@@ -308,7 +308,7 @@ public class ExternalSubstitutor extends SimpleSubstitutorStorage {
                 //if (!WordNet.wn.caseMap.containsKey(wnWord.toUpperCase())) {
                     if (noPunc.size() > 1)
                         WordNet.wn.multiWords.addMultiWord(wnWord);
-//                    WordNet.wn.synsetFromTermFormat(form, wnWord, SUMOterm, kb);
+                    WordNet.wn.synsetFromTermFormat(form, wnWord, SUMOterm, kb);
                     String f = "(instance " + SUMOterm + " " + type + ")";
                     System.out.println("Info in ExternalSubstitutor.addNERtoWN(): formula: " + f);
                     kb.tell(f);

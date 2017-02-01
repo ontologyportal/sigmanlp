@@ -19,13 +19,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA
 */
 
-import com.articulate.sigma.Document;
 import com.articulate.sigma.Formula;
 import com.articulate.sigma.KBmanager;
-import semRewrite.CNF;
-import semRewrite.CommonCNFUtil;
-import semRewrite.Interpreter;
 import com.google.common.collect.Lists;
+import nlp.Document;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 

@@ -21,6 +21,7 @@
 
 package semRewrite.substitutor;
 
+import com.articulate.sigma.WordNet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -51,11 +52,11 @@ public class IdiomSubstitutor extends SimpleSubstitutorStorage {
         ArrayList<String> synset = Lists.newArrayList();
         while (from < labels.size()) {
             List<String> tail = labelsText.subList(from + 1, labelsText.size());
-//            int to = WordNet.wn.getMultiWords().findMultiWord(labels.get(from).lemma(), labels.get(from).originalText(), tail, synset);
-//            if (to > 0) {
-//                semRewrite.substitutor.CoreLabelSequence idiom = new CoreLabelSequence(labels.subList(from, from + to));
-//                collectedIdioms.put(idiom, idiom);
-//            }
+            int to = WordNet.wn.getMultiWords().findMultiWord(labels.get(from).lemma(), labels.get(from).originalText(), tail, synset);
+            if (to > 0) {
+                semRewrite.substitutor.CoreLabelSequence idiom = new CoreLabelSequence(labels.subList(from, from + to));
+                collectedIdioms.put(idiom, idiom);
+            }
             from++;
         }
         addGroups(collectedIdioms);
