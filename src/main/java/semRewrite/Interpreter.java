@@ -29,6 +29,7 @@ import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
+import nlp.DependencyConverter;
 import nlp.Document;
 import nlp.SimFlood;
 import nlp.TFIDF;

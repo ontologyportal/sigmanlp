@@ -1,9 +1,5 @@
 package nlp;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 
@@ -12,8 +8,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 /**
@@ -52,26 +46,5 @@ public class TFIDFUtil {
             documents.add(line);
         }
         return documents;
-    }
-
-    /** *************************************************************
-     * @param filename name of file to retrieve from s3
-     * @return file name of local file
-     * Gets file from S3 and writes to local file
-     */
-    static String readS3File(String filename) {
-
-        String newFileName = "testFile.txt";
-        String bucketName = "cloudminds-nlp";
-        AmazonS3 client = new AmazonS3Client();
-        try {
-            S3Object object = client.getObject(bucketName, filename);
-            S3ObjectInputStream contentStream = object.getObjectContent();
-            Files.copy(contentStream, new File(newFileName).toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        return newFileName;
     }
 }
