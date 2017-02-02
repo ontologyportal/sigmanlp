@@ -7,7 +7,7 @@
     <groupId>com.github.ontologyportal</groupId>
     <artifactId>sigma-nlp</artifactId>
     <packaging>jar</packaging>
-    <version>1.0</version>
+    <version>1.1</version>
     <name>sigma-nlp</name>
     <description>Natural language processing toolbox using Sigma knowledge engineering system.</description>
     <url>www.ontologyportal.org</url>
