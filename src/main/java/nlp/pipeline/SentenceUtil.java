@@ -45,6 +45,19 @@ import static edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCC
 public class SentenceUtil {
 
     /** ***************************************************************
+     * Print all the sentences in this document back into strings
+     */
+    public static List<String> restoreSentences(Annotation document) {
+
+        List<String> result = new ArrayList<String>();
+        List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+        for (CoreMap sentence : sentences) {
+            result.add(sentence.toString());
+        }
+        return result;
+    }
+
+    /** ***************************************************************
      * Print all the sentences in this document
      * CoreMap is essentially a Map that uses class objects as keys and 
      * has values with custom types
@@ -52,7 +65,7 @@ public class SentenceUtil {
     public static void printSentences(Annotation document) {
 
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
-        for(CoreMap sentence : sentences) {
+        for (CoreMap sentence : sentences) {
             // traversing the words in the current sentence
             // a CoreLabel is a CoreMap with additional token-specific methods
             int count = 1;
