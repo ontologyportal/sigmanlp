@@ -104,7 +104,7 @@ public class InterpTest {
     /****************************************************************
      * if one formula has literals that are found in every other formula
      * the first subsumes the second (a little counter-intuitive).  Note that
-     *  only very simple formulas a compared correctly - they must consist
+     *  only very simple formulas are compared correctly - they must consist
      *  of a quantifier and conjunction (which are ignored) and then the
      *  elements of the conjunction are compared.  The only exception that's
      *  properly handled is if the expected formula has just one literal.
@@ -149,10 +149,10 @@ public class InterpTest {
         List<String> actLiterals = act.complexArgumentsToArrayList(0);
         for (String explit : expLiterals) {
             Formula exForm = new Formula(explit);
-            if (!exForm.isSimpleClause()) {
-                System.out.println("Error in InterpTest.subsumes(): non-simple literal: " + exForm);
-                return false;
-            }
+            //if (!exForm.isSimpleClause(kb)) {
+            //    System.out.println("Error in InterpTest.subsumes(): non-simple literal: " + exForm);
+            //    return false;
+            //}
             boolean found = false;
             for (String actlit : actLiterals) {
                 Formula actForm = new Formula(actlit);
