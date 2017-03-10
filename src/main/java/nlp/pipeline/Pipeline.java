@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.sigma.StringUtil;
 import com.articulate.sigma.WSD;
 import com.articulate.sigma.KBmanager;
 import com.google.common.base.Strings;
@@ -143,10 +144,15 @@ public class Pipeline {
                 words.add(lemma);
             }
             for (CoreLabel token : tokens) {
-                String lemma = token.lemma();
-                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class); // need to convert to Sigma's integer codes
+                String orig = token.originalText();
                 String sense = token.get(WSDAnnotator.WSDAnnotation.class);
-                System.out.print(lemma + "/" + sense + " ");
+                String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                System.out.print(orig);
+                if (!StringUtil.emptyString(sense))
+                    System.out.print("/" + sense);
+                if (!StringUtil.emptyString(sumo))
+                    System.out.print("/" + sumo);
+                System.out.print(" ");
             }
             System.out.println();
         }
