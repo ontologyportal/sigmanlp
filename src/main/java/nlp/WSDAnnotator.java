@@ -1,7 +1,6 @@
 package nlp;
 
-import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.WSD;
+import com.articulate.sigma.*;
 import edu.stanford.nlp.ie.machinereading.structure.MachineReadingAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
@@ -27,6 +26,12 @@ import nlp.pipeline.SentenceUtil;
 public class WSDAnnotator implements Annotator {
 
     public static class WSDAnnotation implements CoreAnnotation<String> {
+        public Class<String> getType() {
+            return String.class;
+        }
+    }
+
+    public static class SUMOAnnotation implements CoreAnnotation<String> {
         public Class<String> getType() {
             return String.class;
         }
@@ -59,8 +64,14 @@ public class WSDAnnotator implements Annotator {
             for (CoreLabel token : tokens) {
                 String lemma = token.lemma();
                 String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class); // need to convert to Sigma's integer codes
-                String sense = WSD.findWordSenseInContext(lemma, words);
-                token.set(WSDAnnotation.class,sense);
+                char num = WordNetUtilities.posPennToNumber(pos);
+                if (num == '1' || num == '2' || num == '3' || num == '4') {
+                    String sense = WSD.findWordSenseInContextWithPosCoreNLP(lemma, words, Integer.parseInt(Character.toString(num)));
+                    token.set(WSDAnnotation.class, sense);
+                    String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(sense));
+                    if (!StringUtil.emptyString(SUMO))
+                        token.set(SUMOAnnotation.class, SUMO);
+                }
             }
         }
     }
