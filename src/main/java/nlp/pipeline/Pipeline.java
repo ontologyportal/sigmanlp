@@ -31,6 +31,7 @@ import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.util.CoreMap;
+import nlp.WNMultiWordAnnotator;
 import nlp.WSDAnnotator;
 
 import java.io.IOException;
@@ -81,6 +82,7 @@ public class Pipeline {
         //props.setProperty("parse.kbest", "2");
         //props.setProperty("depparse.language","English");
         props.put("customAnnotatorClass.wsd","nlp.WSDAnnotator");
+        props.put("customAnnotatorClass.wnmw","nlp.WNMultiWordAnnotator");
         //props.put("depparse.model", "edu/stanford/nlp/models/parser/nndep/english_SD.gz");
 
         //if (!useDefaultPCFGModel && !Strings.isNullOrEmpty(KBmanager.getMgr().getPref("englishPCFG"))) {
@@ -147,11 +149,14 @@ public class Pipeline {
                 String orig = token.originalText();
                 String sense = token.get(WSDAnnotator.WSDAnnotation.class);
                 String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                String multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
                 System.out.print(orig);
                 if (!StringUtil.emptyString(sense))
                     System.out.print("/" + sense);
                 if (!StringUtil.emptyString(sumo))
                     System.out.print("/" + sumo);
+                if (!StringUtil.emptyString(multi))
+                    System.out.print("/" + multi);
                 System.out.print(" ");
             }
             System.out.println();
@@ -163,7 +168,7 @@ public class Pipeline {
     public static void processFile(String filename) {
 
         KBmanager.getMgr().initializeOnce();
-        String propString =  "tokenize, ssplit, pos, lemma, wsd";
+        String propString =  "tokenize, ssplit, pos, lemma, wsd, wnmw";
         Pipeline p = new Pipeline(true,propString);
         String contents = "";
         try {
