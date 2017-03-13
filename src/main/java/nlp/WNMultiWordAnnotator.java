@@ -54,7 +54,7 @@ public class WNMultiWordAnnotator implements Annotator {
      */
     public int findMultiWord(List<CoreLabel> tokens, int startIndex, List<String> synset) {
 
-        System.out.println("INFO in MultiWords.findMultiWord(): text: '" + tokens + "'");
+        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): text: '" + tokens + "'");
         if (startIndex + 1 < tokens.size())
             return startIndex + findMultiWord(tokens.get(startIndex),
                 tokens.subList(startIndex + 1, tokens.size()), synset);
@@ -72,56 +72,62 @@ public class WNMultiWordAnnotator implements Annotator {
         String multiWordKey = token.lemma();
         if (!WordNet.wn.getMultiWords().multiWord.containsKey(token.originalText()))
             multiWordKey = token.originalText();
-        System.out.println("INFO in MultiWords.findMultiWord(): current word: '" + multiWordKey + "'");
+        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): current word: '" + multiWordKey + "'");
         int wordIndex = 0;
+        int endIndex = 0;
+        String sense = "";
         if (WordNet.wn.getMultiWords().multiWord.containsKey(multiWordKey) && !multiWordTail.isEmpty()) {
             String foundMultiWord = multiWordKey + "_" + multiWordTail.get(wordIndex).originalText();
             //int wordListSize = multiWord.get(word).size();
-            System.out.println("INFO in MultiWords.findMultiWord(): current head word: '" + multiWordKey + "'");
+            //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): current head word: '" + multiWordKey + "'");
             Collection<String> candidates = WordNet.wn.getMultiWords().multiWord.get(multiWordKey);
             while (candidates.size() > 0) {
                 ArrayList<String> newCandidates = new ArrayList<String>();
-                System.out.println("INFO in MultiWords.findMultiWord(): current multi-word: '" + foundMultiWord + "'");
-                System.out.println("INFO in MultiWords.findMultiWord(): candidates: " + candidates);
+                //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): current multi-word: '" + foundMultiWord + "'");
+                //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): candidates: " + candidates);
                 for (String candidate : candidates) {
-                    System.out.println("INFO in MultiWords.findMultiWord(): candidates.size(): " + candidates.size());
+                    ///System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): candidates.size(): " + candidates.size());
                     if (candidate.equals(foundMultiWord)) {
                         //ArrayList<String> multiResult = new ArrayList<String>();
-                        System.out.println("INFO in MultiWords.findMultiWord(): found multi-word: " + foundMultiWord);
-                        String sense = WSD.getBestDefaultSense(foundMultiWord);
-                        System.out.println("INFO in MultiWords.findMultiWord(): found sense: " + sense);
+                        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): found multi-word: " + foundMultiWord);
+                        sense = WSD.getBestDefaultSense(foundMultiWord);
+                        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): found sense: " + sense);
                         if (!StringUtil.emptyString(sense)) {
-                            synset.add(sense);
-                            return wordIndex + 2;
+                            // synset.add(sense);
+                            endIndex = wordIndex + 2;
+                            //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): recording end index: " + endIndex);
                         }
                     }
                     else if (candidate.startsWith(foundMultiWord)) {
-                        System.out.println("INFO in MultiWords.findMultiWord(): partial match: '" +
-                                candidate + "' with '" + foundMultiWord + "'");
+                        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): partial match: '" +
+                        //        candidate + "' with '" + foundMultiWord + "'");
                         newCandidates.add(candidate);
                     }
                 }
                 if (newCandidates.size() > 0) {
-                    System.out.println("INFO in MultiWords.findMultiWord(): new candidates added");
+                    //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): new candidates added");
                     if (wordIndex > multiWordTail.size() - 1) {
                         candidates = new ArrayList<String>();  // ran out of words, trigger an exit
-                        System.out.println("INFO in MultiWords.findMultiWord(): ran out of words, trigger an exit");
+                        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): ran out of words, trigger an exit");
                     }
                     else {
                         candidates = newCandidates;
                         wordIndex++;
                         if (wordIndex < multiWordTail.size())
                             foundMultiWord = foundMultiWord + "_" + multiWordTail.get(wordIndex).originalText();
-                        System.out.println("INFO in MultiWords.findMultiWord(): new multi-word: " + foundMultiWord);
+                        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): new multi-word: " + foundMultiWord);
                     }
                 }
                 else {
-                    System.out.println("INFO in MultiWords.findMultiWord(): no new candidates");
+                    //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): no new candidates");
                     candidates = new ArrayList<String>();
                 }
             }
         }
-        return 0;
+        synset.add(sense);
+        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): returning sense: " + sense);
+        //System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): returning end index: " + endIndex);
+        return endIndex;
     }
 
     /****************************************************************
@@ -135,17 +141,23 @@ public class WNMultiWordAnnotator implements Annotator {
         for (CoreMap sentence : sentences) {
             List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             ArrayList<String> words = new ArrayList<String>();
+            int wordIndex = 0;
             for (CoreLabel token : tokens) {
+                if (token.index() < wordIndex) // skip the found multi-word
+                    continue;
                 String lemma = token.lemma();
                 String word = token.originalText();
                 int i = token.index();
                 ArrayList<String> multiWordResult = new ArrayList<String>();
-                int wordIndex = findMultiWord(tokens, i, multiWordResult);
+                wordIndex = findMultiWord(tokens, i, multiWordResult);
+                //System.out.println("INFO in WNMultiWordAnnotator.annotate(): start: " + i + " end: " + wordIndex);
                 if (wordIndex != i) {
-                    String theMultiWord = WordNet.wn.synsetsToWords.get(multiWordResult.get(0)).get(0);
-                    for (int index = i; i <= wordIndex; i++) {
-                        CoreLabel tok = tokens.get(index);
-                        tok.set(WNMultiWordAnnotation.class,theMultiWord);
+                    String synset = multiWordResult.get(0);
+                    for (int index = i; index < wordIndex; index++) {
+                        CoreLabel tok = tokens.get(index);  // note that token index is token number -1
+                        tok.set(WNMultiWordAnnotation.class,synset);
+                        //System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for token: " + tok);
+                        //System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for index: " + index);
                     }
                 }
             }
