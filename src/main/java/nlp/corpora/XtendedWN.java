@@ -1,5 +1,6 @@
 package nlp.corpora;
 
+import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.StringUtil;
 import com.articulate.sigma.WordNet;
 import com.articulate.sigma.WordNetUtilities;
@@ -37,7 +38,9 @@ Read the contents of eXtended WordNet http://www.hlt.utdallas.edu/~xwn/downloads
 */
 public class XtendedWN {
 
+    // a map index by WordNet sense keys where values are counts of co-occurring words
     public static HashMap<String,HashMap<String,Integer>> senses = new HashMap<>();
+    public static int errorCount = 0;
 
     /***************************************************************
      * turn a string of space delimited key=value pairs into a map
@@ -55,6 +58,10 @@ public class XtendedWN {
     }
 
     /***************************************************************
+     * Read eXtended wordnet and map the sense keys from WN2.0 to 3.0
+     * Because the version mappings are between synsets we wind up
+     * with synsets as word co-occurrence keys and have to convert them
+     * later to sense keys.
      */
     private static void readFile(String filename, String pos) {
 
@@ -77,25 +84,33 @@ public class XtendedWN {
                     String attribs = line.substring(item+4,close);
                     HashMap<String,String> m = stringToMap(attribs);
                     String word = line.substring(close+1,line.indexOf("<",close + 1));
-                    if (m.containsKey("lemma"))
+                    if (m.containsKey("lemma") && !WordNet.wn.isStopWord(m.get("lemma")))
                         words.add(m.get("lemma"));
                     if (m.containsKey("pos") && m.containsKey("lemma") && m.containsKey("wnsn")) {
                         String POSpenn = StringUtil.removeEnclosingQuotes(m.get("pos"));
                         char POSnum = WordNetUtilities.posPennToNumber(POSpenn);
                         String POSlet = WordNetUtilities.posNumberToLetters(Character.toString(POSnum));
                         String senseKey = m.get("lemma") + "_" + POSlet + "_" + m.get("wnsn");
-                        String synset = POSnum + WordNet.wn.senseIndex.get(senseKey);
+                        String synset20 = POSnum + WordNet.wn.senseIndex.get(senseKey);
                         if (WordNet.wn.senseIndex.get(senseKey) == null && POSlet.equals("JJ")) {
                             // WordNet calls some adjectives "adjective satellites"
                             POSlet = "AS";
                             senseKey = m.get("lemma") + "_" + POSlet + "_" + m.get("wnsn");
-                            synset = "3" + WordNet.wn.senseIndex.get(senseKey);
+                            synset20 = "3" + WordNet.wn.senseIndex.get(senseKey);
                         }
                         // convert from WN 2.0 synsets in XWN to current WN 3.0
-                        if (WordNetUtilities.mappings.containsKey(synset))
-                            snss.add(WordNetUtilities.mappings.get(synset));
-                        else
-                            System.out.println("Error in XtendedWN.readFile(): no mapping to WN 3.0 from 2.0 synset: " + synset);
+                        if (WordNetUtilities.mappings.containsKey(synset20)) {
+                            snss.add(WordNetUtilities.mappings.get(synset20));
+                        }
+                        else {
+                            if (errorCount < 20) {
+                                System.out.println("Error in XtendedWN.readFile(): no mapping to WN 3.0 from 2.0 synset: " +
+                                        synset20 + " on line \n" + line);
+                                errorCount++;
+                                if (errorCount >= 20)
+                                    System.out.println("surpressing further errors...");
+                            }
+                        }
                     }
                 }
                 else if (line.startsWith("  </wsd>")) { // add all the co-occurrence data
@@ -123,21 +138,55 @@ public class XtendedWN {
     }
 
     /***************************************************************
+     * Convert all the 9-digit synset numbers into sense keys
      */
-    public static void main(String[] args) {
+    public static void convertSynsetsToSenseKeys() {
 
-        WordNet.initOnce();
-        WordNet.wn.baseDirFile = new File("/home/apease/corpora/WordNet-2.0/dict");
-        WordNet.wn.readSenseIndex();
+        HashMap<String,HashMap<String,Integer>> newsenses = new HashMap<>();
+        for (String synset : senses.keySet()) {
+            HashMap<String,Integer> value = senses.get(synset);
+            String senseKey = WordNetUtilities.getKeyFromSense(synset);
+            if (senseKey != null)
+                newsenses.put(senseKey,value);
+        }
+        senses = newsenses;
+    }
+
+    /***************************************************************
+     */
+    public static void load() {
+
+        System.out.println("Info in XtendedWN.load(): starting read");
+        //WordNet.initOnce();
+        WordNet.wn.readSenseIndex("/home/apease/corpora/WordNet-2.0/dict/index.sense");
         try {
-            WordNetUtilities.updateWNversionReading("/home/apease/corpora/mappings-upc-2007/mapping-20-30/", "20-30");
+            WordNetUtilities.updateWNversionReading("/home/apease/corpora/mappings-upc-2007/mapping-30-20/", "30-20");
         }
         catch (IOException ioe) {
             System.out.println("Error in XtendedWN.main()" + ioe.getMessage());
             ioe.printStackTrace();
         }
-        //XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/noun.xml","1");
-        XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/noun-small.xml","1");
-        System.out.println(senses);
+        XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/noun.xml","1");
+        XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/verb.xml","2");
+        XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/adj.xml","3");
+        XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/adv.xml","4");
+        //XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/noun-small.xml","1");
+
+        WordNet.wn.readSenseIndex("/home/apease/.sigmakee/KBs/WordNetMappings/index.sense");
+        convertSynsetsToSenseKeys();
+        WordNet.writeWordCoFrequencies("wordFreqXWN.txt",senses);
+        System.out.println("Info in XtendedWN.load(): before merge sense inventory: " +
+                WordNet.wn.wordCoFrequencies.keySet().size());
+        WordNet.wn.mergeWordCoFrequencies(senses);
+        System.out.println("Info in XtendedWN.load(): after merge sense inventory: " +
+                WordNet.wn.wordCoFrequencies.keySet().size());
+    }
+
+    /***************************************************************
+     */
+    public static void main(String[] args) {
+
+        load();
+        //System.out.println(senses);
     }
 }
