@@ -296,7 +296,7 @@ public class Interpreter {
                 String pos = posMap.get(clauseKey);
                 String id = Strings.isNullOrEmpty(pos)
                         ? WSD.findWordSenseInContext(pureWord, pure)
-                        : WSD.findWordSenseInContextWithPos(pureWord, pure, WordNetUtilities.sensePOS(pos));
+                        : WSD.findWordSenseInContextWithPos(pureWord, pure, WordNetUtilities.sensePOS(pos),false);
                 if (debug) System.out.println("INFO in Interpreter.findWSD(): id: " + id);
 
                 if (!Strings.isNullOrEmpty(id)) {
