@@ -85,11 +85,12 @@ public class Pipeline {
         props.put("customAnnotatorClass.wnmw","nlp.WNMultiWordAnnotator");
         //props.put("depparse.model", "edu/stanford/nlp/models/parser/nndep/english_SD.gz");
 
-        //if (!useDefaultPCFGModel && !Strings.isNullOrEmpty(KBmanager.getMgr().getPref("englishPCFG"))) {
-        //    props.put("parse.model", KBmanager.getMgr().getPref("englishPCFG"));
-        //    props.put("parser.model", KBmanager.getMgr().getPref("englishPCFG"));
-        //    props.put("parse.flags", "");
-        //}
+        if (propString.contains("pos,") && !useDefaultPCFGModel &&
+                !Strings.isNullOrEmpty(KBmanager.getMgr().getPref("englishPCFG"))) {
+            props.put("parse.model", KBmanager.getMgr().getPref("englishPCFG"));
+            props.put("parser.model", KBmanager.getMgr().getPref("englishPCFG"));
+            props.put("parse.flags", "");
+        }
         // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
         pipeline = new StanfordCoreNLP(props);
     }
