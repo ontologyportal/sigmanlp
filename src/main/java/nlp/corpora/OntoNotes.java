@@ -48,23 +48,30 @@ https://catalog.ldc.upenn.edu/docs/LDC2013T19/OntoNotes-Release-5.0.pdf
 */
 public class OntoNotes {
 
+    public int correctSumo = 0;
+    public int correctSense = 0;
+    public int incorrectSumo = 0;
+    public int incorrectSense = 0;
+
+    public static int errorCount = 0;
+
     // a map index by WordNet sense keys where values are counts of co-occurring words
     public HashMap<String, HashMap<String,Integer>> senses = new HashMap<>();
 
     // a list of sentences containing a list of tokens in the sentence
-    public ArrayList<ArrayList<Token>> sentences = new ArrayList<>();
+    //public ArrayList<ArrayList<Token>> sentences = new ArrayList<>();
 
     /***************************************************************
      * A particular word and its annotations
      */
     public class Token {
-        String token = "";
+        String origToken = "";
+        String lowerCase = "";
         String file = "";
         int num = 0;
         int sent = 0;
         String lemma = "";
-        String sense = ""; // a nine digit wordnet sense id
-        String mfs = ""; // a nine digit wordnet sense id just by most frequent sense
+        String senseKey = ""; // a nine digit wordnet sense id
         int posNum = 1;
         HashMap<String,String> map = new HashMap<>();
     }
@@ -148,7 +155,7 @@ public class OntoNotes {
             }
             else {
                 if (inLeaves) {
-                    System.out.println("line: " + l);
+                    //System.out.println("line: " + l);
                     if (StringUtil.emptyString(l)) { // empty means the end of the sentence
                         inLeaves = false;
                         processOnfFile(tokens);
@@ -157,7 +164,7 @@ public class OntoNotes {
                     }
                     else {
                         //     4   tourists
-                        Pattern p = Pattern.compile("\\s*(\\d+)\\s*(\\w+).*"); // start of a new sentence
+                        Pattern p = Pattern.compile("\\s+(\\d+)\\s+(\\w+).*"); // start of a new sentence
                         Matcher m = p.matcher(l);
                         if (m.matches()) {
                             tok = new Token();
@@ -173,23 +180,47 @@ public class OntoNotes {
                                 System.out.println(e.getMessage());
                                 e.printStackTrace();
                             }
-                            tok.token = m.group(2);
+                            tok.origToken = m.group(2);
+                            tok.lowerCase = tok.origToken.toLowerCase();
+                            //System.out.println("OntoNotes.scanOnfFile: added token : " + tok.token +
+                            //        " for line " + l);
                             tok.num = tokNum;
                             tokens.add(tok);
                         }
                         else {
                             //            sense: bring-v.2
-                            Pattern p2 = Pattern.compile("\\s*sense:\\s*(.*)");
+                            Pattern p2 = Pattern.compile("\\s+sense:\\s+(.+)");
                             Matcher m2 = p2.matcher(l);
                             if (m2.matches()) {
                                 String senseKey = m2.group(1);
-                                tok.sense = WordNetUtilities.synsetFromOntoNotes(senseKey);
-                                tok.posNum = Integer.parseInt(Character.toString(tok.sense.charAt(0)));
-                                System.out.println("adding sense " + senseKey);
+                                String synset = WordNetUtilities.synsetFromOntoNotes(senseKey);
+                                if (synset != null) {
+                                    tok.senseKey = WordNetUtilities.getKeyFromSense(synset);
+                                    tok.posNum = Integer.parseInt(Character.toString(synset.charAt(0)));
+                                    String sumo = WordNet.wn.getSUMOMapping(synset);
+                                    if (sumo == null) {
+                                        if (errorCount < 20) {
+                                            System.out.println("Error in OntoNotes.scanOnfFile: No SUMO sense for token:key " +
+                                                    tok.origToken + ":" + tok.senseKey + " and key: " + senseKey);
+                                            errorCount++;
+                                            if (errorCount >= 20)
+                                                System.out.println("surpressing further errors...");
+                                        }
+                                    }
+                                }
+                                else {
+                                    if (errorCount < 20) {
+                                        System.out.println("Error in OntoNotes.scanOnfFile: No synset for token:key " +
+                                                tok.origToken + ":" + tok.senseKey + " and key: " + senseKey);
+                                        errorCount++;
+                                        if (errorCount >= 20)
+                                            System.out.println("surpressing further errors...");
+                                    }
+                                }
                             }
                             else {
                                 //            sense: bring-v.2
-                                Pattern p3 = Pattern.compile("\\s*prop:\\s*(\\w+)\\..*");
+                                Pattern p3 = Pattern.compile("\\s+prop:\\s+(\\w+)\\..*");
                                 Matcher m3 = p2.matcher(l); // lemma form of the word
                                 if (m3.matches()) {
                                     String prop = m3.group(1);
@@ -209,7 +240,7 @@ public class OntoNotes {
 
         ArrayList<String> result = new ArrayList<String>();
         for (Token t : tokens) {
-            result.add(t.token);
+            result.add(t.lowerCase);
         }
         return result;
     }
@@ -223,40 +254,74 @@ public class OntoNotes {
         HashMap<String,Integer> words = new HashMap<>();
         HashSet<String> tempSenses = new HashSet<>();
         for (Token tok : tokens) {
-            if (!StringUtil.emptyString(tok.sense)) {
-                tempSenses.add(tok.sense);
-                String candidateSense = WSD.findWordSenseInContextWithPos(tok.token,sentence,tok.posNum);
-                //String candidateSense = WSD.getBestDefaultSense(tok.token);
-                String sumo = WordNet.wn.getSUMOMapping(tok.sense);
-                if (sumo != null)
-                    sumo = WordNetUtilities.getBareSUMOTerm(sumo);
-                String candSumo = WordNet.wn.getSUMOMapping(candidateSense);
-                if (candSumo != null)
-                    candSumo = WordNetUtilities.getBareSUMOTerm(candSumo);
-                if (tok.sense.equals(candidateSense))
-                    System.out.println("INFO in OntoNotes.processOnfFile(): correct sense " +
-                            tok.sense + " for token " + tok.token);
-                else
-                    System.out.println("Error in OntoNotes.processOnfFile(): non matching sense " +
-                             candidateSense + " for token " + tok.token + " with marked sense " + tok.sense);
-                if (sumo != null && sumo.equals(candSumo))
-                    System.out.println("INFO in OntoNotes.processOnfFile(): correct sumo " +
-                            candSumo + " for token " + tok.token);
-                else
-                    System.out.println("Error in OntoNotes.processOnfFile(): non matching sumo " +
-                            candSumo + " for token " + tok.token + " with marked sumo " + sumo +
-                            " and sense " + candidateSense + " with marked sense " + tok.sense +
-                    " on sentence:token " + tok.sent + ":" + tok.num + " in " + tok.file);
+            if (!WordNet.wn.isStopWord(tok.origToken)) {
+                if (!StringUtil.emptyString(tok.senseKey)) {
+                    tempSenses.add(tok.senseKey);
+
+                    String candidateSynset = WSD.findWordSenseInContextWithPos(tok.origToken, sentence, tok.posNum, false);
+
+                    if (StringUtil.emptyString(candidateSynset)) {
+                        incorrectSense++;
+                        incorrectSumo++;
+                        continue;
+                    }
+                    String candidateSenseKey = WordNetUtilities.getKeyFromSense(candidateSynset);
+                    String answerSynset = WordNetUtilities.getSenseFromKey(tok.senseKey);
+
+                    if (tok.senseKey.equals(candidateSenseKey)) {
+                        //System.out.println("in OntoNotes.processOnfFile(): correct sense " +
+                        //        tok.sense + " for token " + tok.token);
+                        correctSense++;
+                    }
+                    else {
+                        //System.out.println("in OntoNotes.processOnfFile(): non matching sense " +
+                        //        candidateSense + " for token " + tok.token + " with marked sense " + tok.sense);
+                        incorrectSense++;
+                    }
+
+                    String sumo = WordNet.wn.getSUMOMapping(answerSynset);
+                    if (sumo != null)
+                        sumo = WordNetUtilities.getBareSUMOTerm(sumo);
+                    else {
+                        System.out.println("OntoNotes.processOnfFile: No SUMO sense for key " +
+                                tok.origToken + ":" + candidateSynset);
+                        continue;
+                    }
+                    String candSumo = WordNet.wn.getSUMOMapping(candidateSynset);
+                    if (candSumo != null)
+                        candSumo = WordNetUtilities.getBareSUMOTerm(candSumo);
+                    else {
+                        incorrectSumo++;
+                        continue;
+                    }
+                    int random = (int) (Math.random() * 2000 + 1);
+                    if (sumo != null && sumo.equals(candSumo)) {
+                        if (random == 1000)
+                            System.out.println("in OntoNotes.processOnfFile(): correct sumo " +
+                                    candSumo + " for token " + tok.origToken + " and sentence \n" + sentence);
+                        correctSumo++;
+                    }
+                    else {
+                        if (random == 1000)
+                            System.out.println("in OntoNotes.processOnfFile(): non matching sumo " +
+                                    candSumo + " for token " + tok.origToken + " with marked sumo " + sumo +
+                                    " and sense " + candidateSynset + " with marked sense " + tok.senseKey +
+                                    " on sentence:token " + tok.sent + ":" + tok.num + " in " + tok.file +
+                                    " and sentence \n" + sentence);
+                        incorrectSumo++;
+                    }
+                }
+                String tokString = tok.lowerCase;
+                if (!StringUtil.emptyString(tok.lemma))
+                    tokString = tok.lemma;
+                Integer value = 0;
+                if (words.containsKey(tokString))
+                    value = words.get(tokString);
+                value = value + 1;
+                words.put(tokString, value);
             }
-            String tokString = tok.token;
-            if (!StringUtil.emptyString(tok.lemma))
-                tokString = tok.lemma;
-            Integer value = new Integer(0);
-            if (words.containsKey(tokString))
-                value = words.get(tokString);
-            value = value + 1;
-            words.put(tokString, value);
         }
+
         for (String sense : tempSenses) {
             HashMap<String,Integer> wordList = new HashMap<>();
             if (senses.containsKey(sense))
@@ -265,7 +330,7 @@ public class OntoNotes {
                 senses.put(sense,wordList);
             }
             for (String word : words.keySet()) {
-                Integer count = new Integer(1);
+                Integer count = 1;
                 if (wordList.containsKey(word))
                     count = count + wordList.get(word);
                 wordList.put(word,count);
@@ -302,6 +367,7 @@ public class OntoNotes {
      */
     public void readCorpus() {
 
+        System.out.println("Info in OntoNotes.readCorpus(): starting read");
         String ontonotesHome = System.getenv("ONTONOTES");
         // such as /home/user/corpora/ontonotes-release-5.0/
         // then get all files under data/files/data/english/annotations
@@ -312,7 +378,7 @@ public class OntoNotes {
         //readNameFiles(dataDir);
         //readSenseFiles(dataDir);
         readOnfFiles(dataDir);
-        System.out.println(senses);
+        //System.out.println(senses);
     }
 
     /***************************************************************
@@ -333,8 +399,44 @@ public class OntoNotes {
         else
             System.out.println("no match!");
         */
-        KBmanager.getMgr().initializeOnce();
-        OntoNotes on = new OntoNotes();
-        on.readCorpus();
+        for (int i = 1; i <= 5; i++) {
+            WSD.threshold = i * i;
+            WSD.gap = i;
+            System.out.println("OntoNotes.main(): ----------------------------------------------------");
+            System.out.println("WSD threshold: " + WSD.threshold);
+            System.out.println("WSD gap: " + WSD.gap);
+            KBmanager.getMgr().initializeOnce();
+            WordNet.wn.readWordCoFrequencies();
+            OntoNotes on = new OntoNotes();
+            on.readCorpus();
+            WordNet.writeWordCoFrequencies("wordFreqOntoNotes.txt",on.senses);
+            System.out.println("OntoNotes.main(): ");
+            System.out.println("Test OntoNotes with SemCor as training set and " +
+                    WordNet.wn.wordCoFrequencies.keySet().size() + " senses in inventory");
+            System.out.println("correct sense: " + on.correctSense);
+            System.out.println("incorrect sense: " + on.incorrectSense);
+            System.out.println("correct SUMO: " + on.correctSumo);
+            System.out.println("incorrect SUMO: " + on.incorrectSumo);
+
+            SUMOtoCoSense.load();
+            on = new OntoNotes();
+            on.readCorpus();
+            System.out.println("Test OntoNotes with SemCor and SUMO as training set and " +
+                    WordNet.wn.wordCoFrequencies.keySet().size() + " senses in inventory");
+            System.out.println("correct sense: " + on.correctSense);
+            System.out.println("incorrect sense: " + on.incorrectSense);
+            System.out.println("correct SUMO: " + on.correctSumo);
+            System.out.println("incorrect SUMO: " + on.incorrectSumo);
+
+            XtendedWN.load();
+            on = new OntoNotes();
+            on.readCorpus();
+            System.out.println("Test OntoNotes with SemCor, SUMO and XWN as training set and " +
+                    WordNet.wn.wordCoFrequencies.keySet().size() + " senses in inventory");
+            System.out.println("correct sense: " + on.correctSense);
+            System.out.println("incorrect sense: " + on.incorrectSense);
+            System.out.println("correct SUMO: " + on.correctSumo);
+            System.out.println("incorrect SUMO: " + on.incorrectSumo);
+        }
     }
 }
