@@ -66,7 +66,7 @@ public class WSDAnnotator implements Annotator {
                 String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class); // need to convert to Sigma's integer codes
                 char num = WordNetUtilities.posPennToNumber(pos);
                 if (num == '1' || num == '2' || num == '3' || num == '4') {
-                    String sense = WSD.findWordSenseInContextWithPos(lemma, words, Integer.parseInt(Character.toString(num)));
+                    String sense = WSD.findWordSenseInContextWithPos(lemma, words, Integer.parseInt(Character.toString(num)),true);
                     token.set(WSDAnnotation.class, sense);
                     String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(sense));
                     if (!StringUtil.emptyString(SUMO))
