@@ -43,7 +43,7 @@ import java.util.Properties;
 
 public class Pipeline {
 
-    StanfordCoreNLP pipeline;
+    public StanfordCoreNLP pipeline;
 
     /** ***************************************************************
      */
@@ -81,8 +81,10 @@ public class Pipeline {
         props.put("annotators", propString);
         //props.setProperty("parse.kbest", "2");
         //props.setProperty("depparse.language","English");
-        props.put("customAnnotatorClass.wsd","nlp.WSDAnnotator");
-        props.put("customAnnotatorClass.wnmw","nlp.WNMultiWordAnnotator");
+        if (propString.contains("wsd")) {
+            props.put("customAnnotatorClass.wsd", "nlp.WSDAnnotator");
+            props.put("customAnnotatorClass.wnmw", "nlp.WNMultiWordAnnotator");
+        }
         //props.put("depparse.model", "edu/stanford/nlp/models/parser/nndep/english_SD.gz");
 
         if (propString.contains("pos,") && !useDefaultPCFGModel &&
