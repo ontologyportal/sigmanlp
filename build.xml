@@ -29,6 +29,7 @@
     <echo message="SIGMA_HOME is set to = ${env.SIGMA_HOME}"/>
     <echo message="sigmakee is set to = ${env.SIGMA_SRC}"/>
     <echo>sigmakee home: ${sigmakee.home}</echo>
+    <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
     <copy todir="${basedir}/lib" file="${sigmakee.home}/build/sigmakee.jar" />
   </target>
   
