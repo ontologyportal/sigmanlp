@@ -50,9 +50,18 @@ public class TimeBank {
     public static int correctMark = 0;
     public static int incorrectMark = 0;
 
+    public static int sumoCount = 0;
+
     private static Pipeline p = null;
     public static String anchorDate = "2017-04-21";
     private static Annotation wholeDocument = null;
+
+    /** ***************************************************************
+     */
+    private static String removeLeading0(String s) {
+
+        return s.replaceAll("^0*","");
+    }
 
     /** ***************************************************************
      */
@@ -76,16 +85,24 @@ public class TimeBank {
      */
     public static Formula parseDateString(String s) {
 
-        //System.out.println("in TimeBank.parseDateString(): ");
-        //System.out.println("TimeBank.parseDateString(): " + s);
+        System.out.println("TimeBank.parseDateString(): " + s);
+        if (StringUtil.emptyString(s))
+            return null;
+        if (s.equals("PAST_REF"))
+            return new Formula("(ImmediatePastFn " + parseDateString(anchorDate).toString() + ")");
+        if (s.equals("FUTURE_REF"))
+            return new Formula("(ImmediateFutureFn " + parseDateString(anchorDate).toString() + ")");
+        if (s.equals("PRESENT_REF"))
+            return new Formula(parseDateString(anchorDate).toString());
         StringBuffer sb = new StringBuffer();
         Formula f = new Formula();
         int dashIndex = s.indexOf('-');
         String year = "";
         if (dashIndex == -1) {
             if (s.matches("\\d+")) {
-                sb.insert(0, "(YearFn " + s);
+                sb.insert(0, "(YearFn " + removeLeading0(s));
                 sb.append(")");
+                f = new Formula(sb.toString());
                 return f;
             }
             else
@@ -100,7 +117,7 @@ public class TimeBank {
         if (year.indexOf("X") == -1) {
             if (sb.length() > 0)
                 spacer = " ";
-            sb.insert(0, "(YearFn " + year + spacer);
+            sb.insert(0, "(YearFn " + removeLeading0(year) + spacer);
             sb.append(")");
         }
         String month = "";
@@ -113,20 +130,20 @@ public class TimeBank {
         if (month.indexOf("X") == -1 && !month.startsWith("Q")) {
             if (sb.length() > 0)
                 spacer = " ";
-            sb.insert(0, "(MonthFn " + month + spacer);
+            sb.insert(0, "(MonthFn " + removeLeading0(month) + spacer);
             sb.append(")");
         }
         else if (month.startsWith("W")) {
             if (sb.length() > 0)
                 spacer = " ";
-            sb.insert(0, "(WeekFn " + month.substring(1) + spacer);
+            sb.insert(0, "(WeekFn " + removeLeading0(month.substring(1)) + spacer);
             sb.append(")");
             return new Formula(sb.toString());
         }
         else if (month.startsWith("Q")) {
             if (sb.length() > 0)
                 spacer = " ";
-            sb.insert(0, "(QuarterYearFn " + month.substring(1) + spacer);
+            sb.insert(0, "(QuarterYearFn " + removeLeading0(month.substring(1)) + spacer);
             sb.append(")");
             return new Formula(sb.toString());
         }
@@ -139,10 +156,25 @@ public class TimeBank {
             //System.out.println("TimeBank.parseDateString(): secondDash: " + secondDash);
             //System.out.println("TimeBank.parseDateString(): length: " + s.length());
             day = s.substring(secondDash+1,s.length());
-            sb.insert(0,"(DayFn " +  day + spacer);
+            sb.insert(0,"(DayFn " + removeLeading0(day) + spacer);
             sb.append(")");
         }
         else {
+            if (s.length() - tIndex > 0) {
+                if (s.endsWith("MO")) {
+                    if (sb.length() > 0)
+                        spacer = " ";
+                    sb.insert(0, "(MorningFn " + removeLeading0(day) + spacer);
+                    sb.append(")");
+                }
+                if (s.endsWith("NI")) {
+                    if (sb.length() > 0)
+                        spacer = " ";
+                    sb.insert(0, "(EveningFn " + removeLeading0(day) + spacer);
+                    sb.append(")");
+                }
+            }
+
             int colonIndex = s.indexOf(':');
             if (colonIndex == -1)
                 return new Formula(sb.toString());
@@ -150,29 +182,39 @@ public class TimeBank {
             day = s.substring(secondDash + 1, tIndex);
             if (sb.length() > 0)
                 spacer = " ";
-            sb.insert(0,"(DayFn " + day + spacer);
-            sb.append(")");
+            if (!day.equals("XX")) {
+                sb.insert(0, "(DayFn " + removeLeading0(day) + spacer);
+                sb.append(")");
+            }
             if (sb.length() > 0)
                 spacer = " ";
             String hour = s.substring(tIndex+1, colonIndex);
-            sb.insert(0,"(HourFn " + hour + spacer);
-            sb.append(")");
+            if (!hour.equals("XX")) {
+                sb.insert(0, "(HourFn " + removeLeading0(hour) + spacer);
+                sb.append(")");
+            }
             if (sb.length() > 0)
                 spacer = " ";
             if (secondColon == -1) {
                 String minute = s.substring(colonIndex + 1, s.length());
-                sb.insert(0, "(MinuteFn " + minute + spacer);
-                sb.append(")");
+                if (!minute.equals("XX")) {
+                    sb.insert(0, "(MinuteFn " + removeLeading0(minute) + spacer);
+                    sb.append(")");
+                }
             }
             else {
                 String minute = s.substring(colonIndex + 1, secondColon);
-                sb.insert(0, "(MinuteFn " + minute + spacer);
-                sb.append(")");
+                if (!minute.equals("XX")) {
+                    sb.insert(0, "(MinuteFn " + removeLeading0(minute) + spacer);
+                    sb.append(")");
+                }
                 if (sb.length() > 0)
                     spacer = " ";
                 String second = s.substring(secondColon, s.length());
-                sb.insert(0, "(SecondFn " + second + spacer);
-                sb.append(")");
+                if (!second.equals("XX")) {
+                    sb.insert(0, "(SecondFn " + removeLeading0(second) + spacer);
+                    sb.append(")");
+                }
             }
         }
         //System.out.println("in TimeBank.parseDateString(): " + sb.toString());
@@ -180,10 +222,10 @@ public class TimeBank {
     }
 
     /** ***************************************************************
-     */
+
     private static Formula toSUMOFromDate(Timex time) {
 
-        //System.out.println("in TimeBank.toSUMOFromDate(): ");
+        System.out.println("in TimeBank.toSUMOFromDate(): ");
         Formula f = new Formula();
         StringBuffer sb = new StringBuffer();
         if (!time.timexType().equals("DATE"))
@@ -227,13 +269,13 @@ public class TimeBank {
         }
         f.read(sb.toString());
         return f;
-    }
+    } */
 
     /** ***************************************************************
-     */
+
     private static Formula toSUMOFromTime(Timex time) {
 
-        //System.out.println("in TimeBank.toSUMOFromTime(): ");
+        System.out.println("in TimeBank.toSUMOFromTime(): ");
         Formula f = new Formula();
         StringBuffer sb = new StringBuffer();
         if (!time.timexType().equals("TIME"))
@@ -275,32 +317,27 @@ public class TimeBank {
         }
         f.read(sb.toString());
         return f;
-    }
+    } */
 
     /** ***************************************************************
      */
-    private static Formula toSUMOFromDuration(Timex time) {
+    private static Formula toSUMOFromDurationString(String tString) {
 
-        //System.out.println("in TimeBank.toSUMOFromDuration(): ");
         Formula f = new Formula();
-        StringBuffer sb = new StringBuffer();
-        if (!time.timexType().equals("DURATION"))
-            return null;
-        Calendar c;
-        String tString = time.value();
         if (tString == null)
             return null;
+        StringBuffer sb = new StringBuffer();
         // from http://www.timeml.org/timeMLdocs/TimeML.xsd
         //Pattern p = Pattern.compile("P((((\\p{Nd}+|X{1,2})Y)?((\\p{Nd}+|X{1,2})M)?" +
         //        "((\\p{Nd}+|X{1,2})D)?(T((\\p{Nd}+|X{1,2})H)?((\\p{Nd}+|X{1,2})M)?" +
         //        "((\\p{Nd}+|X{1,2})S)?)?)|((\\p{Nd}+|X{1,2}))(W|L|E|C|Q))");
-        Pattern p = Pattern.compile("P((T?(\\d+|X{1,2})(Y|M|D|H|M|S))*(W|L|E|C|Q)?)");
+        Pattern p = Pattern.compile("P((T?(\\d+|X{1,2})(Y|M|D|H|M|S)?)*(W|L|E|C|Q)?)");
         // PnYnMnDTnHnMnS
-        Matcher m = p.matcher(time.value());
+        Matcher m = p.matcher(tString);
         if (m.matches()) {
             //System.out.println("Timebank.toSUMOFromDuration() matching groups");
             for (int i = 1; i < m.groupCount(); i++) {
-                //System.out.println(i + ": " + m.group(i));
+                System.out.println(i + ": " + m.group(i));
             }
             String count = m.group(3);
             char unit = m.group(4).charAt(0);
@@ -308,9 +345,9 @@ public class TimeBank {
             switch (unit) {
                 case 'Y': break;
                 case 'M': if (m.group(1).contains("T"))
-                        durationSymbol = "MinuteDuration";
-                    else
-                        durationSymbol = "MonthDuration"; break;
+                    durationSymbol = "MinuteDuration";
+                else
+                    durationSymbol = "MonthDuration"; break;
                 case 'W': durationSymbol = "WeekDuration"; break;
                 case 'D': durationSymbol = "DayDuration"; break;
                 case 'H': durationSymbol = "HourDuration"; break;
@@ -331,9 +368,20 @@ public class TimeBank {
 
     /** ***************************************************************
      */
+    private static Formula toSUMOFromDuration(Timex time) {
+
+        System.out.println("in TimeBank.toSUMOFromDuration(): ");
+        if (!time.timexType().equals("DURATION"))
+            return null;
+        String tString = time.value();
+        return toSUMOFromDurationString(tString);
+    }
+
+    /** ***************************************************************
+
     public static Formula toSUMO(Timex time) {
 
-        //System.out.println("in TimeBank.toSUMO(): ");
+        System.out.println("in TimeBank.toSUMO(): ");
         Formula f = new Formula();
         StringBuffer sb = new StringBuffer();
         String type = time.timexType(); // 'DATE' | 'TIME' | 'DURATION' | 'SET'
@@ -345,7 +393,7 @@ public class TimeBank {
         else if (type.equals("DURATION"))
             return toSUMOFromDuration(time);
         return null;
-    }
+    } */
 
     /** ***************************************************************
      */
@@ -359,53 +407,31 @@ public class TimeBank {
     }
 
     /** ***************************************************************
-     * @return the SUMO expression, if possible, null otherwise
+     * @return the SUMO expression, if possible, null otherwise.  Store
+     * the XML TIMEX markup in the global variable suMarkup
      */
     public static Formula process(String sentence) {
 
         wholeDocument = new Annotation(sentence);
         wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, anchorDate);
         p.pipeline.annotate(wholeDocument);
-        //List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
         suMarkup = new ArrayList<>();
-        //System.out.println("text:" + wholeDocument.get(CoreAnnotations.TextAnnotation.class));
         List<CoreMap> timexAnnsAll = wholeDocument.get(TimeAnnotations.TimexAnnotations.class);
         if (timexAnnsAll != null) {
             for (CoreMap cm : timexAnnsAll) {
-                List<CoreLabel> tokens = cm.get(CoreAnnotations.TokensAnnotation.class);
-                //System.out.println("contents: " + cm);
+                System.out.println("process(): SU contents: " + cm);
                 Timex time = cm.get(TimeAnnotations.TimexAnnotation.class);
-                //System.out.println("timex: " + time);
+                System.out.println("process():  SU timex: " + time);
                 suMarkup.add(getTimexTag(time));  // used later in processFile()
-                //System.out.println("markup: " + markup);
-                //System.out.println("type: " + time.timexType());
-                //System.out.println("value: " + time.value());
-
-                if (isTemporalFunction(time)) {
-
+                if (time.timexType().equals("DATE") || time.timexType().equals("TIME")) {
+                    return parseDateString(time.value());
                 }
                 else {
-                    Formula sumo = toSUMO(time);
-                    if (sumo == null || StringUtil.emptyString(sumo.theFormula))
-                        if (time.timexType().equals("DATE") || time.timexType().equals("TIME")) {
-                            //System.out.println("------------------");
-                            return parseDateString(cm.get(TimeExpression.Annotation.class).getTemporal().toString());
-                        }
-                        else {
-                            //System.out.println("not a single date" + time);
-                            //System.out.println("------------------");
-                            return null;
-                        }
-                    else {
-                        //System.out.println("sumo: " + sumo);
-                        //System.out.println("------------------");
-                        return sumo;
-                    }
+                    if (time.timexType().equals("DURATION"))
+                        return toSUMOFromDuration(time);
                 }
             }
-
         }
-        //System.out.println("------------------");
         return null;
     }
 
@@ -417,7 +443,6 @@ public class TimeBank {
         Formula sumo = process(input);
         if (!StringUtil.emptyString(expectSUMO)) {
             Formula expS = new Formula(expectSUMO);
-            //System.out.println("TimeBank.test(): expected: " + expS + " actual: " + sumo);
             if (expS.equals(sumo))
                 correct++;
             else
@@ -500,26 +525,28 @@ public class TimeBank {
 
     /** ***************************************************************
      */
-    public static boolean equalTimex (String t1, String t2) {
+    public static boolean equalTimex (String mark, String tag) {
 
         Pattern p = Pattern.compile("type=\"([^\"]+)\"");
-        Matcher m = p.matcher(t1);
+        Matcher m = p.matcher(mark);
         if (!m.find())
             return false;
         String t1type = m.group(1);
-        m = p.matcher(t2);
+        m = p.matcher(tag);
         if (!m.find())
             return false;
         String t2type = m.group(1);
-        if (!t2type.equals(t1type))
-            return false;
+        if (!t2type.equals(t1type)) {
+            if (! (mark.equals("SET") && tag.equals("DURATION")))
+                return false;
+        }
 
         p = Pattern.compile("value=\"([^\"]+)\"");
-        m = p.matcher(t1);
+        m = p.matcher(mark);
         if (!m.find())
             return false;
         String t1value = m.group(1);
-        m = p.matcher(t2);
+        m = p.matcher(tag);
         if (!m.find())
             return false;
         String t2value = m.group(1);
@@ -527,11 +554,11 @@ public class TimeBank {
             return false;
 
         p = Pattern.compile(">([^<]+)</TIMEX3");
-        m = p.matcher(t1);
+        m = p.matcher(mark);
         if (!m.find())
             return false;
         String t1cont = m.group(1);
-        m = p.matcher(t2);
+        m = p.matcher(tag);
         if (!m.find())
             return false;
         String t2cont = m.group(1);
@@ -545,14 +572,20 @@ public class TimeBank {
      * Check to see that the tags generated by SUtime match the tags in
      * the answer key.  Compare only the type, value and contents of the tag
      */
-    public static void score (ArrayList<String> tags, ArrayList<String> suMarkup) {
+    public static void score (ArrayList<String> tags, ArrayList<String> suMarkup, Formula f) {
 
-        if (tags.size() == 1)
-            System.out.println("score(): markup: " + tags.get(0));
-        if (suMarkup.size() == 1)
-            System.out.println("score(): SU: " + suMarkup.get(0));
+        if (tags.size() > 0)
+            System.out.println("score(): markup: " + tags);
+        if (suMarkup.size() > 0)
+            System.out.println("score(): SU: " + suMarkup);
         System.out.println("score(): anchor: " + anchorDate);
+        if (f != null && !StringUtil.emptyString(f.theFormula))
+            sumoCount++;
+        else
+            System.out.println("no sumo");
         for (String tag : tags) {
+            if (!tag.startsWith("<TIMEX3"))
+                continue;
             boolean found = false;
             for (String mark : suMarkup) {
                 if (!StringUtil.emptyString(tag)) {
@@ -673,30 +706,24 @@ public class TimeBank {
                 if ((sb.length() == 0 && c == '<') || sb.length() > 0)
                     sb.append(c);
                 if (sb.toString().trim().equals("<s>")) {
-                    //sb = new StringBuffer();
-                    while (br.ready() && !sent.toString().endsWith("</s>")) {
+                    while (br.ready() && !sent.toString().endsWith("</s>"))
                         sent.append((char) br.read());
-                    }
+
                     String sentStr = sent.toString().substring(0,sent.toString().length()-4);
                     String clean = StringUtil.removeHTML(sentStr);
                     System.out.println("TimeBank.processFile(): " + clean);
                     ArrayList<String> tags = getTimexTagsFromString(sentStr);
-
-                    //System.out.println("TimeBank.process(): expected tags: " + tags);
-                    // functionInDocument="CREATION_TIME"
-                    //processSentence(sentStr,clean);
                     Formula f = process(clean);
                     if (f != null && !StringUtil.emptyString(f.theFormula))
                         System.out.println("processFile(): SUMO: " + f.toString());
-                    score(tags,suMarkup);
+                    score(tags,suMarkup,f);
                     System.out.println("------------------");
                     sb = new StringBuffer();
                     sent = new StringBuffer();
                 }
                 else if (sb.toString().trim().equals("<TIMEX3")) { // timex not wrapped in <s> is an anchor
-                    while (br.ready() && !sent.toString().endsWith("</TIMEX3>")) {
+                    while (br.ready() && !sent.toString().endsWith("</TIMEX3>"))
                         sent.append((char) br.read());
-                    }
                     String sentStr = "<TIMEX3" + sent.toString().substring(0,sent.toString().length()-4);
                     getAnchorDate(sentStr);
                     System.out.println("------------------");
@@ -747,6 +774,7 @@ public class TimeBank {
         System.out.println("incorrect: " + incorrect);
         System.out.println("correctMark: " + correctMark);
         System.out.println("incorrectMark: " + incorrectMark);
+        System.out.println("sumoCount: " + sumoCount);
     }
 
     /** ***************************************************************
@@ -866,7 +894,31 @@ public class TimeBank {
     public static void main(String[] args) {
 
         //testAll();
-        testTimeBankNew("/home/apease/corpora/timebank_1_2/data/extra");
+
+        if (args.length == 0 || args[0].equals("-h")) {
+            System.out.println("-c test corpus ");
+            System.out.println("-h show this help ");
+            System.out.println("-t convert one value string to SUMO ");
+            System.out.println("-t convert one duration string to SUMO ");
+            System.out.println("-p one quoted sentence into TIMEX tags and SUMO ");
+        }
+        else if (args[0].equals("-c")) {
+            testTimeBankNew("/home/apease/corpora/timebank_1_2/data/extra");
+        }
+        else if (args[0].equals("-t")) {
+            System.out.println("convert " + args[1]);
+            System.out.println(parseDateString(args[1]));
+        }
+        else if (args[0].equals("-d")) {
+            System.out.println("convert " + args[1]);
+            System.out.println(toSUMOFromDurationString(args[1]));
+        }
+        else if (args[0].equals("-p")) {
+            init();
+            System.out.println("anchor date: " + anchorDate);
+            System.out.println("convert " + args[1]);
+            System.out.println(process(args[1]));
+        }
         //testTimeBankNew("/home/apease/corpora/timebank_1_2/test");
         //testText();
         //testParseDateString();
