@@ -891,6 +891,27 @@ public class TimeBank {
 
     /** ***************************************************************
      */
+    public static void interactive() {
+
+        BufferedReader d = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("type 'quit' (without the quotes) on its own line to quit");
+        String line = "";
+        try {
+            while (!line.equals("quit")) {
+                System.out.print("> ");
+                line = d.readLine();
+                if (!line.equals("quit"))
+                    System.out.println(process(line));
+            }
+        }
+        catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.out.println("error in TimeBank.interactive()");
+        }
+    }
+
+    /** ***************************************************************
+     */
     public static void main(String[] args) {
 
         //testAll();
@@ -901,6 +922,7 @@ public class TimeBank {
             System.out.println("-t convert one value string to SUMO ");
             System.out.println("-t convert one duration string to SUMO ");
             System.out.println("-p one quoted sentence into TIMEX tags and SUMO ");
+            System.out.println("-i interactive mode ");
         }
         else if (args[0].equals("-c")) {
             testTimeBankNew("/home/apease/corpora/timebank_1_2/data/extra");
@@ -918,6 +940,11 @@ public class TimeBank {
             System.out.println("anchor date: " + anchorDate);
             System.out.println("convert " + args[1]);
             System.out.println(process(args[1]));
+        }
+        else if (args[0].equals("-i")) {
+            init();
+            System.out.println("anchor date: " + anchorDate);
+            interactive();
         }
         //testTimeBankNew("/home/apease/corpora/timebank_1_2/test");
         //testText();
