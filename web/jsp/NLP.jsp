@@ -22,14 +22,16 @@ Pease, A., (2003). The Sigma Ontology Development Environment,
 in Working Notes of the IJCAI-2003 Workshop on Ontology and Distributed Systems,
 August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 */
+    KBmanager.getMgr().initializeOnce();
+
     out.println("<html>");
     out.println("  <head>");
     out.println("    <title>Sigma Knowledge Engineering Environment - NLP</title>");
     out.println("  </head>");
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
-    String theText = request.getParameter("text");
-    out.println(theText);
+    String theText = request.getParameter("textContent");
+
 
 %>
 <table width="95%" cellspacing="0" cellpadding="0">
@@ -40,7 +42,7 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
                     <td align="left" valign="top"><img src="pixmaps/sigmaSymbol.gif"></td>
                     <td>&nbsp;&nbsp;</td>
                     <td align="left" valign="top"><img src="pixmaps/logoText.gif"><BR>
-                        <b><%=greeting%></b></td>
+                        <b>hello</b></td>
                 </tr>
                 
             </table>
@@ -56,22 +58,38 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 <IMG SRC='pixmaps/1pixel.gif' width=1 height=1 border=0></TD></tr></table><BR>
 
     <b>test</b>
-    <form name="timeTest" id="timeTest" action="NLP.jsp" method="POST" enctype="multipart/form-data">
-  <table>
-    <tr>
-      <td>
-        <b>KB Name:</b>&nbsp;
-      </td>
-      <td>
-        <input type="text" name="test" size="60">
-      </td>
-    </tr>
-  </table>
+    <form name="timeTest" id="timeTest" action="NLP.jsp" method="GET">
+        <b>Process a sentence: </b>&nbsp;
+        <input type="text" name="textContent" size="60" value="<%=theText %>">
         <input type="submit" name="submit" value="Submit">
     </form><p>
 
 </ul>
 <p>
+
+<%
+    out.println(theText + "<P>\n");
+    if (!StringUtil.emptyString(theText)) {
+        Map<String,Integer> result = new HashMap<>();
+        result = WSD.collectSUMOFromString(theText);
+        out.println(result + "<P>\n");
+        Iterator<String> it = result.keySet().iterator();
+        out.println("<table>");
+        while (it.hasNext()) {
+            String key = it.next();
+            String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(key));
+            ArrayList<String> words = WordNet.wn.synsetsToWords.get(key);
+            String wordstr = "";
+            if (words != null)
+                wordstr = words.toString();
+            out.println("<tr><td>" + key + "</td><td>" + result.get(key) + "</td><td>" +
+                SUMO + "</td><td>" + wordstr + "</td></tr><P>\n");
+        }
+        out.println("</table>");
+    }
+    else
+        out.println("Empty input<P>\n");
+%>
 
 </BODY>
 </HTML>
