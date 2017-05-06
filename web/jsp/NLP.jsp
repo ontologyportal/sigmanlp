@@ -1,6 +1,6 @@
 <%@ page
    language="java"
-   import="com.articulate.sigma.*,java.util.*,java.io.*"
+   import="nlp.corpora.*,com.articulate.sigma.*,java.util.*,java.io.*"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
@@ -23,6 +23,7 @@ in Working Notes of the IJCAI-2003 Workshop on Ontology and Distributed Systems,
 August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 */
     KBmanager.getMgr().initializeOnce();
+    TimeBank.init();
 
     out.println("<html>");
     out.println("  <head>");
@@ -31,7 +32,7 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
     String theText = request.getParameter("textContent");
-
+    KB kb = KBmanager.getMgr().getKB("SUMO");
 
 %>
 <table width="95%" cellspacing="0" cellpadding="0">
@@ -68,7 +69,7 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 <p>
 
 <%
-    out.println(theText + "<P>\n");
+    out.println(theText + "<P>\n<h2>WSD</h2>\n");
     if (!StringUtil.emptyString(theText)) {
         Map<String,Integer> result = new HashMap<>();
         result = WSD.collectSUMOFromString(theText);
@@ -85,7 +86,12 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
             out.println("<tr><td>" + key + "</td><td>" + result.get(key) + "</td><td>" +
                 SUMO + "</td><td>" + wordstr + "</td></tr><P>\n");
         }
-        out.println("</table>");
+        out.println("</table><P>");
+
+        out.println(theText + "<P>\n<h2>Time</h2>\n");
+        Formula f = TimeBank.process(theText);
+        if (f != null && !f.empty())
+            out.println(f.htmlFormat(kb));
     }
     else
         out.println("Empty input<P>\n");
