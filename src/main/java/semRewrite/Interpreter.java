@@ -1207,7 +1207,7 @@ public class Interpreter {
                 return ANSWER_UNDEFINED;
             }
         }
-        else if(query.isExistentiallyQuantified()) {
+        else if (query.isExistentiallyQuantified()) {
             //the query is a yes/no question
             if (inferenceAnswers != null && inferenceAnswers.size() > 0) {
                 return ANSWER_YES;
