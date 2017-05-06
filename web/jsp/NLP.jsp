@@ -24,6 +24,8 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 */
     KBmanager.getMgr().initializeOnce();
     TimeBank.init();
+    semRewrite.Interpreter interp = new semRewrite.Interpreter();
+    interp.initialize();
 
     out.println("<html>");
     out.println("  <head>");
@@ -60,7 +62,6 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 <br><table ALIGN="LEFT" WIDTH=80%><tr><TD BGCOLOR='#AAAAAA'>
 <IMG SRC='pixmaps/1pixel.gif' width=1 height=1 border=0></TD></tr></table><BR>
 
-    <b>test</b>
     <form name="timeTest" id="timeTest" action="NLP.jsp" method="GET">
         <b>Process a sentence: </b>&nbsp;
         <input type="text" name="textContent" size="60" value="<%=theText %>">
@@ -95,6 +96,15 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
         Formula f = TimeBank.process(theText);
         if (f != null && !f.empty())
             out.println(f.htmlFormat(kb));
+
+        out.println(theText + "<P>\n<h2>Interpretation</h2>\n");
+        List<String> forms = interp.interpret(theText);
+        if (forms != null) {
+            for (String s : forms) {
+                Formula theForm = new Formula(s);
+                out.println(theForm.htmlFormat(kb));
+            }
+        }
     }
     else
         out.println("Empty input<P>\n");
