@@ -1,21 +1,16 @@
-Install via script from source on Linux or Mac OS with
-bash <(curl -L https://raw.githubusercontent.com/ontologyportal/sigmakee/master/install.sh)
+First follow the instructions to install sigmakee at https://github.com/ontologyportal/sigmakee
+This assumes you've also downloaded Stanford CoreNLP
 
-Users should also see
+cd ~/workspace/
+git clone https://github.com/ontologyportal/sigmanlp
+cp ~/Programs/stanford-corenlp-3.6.0.jar ~/workspace/sigmanlp/lib
+cp ~/Programs/stanford-corenlp-3.6.0-models.jar ~/workspace/sigmanlp/lib
+ant
 
-https://sourceforge.net/p/sigmakee/wiki/required_data_files/
-Mac instructions - https://sourceforge.net/p/sigmakee/wiki/Sigma%20Setup%20on%20Mac/
-Ubuntu - https://sourceforge.net/p/sigmakee/wiki/Setting%20up%20Sigma%20on%20Ubuntu/
+If you want to run sigmanlp's web interface then
 
-You can also install Sigma on a Vagrant virtual machine.  You'll need VirtualBox too
-https://www.virtualbox.org/
+ant dist
 
-> mkdir sigma_vagrant
-> cd sigma_vagrant
-> wget https://raw.githubusercontent.com/ontologyportal/sigmakee/master/Vagrantfile
-> vagrant up
-> vagrant ssh
-> bash <(curl -L https://raw.githubusercontent.com/ontologyportal/sigmakee/master/install.sh)
+then start tomcat and point your browser at
 
-follow the prompts and Sigma will be running.  Then on the browser of your host machine, go to
-http://localhost:9090/sigma/login.html
+http://localhost:8080/sigmanlp/NLP.jsp
