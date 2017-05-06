@@ -7,6 +7,10 @@ cp ~/Programs/stanford-corenlp-3.6.0.jar ~/workspace/sigmanlp/lib
 cp ~/Programs/stanford-corenlp-3.6.0-models.jar ~/workspace/sigmanlp/lib
 ant
 
+In your .bashrc you'll need to have a great heap space allocation than for sigmakee alone
+
+export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx5000M"
+
 If you want to run sigmanlp's web interface then
 
 ant dist
