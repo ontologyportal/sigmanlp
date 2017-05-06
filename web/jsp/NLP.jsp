@@ -33,6 +33,8 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 
     String theText = request.getParameter("textContent");
     KB kb = KBmanager.getMgr().getKB("SUMO");
+    String kbHref = HTMLformatter.createKBHref("SUMO","EnglishLanguage");
+    String wnHref = kbHref.replace("Browse.jsp","WordNet.jsp");
 
 %>
 <table width="95%" cellspacing="0" cellpadding="0">
@@ -73,18 +75,19 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
     if (!StringUtil.emptyString(theText)) {
         Map<String,Integer> result = new HashMap<>();
         result = WSD.collectSUMOFromString(theText);
-        out.println(result + "<P>\n");
         Iterator<String> it = result.keySet().iterator();
         out.println("<table>");
         while (it.hasNext()) {
             String key = it.next();
+            String keylink = "<a href=\"" + wnHref + "&synset=" + key + "\">" + key + "</a>";
             String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(key));
+            String SUMOlink = "<a href=\"" + kbHref + "&term=" + SUMO + "\">" + SUMO + "</a>";
             ArrayList<String> words = WordNet.wn.synsetsToWords.get(key);
             String wordstr = "";
             if (words != null)
                 wordstr = words.toString();
-            out.println("<tr><td>" + key + "</td><td>" + result.get(key) + "</td><td>" +
-                SUMO + "</td><td>" + wordstr + "</td></tr><P>\n");
+            out.println("<tr><td>" + keylink + "</td><td>" +
+                SUMOlink + "</td><td>" + wordstr + "</td></tr><P>\n");
         }
         out.println("</table><P>");
 
