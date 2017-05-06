@@ -55,6 +55,7 @@ public class TimeBank {
     private static Pipeline p = null;
     public static String anchorDate = "2017-04-21";
     private static Annotation wholeDocument = null;
+    public static boolean initialized = false;
 
     /** ***************************************************************
      */
@@ -399,11 +400,15 @@ public class TimeBank {
      */
     public static void init() {
 
+        if (initialized)
+            return;
         System.out.println("in TimeBank.init(): ");
         Properties props = new Properties();
         String propString = "tokenize, ssplit, pos, lemma, ner";
         p = new Pipeline(true,propString);
         p.pipeline.addAnnotator(new TimeAnnotator("sutime", props));
+        initialized = true;
+        System.out.println("in TimeBank.init(): completed initialization");
     }
 
     /** ***************************************************************
