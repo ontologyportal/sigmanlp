@@ -5,9 +5,10 @@ cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
 cp ~/Programs/stanford-corenlp-3.6.0.jar ~/workspace/sigmanlp/lib
 cp ~/Programs/stanford-corenlp-3.6.0-models.jar ~/workspace/sigmanlp/lib
+cd sigmanlp
 ant
 
-In your .bashrc you'll need to have a great heap space allocation than for sigmakee alone
+In your .bashrc you'll need to have a greater heap space allocation than for sigmakee alone
 
 export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx5000M"
 
