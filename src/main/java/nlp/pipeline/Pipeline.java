@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.sigma.Formula;
 import com.articulate.sigma.StringUtil;
 import com.articulate.sigma.WSD;
 import com.articulate.sigma.KBmanager;
@@ -30,11 +31,17 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.time.TimeAnnotations;
+import edu.stanford.nlp.time.TimeAnnotator;
 import edu.stanford.nlp.util.CoreMap;
 import nlp.WNMultiWordAnnotator;
 import nlp.WSDAnnotator;
+import nlp.TimeSUMOAnnotator;
+import nlp.corpora.TimeBank;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -79,11 +86,15 @@ public class Pipeline {
         Properties props = new Properties();
         // props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, depparse, dcoref, entitymentions");
         props.put("annotators", propString);
+
         //props.setProperty("parse.kbest", "2");
         //props.setProperty("depparse.language","English");
         if (propString.contains("wsd")) {
             props.put("customAnnotatorClass.wsd", "nlp.WSDAnnotator");
             props.put("customAnnotatorClass.wnmw", "nlp.WNMultiWordAnnotator");
+        }
+        if (propString.contains("tsumo")) {
+            props.put("customAnnotatorClass.tsumo", "nlp.TimeSUMOAnnotator");
         }
         //props.put("depparse.model", "edu/stanford/nlp/models/parser/nndep/english_SD.gz");
 
@@ -95,6 +106,11 @@ public class Pipeline {
         }
         // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
         pipeline = new StanfordCoreNLP(props);
+        if (propString.contains("tsumo")) {
+            Properties prps = new Properties();
+            pipeline.addAnnotator(new TimeAnnotator("sutime", prps));
+            pipeline.addAnnotator(new TimeSUMOAnnotator("tsumo", prps));
+        }
     }
 
     /** ***************************************************************
@@ -135,35 +151,46 @@ public class Pipeline {
 
     /** ***************************************************************
      */
-    public static void showResults(Annotation anno) {
+    public static String showResults(Annotation anno) {
 
+        StringBuffer sb = new StringBuffer();
         if (!anno.containsKey(CoreAnnotations.SentencesAnnotation.class))
-            throw new RuntimeException("Unable to find sentences in " + anno);
+            throw new RuntimeException("Unable to find sentences in " + anno + "\n");
 
+        sb.append("Pipeline.showResults(): time annotations at root" + "\n");
+        List<CoreMap> timexAnnsAll = anno.get(TimeAnnotations.TimexAnnotations.class);
+        if (timexAnnsAll != null) {
+            for (CoreMap token : timexAnnsAll) {
+                sb.append("time token: " + token + "\n");
+                String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
+                sb.append("SUMO: " + tsumo + "\n");
+            }
+        }
+
+        sb.append("Pipeline.showResults(): annotations at sentence level" + "\n");
         List<CoreMap> sentences = anno.get(CoreAnnotations.SentencesAnnotation.class);
         for (CoreMap sentence : sentences) {
             List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
-            ArrayList<String> words = new ArrayList<String>();
-            for (CoreLabel token : tokens) {
-                String lemma = token.lemma();
-                words.add(lemma);
-            }
+            List<CoreMap> timexAnnsAllLocal = sentence.get(TimeAnnotations.TimexAnnotations.class);
+            sb.append("local time: " + timexAnnsAllLocal + "\n");
             for (CoreLabel token : tokens) {
                 String orig = token.originalText();
+                String lemma = token.lemma();
                 String sense = token.get(WSDAnnotator.WSDAnnotation.class);
                 String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
                 String multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
-                System.out.print(orig);
+                sb.append(orig);
                 if (!StringUtil.emptyString(sense))
-                    System.out.print("/" + sense);
+                    sb.append("/" + sense);
                 if (!StringUtil.emptyString(sumo))
-                    System.out.print("/" + sumo);
+                    sb.append("/" + sumo);
                 if (!StringUtil.emptyString(multi))
-                    System.out.print("/" + multi);
-                System.out.print(" ");
+                    sb.append("/" + multi);
+                sb.append(" ");
             }
-            System.out.println();
+            sb.append("\n");
         }
+        return sb.toString();
     }
 
     /** ***************************************************************
@@ -171,7 +198,7 @@ public class Pipeline {
     public static void processFile(String filename) {
 
         KBmanager.getMgr().initializeOnce();
-        String propString =  "tokenize, ssplit, pos, lemma, wsd, wnmw";
+        String propString =  "tokenize, ssplit, pos, lemma, ner, wsd, wnmw, tsumo";
         Pipeline p = new Pipeline(true,propString);
         String contents = "";
         try {
@@ -193,22 +220,71 @@ public class Pipeline {
     }
 
     /** ***************************************************************
+     * Process one input through the pipeline and display the results.
+     */
+    public static void processOneSent(String sent) {
+
+        KBmanager.getMgr().initializeOnce();
+        String propString = "tokenize, ssplit, pos, lemma, wsd, wnmw";
+        Pipeline p = new Pipeline(true, propString);
+        Annotation wholeDocument = p.annotate(sent);
+        showResults(wholeDocument);
+    }
+
+    /** ***************************************************************
+     * Process one input at a time through the pipeline and display
+     * the results
+     */
+    public static void interactive() {
+
+        KBmanager.getMgr().initializeOnce();
+        String propString =  "tokenize, ssplit, pos, lemma, ner, wsd, wnmw, tsumo";
+        Pipeline p = new Pipeline(true,propString);
+        //Properties props = new Properties();
+        //p.pipeline.addAnnotator(new TimeAnnotator("sutime", props));
+        BufferedReader d = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("type 'quit' (without the quotes) on its own line to quit");
+        String line = "";
+        try {
+            while (!line.equals("quit")) {
+                System.out.print("> ");
+                line = d.readLine();
+                if (!line.equals("quit")) {
+                    Annotation wholeDocument = new Annotation(line);
+                    wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, "2017-05-08");
+                    p.pipeline.annotate(wholeDocument);
+                    System.out.println(showResults(wholeDocument));
+                }
+            }
+        }
+        catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.out.println("error in Pipeline.interactive()");
+        }
+    }
+
+    /** ***************************************************************
      */
     public static void printHelp() {
 
-        System.out.println("-h           print this help screen");
-        System.out.println("-f <file>    process a file");
+        System.out.println("-h             print this help screen");
+        System.out.println("-f <file>      process a file");
+        System.out.println("-p \"<Sent>\"  process one quoted sentence ");
+        System.out.println("-i             interactive mode ");
     }
 
     /** ***************************************************************
      */
     public static void main(String[] args) {
 
-        if (args[0].equals("-h"))
+        if (args.length == 0 || args[0].equals("-h"))
             printHelp();
-        else if (args[0].equals("-f") && args.length == 2) {
+        else if (args[0].equals("-f") && args.length == 2)
             processFile(args[1]);
-        }
+        else if (args[0].equals("-p") && args.length == 2)
+            processOneSent(args[1]);
+        else if (args[0].equals("-i"))
+            interactive();
         else {
             Annotation a = Pipeline.toAnnotation("Amelia also wrote books, most of them were about her flights.");
             SentenceUtil.printSentences(a);
