@@ -1,6 +1,6 @@
 <%@ page
    language="java"
-   import="nlp.corpora.*,com.articulate.sigma.*,java.util.*,java.io.*"
+   import="nlp.*,nlp.corpora.*,nlp.pipeline.*,edu.stanford.nlp.ling.CoreLabel,edu.stanford.nlp.time.TimeAnnotations,edu.stanford.nlp.pipeline.Annotation,edu.stanford.nlp.util.CoreMap,edu.stanford.nlp.ling.CoreAnnotations,com.articulate.sigma.*,java.util.*,java.io.*"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
@@ -20,13 +20,15 @@ code.  Please cite the following article in any publication with references:
 
 Pease, A., (2003). The Sigma Ontology Development Environment, 
 in Working Notes of the IJCAI-2003 Workshop on Ontology and Distributed Systems,
-August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
+August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
 */
     KBmanager.getMgr().initializeOnce();
     TimeBank.init();
     semRewrite.Interpreter interp = new semRewrite.Interpreter();
     interp.initialize();
 
+    String propString =  "tokenize, ssplit, pos, lemma, ner, wsd, wnmw, tsumo";
+    Pipeline p = new Pipeline(true,propString);
     out.println("<html>");
     out.println("  <head>");
     out.println("    <title>Sigma Knowledge Engineering Environment - NLP</title>");
@@ -72,11 +74,54 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
 <p>
 
 <%
-    out.println(theText + "<P>\n<h2>WSD</h2>\n");
     if (!StringUtil.emptyString(theText)) {
-        Map<String,Integer> result = new HashMap<>();
-        result = WSD.collectSUMOFromString(theText);
-        Iterator<String> it = result.keySet().iterator();
+        out.println("<P>\n<h2>Pipeline</h2>\n");
+        Annotation wholeDocument = new Annotation(theText);
+        wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, "2017-05-08");
+        p.pipeline.annotate(wholeDocument);
+        out.println(theText + "<P>\n<h2>Time</h2>\n");
+        List<CoreMap> timexAnnsAll = wholeDocument.get(TimeAnnotations.TimexAnnotations.class);
+        if (timexAnnsAll != null) {
+            for (CoreMap token : timexAnnsAll) {
+                out.println("time token: <pre>" + token + "</pre><br>\n");
+                String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
+                Formula tf = new Formula(tsumo);
+                out.println(tf.htmlFormat(kb) + "<P>\n");
+            }
+        }
+
+        out.println("<P>\n<h2>Tokens</h2>\n");
+        List<String> senses = new ArrayList<String>();
+        List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
+        for (CoreMap sentence : sentences) {
+            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            for (CoreLabel token : tokens) {
+                String orig = token.originalText();
+                String lemma = token.lemma();
+                String sense = token.get(WSDAnnotator.WSDAnnotation.class);
+                if (!StringUtil.emptyString(sense))
+                    senses.add(sense);
+                String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                String multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
+                out.print(orig);
+                if (!StringUtil.emptyString(lemma))
+                    out.print("/" + lemma);
+                if (!StringUtil.emptyString(sense)) {
+                    String keylink = "<a href=\"" + wnHref + "&synset=" + sense + "\">" + sense + "</a>";
+                    out.print("/" + keylink);
+                }
+                if (!StringUtil.emptyString(sumo)) {
+                    String SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
+                    out.print("/" + SUMOlink);
+                }
+                if (!StringUtil.emptyString(multi))
+                    out.print("/" + multi);
+                out.println("&nbsp;&nbsp; ");
+            }
+            out.println("<P>\n");
+        }
+
+        Iterator<String> it = senses.iterator();
         out.println("<table>");
         while (it.hasNext()) {
             String key = it.next();
@@ -92,12 +137,7 @@ August 9, Acapulco, Mexico.  See also http://sigmakee.sourceforge.net
         }
         out.println("</table><P>");
 
-        out.println(theText + "<P>\n<h2>Time</h2>\n");
-        Formula f = TimeBank.process(theText);
-        if (f != null && !f.empty())
-            out.println(f.htmlFormat(kb));
-
-        out.println(theText + "<P>\n<h2>Interpretation</h2>\n");
+        out.println("<P>\n<h2>Interpretation</h2>\n");
         List<String> forms = interp.interpret(theText);
         if (forms != null) {
             for (String s : forms) {
