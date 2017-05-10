@@ -51,7 +51,7 @@ public class WSDAnnotator implements Annotator {
     public void annotate(Annotation annotation) {
 
         if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
-            throw new RuntimeException("Unable to find sentences in " + annotation);
+            throw new RuntimeException("Error in WSDAnnotator.annotate(): Unable to find sentences in " + annotation);
 
         List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
         for (CoreMap sentence : sentences) {
@@ -77,7 +77,6 @@ public class WSDAnnotator implements Annotator {
     }
 
     /****************************************************************
-     *
      */
     @Override
     public Set<Annotator.Requirement> requires() {
