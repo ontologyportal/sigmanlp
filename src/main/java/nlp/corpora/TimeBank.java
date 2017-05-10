@@ -52,10 +52,26 @@ public class TimeBank {
 
     public static int sumoCount = 0;
 
-    private static Pipeline p = null;
+    public static Pipeline p = null;
     public static String anchorDate = "2017-04-21";
     private static Annotation wholeDocument = null;
     public static boolean initialized = false;
+
+
+    /** ***************************************************************
+     */
+    public static void init() {
+
+        if (initialized)
+            return;
+        System.out.println("in TimeBank.init(): ");
+        Properties props = new Properties();
+        String propString = "tokenize, ssplit, pos, lemma, ner";
+        p = new Pipeline(true,propString);
+        p.pipeline.addAnnotator(new TimeAnnotator("sutime", props));
+        initialized = true;
+        System.out.println("in TimeBank.init(): completed initialization");
+    }
 
     /** ***************************************************************
      */
@@ -125,7 +141,7 @@ public class TimeBank {
         if (secondDash == -1)
             secondDash = s.length();
         month = s.substring(dashIndex + 1, secondDash);
-        //System.out.println("TimeBank.parseDateString(): month: " + month);
+        System.out.println("TimeBank.parseDateString(): month: " + month);
         if (month.indexOf("X") != -1)
             return new Formula(sb.toString());
         if (month.indexOf("X") == -1 && !month.startsWith("Q")) {
@@ -154,8 +170,8 @@ public class TimeBank {
         if (tIndex == -1) {
             if (sb.length() > 0)
                 spacer = " ";
-            //System.out.println("TimeBank.parseDateString(): secondDash: " + secondDash);
-            //System.out.println("TimeBank.parseDateString(): length: " + s.length());
+            System.out.println("TimeBank.parseDateString(): secondDash: " + secondDash);
+            System.out.println("TimeBank.parseDateString(): length: " + s.length());
             day = s.substring(secondDash+1,s.length());
             sb.insert(0,"(DayFn " + removeLeading0(day) + spacer);
             sb.append(")");
@@ -218,7 +234,7 @@ public class TimeBank {
                 }
             }
         }
-        //System.out.println("in TimeBank.parseDateString(): " + sb.toString());
+        System.out.println("in TimeBank.parseDateString(): " + sb.toString());
         return new Formula(sb.toString());
     }
 
@@ -397,18 +413,23 @@ public class TimeBank {
     } */
 
     /** ***************************************************************
+     * @return the SUMO expression, if possible, null otherwise.  Store
+     * the XML TIMEX markup in the global variable suMarkup
      */
-    public static void init() {
+    public static Formula processSUtoken(CoreMap cm) {
 
-        if (initialized)
-            return;
-        System.out.println("in TimeBank.init(): ");
-        Properties props = new Properties();
-        String propString = "tokenize, ssplit, pos, lemma, ner";
-        p = new Pipeline(true,propString);
-        p.pipeline.addAnnotator(new TimeAnnotator("sutime", props));
-        initialized = true;
-        System.out.println("in TimeBank.init(): completed initialization");
+        System.out.println("process(): SU contents: " + cm);
+        Timex time = cm.get(TimeAnnotations.TimexAnnotation.class);
+        System.out.println("process():  SU timex: " + time);
+        suMarkup.add(getTimexTag(time));  // used later in processFile()
+        if (time.timexType().equals("DATE") || time.timexType().equals("TIME")) {
+            return parseDateString(time.value());
+        }
+        else {
+            if (time.timexType().equals("DURATION"))
+                return toSUMOFromDuration(time);
+        }
+        return null;
     }
 
     /** ***************************************************************
@@ -424,17 +445,7 @@ public class TimeBank {
         List<CoreMap> timexAnnsAll = wholeDocument.get(TimeAnnotations.TimexAnnotations.class);
         if (timexAnnsAll != null) {
             for (CoreMap cm : timexAnnsAll) {
-                System.out.println("process(): SU contents: " + cm);
-                Timex time = cm.get(TimeAnnotations.TimexAnnotation.class);
-                System.out.println("process():  SU timex: " + time);
-                suMarkup.add(getTimexTag(time));  // used later in processFile()
-                if (time.timexType().equals("DATE") || time.timexType().equals("TIME")) {
-                    return parseDateString(time.value());
-                }
-                else {
-                    if (time.timexType().equals("DURATION"))
-                        return toSUMOFromDuration(time);
-                }
+                return processSUtoken(cm);
             }
         }
         return null;
