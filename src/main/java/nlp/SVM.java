@@ -1,9 +1,6 @@
 package nlp;
 
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -535,7 +532,7 @@ public class SVM {
      *       For classification, <label> is an integer indicating the class label
      *       <index> is an integer starting from 1 and <value> is a real number.
      */
-    private int read_data(DataInputStream is) {
+    private int read_data(BufferedReader is) {
 
         String s = new String();
         int n_lines = 0;
@@ -719,7 +716,7 @@ public class SVM {
 
     /** ***************************************************************
      */
-    private int read_svm(DataInputStream is) {
+    private int read_svm(BufferedReader is) {
 
         try {
             d = Integer.valueOf(is.readLine().toString()).intValue();
@@ -978,7 +975,9 @@ public class SVM {
                 if (my.is_test_only) {
                     try {
                         FileInputStream svm = new FileInputStream(svm_file_name);
-                        DataInputStream svm_file = new DataInputStream(svm);
+                        BufferedReader svm_file
+                                = new BufferedReader(new InputStreamReader(svm));
+                        //DataInputStream svm_file = new DataInputStream(svm);
                         my.end_support_i = my.first_test_i = n = my.read_svm(svm_file);
                         // my.N += n;
                     }
@@ -1004,7 +1003,9 @@ public class SVM {
                 System.out.println(data_file_name);
 
                 FileInputStream data = new FileInputStream(data_file_name);
-                DataInputStream data_file = new DataInputStream (data);
+                // DataInputStream data_file = new DataInputStream (data);
+                BufferedReader data_file
+                        = new BufferedReader(new InputStreamReader(data));
                 n = my.read_data(data_file);
 
                 if (my.is_test_only) {
