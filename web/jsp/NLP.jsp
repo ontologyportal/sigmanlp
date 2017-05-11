@@ -75,15 +75,14 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
 
 <%
     if (!StringUtil.emptyString(theText)) {
-        out.println("<P>\n<h2>Pipeline</h2>\n");
         Annotation wholeDocument = new Annotation(theText);
         wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, "2017-05-08");
         p.pipeline.annotate(wholeDocument);
-        out.println(theText + "<P>\n<h2>Time</h2>\n");
+        out.println("<h2>Time</h2>\n");
         List<CoreMap> timexAnnsAll = wholeDocument.get(TimeAnnotations.TimexAnnotations.class);
         if (timexAnnsAll != null) {
             for (CoreMap token : timexAnnsAll) {
-                out.println("time token: <pre>" + token + "</pre><br>\n");
+                out.println("time token: <pre>" + token + "</pre>\n");
                 String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
                 Formula tf = new Formula(tsumo);
                 out.println(tf.htmlFormat(kb) + "<P>\n");
@@ -98,6 +97,9 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
             for (CoreLabel token : tokens) {
                 String orig = token.originalText();
                 String lemma = token.lemma();
+                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                String poslink = "<a href=\"https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html\">" +
+                    pos + "</a>";
                 String sense = token.get(WSDAnnotator.WSDAnnotation.class);
                 if (!StringUtil.emptyString(sense))
                     senses.add(sense);
@@ -106,6 +108,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                 out.print(orig);
                 if (!StringUtil.emptyString(lemma))
                     out.print("/" + lemma);
+                if (!StringUtil.emptyString(pos))
+                    out.print("/" + poslink);
                 if (!StringUtil.emptyString(sense)) {
                     String keylink = "<a href=\"" + wnHref + "&synset=" + sense + "\">" + sense + "</a>";
                     out.print("/" + keylink);
