@@ -176,10 +176,15 @@ public class Pipeline {
             for (CoreLabel token : tokens) {
                 String orig = token.originalText();
                 String lemma = token.lemma();
+                String pos = token.tag();
                 String sense = token.get(WSDAnnotator.WSDAnnotation.class);
                 String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
                 String multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
                 sb.append(orig);
+                if (!StringUtil.emptyString(lemma))
+                    sb.append("/" + lemma);
+                if (!StringUtil.emptyString(pos))
+                    sb.append("/" + pos);
                 if (!StringUtil.emptyString(sense))
                     sb.append("/" + sense);
                 if (!StringUtil.emptyString(sumo))
