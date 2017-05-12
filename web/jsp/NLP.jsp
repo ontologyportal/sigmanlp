@@ -1,6 +1,6 @@
 <%@ page
    language="java"
-   import="nlp.*,nlp.corpora.*,nlp.pipeline.*,edu.stanford.nlp.ling.CoreLabel,edu.stanford.nlp.time.TimeAnnotations,edu.stanford.nlp.pipeline.Annotation,edu.stanford.nlp.util.CoreMap,edu.stanford.nlp.ling.CoreAnnotations,com.articulate.sigma.*,java.util.*,java.io.*"
+   import="nlp.*,nlp.corpora.*,nlp.pipeline.*,edu.stanford.nlp.ling.CoreLabel,edu.stanford.nlp.time.TimeAnnotations,edu.stanford.nlp.pipeline.*,edu.stanford.nlp.sentiment.SentimentCoreAnnotations,edu.stanford.nlp.util.CoreMap,edu.stanford.nlp.ling.CoreAnnotations,com.articulate.sigma.*,java.util.*,java.io.*"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
@@ -27,7 +27,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     semRewrite.Interpreter interp = new semRewrite.Interpreter();
     interp.initialize();
 
-    String propString =  "tokenize, ssplit, pos, lemma, ner, wsd, wnmw, tsumo";
+    String propString =  "tokenize, ssplit, pos, lemma, parse, depparse, ner, wsd, wnmw, tsumo, sentiment";
     Pipeline p = new Pipeline(true,propString);
     out.println("<html>");
     out.println("  <head>");
@@ -89,7 +89,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
             }
         }
 
-        out.println("<P>\n<h2>Tokens</h2>\n");
+        out.println("<P>\n");
+        out.println("<h2>Tokens</h2>\n");
         List<String> senses = new ArrayList<String>();
         List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
         for (CoreMap sentence : sentences) {
@@ -141,7 +142,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         }
         out.println("</table><P>");
 
-        out.println("<P>\n<h2>Interpretation</h2>\n");
+        out.println("<h2>Interpretation</h2>\n");
         List<String> forms = interp.interpret(theText);
         if (forms != null) {
             for (String s : forms) {
@@ -149,6 +150,23 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                 out.println(theForm.htmlFormat(kb));
             }
         }
+
+        out.println("<h2>Sentiment</h2>\n");
+        out.println("<table>");
+        for (CoreMap sentence : sentences) {
+            String sentiment = sentence.get(SentimentCoreAnnotations.SentimentClass.class);
+            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            for (CoreLabel token : tokens) {
+                String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                if (!StringUtil.emptyString(sumo)) {
+                    String SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
+                    out.println("<tr><td>" + SUMOlink + "</td><td>" + sentiment + "</td></tr><P>\n");
+                }
+            }
+        }
+        out.println("</table><P>\n");
+
+        out.println("<b>Sigma sentiment score:</b> " + DB.computeSentiment(theText) + "<P>\n");
     }
     else
         out.println("Empty input<P>\n");
