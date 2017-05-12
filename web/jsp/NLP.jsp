@@ -1,9 +1,12 @@
 <%@ page
    language="java"
-   import="nlp.*,nlp.corpora.*,nlp.pipeline.*,edu.stanford.nlp.ling.CoreLabel,edu.stanford.nlp.time.TimeAnnotations,edu.stanford.nlp.pipeline.*,edu.stanford.nlp.sentiment.SentimentCoreAnnotations,edu.stanford.nlp.util.CoreMap,edu.stanford.nlp.ling.CoreAnnotations,com.articulate.sigma.*,java.util.*,java.io.*"
+   import="com.google.common.collect.ImmutableList,com.articulate.sigma.*,java.util.*,java.io.*"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
+<%@ page import="nlp.*,nlp.corpora.*,nlp.pipeline.*" %>
+<%@ page import="edu.stanford.nlp.ling.CoreLabel,edu.stanford.nlp.time.TimeAnnotations,edu.stanford.nlp.pipeline.*,edu.stanford.nlp.sentiment.SentimentCoreAnnotations,edu.stanford.nlp.util.CoreMap,edu.stanford.nlp.ling.CoreAnnotations" %>
+
 <!DOCTYPE html
    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -78,9 +81,9 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         Annotation wholeDocument = new Annotation(theText);
         wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, "2017-05-08");
         p.pipeline.annotate(wholeDocument);
-        out.println("<h2>Time</h2>\n");
         List<CoreMap> timexAnnsAll = wholeDocument.get(TimeAnnotations.TimexAnnotations.class);
-        if (timexAnnsAll != null) {
+        if (timexAnnsAll != null && timexAnnsAll.size() > 0) {
+            out.println("<h2>Time</h2>\n");
             for (CoreMap token : timexAnnsAll) {
                 out.println("time token: <pre>" + token + "</pre>\n");
                 String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
@@ -141,6 +144,16 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                 SUMOlink + "</td><td>" + wordstr + "</td></tr><P>\n");
         }
         out.println("</table><P>");
+
+        out.println("<h2>Dependencies</h2>\n");
+        for (CoreMap sentence : sentences) {
+            out.println("<pre>");
+            List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
+            for (String s : dependencies)
+                out.println(s);
+            out.println("</pre>");
+        }
+        out.println("<P>");
 
         out.println("<h2>Interpretation</h2>\n");
         List<String> forms = interp.interpret(theText);
