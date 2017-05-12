@@ -66,7 +66,7 @@ public class TimeSUMOAnnotator implements Annotator {
                     for (CoreMap token : timexAnnsAll) {
                         Formula f = TimeBank.processSUtoken(token);
                         System.out.println("TimeSUMOAnnotator.annotate(): SUtoken: " + token);
-                        if (!StringUtil.emptyString(f.toString())) {
+                        if (f != null && !StringUtil.emptyString(f.toString())) {
                             token.set(TimeSUMOAnnotation.class, f.toString());
                             System.out.println("TimeSUMOAnnotator.annotate(): SUMO: " + f.toString());
                         }
