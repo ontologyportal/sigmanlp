@@ -67,10 +67,15 @@ public class WSDAnnotator implements Annotator {
                 char num = WordNetUtilities.posPennToNumber(pos);
                 if (num == '1' || num == '2' || num == '3' || num == '4') {
                     String sense = WSD.findWordSenseInContextWithPos(lemma, words, Integer.parseInt(Character.toString(num)),true);
-                    token.set(WSDAnnotation.class, sense);
-                    String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(sense));
-                    if (!StringUtil.emptyString(SUMO))
-                        token.set(SUMOAnnotation.class, SUMO);
+                    if (!StringUtil.emptyString(sense)) {
+                        token.set(WSDAnnotation.class, sense);
+                        String linkedSUMO = WordNet.wn.getSUMOMapping(sense);
+                        if (!StringUtil.emptyString(linkedSUMO)) {
+                            String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(sense));
+                            if (!StringUtil.emptyString(SUMO))
+                                token.set(SUMOAnnotation.class, SUMO);
+                        }
+                    }
                 }
             }
         }
