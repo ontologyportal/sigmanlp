@@ -1,9 +1,8 @@
 First follow the instructions to install sigmakee at https://github.com/ontologyportal/sigmakee
-This assumes you've also downloaded Stanford CoreNLP.  Note that you'll need to change "theuser"
-in the path below to your correct path
+This assumes you've also downloaded Stanford CoreNLP.
 
 cd ~
-echo "export SIGMA_SRC=/home/theuser/workspace/sigmakee" >> .bashrc
+echo "export SIGMA_SRC=~/workspace/sigmakee" >> .bashrc
 source .bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
@@ -20,6 +19,7 @@ If you want to run sigmanlp's web interface then
 
 ant dist
 
-then start tomcat and point your browser at
+Start Tomcat with
+$CATALINA_HOME/bin/startup.sh
 
 http://localhost:8080/sigmanlp/NLP.jsp
