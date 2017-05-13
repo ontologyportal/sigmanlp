@@ -1,12 +1,14 @@
 First follow the instructions to install sigmakee at https://github.com/ontologyportal/sigmakee
-This assumes you've also downloaded Stanford CoreNLP
+This assumes you've also downloaded Stanford CoreNLP.  Note that you'll need to change "theuser"
+in the path below to your correct path
 
 cd ~
 echo "export SIGMA_SRC=/home/theuser/workspace/sigmakee" >> .bashrc
+source .bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
-cp ~/Programs/standford-corenlp-full-2015-12-09/stanford-corenlp-3.6.0.jar ~/workspace/sigmanlp/lib
-cp ~/Programs/standford-corenlp-full-2015-12-09/stanford-corenlp-3.6.0-models.jar ~/workspace/sigmanlp/lib
+cp ~/Programs/stanford-corenlp-full-2015-12-09/stanford-corenlp-3.6.0.jar ~/workspace/sigmanlp/lib
+cp ~/Programs/stanford-corenlp-full-2015-12-09/stanford-corenlp-3.6.0-models.jar ~/workspace/sigmanlp/lib
 cd sigmanlp
 ant
 
