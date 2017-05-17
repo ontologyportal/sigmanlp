@@ -4,8 +4,8 @@
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
-<%@ page import="nlp.*,nlp.corpora.*,nlp.pipeline.*" %>
-<%@ page import="edu.stanford.nlp.ling.CoreLabel,edu.stanford.nlp.time.TimeAnnotations,edu.stanford.nlp.pipeline.*,edu.stanford.nlp.sentiment.SentimentCoreAnnotations,edu.stanford.nlp.util.CoreMap,edu.stanford.nlp.ling.CoreAnnotations" %>
+<%@ page import="com.articulate.nlp.*,com.articulate.nlp.corpora.*,com.articulate.nlp.pipeline.*,com.articulate.nlp.semRewrite.*" %>
+<%@ page import="edu.stanford.nlp.ling.CoreLabel,edu.stanford.nlp.time.*,edu.stanford.nlp.pipeline.*,edu.stanford.nlp.sentiment.SentimentCoreAnnotations,edu.stanford.nlp.util.CoreMap,edu.stanford.nlp.ling.CoreAnnotations" %>
 
 <!DOCTYPE html
    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -31,7 +31,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     }
     KBmanager.getMgr().initializeOnce();
     TimeBank.init();
-    semRewrite.Interpreter interp = new semRewrite.Interpreter();
+    Interpreter interp = new Interpreter();
     interp.initialize();
 
     String propString =  "tokenize, ssplit, pos, lemma, parse, depparse, ner, wsd, wnmw, tsumo, sentiment";
@@ -46,6 +46,10 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     KB kb = KBmanager.getMgr().getKB("SUMO");
     String kbHref = HTMLformatter.createKBHref("SUMO","EnglishLanguage");
     String wnHref = kbHref.replace("Browse.jsp","WordNet.jsp");
+
+    String reload = request.getParameter("reload");
+    if (reload != null)
+        interp.loadRules();
 
 %>
 <table width="95%" cellspacing="0" cellpadding="0">
@@ -89,7 +93,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         if (timexAnnsAll != null && timexAnnsAll.size() > 0) {
             out.println("<h2>Time</h2>\n");
             for (CoreMap token : timexAnnsAll) {
-                out.println("time token: <pre>" + token + "</pre>\n");
+                Timex time = token.get(TimeAnnotations.TimexAnnotation.class);
+                out.println("time token and value: <pre>" + token + ":" + time.value() + "</pre>\n");
                 String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
                 Formula tf = new Formula(tsumo);
                 out.println(tf.htmlFormat(kb) + "<P>\n");
@@ -160,6 +165,12 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         out.println("<P>");
 
         out.println("<h2>Interpretation</h2>\n");
+        %>
+            <form name="interp" id="interp" action="NLP.jsp" method="GET">
+                <input type="hidden" name="textContent" size="60" value="<%=theText %>">
+                <input type="submit" name="reload" value="reload">
+            </form><p>
+        <%
         List<String> forms = interp.interpret(theText);
         if (forms != null) {
             for (String s : forms) {
