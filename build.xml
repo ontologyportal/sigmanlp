@@ -28,6 +28,7 @@
   <path id="sourcepath">
     <dirset dir="${basedir}">
       <include name="src/main/java"/>
+      <include name="src/test"/>
     </dirset>
    </path>
  
@@ -47,6 +48,9 @@
     
     <copy todir="${build.classes}">
       <fileset dir="${basedir}/src/main/java">
+        <include name="*.class"/>
+      </fileset>
+      <fileset dir="${basedir}/src/test">
         <include name="*.class"/>
       </fileset>
     </copy>
@@ -114,7 +118,7 @@
     </jar>
   </target>
 
-  <target name="all" depends="clean, init, compile" description="build all">
+  <target name="all" depends="clean, init, compile, dist" description="build all">
     <tstamp>
         <format property="TODAY_US" pattern="yyyy-MM-dd HH:mm:ss:sss zzz" locale="en,US"/>
     </tstamp>
