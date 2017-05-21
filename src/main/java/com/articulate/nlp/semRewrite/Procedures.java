@@ -32,6 +32,10 @@ public class Procedures {
      */
     public static String isCELTclass(Literal c) {
 
+        // debugging terms
+        if (c.arg1.equals("Sub") && c.arg2.equals("Super"))
+            return "true";
+
         KB kb = KBmanager.getMgr().getKB("SUMO");
         System.out.println("INFO in Procedures.isCELTclass(): " + c);
         if (kb == null) {
