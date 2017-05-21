@@ -207,4 +207,35 @@ public class Clause {
         //System.out.println("INFO in Disjunct.unify(): d: " + d);
         return null;
     }
+
+    /** *************************************************************
+     * A test method for parsing a Literal
+     */
+    public static void testUnify() {
+
+        Literal l = null;
+        try {
+            String input = "isCELTclass(Sub,Super).";
+            Lexer lex = new Lexer(input);
+            lex.look();
+            l = Literal.parse(lex, 0);
+        }
+        catch (Exception ex) {
+            String message = ex.getMessage();
+            System.out.println("Error in Clause.parse() " + message);
+            ex.printStackTrace();
+        }
+        Clause d = new Clause();
+        d.disjuncts.add(l);
+        Clause c = new Clause();
+        System.out.println("Clause.testParse(): " + c.unify(d));
+    }
+
+    /** *************************************************************
+     * A test method
+     */
+    public static void main (String args[]) {
+
+        testUnify();
+    }
 }
