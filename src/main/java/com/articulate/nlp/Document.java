@@ -46,7 +46,7 @@ public class Document extends ArrayList<String> {
      * @param utterance input from the user (can be multiple sentences)
      * @return returns a coreference replaced version of the utterances
      */
-    @Deprecated
+    //@Deprecated
     public List<String> addUtterance(String utterance) {
 
         List<String> toCoreference = Lists.newArrayList(this);
