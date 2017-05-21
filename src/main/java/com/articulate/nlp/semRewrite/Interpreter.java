@@ -103,6 +103,8 @@ public class Interpreter {
     private Pipeline p = null;
     private String propString =  "tokenize, ssplit, pos, lemma, gender, ner, wsd, wnmw, tsumo";
 
+    public ArrayList<String> firedRules = new ArrayList<String>();
+
     /** *************************************************************
      */
     public Interpreter () {
@@ -600,6 +602,7 @@ public class Interpreter {
 
         if (StringUtil.emptyString(input))
             return null;
+        firedRules = new ArrayList<String>();
         input = input.replaceAll("[^#\\.\\,a-zA-Z0-9\\?\\'_\\-\\–\\(\\)\\: ]","");
         List<String> results = Lists.newArrayList();
         if (!ENDING_IN_PUNC_PATTERN.matcher(input).find()) {
@@ -1069,6 +1072,7 @@ public class Interpreter {
                         //System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
                         if (showr)
                             System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
+                        firedRules.add(r.toString());
                         RHS rhs = r.rhs.applyBindings(bindings);
                         if (r.operator == Rule.RuleOp.IMP) {
                             CNF bindingsRemoved = newInput.removeBound(); // delete the bound clauses
@@ -1525,6 +1529,27 @@ public class Interpreter {
 
     /** ***************************************************************
      */
+    public static void testUnify7() {
+
+        KBmanager.getMgr().initializeOnce();
+        String input = "dobj(ate-3, chicken-4), sumo(Eating,ate-3), sumo(Man,George-1), nmod:in(ate-3, December-6), compound(Washington-2, George-1), root(ROOT-0, ate-3), sumo(ChickenMeat,chicken-4)";
+        Lexer lex = new Lexer(input);
+        CNF cnfInput = CNF.parseSimple(lex);
+        //String rule = "nmod:on(?X,?Y), +sumo(?C,?Y), isSubclassOf(?C,ComputerProgram), +dobj(?V,?X) ==> (instrument(?V,?Y)).";
+        String rule =  "nmod:in(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Time) ==> (during(?X,?Y)).";
+        Rule r = new Rule();
+        r = Rule.parseString(rule);
+        CNF cnf = Clausifier.clausify(r.lhs);
+        System.out.println("INFO in Interpreter.testUnify7(): Input: " + cnfInput);
+        System.out.println("INFO in Interpreter.testUnify7(): CNF rule antecedent: " + cnf);
+        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        System.out.println("bindings: " + bindings);
+        if (bindings != null)
+            System.out.println("result: " + r.rhs.applyBindings(bindings));
+    }
+
+    /** ***************************************************************
+     */
     public static void testInterpret() {
 
         try {
@@ -1772,7 +1797,7 @@ public class Interpreter {
         }
         else {
             //testUnify();
-            testUnify6();
+            testUnify7();
             //testInterpret();
             //testPreserve();
             //testQuestionPreprocess();
