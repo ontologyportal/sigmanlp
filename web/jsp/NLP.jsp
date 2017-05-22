@@ -43,6 +43,11 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
     String theText = request.getParameter("textContent");
+    String fired = request.getParameter("firedRules");
+    if (fired != null) {
+        response.sendRedirect("SRRules.jsp");
+        return;
+    }
     if (StringUtil.emptyString(theText))
         theText = "Robert kicks the cart.";
     KB kb = KBmanager.getMgr().getKB("SUMO");
@@ -170,6 +175,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         %>
             <form name="interp" id="interp" action="NLP.jsp" method="GET">
                 <input type="hidden" name="textContent" size="60" value="<%=theText %>">
+                <input type="submit" name="firedRules" value="firedRules">
                 <input type="submit" name="reload" value="reload">
             </form><p>
         <%
