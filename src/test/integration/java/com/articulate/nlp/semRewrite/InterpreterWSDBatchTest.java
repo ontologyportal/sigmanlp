@@ -44,6 +44,8 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+/** ***************************************************************
+ */
 @RunWith(Parameterized.class)
 public class InterpreterWSDBatchTest extends IntegrationTestBase {
 
@@ -57,8 +59,11 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
         KBmanager.getMgr().initializeOnce();
     }
 
+    /** ***************************************************************
+     */
     @Parameterized.Parameters(name="{0}")
     public static Collection<Object[]> prepare() {
+
         return JsonReader.transform("resources/interpreter_wsd_batch.json", (JSONObject jo) -> {
             String input = (String) jo.get("input");
             JSONArray test = (JSONArray) jo.get("test");
@@ -66,16 +71,22 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
         });
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void test() {
+
         List<String> wsds = doFullWSD(input);
         assertThat(wsds, hasItems(expected));
         assertEquals(expected.length, wsds.size());
     }
 
+    /** ***************************************************************
+     */
     private List<String> doFullWSD(String input) {
+
         Annotation document = Pipeline.toAnnotation(input);
-        List<String> results = toDependenciesList(document);
+        List<String> results = Pipeline.toDependenciesList(document);
 
         NounSubstitutor substitutor = new NounSubstitutor(document.get(CoreAnnotations.TokensAnnotation.class));
         SubstitutionUtil.groupClauses(substitutor, results);

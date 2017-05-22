@@ -42,13 +42,18 @@ import static org.junit.Assert.assertThat;
 
 public class InterpreterWSDTest extends IntegrationTestBase {
 
+    /** ***************************************************************
+     */
     @BeforeClass
     public static void initClauses() {
         KBmanager.getMgr().initializeOnce();
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void findWSD_NoGroups() {
+
         ArrayList<String> clauses = Lists.newArrayList("root(ROOT-0, aviator-18)"
                 , "nn(Earhart-3, Amelia-1)", "nn(Earhart-3, Mary-2)"
                 , "nsubj(aviator-18, Earhart-3)"
@@ -74,11 +79,14 @@ public class InterpreterWSDTest extends IntegrationTestBase {
         assertEquals(expected.length, wsds.size());
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void findWSD_WithGroups() {
+
         String input = "Amelia Mary Earhart (July 24, 1897 - July 2, 1937) was an American aviator.";
         Annotation document = Pipeline.toAnnotation(input);
-        List<String> results = toDependenciesList(document);
+        List<String> results = Pipeline.toDependenciesList(document);
 
         NounSubstitutor substitutor = new NounSubstitutor(document.get(CoreAnnotations.TokensAnnotation.class));
         SubstitutionUtil.groupClauses(substitutor, results);
