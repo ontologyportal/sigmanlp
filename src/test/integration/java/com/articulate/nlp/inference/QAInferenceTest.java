@@ -1,7 +1,7 @@
 package com.articulate.nlp.inference;
 
 import com.articulate.sigma.IntegrationTestBase;
-import com.articulate.sigma.semRewrite.Interpreter;
+import com.articulate.nlp.semRewrite.Interpreter;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -18,8 +18,11 @@ public class QAInferenceTest extends IntegrationTestBase {
 
     private static Interpreter interpreter;
 
+    /** ***************************************************************
+     */
     @Before
     public void init() throws IOException {
+
         interpreter = new Interpreter();
         interpreter.inference = true;
         interpreter.initialize();
@@ -27,6 +30,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         IntegrationTestBase.resetAllForInference();
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void test0() throws IOException {
         String assertion = "Amelia flies a plane.";
@@ -51,6 +56,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertNotEquals("No response.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Ignore
     @Test
     public void test1() throws IOException {
@@ -65,6 +72,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("UnitedStates.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Ignore
     @Test
     public void test2() throws IOException {
@@ -75,6 +84,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("'John'.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void test3() throws IOException {
         interpreter.interpret("The Liberty Bell, located in Pennsylvania, changed the world on July 8, 1776.");
@@ -83,6 +94,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("Pennsylvania.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void test4() throws IOException {
         interpreter.interpret("The Liberty Bell, located in Pennsylvania, changed the world on July 8, 1776.");
@@ -91,6 +104,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("DayFn(8,s__MonthFn(s__July,s__YearFn(1776))).", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void test5() throws IOException {
         interpreter.interpret("The Prince of Wales, the eldest son of The Queen and Prince Philip, Duke of Edinburgh, was born at Buckingham Palace at 9.14pm on November 14, 1948.");
@@ -102,6 +117,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("The Prince of Wales, the eldest son of The Queen and Prince Philip, Duke of Edinburgh, was born at Buckingham Palace at 9.14pm on November 14, 1948.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void testWhereWasMotherTeresaBorn() throws IOException {
         String assertion = "Mother Teresa was born in today's Macedonia, with her family being of Albanian descent originating in Kosovo.";
@@ -116,6 +133,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("Macedonia.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void testWhoFoundedtheMissionariesOfCharity() throws IOException {
         String assertion = "Mother Teresa founded the Missionaries of Charity, a Roman Catholic religious congregation, which in 2012 consisted of over 4500 sisters and is active in 133 countries.";
@@ -130,6 +149,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("'Mother Teresa'.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void testWhoReceivedTheNobelPeacePrizeIn1979() throws IOException {
         String assertion = "Mother Teresa was the recipient of numerous honours including the 1979 Nobel Peace Prize.";
@@ -144,6 +165,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("'Mother Teresa'.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void testWhenDidMotherTeresaReceiveTheNobelPeacePrize() throws IOException {
         String assertion = "Mother Teresa was the recipient of numerous honours including the 1979 Nobel Peace Prize.";
@@ -158,6 +181,8 @@ public class QAInferenceTest extends IntegrationTestBase {
         assertEquals("1979.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Test
     public void testWhatDoesBiomassConversionResultIn() throws IOException {
         String assertion = "This biomass conversion can result in fuel in solid, liquid, or gas form.";
@@ -171,6 +196,5 @@ public class QAInferenceTest extends IntegrationTestBase {
 
         assertEquals("An instance of Fuel.", actualAnswer);
     }
-
 }
 

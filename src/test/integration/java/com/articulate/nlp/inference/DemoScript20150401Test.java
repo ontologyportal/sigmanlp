@@ -1,7 +1,7 @@
 package com.articulate.nlp.inference;
 
 import com.articulate.sigma.IntegrationTestBase;
-import com.articulate.sigma.semRewrite.Interpreter;
+import com.articulate.nlp.semRewrite.Interpreter;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -14,6 +14,8 @@ public class DemoScript20150401Test extends IntegrationTestBase {
 
     private static Interpreter interpreter;
 
+    /** ***************************************************************
+     */
     @BeforeClass
     public static void initInterpreter() throws IOException {
         interpreter = new Interpreter();
@@ -23,6 +25,8 @@ public class DemoScript20150401Test extends IntegrationTestBase {
         IntegrationTestBase.resetAllForInference();
     }
 
+    /** ***************************************************************
+     */
     @Ignore
     @Test
     public void test1() {
@@ -82,6 +86,8 @@ public class DemoScript20150401Test extends IntegrationTestBase {
         assertEquals("MonthFn(s__July,s__YearFn(1937)).", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Ignore
     @Test
     public void test2() {
@@ -99,6 +105,8 @@ public class DemoScript20150401Test extends IntegrationTestBase {
         assertEquals("An instance of Airplane.", actualAnswer);
     }
 
+    /** ***************************************************************
+     */
     @Ignore
     @Test
     public void test3() {
