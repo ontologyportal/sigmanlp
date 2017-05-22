@@ -23,6 +23,7 @@ package com.articulate.nlp.semRewrite;
 import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
 import com.articulate.nlp.pipeline.Pipeline;
+import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.substitutor.NounSubstitutor;
 import com.articulate.nlp.semRewrite.substitutor.SubstitutionUtil;
 import com.articulate.sigma.test.JsonReader;
@@ -86,7 +87,7 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
     private List<String> doFullWSD(String input) {
 
         Annotation document = Pipeline.toAnnotation(input);
-        List<String> results = Pipeline.toDependenciesList(document);
+        List<String> results = SentenceUtil.toDependenciesList(document);
 
         NounSubstitutor substitutor = new NounSubstitutor(document.get(CoreAnnotations.TokensAnnotation.class));
         SubstitutionUtil.groupClauses(substitutor, results);
