@@ -916,6 +916,8 @@ public class TimeBank {
         System.out.println("test parse date string " + t + ": " + parseDateString(t));
         t = "P1W";
         System.out.println("test parse date string " + t + ": " + toSUMOFromDurationString(t));
+        t = "2017-W18";
+        System.out.println("test parse date string " + t + ": " + parseDateString(t));
     }
 
     /** ***************************************************************
