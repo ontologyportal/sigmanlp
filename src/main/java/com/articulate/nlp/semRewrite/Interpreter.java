@@ -103,7 +103,7 @@ public class Interpreter {
     private Pipeline p = null;
     private String propString =  "tokenize, ssplit, pos, lemma, gender, ner, wsd, wnmw, tsumo";
 
-    public ArrayList<String> firedRules = new ArrayList<String>();
+    public static ArrayList<String> firedRules = new ArrayList<String>();
 
     /** *************************************************************
      */
