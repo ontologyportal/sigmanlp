@@ -43,6 +43,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
     String theText = request.getParameter("textContent");
+    if (StringUtil.emptyString(theText))
+        theText = "Robert kicks the cart.";
     KB kb = KBmanager.getMgr().getKB("SUMO");
     String kbHref = HTMLformatter.createKBHref("SUMO","EnglishLanguage");
     String wnHref = kbHref.replace("Browse.jsp","WordNet.jsp");
