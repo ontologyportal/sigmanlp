@@ -20,7 +20,7 @@ MA  02111-1307 USA
 */
 package com.articulate.nlp.pipeline;
 
-import com.articulate.sigma.test.CVSExporter;
+import com.articulate.sigma.test.CSVExporter;
 import com.articulate.sigma.test.JsonReader;
 import com.google.common.base.Charsets;
 import com.google.common.cache.CacheBuilder;
@@ -70,7 +70,7 @@ public class CorefTest extends TestCase {
     public CorefParam corefB;
 
     // swallows output by default
-    private static final CVSExporter exportResults = new CVSExporter(false, "Filename,Result,Coref A,Coref B,Sentence A, Sentence B");
+    private static final CSVExporter exportResults = new CSVExporter(false, "Filename,Result,Coref A,Coref B,Sentence A, Sentence B");
 
     @AfterClass
     public static void cleanUp() throws IOException {
