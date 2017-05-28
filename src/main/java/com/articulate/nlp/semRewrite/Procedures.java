@@ -37,13 +37,13 @@ public class Procedures {
             return "true";
 
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        System.out.println("INFO in Procedures.isCELTclass(): " + c);
+        //System.out.println("INFO in Procedures.isCELTclass(): " + c);
         if (kb == null) {
             //if (c.arg1.equals("River") && c.arg2.equals("Object"))
             //    return "true";
             return "false";
         }
-        System.out.println("INFO in Procedures.isCELTclass(): " + kb.isSubclass(c.arg1, c.arg2));
+        //System.out.println("INFO in Procedures.isCELTclass(): " + kb.isSubclass(c.arg1, c.arg2));
 
         if (c.arg2.equals("Person"))
             if (kb.isSubclass(c.arg1, "Human") || kb.isSubclass(c.arg1, "SocialRole"))
@@ -66,8 +66,8 @@ public class Procedures {
     public static String isSubclass(Literal c) {
 
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        System.out.println("INFO in Procedures.isSubclass(): " + c);
-        System.out.println("INFO in Procedures.isSubclass(): " + kb.isSubclass(c.arg1, c.arg2));
+        //System.out.println("INFO in Procedures.isSubclass(): " + c);
+        //System.out.println("INFO in Procedures.isSubclass(): " + kb.isSubclass(c.arg1, c.arg2));
         if (kb.isSubclass(c.arg1, c.arg2))
             return "true";
         else
