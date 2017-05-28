@@ -26,6 +26,8 @@ import com.articulate.sigma.StringUtil;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** *************************************************************
  * pred(arg1,arg2).  
@@ -44,7 +46,46 @@ public class Literal {
     public String pred;
     public String arg1;
     public String arg2;
-    
+
+    /** ***************************************************************
+     */
+    public Literal() {
+    }
+
+    /** ***************************************************************
+     */
+    public Literal(String s) {
+
+        try {
+            Lexer lex = new Lexer(s + ".");
+            lex.look();
+            Literal lit = Literal.parse(lex, 0);
+            negated = lit.negated;
+            pred = lit.pred;
+            arg1 = lit.arg1;
+            arg2 = lit.arg2;
+        }
+        catch (Exception ex) {
+            String message = ex.getMessage();
+            System.out.println("Error in Literal.parse() " + message);
+            ex.printStackTrace();
+        }
+    }
+
+    /** ***************************************************************
+     * @return the token number of the constant or -1 if it is a variable
+     * such as ?foo or foo*
+     */
+    public static int tokenNum(String s) {
+
+        Pattern p = Pattern.compile(".+-(\\d+)");
+        Matcher m = p.matcher(s);
+        if (m.matches()) {
+            return Integer.parseInt(m.group(1));
+        }
+        return -1;
+    }
+
     /** ***************************************************************
      */
     public String toString() {
@@ -113,7 +154,7 @@ public class Literal {
     public void preProcessQuestionWords(List<String> qwords) {
         
         for (String s: qwords) {
-            System.out.println("INFO in Clause.preProcessQuestionWords(): " + s + " " + arg1 + " " + arg2);
+            System.out.println("INFO in Literal.preProcessQuestionWords(): " + s + " " + arg1 + " " + arg2);
             if (arg1.toLowerCase().matches(s.toLowerCase() + "-\\d+"))
                 arg1 = "?" + arg1;
             if (arg2.toLowerCase().matches(s.toLowerCase() + "-\\d+"))
@@ -141,14 +182,14 @@ public class Literal {
      */
     public Literal applyBindings(HashMap<String,String> bindings) {
         
-        //System.out.println("INFO in Clause.applyBindings(): this: " + this);
-        //System.out.println("INFO in Clause.applyBindings(): bindings: " + bindings);
+        //System.out.println("INFO in Literal.applyBindings(): this: " + this);
+        //System.out.println("INFO in Literal.applyBindings(): bindings: " + bindings);
         Literal c = new Literal();
         c.pred = pred;
         c.negated = negated;
         c.preserve = preserve;
         if (StringUtil.emptyString(arg1) || StringUtil.emptyString(arg2)) {
-            System.out.println("Error in Clause.applyBindings(): Empty argument(s): " + this);
+            System.out.println("Error in Literal.applyBindings(): Empty argument(s): " + this);
             c.arg1 = arg1;
             c.arg2 = arg2;
             return c;
@@ -169,7 +210,7 @@ public class Literal {
         }
         else
             c.arg2 = arg2;
-        //System.out.println("INFO in Clause.applyBindings(): returning this: " + c);
+        //System.out.println("INFO in Literal.applyBindings(): returning this: " + c);
         return c;
     }
     
@@ -195,13 +236,13 @@ public class Literal {
      */
     private static boolean wildcardMatch(String t1, String t2) {
         
-        //System.out.println("INFO in Clause.wildcardMatch(): attempting to match: " + t1 + " " + t2);
+        //System.out.println("INFO in Literal.wildcardMatch(): attempting to match: " + t1 + " " + t2);
         String s1 = t1;
         String s2 = t2;
         if (!t1.contains("*") && !t2.contains("*")) // no wildcards case should fall through
             return true;
         if (t1.contains("*") && t2.contains("*")) {
-            System.out.println("Error in Clause.wildcardMatch(): both arguments have wildcards: " + t1 + " " + t2);
+            System.out.println("Error in Literal.wildcardMatch(): both arguments have wildcards: " + t1 + " " + t2);
             return false;
         }
         if (t2.contains("*")) {
@@ -225,7 +266,7 @@ public class Literal {
      */
     public HashMap<String,String> mguTermList(Literal l2) {
 
-        //System.out.println("INFO in Clause.mguTermList(): attempting to unify " + this + " and " + l2);
+        //System.out.println("INFO in Literal.mguTermList(): attempting to unify " + this + " and " + l2);
         HashMap<String,String> subst = new HashMap<String,String>();
         
         if (!pred.equals(l2.pred)) 
@@ -237,9 +278,9 @@ public class Literal {
                 t1 = arg2;            
                 t2 = l2.arg2;
             }
-            //System.out.println("INFO in Clause.mguTermList(): attempting to unify arguments " + t1 + " and " + t2); 
+            //System.out.println("INFO in Literal.mguTermList(): attempting to unify arguments " + t1 + " and " + t2);
             if (t1.startsWith("?")) {
-                //System.out.println("INFO in Clause.mguTermList(): here 1");
+                //System.out.println("INFO in Literal.mguTermList(): here 1");
                 if (t1.equals(t2))
                     // We could always test this upfront, but that would
                     // require an expensive check every time. 
@@ -262,7 +303,7 @@ public class Literal {
                 subst.put(t1, t2);
             }
             else if (t2.startsWith("?")) {
-                //System.out.println("INFO in Clause.mguTermList(): here 2");
+                //System.out.println("INFO in Literal.mguTermList(): here 2");
                 // Symmetric case - We know that t1!=t2, so we can drop this check
                 if (occursCheck(t2, this))
                     return null;
@@ -275,7 +316,7 @@ public class Literal {
                 subst.put(t2, t1);
             }
             else {
-                //System.out.println("INFO in Clause.mguTermList(): t1 " + t1 + " t2 " + t2);
+                //System.out.println("INFO in Literal.mguTermList(): t1 " + t1 + " t2 " + t2);
                 if (!t1.equals(t2)) {
                     if (t1.indexOf('*') > -1 && t2.indexOf('-') > -1) {
                         if (!t1.substring(0,t1.lastIndexOf('*')).equalsIgnoreCase(t2.substring(0,t2.lastIndexOf('-'))))
@@ -290,7 +331,7 @@ public class Literal {
                 }
             }
         }
-        //System.out.println("INFO in Clause.mguTermList(): subst on exit: " + subst);
+        //System.out.println("INFO in Literal.mguTermList(): subst on exit: " + subst);
         return subst;
     }
     
@@ -312,30 +353,30 @@ public class Literal {
         String errStr;
         Literal cl = new Literal();
         try {
-            //System.out.println("INFO in Clause.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(): " + lex.look());
             if (lex.testTok(Lexer.Plus)) {
                 cl.preserve = true;
                 lex.next();
             }
-            //System.out.println("INFO in Clause.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(): " + lex.look());
             cl.pred = lex.next();
-            //System.out.println("INFO in Clause.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(): " + lex.look());
             if (!lex.testTok(Lexer.OpenPar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
             }
             lex.next();
-            //System.out.println("INFO in Clause.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(): " + lex.look());
             cl.arg1 = lex.next();
-            //System.out.println("INFO in Clause.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(): " + lex.look());
             if (!lex.testTok(Lexer.Comma)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
             }
             lex.next();
-            //System.out.println("INFO in Clause.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(): " + lex.look());
             cl.arg2 = lex.next();
-            //System.out.println("INFO in Clause.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(): " + lex.look());
             if (!lex.testTok(Lexer.ClosePar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
@@ -344,13 +385,41 @@ public class Literal {
         }
         catch (Exception ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.parse() " + message);
+            System.out.println("Error in Literal.parse() " + message);
             ex.printStackTrace();
         }    
-        //System.out.println("INFO in Clause.parse(): returning " + cl);
+        //System.out.println("INFO in Literal.parse(): returning " + cl);
         return cl;
     }
-    
+
+    /** *************************************************************
+     * A test method for getArg
+     */
+    public static void testGetArg() {
+
+        String s1 = "sumo(Human,Mary-1)";
+        String s2 = "sumo(?O,Mary-1)";
+        try {
+            Literal l = new Literal(s1);
+            System.out.println("INFO in Literal.testGetArg(): " + l);
+            System.out.println("INFO in Literal.testGetArg(): " + l.arg1);
+            System.out.println("INFO in Literal.testGetArg(): " + Literal.tokenNum(l.arg1));
+            System.out.println("INFO in Literal.testGetArg(): " + l.arg2);
+            System.out.println("INFO in Literal.testGetArg(): " + Literal.tokenNum(l.arg2));
+            l = new Literal(s2);
+            System.out.println("INFO in Literal.testGetArg(): " + l);
+            System.out.println("INFO in Literal.testGetArg(): " + l.arg1);
+            System.out.println("INFO in Literal.testGetArg(): " + Literal.tokenNum(l.arg1));
+            System.out.println("INFO in Literal.testGetArg(): " + l.arg2);
+            System.out.println("INFO in Literal.testGetArg(): " + Literal.tokenNum(l.arg2));
+        }
+        catch (Exception ex) {
+            String message = ex.getMessage();
+            System.out.println("Error in Clause.parse() " + message);
+            ex.printStackTrace();
+        }
+    }
+
     /** *************************************************************
      * A test method for unification
      */
@@ -373,8 +442,8 @@ public class Literal {
             System.out.println("Error in Clause.parse() " + message);
             ex.printStackTrace();
         }   
-        System.out.println("INFO in Clause.testUnify(): " + c1.mguTermList(c2));
-        System.out.println("INFO in Clause.testUnify(): " + c2.mguTermList(c1));
+        System.out.println("INFO in Literal.testUnify(): " + c1.mguTermList(c2));
+        System.out.println("INFO in Literal.testUnify(): " + c2.mguTermList(c1));
     }
     
     /** *************************************************************
@@ -404,12 +473,12 @@ public class Literal {
         }
         catch (Exception ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.parse() " + message);
+            System.out.println("Error in Literal.parse() " + message);
             ex.printStackTrace();
         }   
-        System.out.println("INFO in Clause.testRegexUnify(): " + c1.mguTermList(c2));
-        System.out.println("INFO in Clause.testRegexUnify(): " + c2.mguTermList(c1));
-        System.out.println("INFO in Clause.testRegexUnify(): should fail: " + c2.mguTermList(c3));
+        System.out.println("INFO in Literal.testRegexUnify(): " + c1.mguTermList(c2));
+        System.out.println("INFO in Literal.testRegexUnify(): " + c2.mguTermList(c1));
+        System.out.println("INFO in Literal.testRegexUnify(): should fail: " + c2.mguTermList(c3));
     }
     
     /** *************************************************************
@@ -421,11 +490,13 @@ public class Literal {
             String input = "+det(bank-2, The-1).";
             Lexer lex = new Lexer(input);
             lex.look();
-            System.out.println(Literal.parse(lex, 0));
+            input = "sumo(PsychologicalAttribute,loves-3)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): parse: " + new Literal(input));
         }
         catch (Exception ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.parse() " + message);
+            System.out.println("Error in Literal.parse() " + message);
             ex.printStackTrace();
         }   
     }
@@ -434,8 +505,9 @@ public class Literal {
      * A test method
      */
     public static void main (String args[]) {
-        
-        testParse();
+
+        testGetArg();
+        //testParse();
         //testUnify();
         //testRegexUnify();
     }
