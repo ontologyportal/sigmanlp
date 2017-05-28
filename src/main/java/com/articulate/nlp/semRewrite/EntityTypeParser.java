@@ -39,8 +39,7 @@ public class EntityTypeParser {
 
     /** ***************************************************************
      */
-    private EntityTypeParser(){
-
+    private EntityTypeParser() {
     }
 
     /** ***************************************************************
@@ -53,7 +52,8 @@ public class EntityTypeParser {
         }
         else {
             for (CoreMap coreMap : coreMaps) {
-                Optional<EntityType> type = Enums.getIfPresent(EntityType.class, coreMap.get(CoreAnnotations.EntityTypeAnnotation.class));
+                Optional<EntityType> type =
+                        Enums.getIfPresent(EntityType.class, coreMap.get(CoreAnnotations.EntityTypeAnnotation.class));
                 if (type.isPresent()) {
                     CoreLabelSequence seq = new CoreLabelSequence(coreMap.get(CoreAnnotations.TokensAnnotation.class));
                     parsedEntities.put(seq.toLabelString().get(), type.get());
