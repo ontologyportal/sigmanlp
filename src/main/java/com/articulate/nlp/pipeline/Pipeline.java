@@ -47,6 +47,8 @@ import java.util.Properties;
 public class Pipeline {
 
     public StanfordCoreNLP pipeline;
+    public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
+        "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
 
     /** ***************************************************************
      */
@@ -59,26 +61,14 @@ public class Pipeline {
      */
     public Pipeline(boolean useDefaultPCFGModel) {
 
-        Properties props = new Properties();
-        // props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, depparse, dcoref, entitymentions");
-        props.setProperty("annotators", "tokenize, ssplit, pos, lemma, parse, depparse");
-        //props.setProperty("parse.kbest", "2");
-        props.setProperty("depparse.language","English");
-        props.put("depparse.model", "edu/stanford/nlp/models/parser/nndep/english_SD.gz");
-
-        if (!useDefaultPCFGModel && !Strings.isNullOrEmpty(KBmanager.getMgr().getPref("englishPCFG"))) {
-            props.put("parse.model", KBmanager.getMgr().getPref("englishPCFG"));
-            props.put("parser.model", KBmanager.getMgr().getPref("englishPCFG"));
-            props.put("parse.flags", "");
-        }
-        // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
-        pipeline = new StanfordCoreNLP(props);
+        this(useDefaultPCFGModel,defaultProp);
     }
 
     /** ***************************************************************
      */
     public Pipeline(boolean useDefaultPCFGModel, String propString) {
 
+        System.out.println("Pipeline(): initializing with " + propString);
         Properties props = new Properties();
         // props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, depparse, dcoref, entitymentions");
         props.put("annotators", propString);
@@ -92,6 +82,11 @@ public class Pipeline {
         if (propString.contains("tsumo")) {
             props.put("customAnnotatorClass.tsumo", "com.articulate.nlp.TimeSUMOAnnotator");
         }
+        if (propString.contains("nersumo")) {
+            props.put("customAnnotatorClass.nersumo", "com.articulate.nlp.NERAnnotator");
+        }
+        //if (propString.contains("ner"))
+        //    props.put("ner.model", "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz");
         //props.put("depparse.model", "edu/stanford/com.articulate.nlp/models/parser/nndep/english_SD.gz");
 
         if (propString.contains("pos,") && !useDefaultPCFGModel &&
@@ -199,8 +194,8 @@ public class Pipeline {
     public static void processFile(String filename) {
 
         KBmanager.getMgr().initializeOnce();
-        String propString =  "tokenize, ssplit, pos, lemma, ner, wsd, wnmw, tsumo";
-        Pipeline p = new Pipeline(true,propString);
+        //String propString = "tokenize, ssplit, pos, lemma, ner, wsd, wnmw, tsumo";
+        Pipeline p = new Pipeline(true,defaultProp);
         String contents = "";
         try {
             contents = new String(Files.readAllBytes(Paths.get(filename)));
@@ -226,8 +221,7 @@ public class Pipeline {
     public static void processOneSent(String sent) {
 
         KBmanager.getMgr().initializeOnce();
-        String propString = "tokenize, ssplit, pos, lemma, wsd, wnmw";
-        Pipeline p = new Pipeline(true, propString);
+        Pipeline p = new Pipeline(true);
         Annotation wholeDocument = p.annotate(sent);
         showResults(wholeDocument);
     }
@@ -239,8 +233,7 @@ public class Pipeline {
     public static void interactive() {
 
         KBmanager.getMgr().initializeOnce();
-        String propString =  "tokenize, ssplit, pos, lemma, ner, wsd, wnmw, tsumo";
-        Pipeline p = new Pipeline(true,propString);
+        Pipeline p = new Pipeline(true);
         //Properties props = new Properties();
         //p.pipeline.addAnnotator(new TimeAnnotator("sutime", props));
         BufferedReader d = new BufferedReader(new InputStreamReader(System.in));
@@ -287,6 +280,7 @@ public class Pipeline {
         else if (args[0].equals("-i"))
             interactive();
         else {
+            printHelp();
             Annotation a = Pipeline.toAnnotation("Amelia also wrote books, most of them were about her flights.");
             SentenceUtil.printSentences(a);
         }
