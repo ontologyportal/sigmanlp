@@ -20,23 +20,24 @@ MA  02111-1307 USA
  */
 package com.articulate.nlp.semRewrite;
 
+import com.articulate.nlp.*;
+import com.articulate.nlp.DependencyConverter;
+import com.articulate.nlp.Document;
 import com.articulate.sigma.*;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
+import edu.stanford.nlp.ie.machinereading.structure.MachineReadingAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
-import com.articulate.nlp.DependencyConverter;
-import com.articulate.nlp.Document;
-import com.articulate.nlp.SimFlood;
-import com.articulate.nlp.TFIDF;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceBuilder;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.substitutor.*;
+import edu.stanford.nlp.util.IntPair;
 
 import java.io.File;
 import java.io.IOException;
@@ -101,15 +102,17 @@ public class Interpreter {
     private ArrayList<Graph> userGraphs = new ArrayList<Graph>();
 
     private Pipeline p = null;
-    private String propString =  "tokenize, ssplit, pos, lemma, gender, ner, wsd, wnmw, tsumo";
+    //private String propString =  "tokenize, ssplit, pos, lemma, ner, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
 
     public static ArrayList<String> firedRules = new ArrayList<String>();
+    public static ArrayList<String> augmentedClauses = new ArrayList<String>();
+    public static ClauseSubstitutor substitutor = null;
 
     /** *************************************************************
      */
     public Interpreter () {
 
-        p = new Pipeline(true,propString);
+        p = new Pipeline(true,Pipeline.defaultProp);
     }
 
     /** *************************************************************
@@ -118,7 +121,7 @@ public class Interpreter {
 
         canon(rsin);
         rs = rsin;
-        p = new Pipeline(true,propString);
+        p = new Pipeline(true,Pipeline.defaultProp);
     }
 
     /** *************************************************************
@@ -250,6 +253,66 @@ public class Interpreter {
         }
         //System.out.println("INFO in Interpreter.replaceInstances(): results: " + results);
         return results;
+    }
+
+    /** *************************************************************
+     * @return a list of strings in the format sumo(Class,word-num) or
+     * sumoInstance(Inst,word-num) that specify the SUMO class of each
+     * dismabiguated word or multi-word
+     */
+    public static List<String> findWSDNew(List<CoreLabel> sent, EntityTypeParser etp) {
+
+        boolean debug = true;
+        if (debug) System.out.println("INFO in Interpreter.findWSDNew(): sentence: " + sent);
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        Set<String> results = Sets.newHashSet();
+        String sumo = null;
+        for (CoreLabel cl : sent) {
+            if (debug) System.out.println("INFO in Interpreter.findWSDNew(): token: " + cl);
+            String sexAttribute = cl.get(MachineReadingAnnotations.GenderAnnotation.class);
+            if (debug) System.out.println("INFO in Interpreter.findWSDNew(): Stanford gender: " +
+                    sexAttribute);
+            if (debug) System.out.println("INFO in Interpreter.findWSDNew(): Sigma gender: " +
+                    getGenderAttribute(cl.originalText()));
+            sumo = cl.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
+            if (debug) System.out.println("INFO in Interpreter.findWSDNew(): MW sumo: " +
+                    sumo);
+            if (!StringUtil.emptyString(sumo)) {   // -----------------------MultiWords (from WordNet)
+                String token = cl.get(WNMultiWordAnnotator.WNMWTokenAnnotation.class);
+                if (kb.isInstance(sumo)) {
+                    if (debug) System.out.println("INFO in Interpreter.findWSDNew(): instance:  " + sumo);
+                    results.add("sumoInstance(" + sumo + "," + token + ")");
+                }
+                else
+                    results.add("sumo(" + sumo + "," + token + ")");
+            }
+            else if (etp.equalsToEntityType(cl.tag(), PERSON) || // --------- Gendered names
+                    !StringUtil.emptyString(sexAttribute) ||
+                    getGenderAttribute(cl.originalText()) != "") {
+                results.add("sumo(Human," + cl + ")");
+                results.add("names(" + cl + ",\"" + cl.originalText() + "\")");
+                if (!StringUtil.emptyString(sexAttribute))
+                    results.add("attribute(" + cl + "," + sexAttribute + ")");
+                else if (!StringUtil.emptyString(getGenderAttribute(cl.originalText())))
+                    results.add("attribute(" + cl + "," + getGenderAttribute(cl.originalText()) + ")");
+            }
+            else {
+                sumo = cl.get(WSDAnnotator.SUMOAnnotation.class); // ----------other word senses
+                if (debug) System.out.println("INFO in Interpreter.findWSDNew(): sumo: " +
+                        sumo);
+                if (!StringUtil.emptyString(sumo)) {
+                    if (kb.isInstance(sumo)) {
+                        if (debug) System.out.println("INFO in Interpreter.findWSDNew(): instance:  " + sumo);
+                        results.add("sumoInstance(" + sumo + "," + cl + ")");
+                    }
+                    else
+                        results.add("sumo(" + sumo + "," + cl + ")");
+                }
+            }
+        }
+        if (debug) System.out.println("INFO in Interpreter.findWSDNew(): " + results);
+        //results.addAll(clauses);
+        return Lists.newArrayList(results);
     }
 
     /** *************************************************************
@@ -665,10 +728,82 @@ public class Interpreter {
     }
 
     /** *************************************************************
+     * Collect all the identified spans and replace them with single
+     * tokens. Remove Literals that are within a span.
      */
-    private static void removeEndPunc(Annotation doc) {
+    private static List<String> consolidateSpans(List<CoreLabel> lastSentenceTokens, List<String> literals) {
 
-        // TODO
+        List<String> result = new ArrayList<>();
+        // span indices, new token, old tokens
+        // replace all old tokens with new token, delete relations within a span
+        int[] spanTotal = new int[lastSentenceTokens.size()]; // start at 1 and use token number indexes
+        Arrays.fill(spanTotal,0);
+        HashMap<IntPair,String> spans = new HashMap<>(); // span dimensions and token
+        HashMap<String,String> sumoMap = new HashMap<>(); // token name to sumo term
+        //collectSpans(lastSentenceTokens,spanTotal,spans,sumoMap);
+        //replaceSpans(spanTotal,spans,sumoMap,results);
+        for (String s : literals) {
+            Literal l = new Literal(s);
+            System.out.println("Interpreter.consolidateSpans(): literal: " + l);
+            IntPair nerspan = null;
+            IntPair wnspan = null;
+            IntPair tok1span = null;
+
+            int arg1tok = Literal.tokenNum(l.arg1);
+            String arg1 = l.arg1;
+            if (arg1tok > 0) {
+                CoreLabel token1 = lastSentenceTokens.get(arg1tok-1);
+                nerspan = token1.get(NERAnnotator.NERSpanAnnotation.class);
+                wnspan = token1.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class);
+                System.out.println("Interpreter.consolidateSpans(): token1: "
+                        + token1 + " nerspan: " + nerspan + " wnspan: " + wnspan);
+                if (nerspan != null && wnspan != null)
+                    System.out.println("Interpreter.consolidateSpans(): span conflict at: " + token1);
+                if (wnspan != null) { // prefer spans from known WordNet multiwords
+                    String tok1name = token1.get(WNMultiWordAnnotator.WNMWTokenAnnotation.class);
+                    arg1 = tok1name;
+                    tok1span = token1.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class);
+                }
+                else if (nerspan != null) {
+                    String tok1name = token1.get(NERAnnotator.NERTokenAnnotation.class);
+                    arg1 = tok1name;
+                    tok1span = token1.get(NERAnnotator.NERSpanAnnotation.class);
+                }
+            }
+
+            IntPair tok2span = null;
+            String arg2 = l.arg2;
+            int arg2tok = Literal.tokenNum(l.arg2);
+            if (arg2tok > 0) {
+                CoreLabel token2 = lastSentenceTokens.get(arg2tok-1);
+                nerspan = token2.get(NERAnnotator.NERSpanAnnotation.class);
+                wnspan = token2.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class);
+                System.out.println("Interpreter.consolidateSpans(): token2: "
+                        + token2 + " nerspan: " + nerspan + " wnspan: " + wnspan);
+                if (nerspan != null && wnspan != null)
+                    System.out.println("Interpreter.consolidateSpans(): span conflict at: " + token2);
+                if (wnspan != null) { // prefer spans from known WordNet multiwords
+                    String tok2name = token2.get(WNMultiWordAnnotator.WNMWTokenAnnotation.class);
+                    arg2 = tok2name;
+                    tok2span = token2.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class);
+                }
+                else if (nerspan != null) {
+                    String tok2name = token2.get(NERAnnotator.NERTokenAnnotation.class);
+                    arg2 = tok2name;
+                    tok2span = token2.get(NERAnnotator.NERSpanAnnotation.class);
+                }
+            }
+            if ((tok1span != null && tok2span != null && tok1span == tok2span) || arg1.equals(arg2))
+                continue; // clauses in the same span are ignored
+            else {
+                l.arg1 = arg1;
+                l.arg2 = arg2;
+                System.out.println("Interpreter.consolidateSpans(): new literal: " + l);
+                result.add(l.toString());
+            }
+        }
+        System.out.println("Interpreter.consolidateSpans(): results: " + result);
+        return result;
     }
 
     /** *************************************************************
@@ -677,7 +812,7 @@ public class Interpreter {
     public CNF interpretGenCNF(String input)    {
 
         Annotation wholeDocument = userInputs.annotateDocument(input);
-        removeEndPunc(wholeDocument);
+        //removeEndPunc(wholeDocument);
         //System.out.println("Interpreter.interpretGenCNF(): Interpreting " + wholeDocument.size() + " inputs.");
         //System.out.println("Interpreter.interpretGenCNF(): coref chains");
         SentenceUtil.printCorefChain(wholeDocument);
@@ -685,7 +820,8 @@ public class Interpreter {
         List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
 
         if (verboseParse) {
-            lastSentenceTokens.forEach(this::printLabel);
+            for (CoreLabel cl : lastSentenceTokens)
+                System.out.println(cl.originalText() + ": " + cl.ner());
         }
 
         List<String> results = Lists.newArrayList();
@@ -697,7 +833,8 @@ public class Interpreter {
         //List<String> measures = InterpretNumerics.getSumoTerms(input);
         //results.addAll(measures);
         //System.out.println("Interpreter.interpretGenCNF(): after numerics: " + results);
-        ClauseSubstitutor substitutor = null;
+        /*
+        substitutor = null;
         if (coref) {
             substitutor = SubstitutorsUnion.of(
                     new CorefSubstitutor(wholeDocument),
@@ -720,22 +857,26 @@ public class Interpreter {
         results = SubstitutionUtil.groupClauses(substitutor, results);
 
         System.out.println("Interpreter.interpretGenCNF(): after grouping: " + results);
-        EntityTypeParser etp = new EntityTypeParser(userInputs.annotateDocument(""));
-        if (ner)
-            etp = new EntityTypeParser(wholeDocument);
-        List<String> wsd = findWSD(results, getPartOfSpeechList(lastSentenceTokens, substitutor), etp);
+*/
+        EntityTypeParser etp = new EntityTypeParser(wholeDocument);
+       // if (ner)
+        //    etp = new EntityTypeParser(wholeDocument);
+        //List<String> wsd = findWSD(results, getPartOfSpeechList(lastSentenceTokens, substitutor), etp);
+        List<String> wsd = findWSDNew(lastSentenceTokens,etp);
         results.addAll(wsd);
-        System.out.println("Interpreter.interpretGenCNF(): after WSD: " + results);
+        results = consolidateSpans(lastSentenceTokens,results);
+        System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
         results = replaceInstances(results);
         System.out.println("Interpreter.interpretGenCNF(): after instance replacement: " + results);
 
         List<String> posInformation = SentenceUtil.findPOSInformation(lastSentenceTokens, dependenciesList);
         // TODO: This is not the best way to substitute POS information
-        posInformation = SubstitutionUtil.groupClauses(substitutor, posInformation);
-        results.addAll(posInformation);
+        //posInformation = SubstitutionUtil.groupClauses(substitutor, posInformation);
+        //results.addAll(posInformation);
 
-        results = lemmatizeResults(results, lastSentenceTokens, substitutor);
-
+        //results = lemmatizeResults(results, lastSentenceTokens, substitutor);
+        augmentedClauses = new ArrayList<String>();
+        augmentedClauses.addAll(results);
 //        results = processPhrasalVerbs(results);
 
         String in = StringUtil.removeEnclosingCharPair(results.toString(),Integer.MAX_VALUE,'[',']');
@@ -919,7 +1060,8 @@ public class Interpreter {
     /** *************************************************************
      * Lemmatize the results of the dependency parser, WSD, etc.
      */
-    public static List<String> lemmatizeResults(List<String> results, List<CoreLabel> tokens, ClauseSubstitutor substitutor) {
+    public static List<String> lemmatizeResults(List<String> results,
+                                                List<CoreLabel> tokens, ClauseSubstitutor substitutor) {
 
         List<String> lemmatizeResults = Lists.newArrayList(results);
 
@@ -1390,6 +1532,7 @@ public class Interpreter {
         loadRules();
         tfidf = new TFIDF(KBmanager.getMgr().getPref("kbDir") + File.separator +
                 "WordNetMappings" + File.separator + "stopwords.txt");
+        DependencyConverter.readFirstNames();
     }
 
     /** ***************************************************************
@@ -1550,6 +1693,24 @@ public class Interpreter {
 
     /** ***************************************************************
      */
+    public static void testInterpretGenCNF() {
+
+        try {
+            KBmanager.getMgr().initializeOnce();
+            Interpreter interp = new Interpreter();
+            interp.initialize();
+            String sent = "Robert kicks the bucket";
+            System.out.println("INFO in Interpreter.testInterpret(): " + sent);
+            System.out.println(interp.interpretGenCNF(sent));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** ***************************************************************
+     */
     public static void testInterpret() {
 
         try {
@@ -1563,9 +1724,7 @@ public class Interpreter {
             CNF cnfInput = CNF.parseSimple(lex);
             ArrayList<CNF> inputs = new ArrayList<CNF>();
             inputs.add(cnfInput);
-
             System.out.println(interp.interpretCNF(inputs));
-            //System.out.println("INFO in Interpreter.testInterpret():" + interp.interpretSingle(sent));
 
             sent = "John takes a walk.";
             System.out.println("INFO in Interpreter.testInterpret(): " + sent);
@@ -1575,7 +1734,35 @@ public class Interpreter {
             inputs = new ArrayList<CNF>();
             inputs.add(cnfInput);
             System.out.println(interp.interpretCNF(inputs));
-            //System.out.println("INFO in Interpreter.testInterpret():" + interp.interpretSingle(sent));
+
+            sent = "Robert kicks the bucket.";
+            System.out.println("INFO in Interpreter.testInterpret(): " + sent);
+            input = "sumo(Kicking,kicks-2), nsubj(kicks-2, Robert-1), root(ROOT-0, kicks-2), " +
+                    "sumo(Man,Robert-1), number(SINGULAR, Robert-1), tense(PRESENT, kicks-2), " +
+                    "sumo(Container,bucket-4), dobj(kicks-2, bucket-4), number(SINGULAR, bucket-4), " +
+                    "det(bucket-4, the-3)";
+            lex = new Lexer(input);
+            cnfInput = CNF.parseSimple(lex);
+            inputs = new ArrayList<CNF>();
+            inputs.add(cnfInput);
+            System.out.println(interp.interpretCNF(inputs));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** ***************************************************************
+     */
+    public static void testInterpret2() {
+
+        try {
+            KBmanager.getMgr().initializeOnce();
+            Interpreter interp = new Interpreter();
+            interp.initialize();
+            String sent = "Juan Lopez loves New York City.";
+            interp.interpretSingle(sent);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -1797,8 +1984,9 @@ public class Interpreter {
         }
         else {
             //testUnify();
-            testUnify7();
-            //testInterpret();
+            //testUnify7();
+            testInterpret2();
+            //testInterpretGenCNF();
             //testPreserve();
             //testQuestionPreprocess();
             //testPostProcess();
