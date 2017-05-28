@@ -32,7 +32,7 @@ import java.util.Optional;
   */
 public class SubstitutorsUnion implements ClauseSubstitutor {
 
-    final List<ClauseSubstitutor> substitutors;
+    public final List<ClauseSubstitutor> substitutors;
 
     public SubstitutorsUnion(List<ClauseSubstitutor> substitutors) {
         this.substitutors = substitutors;
