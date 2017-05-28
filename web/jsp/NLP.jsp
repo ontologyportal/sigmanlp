@@ -161,7 +161,10 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         }
         out.println("</table><P>");
 
+        List<String> forms = interp.interpret(theText);
+
         out.println("<h2>Dependencies</h2>\n");
+        out.println("<table><tr><th>original</th><th>augmented</th><th>substitutors</th></tr><tr><td>\n");
         for (CoreMap sentence : sentences) {
             out.println("<pre>");
             List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
@@ -169,6 +172,18 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                 out.println(s);
             out.println("</pre>");
         }
+        out.println("</td>\n");
+        out.println("<td><pre>\n");
+        for (String s : interp.augmentedClauses)
+            out.println(s);
+        out.println("</pre>");
+
+        out.println("</td>");
+        out.println("<td><pre>\n");
+        out.println(interp.substitutor.toString());
+        out.println("</pre>");
+        out.println("</td>");
+        out.println("</tr></table>\n");
         out.println("<P>");
 
         out.println("<h2>Interpretation</h2>\n");
@@ -179,7 +194,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                 <input type="submit" name="reload" value="reload">
             </form><p>
         <%
-        List<String> forms = interp.interpret(theText);
+
         if (forms != null) {
             for (String s : forms) {
                 Formula theForm = new Formula(s);
