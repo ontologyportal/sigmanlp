@@ -265,13 +265,15 @@ public class SentenceUtil {
         return sb.toString();
     }
 
+    /** *************************************************************
+     */
     public static CoreMap getLastSentence(Annotation document) {
+
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
-        if(!sentences.isEmpty()) {
+        if (!sentences.isEmpty())
             return Iterables.getLast(sentences);
-        } else {
+        else
             return null;
-        }
     }
 
     /** ***************************************************************
@@ -289,7 +291,10 @@ public class SentenceUtil {
         for (CoreMap sentence : sentences) {
             //SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
             SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-            results = Lists.newArrayList(dependencies.toList().split("\n"));
+            if (dependencies == null)
+                System.out.println("SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
+            else
+                results = Lists.newArrayList(dependencies.toList().split("\n"));
         }
         ArrayList<String> deps= new ArrayList<String>();
         for (String dep : results)
