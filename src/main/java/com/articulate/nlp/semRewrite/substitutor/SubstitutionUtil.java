@@ -36,7 +36,7 @@ public class SubstitutionUtil {
     // predicate(word-1, word)
     public static final Pattern CLAUSE_SPLITTER = Pattern.compile("([^\\(]+)\\((.+?(-\\d+)?),\\s*(.+?(-\\d+)?)\\)");
     public static final Pattern CLAUSE_PARAM = Pattern.compile("(.+)-(\\d+)");
-    public static final boolean debug = false;
+    public static final boolean debug = true;
 
     /** **************************************************************
      * Takes the list of clauses and substitutes them using provided substitutor.
@@ -59,10 +59,10 @@ public class SubstitutionUtil {
                 String attr2 = m.group(4);
                 if (debug) System.out.println("INFO in SubstitutionUtil.groupClauses(): attr1: " + attr1);
                 if (debug) System.out.println("INFO in SubstitutionUtil.groupClauses(): attr2: " + attr2);
-                if ((m.group(3) != null && substitutor.containsKey(attr1.toUpperCase()))
-                        || (m.group(5) != null && substitutor.containsKey(attr2.toUpperCase()))) {
-                    CoreLabelSequence attr1Grouped = substitutor.getGrouped(attr1.toUpperCase());
-                    CoreLabelSequence attr2Grouped = substitutor.getGrouped(attr2.toUpperCase());
+                if ((m.group(3) != null && substitutor.containsKey(attr1))
+                        || (m.group(5) != null && substitutor.containsKey(attr2))) {
+                    CoreLabelSequence attr1Grouped = substitutor.getGrouped(attr1);
+                    CoreLabelSequence attr2Grouped = substitutor.getGrouped(attr2);
                     if (debug) System.out.println("INFO in SubstitutionUtil.groupClauses(): attr1Grouped: " + attr1Grouped);
                     if (debug) System.out.println("INFO in SubstitutionUtil.groupClauses(): attr2Grouped: " + attr2Grouped);
                    // if (attr1Grouped.toString() != null && attr2Grouped != null &&
