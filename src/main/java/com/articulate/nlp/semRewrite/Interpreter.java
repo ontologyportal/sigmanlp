@@ -60,7 +60,7 @@ public class Interpreter {
 
     private static final Pattern ENDING_IN_PUNC_PATTERN = Pattern.compile(".*[.?!]$");
 
-    // Canonicalize rules into CNF then unify.
+    public boolean debug = false;
 
     public RuleSet rs = null;
     //public CNF input = null;
@@ -260,7 +260,7 @@ public class Interpreter {
      * sumoInstance(Inst,word-num) that specify the SUMO class of each
      * dismabiguated word or multi-word
      */
-    public static List<String> findWSDNew(List<CoreLabel> sent, EntityTypeParser etp) {
+    public static List<String> findWSDNew(List<CoreLabel> sent) {
 
         boolean debug = true;
         if (debug) System.out.println("INFO in Interpreter.findWSDNew(): sentence: " + sent);
@@ -268,6 +268,7 @@ public class Interpreter {
         Set<String> results = Sets.newHashSet();
         String sumo = null;
         for (CoreLabel cl : sent) {
+            String nerType = cl.get(CoreAnnotations.NamedEntityTagAnnotation.class);
             if (debug) System.out.println("INFO in Interpreter.findWSDNew(): token: " + cl);
             String sexAttribute = cl.get(MachineReadingAnnotations.GenderAnnotation.class);
             if (debug) System.out.println("INFO in Interpreter.findWSDNew(): Stanford gender: " +
@@ -286,8 +287,8 @@ public class Interpreter {
                 else
                     results.add("sumo(" + sumo + "," + token + ")");
             }
-            else if (etp.equalsToEntityType(cl.tag(), PERSON) || // --------- Gendered names
-                    !StringUtil.emptyString(sexAttribute) ||
+            else if (!StringUtil.emptyString(sexAttribute) || // --------- Gendered names
+                    nerType.equals("PERSON") ||
                     getGenderAttribute(cl.originalText()) != "") {
                 results.add("sumo(Human," + cl + ")");
                 results.add("names(" + cl + ",\"" + cl.originalText() + "\")");
@@ -858,11 +859,11 @@ public class Interpreter {
 
         System.out.println("Interpreter.interpretGenCNF(): after grouping: " + results);
 */
-        EntityTypeParser etp = new EntityTypeParser(wholeDocument);
+        //EntityTypeParser etp = new EntityTypeParser(wholeDocument);
        // if (ner)
         //    etp = new EntityTypeParser(wholeDocument);
         //List<String> wsd = findWSD(results, getPartOfSpeechList(lastSentenceTokens, substitutor), etp);
-        List<String> wsd = findWSDNew(lastSentenceTokens,etp);
+        List<String> wsd = findWSDNew(lastSentenceTokens);
         results.addAll(wsd);
         results = consolidateSpans(lastSentenceTokens,results);
         System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
@@ -1203,7 +1204,7 @@ public class Interpreter {
                 for (int i = 0; i < rs.rules.size(); i++) {
                     Rule r = rs.rules.get(i).deepCopy();
                     //System.out.println("INFO in Interpreter.interpretCNF(): new input 0.5: " + newInput);
-                    //System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
+                    if (debug) System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                     HashMap<String,String> bindings = r.cnf.unify(newInput);
                     if (bindings == null) {
                         newInput.clearBound();
@@ -1211,7 +1212,7 @@ public class Interpreter {
                     else {
                         bindingFound = true;
                         //System.out.println("INFO in Interpreter.interpretCNF(): new input 1: " + newInput);
-                        //System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
+                        if (debug) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
                         if (showr)
                             System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                         firedRules.add(r.toString());
@@ -1423,6 +1424,16 @@ public class Interpreter {
                 else if (input.equals("nosim")) {
                     simFlood = false;
                     System.out.println("not using Similarity Flooding");
+                }
+                else if (input.equals("debug")) {
+                    Procedures.debug = true;
+                    this.debug = true;
+                    System.out.println("debugging messages on");
+                }
+                else if (input.equals("nodebug")) {
+                    Procedures.debug = false;
+                    this.debug = false;
+                    System.out.println("debugging messages off");
                 }
                 else if (input.equals("noshowrhs")) {
                     showrhs = false;
@@ -1685,6 +1696,28 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify7(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify7(): CNF rule antecedent: " + cnf);
+        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        System.out.println("bindings: " + bindings);
+        if (bindings != null)
+            System.out.println("result: " + r.rhs.applyBindings(bindings));
+    }
+
+    /** ***************************************************************
+     */
+    public static void testUnify8() {
+
+        KBmanager.getMgr().initializeOnce();
+        String input = "nmod:poss(hat-3,John-1), sumo(Hat,hat-3), sumo(Human,John-1)";
+        Lexer lex = new Lexer(input);
+        CNF cnfInput = CNF.parseSimple(lex);
+        //String rule = "nmod:on(?X,?Y), +sumo(?C,?Y), isSubclassOf(?C,ComputerProgram), +dobj(?V,?X) ==> (instrument(?V,?Y)).";
+        String rule =  "nmod:poss(?O,?Y), sumo(Human,?Y), sumo(?C,?O), isCELTclass(?C,Object) ==> {(possesses ?S ?O)}.";
+        Rule r = new Rule();
+        r = Rule.parseString(rule);
+        CNF cnf = Clausifier.clausify(r.lhs);
+        cnf.debug = true;
+        System.out.println("INFO in Interpreter.testUnify8(): Input: " + cnfInput);
+        System.out.println("INFO in Interpreter.testUnify8(): CNF rule antecedent: " + cnf);
         HashMap<String,String> bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
@@ -1974,6 +2007,7 @@ public class Interpreter {
             System.out.println("       'ir/autoir/noir' will determine whether TF/IDF is run always, on inference failure or never.");
             System.out.println("       'reload' (no quotes) will reload the rewriting rule set.");
             System.out.println("       'inference/noinference' will turn on/off inference.");
+            System.out.println("       'debug/nodebug' will turn on/off debugging messages.");
             System.out.println("       'sim/nosim' will turn on/off similarity flooding (and toggle inference).");
             System.out.println("       'addUnprocessed/noUnprocessed' will add/not add unprocessed clauses.");
             System.out.println("       'showr/noshowr' will show/not show what rules get matched.");
@@ -1984,8 +2018,8 @@ public class Interpreter {
         }
         else {
             //testUnify();
-            //testUnify7();
-            testInterpret2();
+            testUnify8();
+            //testInterpret2();
             //testInterpretGenCNF();
             //testPreserve();
             //testQuestionPreprocess();
