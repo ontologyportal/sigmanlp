@@ -33,6 +33,7 @@ import java.util.List;
 public class CNF {
 
     public ArrayList<Clause> clauses = new ArrayList<Clause>();
+    public boolean debug = false;
 
     /** ***************************************************************
      */
@@ -278,7 +279,7 @@ public class CNF {
             if (d1.disjuncts.size() == 1 && d1.disjuncts.get(0).negated)
                 negatedClause = true;
             HashMap<String,String> result2 = unifyDisjunct(d1,cnfnew2,cnfnew1,result);
-            //System.out.println("INFO in CNF.unify(): results2 " + result2);
+            if (debug) System.out.println("INFO in CNF.unify(): results2 " + result2);
             //System.out.println("INFO in CNF.unify(): cnfnew1 " + cnfnew1);
             //System.out.println("INFO in CNF.unify(): cnfnew2 " + cnfnew2);
             if (negatedClause) {
