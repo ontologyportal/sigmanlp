@@ -24,6 +24,8 @@ MA  02111-1307 USA
 import com.articulate.sigma.StringUtil;
 
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -47,6 +49,19 @@ public class Literal {
     public String arg1;
     public String arg2;
 
+    // from http://universaldependencies.org/u/dep/index.html
+    public static final List<String> dependencyTags = Arrays.asList("acl",
+            "advcl", "advmod", "amod", "appos", "aux", "case", "cc",
+            "ccomp", "clf", "compound", "conj", "cop", "csubj", "dep",
+            "det", "discourse", "dislocated", "expl", "fixed", "flat",
+            "goeswith", "iobj", "list", "mark", "nmod", "nsubj", "nummod",
+            "obj", "obl", "orphan", "parataxis", "punct", "reparandum",
+            "root", "vocative", "xcomp");
+
+    public static final List<String> augmentTags = Arrays.asList("sumo",
+            "sumoInstance", "isCELTclass", "unit", "valueToken", "value",
+            "isSubclass", "isInstanceOf", "isSubAttribute");
+
     /** ***************************************************************
      */
     public Literal() {
@@ -62,6 +77,8 @@ public class Literal {
             Literal lit = Literal.parse(lex, 0);
             negated = lit.negated;
             pred = lit.pred;
+            if (!dependencyTags.contains(pred) && !augmentTags.contains(pred))
+                System.out.println("Error in Literal(): unknown pred in: " + lit);
             arg1 = lit.arg1;
             arg2 = lit.arg2;
         }
@@ -360,6 +377,12 @@ public class Literal {
             }
             //System.out.println("INFO in Literal.parse(): " + lex.look());
             cl.pred = lex.next();
+            if (!dependencyTags.contains(cl.pred) && !augmentTags.contains(cl.pred)) {
+                System.out.println("Error in Literal(): unknown pred in: " + cl);
+                errStr = (errStart + ": bad predicate '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
+                System.out.println(errStr);
+                //throw new ParseException(errStr, startLine);
+            }
             //System.out.println("INFO in Literal.parse(): " + lex.look());
             if (!lex.testTok(Lexer.OpenPar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
