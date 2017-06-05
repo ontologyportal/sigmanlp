@@ -60,17 +60,20 @@ public class DateAndNumbersGeneration {
 			if ((times.getSecond() != null) || (times.getMinute() != null) || (times.getHour() != null)) {
 				//StringBuffer timeFn = new StringBuffer();
 				if (times.getSecond() != null) {
-					utilities.sumoTerms.add("second("+"time-"+utilities.timeCount+","+times.getSecond()+"-"+times.getWordIndex() +")");
+					utilities.sumoTerms.add("second(" + "time-" + utilities.timeCount + "," +
+							times.getSecond() + "-" + times.getWordIndex() + ")");
 				}
 				if (times.getMinute() != null) {
-					utilities.sumoTerms.add("minute("+"time-"+utilities.timeCount+","+times.getMinute()+"-"+times.getWordIndex()+")");
+					utilities.sumoTerms.add("minute(" + "time-" + utilities.timeCount + "," +
+							times.getMinute() + "-" + times.getWordIndex() + ")");
 				}
 				if (times.getHour() != null) {
-					utilities.sumoTerms.add("hour("+"time-"+utilities.timeCount+","+times.getHour()+"-"+times.getWordIndex()+")");
+					utilities.sumoTerms.add("hour(" + "time-" + utilities.timeCount + "," +
+							times.getHour() + "-" + times.getWordIndex() + ")");
 				}
 				String tokenRoot = utilities.populateRootWord(times.getWordIndex());
 				if (tokenRoot != null) {
-					utilities.sumoTerms.add("time("+tokenRoot+","+"time-"+utilities.timeCount+")");
+					utilities.sumoTerms.add("time(" + tokenRoot + "," + "time-" + utilities.timeCount + ")");
 				}
 				utilities.timeCount++;
 			}
@@ -82,7 +85,7 @@ public class DateAndNumbersGeneration {
 	private String lemmatizeWord(IndexedWord measuredEntity) {
 		
 		String value = measuredEntity.value();
-		if(!measuredEntity.tag().equals("NNP") || !measuredEntity.tag().equals("NNPS")) {
+		if (!measuredEntity.tag().equals("NNP") || !measuredEntity.tag().equals("NNPS")) {
 			value = measuredEntity.lemma();
 		}
 		return value;
@@ -95,6 +98,10 @@ public class DateAndNumbersGeneration {
 	 */
 	private void measureFn(Tokens token, int count, Utilities utilities) {
 
+        if (utilities != null)
+            System.out.println("DateAndNumbersGeneration.measureFn(): " + utilities);
+        if (token != null)
+            System.out.println("DateAndNumbersGeneration.measureFn(): " + token);
 		IndexedWord tokenNode = utilities.StanfordDependencies.getNodeByIndex(token.getId());
 		IndexedWord unitOfMeasurementNode = utilities.StanfordDependencies.getParent(tokenNode);
 		IndexedWord measuredEntity = null;
@@ -114,7 +121,7 @@ public class DateAndNumbersGeneration {
 			//unitOfMeasurementStr = lemmatizeWord(unitOfMeasurementNode);
 			unitOfMeasurementStr = unitOfMeasurementNode.word();
 			measuredEntity = utilities.StanfordDependencies.getParent(unitOfMeasurementNode);
-			visitedNodes.add(unitOfMeasurementNode.toString()+"-"+unitOfMeasurementNode.index());
+			visitedNodes.add(unitOfMeasurementNode.toString() + "-" + unitOfMeasurementNode.index());
 		}
 		if ((measuredEntity == null) && (unitOfMeasurementNode != null)) {
 			for (SemanticGraphEdge e : utilities.StanfordDependencies.getOutEdgesSorted(unitOfMeasurementNode)) {
@@ -129,7 +136,7 @@ public class DateAndNumbersGeneration {
 			return;
 		}
 		while ((measuredEntity != null) && (!flag)) {
-			measuredEntityStr = measuredEntity.value()+"-"+measuredEntity.index();
+			measuredEntityStr = measuredEntity.value() + "-" + measuredEntity.index();
 			if (!visitedNodes.contains(measuredEntityStr)) {
 				visitedNodes.add(measuredEntityStr);
 			}
@@ -146,10 +153,11 @@ public class DateAndNumbersGeneration {
 					if ((childrenSet.size()==1)) {
 						measuredEntity = unitOfMeasurementNode;
 						//String lemmatizedWord = lemmatizeWord(measuredEntity);
-						utilities.sumoTerms.add("measure(" + measuredEntity.word() + "-" + measuredEntity.index() + ", measure" + count + ")");
+						utilities.sumoTerms.add("measure(" + measuredEntity.word() + "-" + measuredEntity.index() +
+                                ", measure" + count + ")");
 						utilities.sumoTerms.add("unit(measure" + count + ", "+ "memberCount" + ")");
 						utilities.sumoTerms.add("value(measure" + count + ", " + token.getWord()+ ")");
-						utilities.sumoTerms.add("valueToken("+token.getWord()+","+token.getWord()+"-"+token.getId()+")");
+						utilities.sumoTerms.add("valueToken(" + token.getWord() + "," + token.getWord() + "-" + token.getId() + ")");
 						flag = true;
 						return;
 					}
@@ -161,15 +169,20 @@ public class DateAndNumbersGeneration {
 						if (posTagRemoverMatcher.find()) {
 							childPosTagRemover = posTagRemoverMatcher.group(1); 
 						}
-						if (!(visitedNodes.contains(child.toString()+"-"+child.index())) && (Utilities.nounTags.contains(childPosTagRemover.replaceFirst("\\/", "")))){
-							if ((utilities.StanfordDependencies.reln(measuredEntity, child) != null) && (utilities.StanfordDependencies.reln(measuredEntity, child).getShortName().equals("nsubj"))) {
+						System.out.println("DateAndNumbersGeneration.measureFn(): visited: " + visitedNodes);
+                        System.out.println("DateAndNumbersGeneration.measureFn(): noun tags: " + Utilities.nounTags);
+                        System.out.println("DateAndNumbersGeneration.measureFn(): childPosTagRemover: " + childPosTagRemover);
+						if (childPosTagRemover != null && !(visitedNodes.contains(child.toString() + "-" + child.index())) &&
+								(Utilities.nounTags.contains(childPosTagRemover.replaceFirst("\\/", "")))){
+							if ((utilities.StanfordDependencies.reln(measuredEntity, child) != null) &&
+                                    (utilities.StanfordDependencies.reln(measuredEntity, child).getShortName().equals("nsubj"))) {
 								measuredEntity = child;
-								visitedNodes.add(child.toString()+"-"+child.index());
+								visitedNodes.add(child.toString() + "-" + child.index());
 								flag = true;
 								break;
 							}
 							measuredEntity_temp = child;
-							visitedNodes.add(child.toString()+"-"+child.index());
+							visitedNodes.add(child.toString() + "-" + child.index());
 						}
 					}
 					if (!flag) {
@@ -201,7 +214,7 @@ public class DateAndNumbersGeneration {
 		}
 		utilities.sumoTerms.add("unit(measure" + count + ", "+ sumoUnitOfMeasure + ")");
 		utilities.sumoTerms.add("value(measure" + count + ", " + token.getWord() + ")");
-		utilities.sumoTerms.add("valueToken("+token.getWord()+","+token.getWord()+"-"+token.getId()+")");
+		utilities.sumoTerms.add("valueToken(" + token.getWord() + "," + token.getWord() + "-" + token.getId() + ")");
 		WordNet.wn.initOnce();
 	}
 	
@@ -362,7 +375,7 @@ public class DateAndNumbersGeneration {
 		Tokens numberToken = new Tokens();
 		Tokens presentDurationToken = new Tokens();
 		Tokens prevDurationToken = null;
-		for(Tokens token : tokensList) {
+		for (Tokens token : tokensList) {
 			presentDateToken = token;
 			presentDurationToken = token;
 			switch(token.getNer()) {
