@@ -1,8 +1,8 @@
-package com.articulate.sigma.inference;
+package com.articulate.nlp.inference;
 
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.nlp.TextFileUtil;
-import com.articulate.sigma.semRewrite.Interpreter;
+import com.articulate.nlp.TextFileUtil;
+import com.articulate.nlp.semRewrite.Interpreter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
