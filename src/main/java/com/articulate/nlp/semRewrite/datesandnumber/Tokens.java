@@ -25,6 +25,8 @@ MA  02111-1307 USA
 /** ***************************************************************
  * This class holds the various data populated by the Stanford parser for Dates and Numbers.
  * input: The natural language string.
+ * TODO: probably remove this class and replace with use of CoreMap,
+ * which is seems to duplicate
  */
 public class Tokens {
 	
@@ -96,6 +98,17 @@ public class Tokens {
 		this.pos = pos;
 	}
 
+    /** ***************************************************************
+     */
+    public String toString() {
+
+        StringBuffer result = new StringBuffer();
+        result.append(word + ":" + lemma + ":" + ner);
+        return result.toString();
+    }
+
+	/** ***************************************************************
+	 */
 	public boolean equals(Tokens token) {
 	    
 		boolean wordFlag,tokenTypeFlag;
