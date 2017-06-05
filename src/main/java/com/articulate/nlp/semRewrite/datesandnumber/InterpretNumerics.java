@@ -47,6 +47,7 @@ public class InterpretNumerics {
 	public static void main(String[] args) {
 
 		KBmanager.getMgr().initializeOnce();
+        System.out.println("-------------------------InterpretNumerics.main()-------------------------");
         String input = "John was killed on 8/15/2014 at 3:45 PM.";
         System.out.println(input);
         System.out.println(getSumoTerms(input));
