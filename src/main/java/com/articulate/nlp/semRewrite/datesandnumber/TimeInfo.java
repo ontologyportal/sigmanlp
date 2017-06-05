@@ -58,6 +58,15 @@ public class TimeInfo {
 	}
 
 	/** ***************************************************************
+	 */
+	public String toString() {
+
+		StringBuffer result = new StringBuffer();
+		result.append(hour + ":" + minute + ":" + second + " (" + wordIndex + ")");
+		return result.toString();
+	}
+
+	/** ***************************************************************
 	 * Overridden equals method.
      */
 	public boolean equals(TimeInfo timeInfo) {
