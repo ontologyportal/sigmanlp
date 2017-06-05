@@ -54,8 +54,25 @@ public class Utilities {
 	List<String> lemmatizedResults = new ArrayList<>();
 	HashMap<Integer, String> lemmaWordMap = new HashMap<>();
 	int timeCount = 1;
-	
-	
+
+	/** ***************************************************************
+	 */
+	public String toString() {
+
+		StringBuffer result = new StringBuffer();
+		if (sumoTerms != null)
+			result.append("sumoTerms: " + sumoTerms.toString() + "\n");
+		if (datesList != null)
+			result.append("datesList: " + datesList + "\n");
+		if (StanfordDependencies != null)
+			result.append("StanfordDependencies: " + StanfordDependencies + "\n");
+		if (lemmatizedResults != null)
+			result.append("lemmatizedResults: " + lemmatizedResults + "\n");
+		if (lemmaWordMap != null)
+			result.append("lemmaWordMap: " +  lemmaWordMap + "\n");
+		return result.toString();
+	}
+
 	/** ***************************************************************
      */
 	public boolean containsIndexWord(String word) {
@@ -76,7 +93,7 @@ public class Utilities {
 		while (!tempParent.equals(StanfordDependencies.getFirstRoot())) {
 			tempParent = StanfordDependencies.getParent(tempParent);
 			if (containsIndexWord(tempParent.tag())) {
-				return tempParent.word()+"-"+tempParent.index();
+				return tempParent.word() + "-" + tempParent.index();
 			}
 		}
 		return null;
@@ -95,7 +112,7 @@ public class Utilities {
 			if (d.isDuration()) {
 				//removableList.add("time-"+d.getTimeCount());
 				for(String sumoTerm : sumoTerms) {
-					if(sumoTerm.matches("^time\\(.*,time-"+d.getTimeCount()+"\\)$")) {
+					if (sumoTerm.matches("^time\\(.*,time-" + d.getTimeCount() + "\\)$")) {
 						removableSumoTerms.add(sumoTerm);
 					}
 				}
