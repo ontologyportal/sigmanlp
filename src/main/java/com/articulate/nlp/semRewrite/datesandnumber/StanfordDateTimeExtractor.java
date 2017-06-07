@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.pipeline.Pipeline;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.*;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -46,7 +47,6 @@ public class StanfordDateTimeExtractor {
 	private List<String> dependencyList = new ArrayList<String>();
 	private SemanticGraph dependencies;
 	private int tokenCount = 0;
-	
 
 	/** ***************************************************************
 	 */
@@ -71,47 +71,60 @@ public class StanfordDateTimeExtractor {
 	public void setDependencies(SemanticGraph dependencies) {
 		this.dependencies = dependencies;
 	}
-	
+
+    /** ***************************************************************
+     * Calls the stanford parser and extracts the necessary information about the words in the string
+     * and stores them in Token object for further usage.
+     * @param sentence: The natural language string.
+     * @return List of Tokens.
+     */
+    public void populateParserInfo(CoreMap sentence, List<Tokens> tokenList) {
+
+        tokenCount = 1;
+        for (CoreLabel token: sentence.get(TokensAnnotation.class)) {
+            String namedEntity = token.get(NamedEntityTagAnnotation.class);
+            if ((DATE_ENTITIES.contains(namedEntity)) || ((MEASURE_ENTITIES.contains(namedEntity)) &&
+                    (token.get(PartOfSpeechAnnotation.class).equals("CD") || token.get(PartOfSpeechAnnotation.class).equals("JJ")))
+                    || (namedEntity.equals("DURATION") && token.get(PartOfSpeechAnnotation.class).equals("CD"))) {
+                Tokens tokens = new Tokens();
+                tokens.setId(tokenCount);
+                tokens.setWord(token.get(TextAnnotation.class));
+                tokens.setNer(token.get(NamedEntityTagAnnotation.class));
+                tokens.setNormalizedNer(token.get(NormalizedNamedEntityTagAnnotation.class));
+                tokens.setCharBegin(token.get(BeginIndexAnnotation.class));
+                tokens.setCharEnd(token.get(EndIndexAnnotation.class));
+                tokens.setPos(token.get(PartOfSpeechAnnotation.class));
+                tokens.setLemma(token.get(LemmaAnnotation.class));
+                tokenList.add(tokens);
+            }
+            tokenCount++;
+        }
+        dependencies = (sentence.get(CollapsedDependenciesAnnotation.class));
+        dependencyList = (StringUtils.split(dependencies.toList(), "\n"));
+    }
+
 	 /** ***************************************************************
-		 * Calls the stanford parser and extracts the necessary information about the words in the string 
-		 * and stores them in Token object for further usage. 
-		 * @param inputSentence: The natural language string.
-	     * @return List of Tokens.
-		 */
+     * Calls the stanford parser and extracts the necessary information about the words in the string
+     * and stores them in Token object for further usage.
+     * @param inputSentence: The natural language string.
+     * @return List of Tokens.
+     */
 	public List<Tokens> populateParserInfo(String inputSentence) {
 		
-		Properties props = new Properties();
+		//Properties props = new Properties();
 		// props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
-		props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse");
-		StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
-		Annotation annotation;
-		annotation = new Annotation(inputSentence);
+		//props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse");
+		//StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+		Pipeline pipe = new Pipeline(true);
+		//Annotation annotation;
+		//annotation = new Annotation(inputSentence);
 
-		pipeline.annotate(annotation);
+		Annotation annotation = pipe.annotate(inputSentence);
 		List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
 		int sentenceCount = 0;
 		List<Tokens> tokenList = new ArrayList<Tokens>();
 		for (CoreMap sentence: sentences) {
-			tokenCount = 1;
-			for (CoreLabel token: sentence.get(TokensAnnotation.class)) {
-				String namedEntity = token.get(NamedEntityTagAnnotation.class);
-				if ((DATE_ENTITIES.contains(namedEntity)) || ((MEASURE_ENTITIES.contains(namedEntity))&& (token.get(PartOfSpeechAnnotation.class).equals("CD") || token.get(PartOfSpeechAnnotation.class).equals("JJ")))
-						|| (namedEntity.equals("DURATION") && token.get(PartOfSpeechAnnotation.class).equals("CD"))) {
-					Tokens tokens = new Tokens();
-					tokens.setId(tokenCount);
-					tokens.setWord(token.get(TextAnnotation.class));
-					tokens.setNer(token.get(NamedEntityTagAnnotation.class));
-					tokens.setNormalizedNer(token.get(NormalizedNamedEntityTagAnnotation.class));
-					tokens.setCharBegin(token.get(BeginIndexAnnotation.class));
-					tokens.setCharEnd(token.get(EndIndexAnnotation.class));
-					tokens.setPos(token.get(PartOfSpeechAnnotation.class));
-					tokens.setLemma(token.get(LemmaAnnotation.class));
-					tokenList.add(tokens);					
-				}
-				tokenCount++;
-			}
-			dependencies = (sentence.get(CollapsedDependenciesAnnotation.class));
-			dependencyList = (StringUtils.split(dependencies.toList(), "\n"));
+            populateParserInfo(sentence, tokenList);
 		}
 		return tokenList;
 	}
