@@ -1,4 +1,6 @@
-package com.articulate.nlp.semRewrite;/*
+package com.articulate.nlp.semRewrite;
+
+/*
 Copyright 2014-2015 IPsoft
 
 Author: Peigen You Peigen.You@ipsoft.com
