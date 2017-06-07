@@ -30,6 +30,8 @@ import com.articulate.sigma.test.JsonReader;
 import com.google.common.collect.Maps;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.util.CoreMap;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.junit.BeforeClass;
@@ -49,14 +51,23 @@ import static org.junit.Assert.assertThat;
 @RunWith(Parameterized.class)
 public class InterpreterWSDBatchTest extends IntegrationTestBase {
 
-    @Parameterized.Parameter(value= 0)
+    public static Interpreter interp = new Interpreter();
+
+    @Parameterized.Parameter(value = 0)
     public String input;
-    @Parameterized.Parameter(value= 1)
+    @Parameterized.Parameter(value = 1)
     public String[] expected;
 
     @BeforeClass
     public static void initInterpreter() {
+
         KBmanager.getMgr().initializeOnce();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /** ***************************************************************
@@ -85,14 +96,10 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
      */
     private List<String> doFullWSD(String input) {
 
-        Annotation document = Pipeline.toAnnotation(input);
-        List<String> results = SentenceUtil.toDependenciesList(document);
-
-        NounSubstitutor substitutor = new NounSubstitutor(document.get(CoreAnnotations.TokensAnnotation.class));
-        SubstitutionUtil.groupClauses(substitutor, results);
-
-        EntityTypeParser etp = new EntityTypeParser(document);
-        List<String> wsds = Interpreter.findWSD(results, Maps.newHashMap(), etp);
+        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        List<String> wsds = interp.findWSD(lastSentenceTokens);
 
         return wsds;
     }
