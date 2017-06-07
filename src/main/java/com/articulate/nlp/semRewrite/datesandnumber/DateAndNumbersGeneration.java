@@ -61,15 +61,16 @@ public class DateAndNumbersGeneration {
 				//StringBuffer timeFn = new StringBuffer();
 				if (times.getSecond() != null) {
 					utilities.sumoTerms.add("second(" + "time-" + utilities.timeCount + "," +
-							times.getSecond() + "-" + times.getWordIndex() + ")");
+                            times.getSecond() + ")");
+                    // times.getSecond() + "-" + times.getWordIndex() + ")");
 				}
 				if (times.getMinute() != null) {
 					utilities.sumoTerms.add("minute(" + "time-" + utilities.timeCount + "," +
-							times.getMinute() + "-" + times.getWordIndex() + ")");
+							times.getMinute() + ")");
 				}
 				if (times.getHour() != null) {
 					utilities.sumoTerms.add("hour(" + "time-" + utilities.timeCount + "," +
-							times.getHour() + "-" + times.getWordIndex() + ")");
+							times.getHour() + ")");
 				}
 				String tokenRoot = utilities.populateRootWord(times.getWordIndex());
 				if (tokenRoot != null) {
@@ -141,7 +142,7 @@ public class DateAndNumbersGeneration {
 				visitedNodes.add(measuredEntityStr);
 			}
 			posTagRemoverMatcher = POS_TAG_REMOVER.matcher(measuredEntity.toString());
-			if(posTagRemoverMatcher.find()) {
+			if (posTagRemoverMatcher.find()) {
 				posTagRemover = posTagRemoverMatcher.group(1);
 				if(Utilities.nounTags.contains(posTagRemover)) {
 					break;
@@ -205,8 +206,7 @@ public class DateAndNumbersGeneration {
 		if ((sumoUnitOfMeasure != null) && (!sumoUnitOfMeasure.isEmpty())) {
 			sumoUnitOfMeasure = sumoUnitOfMeasure.replaceAll("[^\\p{Alpha}\\p{Digit}]+","");
 		}
-		else 
-		{
+		else {
 			if ((measuredEntity != null) && (unitOfMeasurementStr.equals(measuredEntity.value()))) {
 				unitOfMeasurementStr = "memberCount";
 			}
@@ -257,7 +257,9 @@ public class DateAndNumbersGeneration {
 	 * analyzes that 3 hour and 30 min would belong to same type object and groups them together.
 	 * input: normalizedTokenIdMap, utility value, List of date tokens,date andDurationHandler,presentTimeToken and PreviousTimeToken
 	 */
-	private List<TimeInfo> processTime(List<String> tokenIdNormalizedTimeMap, Utilities utilities, List<Tokens> tempDateList, DatesAndDuration datesandDurationHandler, Tokens presentTimeToken, Tokens prevTimeToken) {
+	private List<TimeInfo> processTime(List<String> tokenIdNormalizedTimeMap, Utilities utilities,
+                                       List<Tokens> tempDateList, DatesAndDuration datesandDurationHandler,
+                                       Tokens presentTimeToken, Tokens prevTimeToken) {
 
 		List<TimeInfo> timesList = new ArrayList<TimeInfo>();
 		for (String timeToken : tokenIdNormalizedTimeMap) {
@@ -305,7 +307,7 @@ public class DateAndNumbersGeneration {
 					digitMonthToken.setId(id);
 					digitMonthToken.setTokenType("MONTH");
 					
-					if(!checkTokenInList(monthToken, tempDateList) && !checkTokenInList(digitMonthToken, tempDateList)) {
+					if (!checkTokenInList(monthToken, tempDateList) && !checkTokenInList(digitMonthToken, tempDateList)) {
 						presentTimeToken = digitMonthToken;
 						datesandDurationHandler.mergeDates(digitMonthToken, tempDateList, prevTimeToken, utilities);
 						prevTimeToken = presentTimeToken;
@@ -353,8 +355,7 @@ public class DateAndNumbersGeneration {
 		}
 		return false;
 	}
-	
-		
+
 	/** ***************************************************************
 	 * Categorizes the input into Date, Number, Duration and Time.
 	 * Adds the necessary sumo terms from the respective functions and filter any duplicates if present.
@@ -379,21 +380,21 @@ public class DateAndNumbersGeneration {
 			presentDateToken = token;
 			presentDurationToken = token;
 			switch(token.getNer()) {
-				case "DATE"  : datesandDurationHandler.processDateToken(token, utilities, tempDateList, prevDateToken);
-					            prevDateToken = presentDateToken;
-							    break;
+				case "DATE"      : datesandDurationHandler.processDateToken(token, utilities, tempDateList, prevDateToken);
+                                   prevDateToken = presentDateToken;
+							       break;
 				case "NUMBER":
 				case "ORDINAL":
-				case "PERCENT" : measureFn(token,numberCount, utilities); ++numberCount;  //processNumber(token,stanfordParser.getDependencyList());
-								 break;
-				case "DURATION" :numberToken = datesandDurationHandler.processDuration(token,utilities, prevDurationToken); 
-				                 if(numberToken != null) {
-				                	 measureFn(numberToken, numberCount, utilities);
-				                	 ++numberCount;
-				                 }
-				                 prevDurationToken = presentDurationToken;
-				                 break;
-				case "TIME" : tokenIdNormalizedTimeMap.add(token.getId() + "@" + token.getNormalizedNer());
+				case "PERCENT"   : measureFn(token,numberCount, utilities); ++numberCount;  //processNumber(token,stanfordParser.getDependencyList());
+								   break;
+				case "DURATION"  : numberToken = datesandDurationHandler.processDuration(token,utilities, prevDurationToken);
+				                   if (numberToken != null) {
+				                	   measureFn(numberToken, numberCount, utilities);
+				                	   ++numberCount;
+				                   }
+				                   prevDurationToken = presentDurationToken;
+				                   break;
+				case "TIME"      : tokenIdNormalizedTimeMap.add(token.getId() + "@" + token.getNormalizedNer());
 			}
 		}
 		List<TimeInfo> timesList = processTime(tokenIdNormalizedTimeMap,utilities, tempDateList, datesandDurationHandler, presentTimeToken, prevTimeToken);
