@@ -22,24 +22,40 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.pipeline.Pipeline;
+import com.articulate.nlp.pipeline.SentenceUtil;
+import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.sigma.KBmanager;
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class InterpretNumerics {
+
+    private static Pipeline p = null; //new Pipeline(false);
 
     /** ***************************************************************
 	 * Returns a list of SUO-KIF statements, each corresponding to a date/time/measure found in the input
 	 * natural language string.
 	 * @param input: The natural language string.
-     * @return List of SU-KIF statements, each date/time/measures are obtained from parser.
-	 */
+     * @return List of SUO-KIF statements, each date/time/measures are obtained from parser.
+     */
 	public static List<String> getSumoTerms(String input) {
-		
+
+        if (p == null) {
+            System.out.println("Error in InterpretNumerics.getSumoTerms(): null pipeline");
+            return null;
+        }
+        Annotation annotation = p.annotate(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(annotation);
 		StanfordDateTimeExtractor sde = new StanfordDateTimeExtractor();
-		List<Tokens> tokensList = sde.populateParserInfo(input);
+        List<Tokens> tokenList = new ArrayList<Tokens>();
+		sde.populateParserInfo(lastSentence,tokenList);
 		DateAndNumbersGeneration generator = new DateAndNumbersGeneration();
-		return generator.generateSumoTerms(tokensList, sde);
+		return generator.generateSumoTerms(tokenList, sde);
 	}
 
 	/** ***************************************************************
@@ -47,24 +63,42 @@ public class InterpretNumerics {
 	public static void main(String[] args) {
 
 		KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+        }
+        //pipe = new Pipeline(true);
+        //Annotation annotation;
+        //annotation = new Annotation(inputSentence);
+
         System.out.println("-------------------------InterpretNumerics.main()-------------------------");
         String input = "John was killed on 8/15/2014 at 3:45 PM.";
         System.out.println(input);
-        System.out.println(getSumoTerms(input));
+        System.out.println(interp.interpretSingle(input));
+
+        System.out.println("-------------------------");
         input = "As of 2012, sweet oranges accounted for approximately 70 percent of citrus production.";
         System.out.println(input);
-        System.out.println(getSumoTerms(input));
+        System.out.println(interp.interpretSingle(input));
+        System.out.println("-------------------------");
         input = "The standard goal of sigma is to achieve precision to 4.5 standard deviations above or below the mean.";
         System.out.println(input);
-        System.out.println(getSumoTerms(input));
+        System.out.println(interp.interpretSingle(input));
+        System.out.println("-------------------------");
         input = "Taj Mahal attracts some 3000000 people a year for visit.";
         System.out.println(input);
-        System.out.println(getSumoTerms(input));
+        System.out.println(interp.interpretSingle(input));
+        System.out.println("-------------------------");
         input = "In 2014, Fiat owned 90% of Ferrari.";
         System.out.println(input);
-        System.out.println(getSumoTerms(input));
+        System.out.println(interp.interpretSingle(input));
+        System.out.println("-------------------------");
         input = "John killed Mary on 31 March and also in July 1995 by travelling back in time.";
         System.out.println(input);
-        System.out.println(getSumoTerms(input));
+        System.out.println(interp.interpretSingle(input));
     }
 }
