@@ -51,23 +51,24 @@ public class Literal {
 
     // from http://universaldependencies.org/u/dep/index.html
     public static final List<String> dependencyTags = Arrays.asList("acl",
-            "advcl", "advmod", "amod", "appos", "aux", "case", "cc",
+            "advcl", "advmod", "amod", "appos", "aux", "auxpass", "case", "cc",
             "ccomp", "clf", "compound", "conj", "cop", "csubj", "dep",
-            "det", "discourse", "dislocated", "expl", "fixed", "flat",
-            "goeswith", "iobj", "list", "mark", "nmod", "nsubj", "nummod",
+            "det", "discourse", "dislocated", "dobj", "expl", "fixed", "flat",
+            "goeswith", "iobj", "list", "mark", "nmod", "nsubj", "nsubjpass", "nummod",
             "obj", "obl", "orphan", "parataxis", "punct", "reparandum",
             "root", "vocative", "xcomp");
 
     public static final List<String> augmentTags = Arrays.asList("sumo",
             "sumoInstance", "isCELTclass", "unit", "valueToken", "value",
-            "isSubclass", "isInstanceOf", "isSubAttribute");
+            "isSubclass", "isInstanceOf", "isSubAttribute", "time", "year",
+            "month", "day", "hour", "minute", "second", "names", "attribute");
 
-    /** ***************************************************************
+    /****************************************************************
      */
     public Literal() {
     }
 
-    /** ***************************************************************
+    /****************************************************************
      */
     public Literal(String s) {
 
@@ -77,8 +78,8 @@ public class Literal {
             Literal lit = Literal.parse(lex, 0);
             negated = lit.negated;
             pred = lit.pred;
-            if (!dependencyTags.contains(pred) && !augmentTags.contains(pred))
-                System.out.println("Error in Literal(): unknown pred in: " + lit);
+            //if (!acceptedPredicate(pred))
+            //    System.out.println("Error in Literal(): unknown pred in: " + lit);
             arg1 = lit.arg1;
             arg2 = lit.arg2;
         }
@@ -87,6 +88,14 @@ public class Literal {
             System.out.println("Error in Literal.parse() " + message);
             ex.printStackTrace();
         }
+    }
+
+    /****************************************************************
+     */
+    private static boolean acceptedPredicate(String p) {
+
+        return (dependencyTags.contains(p) || augmentTags.contains(p) ||
+            p.matches("(conj|nmod|prep_)\\:?\\w+"));
     }
 
     /** ***************************************************************
@@ -370,36 +379,36 @@ public class Literal {
         String errStr;
         Literal cl = new Literal();
         try {
-            //System.out.println("INFO in Literal.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(1): " + lex.look());
             if (lex.testTok(Lexer.Plus)) {
                 cl.preserve = true;
                 lex.next();
             }
-            //System.out.println("INFO in Literal.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(2): " + lex.look());
             cl.pred = lex.next();
-            if (!dependencyTags.contains(cl.pred) && !augmentTags.contains(cl.pred)) {
-                System.out.println("Error in Literal(): unknown pred in: " + cl);
+            /* if (!acceptedPredicate(cl.pred)) {
+                System.out.println("Error in Literal.parse(): unknown pred '" + cl.pred + "' in: " + cl);
                 errStr = (errStart + ": bad predicate '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 System.out.println(errStr);
                 //throw new ParseException(errStr, startLine);
-            }
-            //System.out.println("INFO in Literal.parse(): " + lex.look());
+            } */
+            //System.out.println("INFO in Literal.parse(3): " + lex.look());
             if (!lex.testTok(Lexer.OpenPar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
             }
             lex.next();
-            //System.out.println("INFO in Literal.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(4): " + lex.look());
             cl.arg1 = lex.next();
-            //System.out.println("INFO in Literal.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(5): " + lex.look());
             if (!lex.testTok(Lexer.Comma)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
             }
             lex.next();
-            //System.out.println("INFO in Literal.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(6): " + lex.look());
             cl.arg2 = lex.next();
-            //System.out.println("INFO in Literal.parse(): " + lex.look());
+            //System.out.println("INFO in Literal.parse(7): " + lex.look());
             if (!lex.testTok(Lexer.ClosePar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
@@ -408,10 +417,10 @@ public class Literal {
         }
         catch (Exception ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Literal.parse() " + message);
+            System.out.println("Error in Literal.parse(8) " + message);
             ex.printStackTrace();
         }    
-        //System.out.println("INFO in Literal.parse(): returning " + cl);
+        //System.out.println("INFO in Literal.parse(9): returning " + cl);
         return cl;
     }
 
@@ -516,6 +525,12 @@ public class Literal {
             input = "sumo(PsychologicalAttribute,loves-3)";
             System.out.println("Literal.testParse(): input: " + input);
             System.out.println("Literal.testParse(): parse: " + new Literal(input));
+            input = "valueToken(3000000,3000000-5)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): parse: " + new Literal(input));
+            input = "conj:and(killed-2,killed-2)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): parse: " + new Literal(input));
         }
         catch (Exception ex) {
             String message = ex.getMessage();
@@ -529,8 +544,8 @@ public class Literal {
      */
     public static void main (String args[]) {
 
-        testGetArg();
-        //testParse();
+        //testGetArg();
+        testParse();
         //testUnify();
         //testRegexUnify();
     }
