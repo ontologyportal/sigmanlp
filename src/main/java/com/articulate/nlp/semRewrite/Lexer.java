@@ -179,7 +179,7 @@ public class Lexer {
         tokenDefs.put(Newline,      Pattern.compile("\\n"));
         tokenDefs.put(WhiteSpace,   Pattern.compile("\\s+"));
         //tokenDefs.put(Ident,        Pattern.compile("\\\"?\\'?[0-9a-zA-Z]\\'?[_\\-a-z0-9_A-Z ]+\\*?\\\"?"));
-        tokenDefs.put(Number,       Pattern.compile("-?[0-9]?[0-9\\.]+(,\\d\\d\\d)*[^,()]+"));
+        tokenDefs.put(Number,       Pattern.compile("-?[0-9]?[0-9\\.]+(\\d\\d\\d)*[^,()]+")); // allow comma "-?[0-9]?[0-9\\.]+(,\\d\\d\\d)*[^,()]+"
         tokenDefs.put(Negation,     Pattern.compile("-"));
         tokenDefs.put(Zero,         Pattern.compile("\\!"));
 
