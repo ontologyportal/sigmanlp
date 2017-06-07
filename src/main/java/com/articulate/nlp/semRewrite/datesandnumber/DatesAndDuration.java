@@ -170,31 +170,31 @@ public class DatesAndDuration {
 		 */
 	 public List<DateInfo> generateSumoDateTerms(Utilities utilities, List<Tokens> tempDateList){
 
-		 if(!tempDateList.isEmpty()) {
+		 if (!tempDateList.isEmpty()) {
 			 addInfoToDateList(tempDateList, utilities);
 			 tempDateList.clear();
 		 }
-		List<DateInfo> dateList = utilities.datesList;
-		for (DateInfo date : dateList) {
-			if ((date.getYear() != null) || (date.getMonth() != null) || (date.getDay() != null)) {
-				if (date.getDay() != null) {
-					utilities.sumoTerms.add("day(time-"+utilities.timeCount+","+date.getDay()+")");
-				}
-				if (date.getMonth() != null) {
-					utilities.sumoTerms.add("month(time-"+utilities.timeCount+","+date.getMonth()+")");
-				}
-				if (date.getYear() != null) {
-					utilities.sumoTerms.add("year(time-"+utilities.timeCount+","+date.getYear()+")");
-				}
-				String tokenRoot = utilities.populateRootWord(date.getWordIndex());
-				date.setTimeCount(utilities.timeCount);
-				if (tokenRoot != null) {
-					utilities.sumoTerms.add("time("+tokenRoot+","+"time-"+utilities.timeCount+")");
-				}
-				utilities.timeCount++;
-			}
-		}
-		return dateList;
+		 List<DateInfo> dateList = utilities.datesList;
+		 for (DateInfo date : dateList) {
+			 if ((date.getYear() != null) || (date.getMonth() != null) || (date.getDay() != null)) {
+				 if (date.getDay() != null) {
+					 utilities.sumoTerms.add("day(time-" + utilities.timeCount + "," + date.getDay() + ")");
+				 }
+				 if (date.getMonth() != null) {
+					 utilities.sumoTerms.add("month(time-" + utilities.timeCount + "," + date.getMonth() + ")");
+				 }
+				 if (date.getYear() != null) {
+					 utilities.sumoTerms.add("year(time-" + utilities.timeCount + "," + date.getYear() + ")");
+				 }
+				 String tokenRoot = utilities.populateRootWord(date.getWordIndex());
+				 date.setTimeCount(utilities.timeCount);
+				 if (tokenRoot != null) {
+					 utilities.sumoTerms.add("time(" + tokenRoot + "," + "time-" + utilities.timeCount + ")");
+				 }
+				 utilities.timeCount++;
+			 }
+		 }
+		 return dateList;
 	}
 
 	 /** ***************************************************************
