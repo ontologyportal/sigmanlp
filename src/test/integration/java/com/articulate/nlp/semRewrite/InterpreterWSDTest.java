@@ -30,6 +30,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.util.CoreMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,11 +44,20 @@ import static org.junit.Assert.assertThat;
 
 public class InterpreterWSDTest extends IntegrationTestBase {
 
+    public static Interpreter interp = new Interpreter();
+
     /** ***************************************************************
      */
     @BeforeClass
     public static void initClauses() {
+
         KBmanager.getMgr().initializeOnce();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /** ***************************************************************
@@ -54,26 +65,19 @@ public class InterpreterWSDTest extends IntegrationTestBase {
     @Test
     public void findWSD_NoGroups() {
 
-        ArrayList<String> clauses = Lists.newArrayList("root(ROOT-0, aviator-18)"
-                , "nn(Earhart-3, Amelia-1)", "nn(Earhart-3, Mary-2)"
-                , "nsubj(aviator-18, Earhart-3)"
-                , "dep(Earhart-3, July-5)"
-                , "num(July-5, 24-6)", "num(July-5, 1897-8)"
-                , "dep(July-5, July-10)"
-                , "num(July-10, 2-11)", "num(July-10, 1937-13)"
-                , "cop(aviator-18, was-15)"
-                , "det(aviator-18, an-16)"
-                , "amod(aviator-18, American-17)");
-
-        List<String> wsds = Interpreter.findWSD(clauses, Maps.newHashMap(), EntityTypeParser.NULL_PARSER);
+        String input = "Amelia Mary Earhart was an American aviator.";
+        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        List<String> wsds = interp.findWSD(lastSentenceTokens);
         String[] expected = {
                 //"names(Amelia-1,\"Amelia\")", // missed without real EntityParser information
                 //"names(Mary-2,\"Mary\")",
                 "sumo(DiseaseOrSyndrome,Amelia-1)", // from WordNet: Amelia
                 "sumo(Woman,Mary-2)",
                 "sumo(Woman,Earhart-3)",
-                "sumo(UnitedStates,American-17)",
-                "sumo(Pilot,aviator-18)"
+                "sumo(UnitedStates,American-6)",
+                "sumo(Pilot,aviator-7)"
         };
         assertThat(wsds, hasItems(expected));
         assertEquals(expected.length, wsds.size());
@@ -85,13 +89,10 @@ public class InterpreterWSDTest extends IntegrationTestBase {
     public void findWSD_WithGroups() {
 
         String input = "Amelia Mary Earhart (July 24, 1897 - July 2, 1937) was an American aviator.";
-        Annotation document = Pipeline.toAnnotation(input);
-        List<String> results = SentenceUtil.toDependenciesList(document);
-
-        NounSubstitutor substitutor = new NounSubstitutor(document.get(CoreAnnotations.TokensAnnotation.class));
-        SubstitutionUtil.groupClauses(substitutor, results);
-
-        List<String> wsds = Interpreter.findWSD(results, Maps.newHashMap(), EntityTypeParser.NULL_PARSER);
+        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        List<String> wsds = interp.findWSD(lastSentenceTokens);
         String[] expected = {
                 //"names(AmeliaMaryEarhart-1,\"Amelia Mary Earhart\")", // missed without real EntityParser information
                 "sumo(UnitedStates,American-17)",
