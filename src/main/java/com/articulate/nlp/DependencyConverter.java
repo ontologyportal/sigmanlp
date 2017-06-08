@@ -87,7 +87,7 @@ public class DependencyConverter {
         String newcore = KBmanager.getMgr().getPref("stanford-core");
         if (!StringUtil.emptyString(newcore))
         	stanfordCore = newcore;
-        String execString = "/home/apease/Programs/java/jdk1.8.0_25/bin/java -mx1000m -classpath " + stanfordCore + 
+        String execString = "/home/apease/Programs/java/jdk1.8.0_60/bin/java -mx1000m -classpath " + stanfordCore +
                 "/stanford-corenlp-3.5.1.jar edu.stanford.com.articulate.nlp.parser.lexparser.LexicalizedParser " +
                 "-outputFormat typedDependencies " + stanfordCore + "/englishPCFG-mcg.ser.gz " + tmpfname;
                 //"-outputFormat typedDependencies /home/apease/Programs/stanford-parser-full-2014-08-27/englishPCFG.ser.gz " + tmpfname;
@@ -700,6 +700,8 @@ public class DependencyConverter {
         }
         else {
             try {
+                test("John killed Mary on 31 March and also in July.");
+                /*
                 KBmanager.getMgr().initializeOnce();
                 kb = KBmanager.getMgr().getKB("SUMO");
                 WordNet.wn.initOnce();
@@ -712,7 +714,7 @@ public class DependencyConverter {
                 //System.out.println("Info in DependencyConverter.main(): root form: " + WordNet.wn.verbRootForm("rolls","rolls")); 
                 DependencyConverter dc = new DependencyConverter();
                 // ArrayList<String> results = getDependencies("After an unsuccessful Baltimore theatrical debut in 1856, John played minor roles in Philadelphia until 1859, when he joined a Shakespearean stock company in Richmond, Va.");
-                ArrayList<String> results = getDependencies("The bank hired John.");
+                ArrayList<String> results = getDependencies("John killed Mary on 31 March and also in July.");
                 //ArrayList<String> results = getDependencies("John rolls the ball through Africa.");/
                 //ArrayList<String> results = getDependencies("John sticks the pin through the apple.");
                 System.out.println(results);
@@ -723,6 +725,7 @@ public class DependencyConverter {
                 System.out.println(Formula.textFormat(output.toString()));
                 //System.out.println("Info in DependencyConverter.main(): " + WordNetUtilities.getBareSUMOTerm(WSD.getBestDefaultSUMOsense("pin",1)));
                 //System.out.println(kb.isChildOf("Africa","Region"));
+                */
             }
             catch (Exception ex) {
                 System.out.println(ex.getMessage());
