@@ -284,22 +284,40 @@ public class SentenceUtil {
     }
 
     /** ***************************************************************
+     * Also remove tokens with trailing apostrophe - see dependency manual sec 4.6
      */
     public static ArrayList<String> toDependenciesList(List<CoreMap> sentences) {
 
+        System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
         ArrayList<String> results = Lists.newArrayList();
         for (CoreMap sentence : sentences) {
             //SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
             SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+            System.out.println("SentenceUtil.toDependenciesList():deps: " + dependencies.toList());
             if (dependencies == null)
                 System.out.println("SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
             else
                 results = Lists.newArrayList(dependencies.toList().split("\n"));
         }
         ArrayList<String> deps= new ArrayList<String>();
+        System.out.println("SentenceUtil.toDependenciesList(): results: " + results);
         for (String dep : results)
-            if (!dep.startsWith("punct(")) // TODO: handle punctuations instead of just removing - AP
+            if (!dep.startsWith("punct(")) { // TODO: handle punctuations instead of just removing - AP
+                Pattern p = Pattern.compile("([^\\(]+)\\(([^,]+),([^\\(]+)\\)");
+                Matcher matcher = p.matcher(dep);
+                if (matcher.matches()) { // have to remove trailing apostrophe,
+                    // see https://nlp.stanford.edu/software/dependencies_manual.pdf section 4.6
+                    String pred = matcher.group(1);
+                    String arg1 = matcher.group(2);
+                    String arg2 = matcher.group(3);
+                    while (arg1.endsWith("'"))
+                        arg1 = arg1.substring(0,arg1.length()-1);
+                    while (arg2.endsWith("'"))
+                        arg2 = arg2.substring(0,arg2.length()-1);
+                    dep = pred + "(" + arg1 + "," + arg2 + ")";
+                }
                 deps.add(dep);
+            }
         return deps;
     }
 
