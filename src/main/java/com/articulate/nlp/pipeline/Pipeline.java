@@ -281,8 +281,11 @@ public class Pipeline {
             interactive();
         else {
             printHelp();
-            Annotation a = Pipeline.toAnnotation("Amelia also wrote books, most of them were about her flights.");
+            Annotation a = Pipeline.toAnnotation("John killed Mary on 31 March and also in July.");
             SentenceUtil.printSentences(a);
+            CoreMap lastSentence = SentenceUtil.getLastSentence(a);
+            List<String> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+            System.out.println("Interpreter.interpretGenCNF(): dependencies: " + dependenciesList);
         }
     }
 }
