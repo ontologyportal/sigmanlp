@@ -869,9 +869,9 @@ public class Interpreter {
 
         List<String> wsd = findWSD(lastSentenceTokens);
         results.addAll(wsd);
-        System.out.println("Interpreter.interpretGenCNF(): before consolidate: " + results);
+        //System.out.println("Interpreter.interpretGenCNF(): before consolidate: " + results);
         results = consolidateSpans(lastSentenceTokens,results);
-        System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
+        //System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
         results = replaceInstances(results);
         System.out.println("Interpreter.interpretGenCNF(): after instance replacement: " + results);
 
