@@ -878,7 +878,7 @@ public class Interpreter {
         List<String> posInformation = SentenceUtil.findPOSInformation(lastSentenceTokens, dependenciesList);
         // TODO: This is not the best way to substitute POS information
         //posInformation = SubstitutionUtil.groupClauses(substitutor, posInformation);
-        //results.addAll(posInformation);
+        results.addAll(posInformation);
 
         DateAndNumbersGeneration generator = new DateAndNumbersGeneration();
         StanfordDateTimeExtractor sde = new StanfordDateTimeExtractor();
@@ -894,6 +894,7 @@ public class Interpreter {
         String in = StringUtil.removeEnclosingCharPair(results.toString(),Integer.MAX_VALUE,'[',']');
         Lexer lex = new Lexer(in);
         CNF cnf = CNF.parseSimple(lex);
+        System.out.println("Interpreter.interpretGenCNF(): cnf: " + cnf);
         return cnf;
     }
 
