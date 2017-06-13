@@ -52,16 +52,16 @@ public class Procedures {
                 kb.isSubclass(c.arg1, c.arg2));
 
         if (c.arg2.equals("Person"))
-            if (kb.isSubclass(c.arg1, "Human") || kb.isSubclass(c.arg1, "SocialRole"))
+            if (kb.isSubclass(c.arg1, "Human") || kb.isInstanceOf(c.arg1, "Human") || kb.isSubclass(c.arg1, "SocialRole"))
                 return "true";
             else
                 return "false";
         else if (c.arg2.equals("Time"))
-            if (kb.isSubclass(c.arg1, "TimeMeasure") || kb.isSubclass(c.arg1, "Process"))
+            if (kb.isSubclass(c.arg1, "TimeMeasure") || kb.isSubclass(c.arg1, "Process") || kb.isInstanceOf(c.arg1, "Process"))
                 return "true";
             else
                 return "false";
-        else if (kb.isSubclass(c.arg1, c.arg2))
+        else if (kb.isSubclass(c.arg1, c.arg2) || kb.isInstanceOf(c.arg1,c.arg2))
             return "true";
         else
             return "false";
