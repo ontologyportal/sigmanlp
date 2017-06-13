@@ -171,11 +171,25 @@ public class SentenceUtil {
         }
     }
 
-    //TODO: I'm a monster! Refactor me
+    /** *************************************************************
+     */
+    private static boolean isVerb(String pennPOS) {
+
+        return pennPOS.startsWith("V");
+    }
+
+    /** *************************************************************
+     */
+    private static boolean isNoun(String pennPOS) {
+
+        return pennPOS.startsWith("N");
+    }
+
     /** *************************************************************
      * returns a list of strings that add tense, number, etc. information about words in input
      * ex.  tense(PAST, Verb)
      *      number(SINGULAR, Noun)
+     *          //TODO: I'm a monster! Refactor me
      */
     public static List<String> findPOSInformation(List<CoreLabel> tokens, List<String> dependenciesList) {
 
@@ -237,6 +251,8 @@ public class SentenceUtil {
                     posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_PLURAL, label.toString()));
                 }
 
+                if (isVerb(pos) || isNoun(pos))
+                    posInformation.add(makeBinaryRelationship("lemma", label.lemma(), label.toString()));
                 if (progressive && perfect) {
                     posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PROGRESSIVE_PERFECT, label.toString()));
                 }
