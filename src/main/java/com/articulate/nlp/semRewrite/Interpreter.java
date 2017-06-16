@@ -63,7 +63,7 @@ public class Interpreter {
 
     private static final Pattern ENDING_IN_PUNC_PATTERN = Pattern.compile(".*[.?!]$");
 
-    public boolean debug = false;
+    public static boolean debug = false;
 
     public RuleSet rs = null;
     //public CNF input = null;
@@ -93,6 +93,8 @@ public class Interpreter {
     public static boolean showrhs = false;
     public static boolean showr = true;
     public static boolean coref = true;
+    public static boolean lemmaLiteral = false; // set to true and a lemma() literal will be produced
+                                                // set to false and the token-num constant will be set to the lemma
 
     public static List<String> qwords = Lists.newArrayList("who","what","where","when","why","which","how");
     public static List<String> months = Lists.newArrayList("January","February","March","April","May","June",
@@ -887,7 +889,9 @@ public class Interpreter {
         List<String> timeResults = generator.generateSumoTerms(tokenList, sde);
         results = scrubMeasures(results,lastSentence); // remove original date/time/measure literals
         results.addAll(timeResults);
-        //results = lemmatizeResults(results, lastSentenceTokens, substitutor);
+
+        if (!lemmaLiteral) // if true, then explicit lemma added by
+            results = lemmatizeResults(results, lastSentenceTokens);
         augmentedClauses = new ArrayList<String>();
         augmentedClauses.addAll(results);
 //        results = processPhrasalVerbs(results);
@@ -1061,31 +1065,39 @@ public class Interpreter {
     }
 
     /** *************************************************************
-     * Lemmatize the results of the dependency parser, WSD, etc.
+     * replace all single tokens with their lemmas in the dependency
+     * parse
      */
-    public static List<String> lemmatizeResults(List<String> results,
-                                                List<CoreLabel> tokens, ClauseSubstitutor substitutor) {
+    public static List<String> lemmatizeResults(List<String> dependencies,
+                                                List<CoreLabel> tokens) {
 
-        List<String> lemmatizeResults = Lists.newArrayList(results);
-
-        for (CoreLabel label : tokens) {
-            if (!"NNP".equals(label.tag()) && !"NNPS".equals(label.tag())) {
-                CoreLabelSequence grouped = substitutor.getGroupedByFirstLabel(label).orElse(new CoreLabelSequence(label));
-                String replace = grouped.toLabelString().get();
-                String replaceTo = Joiner.on("_").join(
-                        grouped.getLabels().stream()
-                                .map(l -> l.lemma()).toArray())
-                        + "-" + grouped.getLabels().get(0).index();
-
-                for (String singleResult : ImmutableList.copyOf(lemmatizeResults)) {
-                    if (singleResult.contains(replace)) {
-                        lemmatizeResults.remove(singleResult);
-                        lemmatizeResults.add(singleResult.replace(replace, replaceTo));
-                    }
-                }
-            }
+        if (debug) System.out.println("lemmatizeResults(): " + dependencies);
+        if (debug) System.out.println("lemmatizeResults(): " + tokens);
+        ArrayList<String> results = new ArrayList<>();
+        for (String dep : dependencies) {
+            Literal lit = new Literal(dep);
+            String arg1 = lit.arg1;
+            String arg2 = lit.arg2;
+            String pred = lit.pred;
+            int toknum1 = Literal.tokenNum(arg1);
+            int toknum2 = Literal.tokenNum(arg2);
+            CoreLabel tok1 = null;
+            CoreLabel tok2 = null;
+            if (toknum1 > 0)
+                tok1 = tokens.get(toknum1-1); // position in list is token number - 1
+            if (toknum2 > 0)
+                tok2 = tokens.get(toknum2-1); // position in list is token number - 1
+            String newarg1 = arg1;
+            String newarg2 = arg2;
+            if (tok1 != null && tok1.lemma() != null)
+                newarg1 = tok1.lemma() + "-" + Integer.toString(toknum1);
+            if (tok2 != null && tok2.lemma() != null)
+                newarg2 = tok2.lemma() + "-" + Integer.toString(toknum2);
+            String newdep = pred + "(" + newarg1 + "," + newarg2 + ")";
+            results.add(pred + "(" + newarg1 + "," + newarg2 + ")");
+            if (debug) System.out.println("lemmatizeResults(): replacing " + dep + " with: " + newdep);
         }
-        return lemmatizeResults;
+        return results;
     }
 
     /** *************************************************************
@@ -1487,6 +1499,14 @@ public class Interpreter {
                     autoir = false;
                     System.out.println("never calling TF/IDF");
                 }
+                else if (input.equals("lemma")) {
+                    lemmaLiteral = true;
+                    System.out.println("produce explicit lemma() literal");
+                }
+                else if (input.equals("nolemma")) {
+                    lemmaLiteral = false;
+                    System.out.println("turn token ids into lemmas");
+                }
                 else if (input.equals("autoir")) {
                     autoir = true;
                     System.out.println("call TF/IDF on inference failure");
@@ -1837,6 +1857,23 @@ public class Interpreter {
         }
     }
 
+    /** ***************************************************************
+     */
+    public static void testInterpret3() {
+
+        try {
+            KBmanager.getMgr().initializeOnce();
+            Interpreter interp = new Interpreter();
+            interp.initialize();
+            String sent = "John likes Sue.";
+            System.out.println(interp.interpretSingle(sent));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
     /** *************************************************************
      * A test method
      */
@@ -2050,14 +2087,15 @@ public class Interpreter {
             System.out.println("       'addUnprocessed/noUnprocessed' will add/not add unprocessed clauses.");
             System.out.println("       'showr/noshowr' will show/not show what rules get matched.");
             System.out.println("       'showrhs/noshowrhs' will show/not show what right hand sides get asserted.");
+            System.out.println("       'lemma/nolemma' will add an explicit lemma() literal, or replace token ids with lemmas.");
             System.out.println("       'quit' to quit");
             System.out.println("       Ending a sentence with a question mark will trigger a query,");
             System.out.println("       otherwise results will be asserted to the KB. Don't end commands with a period.");
         }
         else {
             //testUnify();
-            testUnify8();
-            //testInterpret2();
+            //testUnify8();
+            testInterpret3();
             //testInterpretGenCNF();
             //testPreserve();
             //testQuestionPreprocess();
