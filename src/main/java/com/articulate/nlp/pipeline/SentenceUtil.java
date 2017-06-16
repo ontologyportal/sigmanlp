@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.semRewrite.Interpreter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import edu.stanford.nlp.dcoref.CorefChain;
@@ -251,7 +252,8 @@ public class SentenceUtil {
                     posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_PLURAL, label.toString()));
                 }
 
-                if (isVerb(pos) || isNoun(pos))
+                // if false then Interpreter.lemmatizeResults() is called instead
+                if (Interpreter.lemmaLiteral && (isVerb(pos) || isNoun(pos)))
                     posInformation.add(makeBinaryRelationship("lemma", label.lemma(), label.toString()));
                 if (progressive && perfect) {
                     posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PROGRESSIVE_PERFECT, label.toString()));
