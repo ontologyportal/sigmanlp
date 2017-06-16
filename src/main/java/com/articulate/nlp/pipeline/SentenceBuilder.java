@@ -89,7 +89,7 @@ public class SentenceBuilder {
     public List<String> asStrings(ClauseSubstitutor substitutor) {
 
         return asStrings(label -> {
-            if(substitutor.containsKey(label)) {
+            if (substitutor.containsKey(label)) {
                 // Replace only first element for complex keys
                 Optional<CoreLabelSequence> grouped = substitutor.getGroupedByFirstLabel(label);
                 return grouped.isPresent() ? grouped.get().toText() : "";
