@@ -30,7 +30,7 @@ public class LemmatizerTest {
 
         List<String> results = ImmutableList.of("test(had-2,anything-0)", "testing(PAST,had-2)", "testing2(had-2,ANYTHING)");
 
-        List<String> actual = Interpreter.lemmatizeResults(results, labels, SubstitutorsUnion.of());
+        List<String> actual = Interpreter.lemmatizeResults(results, labels);
 
         String[] expected = {
                 "test(have-2,anything-0)",
