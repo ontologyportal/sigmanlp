@@ -24,6 +24,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
@@ -57,6 +58,7 @@ public class LuceneIR {
                             FALSENEG}; // answer not reported as an answer
 
     private static int answerLimit = 5; // number of answers returned to a given question
+    public static boolean bm25 = true;
 
     /** **************************************************************
      */
@@ -110,6 +112,8 @@ public class LuceneIR {
 
             IndexReader reader = DirectoryReader.open(directory);
             IndexSearcher searcher = new IndexSearcher(reader);
+            if (bm25)
+                searcher.setSimilarity(new BM25Similarity((float) 1.2,(float) 0.75));
             QueryParser parser = new QueryParser("contents", standardAnalyzer);
             Query query = parser.parse(q);
             TopDocs sresults = searcher.search(query, answerLimit);
@@ -152,17 +156,19 @@ public class LuceneIR {
      *
      * @param tests is a list of tests with answers
      */
-    public void runTests(ArrayList<SearchResult> tests, Directory dir,
+    public void runTests(HashMap<String,SearchResult> tests, Directory dir,
                          StandardAnalyzer sa) {
 
         try {
             IndexReader reader = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(reader);
             QueryParser parser = new QueryParser("contents", sa);
-            for (SearchResult sr : tests) {
+            for (SearchResult sr : tests.values()) {
                 boolean found = false;
                 Query query = parser.parse(sr.query);
                 TopDocs results = searcher.search(query, answerLimit);
+                if (bm25)
+                    searcher.setSimilarity(new BM25Similarity((float) 1.2,(float) 0.75));
                 ScoreDoc[] hits = results.scoreDocs;
                 System.out.println();
                 System.out.println("-------------------");
@@ -204,9 +210,9 @@ public class LuceneIR {
      *
      * @param filename is the full path
      */
-    public ArrayList<SearchResult> parseTREC8questions(String filename) {
+    public HashMap<String,SearchResult> parseTREC8questions(String filename) {
 
-        ArrayList<SearchResult> result = new ArrayList<>();
+        HashMap<String,SearchResult> result = new HashMap<>();
         LineNumberReader lr = null;
         try {
             String line;
@@ -229,7 +235,7 @@ public class LuceneIR {
                     line = lr.readLine();
                     sr.query = line.replace("\"","\\\""); //lucene appears confused by quotes in a query
                     sr.query = sr.query.replace("?",".");
-                    result.add(sr);
+                    result.put(sr.id,sr);
                 }
             }
         }
@@ -246,7 +252,7 @@ public class LuceneIR {
      *
      * @param filename is the full path
      */
-    public void parseTREC8answers(String filename, ArrayList<SearchResult> questions) {
+    public void parseTREC8answers(String filename, HashMap<String,SearchResult> questions) {
 
         LineNumberReader lr = null;
         try {
@@ -260,9 +266,9 @@ public class LuceneIR {
             lr = new LineNumberReader(r);
             while ((line = lr.readLine()) != null) {
                 String num = line.substring(0,line.indexOf(" ")).trim();
-                int id = Integer.parseInt(num);
-                SearchResult sr = questions.get(id);
-                sr.answers.put("unknown",line.substring(line.indexOf(" ")).trim());
+                SearchResult sr = questions.get(num);
+                if (sr != null)
+                    sr.answers.put("unknown",line.substring(line.indexOf(" ")).trim());
             }
         }
         catch (Exception ex) {
@@ -279,7 +285,6 @@ public class LuceneIR {
      */
     public ArrayList<SearchResult> parseTREC8dev(String filename) {
 
-        boolean drop = false; // drop tests in TREC but missing from NIST doc distribution
         ArrayList<SearchResult> result = new ArrayList<>();
         LineNumberReader lr = null;
         try {
@@ -300,12 +305,8 @@ public class LuceneIR {
                     line = lr.readLine();
                     ArrayList<String> fileList = new ArrayList<>();
                     while (!StringUtil.emptyString(line)) {
-                        if (line.matches("(FT|FBIS|LA).+")) {
+                        if (line.matches("(FR|CR|FT|FBIS|LA).+")) {
                             fileList.add(line);
-                            if (line.matches("(FT).+")) // drop tests in TREC but missing from NIST doc distribution
-                                drop = true;
-                            else
-                                drop = false;
                         }
                         else {
                             for (String s : fileList)
@@ -314,8 +315,7 @@ public class LuceneIR {
                         }
                         line = lr.readLine();
                     }
-                    if (!drop)
-                        result.add(sr);
+                    result.add(sr);
                 }
                 else
                     System.out.println("Error in LuceneHellowWorld.parseTREC8(): unexpected line: " + line);
@@ -357,7 +357,7 @@ public class LuceneIR {
                     doc = new StringBuffer();
                 }
                 if (line.startsWith("<DOCNO>")) {
-                    id = line.substring(8,line.indexOf("<",8)-1);
+                    id = line.substring(7,line.indexOf("<",8)).trim();
                 }
             }
         }
@@ -368,7 +368,7 @@ public class LuceneIR {
     }
 
     /** **************************************************************
-     * Add all documents in the directory to the IndexWriter.  Note that
+     * Recursively add all documents in the directory to the IndexWriter.  Note that
      * parseDoc() is called because each file actually contains multiple
      * documents.
      * @param d is the directory path
@@ -381,16 +381,20 @@ public class LuceneIR {
             if (files.length <= 1)
                 System.out.println("Error in indexDocument(): no files in " + d);
             for (File f : files) {
-                System.out.println("Add file: " + f);
-                HashMap<String,String> componentDocs = parseDoc(f.getAbsolutePath());
-                for (String id : componentDocs.keySet()) {
-                    Document document = new Document();
-                    String path = f.getCanonicalPath();
-                    document.add(new StringField("path", path, Field.Store.YES));
-                    //Reader reader = new FileReader(f);
-                    document.add(new TextField("id", id, Field.Store.YES));
-                    document.add(new TextField("contents", componentDocs.get(id), Field.Store.YES));
-                    writer.addDocument(document);
+                if (f.isDirectory())
+                    indexDocuments(writer,f.getAbsolutePath());
+                else {
+                    System.out.println("Add file: " + f);
+                    HashMap<String,String> componentDocs = parseDoc(f.getAbsolutePath());
+                    for (String id : componentDocs.keySet()) {
+                        Document document = new Document();
+                        String path = f.getCanonicalPath();
+                        document.add(new StringField("path", path, Field.Store.YES));
+                        //Reader reader = new FileReader(f);
+                        document.add(new TextField("id", id, Field.Store.YES));
+                        document.add(new TextField("contents", componentDocs.get(id), Field.Store.YES));
+                        writer.addDocument(document);
+                    }
                 }
             }
             //writer.optimize();
@@ -423,11 +427,13 @@ public class LuceneIR {
     public static void runTest(Directory directory, StandardAnalyzer sa)
             throws IOException, ParseException {
 
-        String testFile = "/home/apease/corpora/TREC/TREC8/development.qa.txt";
+        //String testFile = "/home/apease/corpora/TREC/TREC8/development.qa.txt";
         LuceneIR lhd = new LuceneIR();
-        ArrayList<SearchResult> tests =
-                lhd.parseTREC8dev(testFile);
-        tests = lhd.parseTREC8questions("/home/apease/corpora/TREC/TREC8/trec8.topics.qa_questions.txt");
+        //ArrayList<SearchResult> tests =
+        //        lhd.parseTREC8dev(testFile);
+        String testFile = "/home/apease/corpora/TREC/TREC8/trec8.topics.qa_questions.txt";
+        HashMap<String,SearchResult> tests =
+                lhd.parseTREC8questions(testFile);
         initScores(docScore);
         lhd.parseTREC8answers("/home/apease/corpora/TREC/TREC8/trec8.orig.qanswers.only.txt",tests);
 
@@ -466,16 +472,94 @@ public class LuceneIR {
 
         try {
             IndexWriterConfig config = new IndexWriterConfig(sa);
+            if (bm25)
+                config.setSimilarity(new BM25Similarity((float) 1.2, (float) 0.75));
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
             IndexWriter writer = new IndexWriter(directory, config);
 
-            indexDocuments(writer, "/home/apease/corpora/Trec5/latimes");  // LA
-            indexDocuments(writer, "/home/apease/corpora/Trec5/fbis");     // FBIS
-            indexDocuments(writer, "/home/apease/corpora/TREC4/hfiles");   // CR
-            indexDocuments(writer, "/home/apease/corpora/TREC4/efiles");   // CR
+            indexDocuments(writer, "/home/apease/corpora/Trec5");  // LA, FBIS
+            indexDocuments(writer, "/home/apease/corpora/TREC4");   // CR, FT, FR
             writer.close();
         }
         catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** **************************************************************
+     * run a grep command and return a list of the results
+     */
+    private static ArrayList<String> grep(String command) {
+
+        ArrayList<String> result = new ArrayList<>();
+        try {
+            Runtime rt = Runtime.getRuntime();
+            Process pr = rt.exec(command);
+            BufferedReader input = new BufferedReader(new InputStreamReader(
+                    pr.getInputStream()));
+            String line = null;
+            while ((line = input.readLine()) != null) {
+                result.add(line);
+            }
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /** **************************************************************
+     * run a grep command and return a list of the results
+     */
+    private static HashMap<String,String> grepFiles(String str, String path) {
+
+        HashMap<String,String> result = new HashMap<String,String>();
+        String cmdString = "grep -r \"" + str + "\" " + path;
+        System.out.println(cmdString);
+        ArrayList<String> lines = grep(cmdString);
+        for (String s : lines) {
+            if (s.indexOf(":") != -1) {
+                String fullfile = s.substring(0,s.indexOf(":"));
+                String fname = fullfile.substring(fullfile.lastIndexOf(':') + 1);
+                result.put(fname,str);
+                System.out.println("Adding answer: " + fname + ":" + str);
+            }
+        }
+        return result;
+    }
+
+    /** **************************************************************
+     * Test to ensure that all the TREC8 questions have answers available
+     * in the documents provided.
+     */
+    public static void findAnswerDocs() {
+
+        LuceneIR lhd = new LuceneIR();
+        HashMap<String,SearchResult> tests =
+                lhd.parseTREC8questions("/home/apease/corpora/TREC/TREC8/trec8.topics.qa_questions.txt");
+        lhd.parseTREC8answers("/home/apease/corpora/TREC/TREC8/trec8.orig.qanswers.only.txt",tests);
+        try {
+            for (SearchResult sr : tests.values()) {
+                Collection<String> answers = sr.answers.values();
+                HashMap<String,String> newanswers = new HashMap<>();
+                for (String ans : answers) {
+                    newanswers.putAll(grepFiles(ans,"/home/apease/corpora/TREC4"));
+                    newanswers.putAll(grepFiles(ans,"/home/apease/corpora/Trec5"));
+                }
+                if (newanswers.keySet().size() == 0)
+                    System.out.println("No answers for question: " + sr.id);
+                sr.answers = newanswers;
+                System.out.println(sr.query);
+                for (String s : sr.answers.keySet()) {
+                    System.out.println(s);
+                    System.out.println(sr.answers.get(s));
+                }
+                System.out.println();
+            }
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
             e.printStackTrace();
         }
     }
@@ -499,6 +583,7 @@ public class LuceneIR {
             System.out.println("  -d            - test the default test corpus without reindexing");
             System.out.println("  -t <file>     - indexes and runs the specified test corpus");
             System.out.println("  -r            - reindex");
+            System.out.println("  -f            - validate presence of answers for all TREC8 questions");
             System.out.println("       'quit' to quit");
         }
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].matches(".*\\d.*")) {
@@ -516,6 +601,9 @@ public class LuceneIR {
         }
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("d")) {
             runTest(dir,sa);
+        }
+        if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("f")) {
+            findAnswerDocs();
         }
     }
 }
