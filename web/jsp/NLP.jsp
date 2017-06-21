@@ -177,11 +177,6 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         for (String s : interp.augmentedClauses)
             out.println(s);
         out.println("</pre>");
-
-        out.println("</td>");
-        out.println("<td><pre>\n");
-        out.println(interp.substitutor.toString());
-        out.println("</pre>");
         out.println("</td>");
         out.println("</tr></table>\n");
         out.println("<P>");
