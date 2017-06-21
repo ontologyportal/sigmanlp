@@ -93,7 +93,7 @@ public class Interpreter {
     public static boolean showrhs = false;
     public static boolean showr = true;
     public static boolean coref = true;
-    public static boolean lemmaLiteral = false; // set to true and a lemma() literal will be produced
+    public static boolean lemmaLiteral = true; // set to true and a lemma() literal will be produced
                                                 // set to false and the token-num constant will be set to the lemma
 
     public static List<String> qwords = Lists.newArrayList("who","what","where","when","why","which","how");
@@ -306,7 +306,7 @@ public class Interpreter {
                 sumo = cl.get(WSDAnnotator.SUMOAnnotation.class); // ----------other word senses
                 if (debug) System.out.println("INFO in Interpreter.findWSD(): sumo: " +
                         sumo);
-                if (!StringUtil.emptyString(sumo) && !WordNet.wn.stopwords.contains(cl.originalText()) &&
+                if (!StringUtil.emptyString(sumo) &&
                         !qwords.contains(cl.originalText().toLowerCase()) && !excluded(cl.originalText())) {
                     if (kb.isInstance(sumo)) {
                         if (debug) System.out.println("INFO in Interpreter.findWSD(): instance:  " + sumo);
