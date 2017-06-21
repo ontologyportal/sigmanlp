@@ -9,7 +9,10 @@ import java.util.*;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.util.CoreMap;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -59,6 +62,7 @@ public class LuceneIR {
 
     private static int answerLimit = 5; // number of answers returned to a given question
     public static boolean bm25 = true;
+    public static boolean displaySentence = false;
 
     /** **************************************************************
      */
@@ -92,6 +96,8 @@ public class LuceneIR {
             StandardAnalyzer standardAnalyzer = new StandardAnalyzer();
             Directory directory = new RAMDirectory();
             IndexWriterConfig config = new IndexWriterConfig(standardAnalyzer);
+            if (bm25)
+                config.setSimilarity(new BM25Similarity((float) 1.2, (float) 0.75));
             IndexWriter writer = new IndexWriter(directory, config);
 
             Properties properties = new Properties();
@@ -124,7 +130,7 @@ public class LuceneIR {
             for (ScoreDoc sd : sdocs) {
                 int docnum = sd.doc;
                 Document document = searcher.doc(docnum); // "document" is a sentence
-                //System.out.println("candidate sentence: " + document.get("contents"));
+                if (displaySentence) System.out.println("candidate sentence: " + document.get("contents"));
                 for (String ans : sr.answers.values()) {
                     if (document.get("contents").contains(ans)) {
                         System.out.println("Answer sentence found! " + document.get("contents"));
@@ -151,6 +157,45 @@ public class LuceneIR {
     }
 
     /** **************************************************************
+     * @param query
+     */
+    public void runOneQuery(String query, Directory dir,
+                            StandardAnalyzer sa) {
+
+        initScores(docScore);
+        initScores(sentScore);
+        try {
+            IndexReader reader = DirectoryReader.open(dir);
+            IndexSearcher searcher = new IndexSearcher(reader);
+            QueryParser parser = new QueryParser("contents", sa);
+            Query q = parser.parse(query);
+            if (bm25)
+                searcher.setSimilarity(new BM25Similarity((float) 1.2,(float) 0.75));
+            TopDocs results = searcher.search(q, answerLimit);
+            ScoreDoc[] hits = results.scoreDocs;
+            System.out.println();
+            System.out.println("-------------------");
+            System.out.println("Found " + hits.length + " hits for query: ");
+            System.out.println("query: " + query);
+            int limit = hits.length;
+            if (limit > answerLimit)
+                limit = answerLimit;
+            for (int i = 0; i < limit; ++i) {
+                int docId = hits[i].doc;
+                Document d = searcher.doc(docId);
+                SearchResult sr = new SearchResult();
+                sr.query = query;
+                ArrayList<String> answerSentences = getSentenceAnswers(d,sr);
+                System.out.println((i + 1) + ". " + d.get("id") + " : " + hits[i].score);
+            }
+            System.out.println();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** **************************************************************
      * Run tests and print out whether the answer is among each set of
      * results.  Tally the number of correct answers present.
      *
@@ -166,9 +211,9 @@ public class LuceneIR {
             for (SearchResult sr : tests.values()) {
                 boolean found = false;
                 Query query = parser.parse(sr.query);
-                TopDocs results = searcher.search(query, answerLimit);
                 if (bm25)
                     searcher.setSimilarity(new BM25Similarity((float) 1.2,(float) 0.75));
+                TopDocs results = searcher.search(query, answerLimit);
                 ScoreDoc[] hits = results.scoreDocs;
                 System.out.println();
                 System.out.println("-------------------");
@@ -565,26 +610,44 @@ public class LuceneIR {
     }
 
     /** **************************************************************
+     */
+    public static void interactive(Directory dir, StandardAnalyzer sa) {
+
+        LuceneIR lhd = new LuceneIR();
+        String input = "";
+        Scanner scanner = new Scanner(System.in);
+        do {
+            System.out.print("Enter query: ");
+            input = scanner.nextLine().trim();
+            System.out.print("test query: " + input);
+            lhd.runOneQuery(input,dir,sa);
+        } while (!input.equals("exit") && !input.equals("quit"));
+    }
+
+    /** **************************************************************
      * @param args
      * @throws IOException
      * @throws ParseException
      */
     public static void main(String[] args) throws IOException, ParseException {
 
+        //need to try StandardFilter, LowerCaseFilter, StopFilter, SnowBallFilter(English),
+        //  EnglishMinimalStemFilter, CodePointCountFilter
+
         StandardAnalyzer sa = new StandardAnalyzer();
         Directory dir = init(sa);
         if (args == null || args.length < 1 || args[0].equals("-h")) {
             System.out.println("Information Retrieval");
             System.out.println("  options:");
-            System.out.println("  -h            - show this help screen");
-            System.out.println("  -q <question> - runs one test question on a loaded corpus");
-            System.out.println("  -i            - runs a loop of one question at a time,");
-            System.out.println("  -<1-0>        - specifies answer set size of one to ten (where 0 indicates 10)");
-            System.out.println("  -d            - test the default test corpus without reindexing");
-            System.out.println("  -t <file>     - indexes and runs the specified test corpus");
-            System.out.println("  -r            - reindex");
-            System.out.println("  -f            - validate presence of answers for all TREC8 questions");
+            System.out.println("  -h              - show this help screen");
+            System.out.println("  -q \"<question>\" - runs one test question on a loaded corpus");
+            System.out.println("  -i              - runs a loop of one question at a time,");
             System.out.println("       'quit' to quit");
+            System.out.println("  -<1-0>          - specifies answer set size of one to ten (where 0 indicates 10)");
+            System.out.println("  -d              - test the default test corpus without reindexing");
+            System.out.println("  -t <file>       - indexes and runs the specified test corpus");
+            System.out.println("  -r              - reindex");
+            System.out.println("  -f              - validate presence of answers for all TREC8 questions");
         }
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].matches(".*\\d.*")) {
             for (char c : args[0].toCharArray()) {
@@ -604,6 +667,15 @@ public class LuceneIR {
         }
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("f")) {
             findAnswerDocs();
+        }
+        if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("i")) {
+            displaySentence = true;
+            answerLimit = 1;
+            interactive(dir,sa);
+        }
+        if (args != null && args.length > 1 && args[0].startsWith("-") && args[0].contains("q")) {
+            LuceneIR lhd = new LuceneIR();
+            lhd.runOneQuery(StringUtil.removeEnclosingQuotes(args[1]),dir,sa);
         }
     }
 }
