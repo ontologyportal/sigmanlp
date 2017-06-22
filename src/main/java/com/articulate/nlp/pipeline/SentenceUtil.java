@@ -302,23 +302,18 @@ public class SentenceUtil {
     }
 
     /** ***************************************************************
-     * Also remove tokens with trailing apostrophe - see dependency manual sec 4.6
      */
-    public static ArrayList<String> toDependenciesList(List<CoreMap> sentences) {
+    public static ArrayList<String> toDependenciesList(CoreMap sentence) {
 
-        System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
-        ArrayList<String> results = Lists.newArrayList();
-        for (CoreMap sentence : sentences) {
-            //SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-            SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-            System.out.println("SentenceUtil.toDependenciesList():deps: " + dependencies.toList());
-            if (dependencies == null)
-                System.out.println("SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
-            else
-                results = Lists.newArrayList(dependencies.toList().split("\n"));
-        }
-        ArrayList<String> deps= new ArrayList<String>();
-        System.out.println("SentenceUtil.toDependenciesList(): results: " + results);
+        ArrayList<String> results = new ArrayList<>();
+        SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+        //System.out.println("SentenceUtil.toDependenciesList(): deps: " + dependencies.toList());
+        if (dependencies == null)
+            System.out.println("SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
+        else
+            results = Lists.newArrayList(dependencies.toList().split("\n"));
+        ArrayList<String> deps = new ArrayList<String>();
+        //System.out.println("SentenceUtil.toDependenciesList(): results: " + results);
         for (String dep : results)
             if (!dep.startsWith("punct(")) { // TODO: handle punctuations instead of just removing - AP
                 Pattern p = Pattern.compile("([^\\(]+)\\(([^,]+),([^\\(]+)\\)");
@@ -337,6 +332,19 @@ public class SentenceUtil {
                 deps.add(dep);
             }
         return deps;
+    }
+
+    /** ***************************************************************
+     * Also remove tokens with trailing apostrophe - see dependency manual sec 4.6
+     */
+    public static ArrayList<String> toDependenciesList(List<CoreMap> sentences) {
+
+        //System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
+        ArrayList<String> results = new ArrayList<>();
+        for (CoreMap sentence : sentences) {
+            results.addAll(toDependenciesList(sentence));
+        }
+        return results;
     }
 
     /** ***************************************************************
