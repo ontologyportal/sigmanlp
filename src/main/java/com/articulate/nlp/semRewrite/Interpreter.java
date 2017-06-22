@@ -34,7 +34,12 @@ import edu.stanford.nlp.ie.machinereading.structure.MachineReadingAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
+import edu.stanford.nlp.semgraph.SemanticGraphEdge;
+import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.util.CoreMap;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceBuilder;
@@ -261,13 +266,32 @@ public class Interpreter {
     }
 
     /** *************************************************************
+     * Determine whether a particular token is an auxilliary verb
+     * (including a passive one)
+     */
+    public static boolean isAuxilliary(CoreLabel token, CoreMap cm) {
+
+        //System.out.println("isAuxilliary(): token: " + token);
+        List<String> deps = SentenceUtil.toDependenciesList(cm);
+        String tokenStr = token.toString();
+        for (String s : deps) {
+            Literal l = new Literal(s);
+            if (tokenStr.equals(l.arg2) && l.pred.startsWith("aux")) {
+                //System.out.println("isAuxilliary(): literal: " + l);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** *************************************************************
      * @return a list of strings in the format sumo(Class,word-num) or
      * sumoInstance(Inst,word-num) that specify the SUMO class of each
      * dismabiguated word or multi-word
      */
-    public static List<String> findWSD(List<CoreLabel> sent) {
+    public static List<String> findWSD(CoreMap cm) {
 
-        boolean debug = true;
+        List<CoreLabel> sent = cm.get(CoreAnnotations.TokensAnnotation.class);
         if (debug) System.out.println("INFO in Interpreter.findWSD(): sentence: " + sent);
         KB kb = KBmanager.getMgr().getKB("SUMO");
         Set<String> results = Sets.newHashSet();
@@ -306,7 +330,8 @@ public class Interpreter {
                 sumo = cl.get(WSDAnnotator.SUMOAnnotation.class); // ----------other word senses
                 if (debug) System.out.println("INFO in Interpreter.findWSD(): sumo: " +
                         sumo);
-                if (!StringUtil.emptyString(sumo) &&
+                boolean isAux = isAuxilliary(cl,cm);
+                if (!StringUtil.emptyString(sumo) && !isAuxilliary(cl,cm) &&
                         !qwords.contains(cl.originalText().toLowerCase()) && !excluded(cl.originalText())) {
                     if (kb.isInstance(sumo)) {
                         if (debug) System.out.println("INFO in Interpreter.findWSD(): instance:  " + sumo);
@@ -869,7 +894,8 @@ public class Interpreter {
         results.addAll(dependenciesList);
         //System.out.println("Interpreter.interpretGenCNF(): before numerics: " + results);
 
-        List<String> wsd = findWSD(lastSentenceTokens);
+        //List<String> wsd = findWSD(lastSentenceTokens);
+        List<String> wsd = findWSD(lastSentence);
         results.addAll(wsd);
         //System.out.println("Interpreter.interpretGenCNF(): before consolidate: " + results);
         results = consolidateSpans(lastSentenceTokens,results);
