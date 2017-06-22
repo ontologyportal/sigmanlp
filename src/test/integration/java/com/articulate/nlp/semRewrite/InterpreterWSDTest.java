@@ -68,8 +68,7 @@ public class InterpreterWSDTest extends IntegrationTestBase {
         String input = "Amelia Mary Earhart was an American aviator.";
         Annotation wholeDocument = interp.userInputs.annotateDocument(input);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
-        List<String> wsds = interp.findWSD(lastSentenceTokens);
+        List<String> wsds = interp.findWSD(lastSentence);
         String[] expected = {
                 //"names(Amelia-1,\"Amelia\")", // missed without real EntityParser information
                 //"names(Mary-2,\"Mary\")",
@@ -91,8 +90,7 @@ public class InterpreterWSDTest extends IntegrationTestBase {
         String input = "Amelia Mary Earhart (July 24, 1897 - July 2, 1937) was an American aviator.";
         Annotation wholeDocument = interp.userInputs.annotateDocument(input);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
-        List<String> wsds = interp.findWSD(lastSentenceTokens);
+        List<String> wsds = interp.findWSD(lastSentence);
         String[] expected = {
                 //"names(AmeliaMaryEarhart-1,\"Amelia Mary Earhart\")", // missed without real EntityParser information
                 "sumo(UnitedStates,American-17)",

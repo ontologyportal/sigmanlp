@@ -98,8 +98,7 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
 
         Annotation wholeDocument = interp.userInputs.annotateDocument(input);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
-        List<String> wsds = interp.findWSD(lastSentenceTokens);
+        List<String> wsds = interp.findWSD(lastSentence);
 
         return wsds;
     }
