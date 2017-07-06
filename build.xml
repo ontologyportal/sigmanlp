@@ -2,6 +2,7 @@
   <property environment="env"/>
   <property name="compiler.debug" value="on"/>
   <property name="app.name" value="sigmanlp"/>
+  <property name="build.home" value="build"/>
   <property name="sigmakee.home" value="${env.SIGMA_SRC}" />
   <property name="tomcat.home" value="${env.CATALINA_HOME}"/>
   <property name="deploy.home" value="${tomcat.home}/webapps/${app.name}"/>
@@ -113,7 +114,7 @@
       <lib dir="${deploy.lib}"/>
       <classes dir="${deploy.classes}"/>
     </war>
-    <jar destfile="${build.home}/sigmakee.jar">
+    <jar destfile="${build.home}/sigmanlp.jar">
       <fileset dir="${deploy.classes}"/>
     </jar>
   </target>
