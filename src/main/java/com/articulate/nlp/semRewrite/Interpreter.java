@@ -1,7 +1,8 @@
 /*
-Copyright 2014-2015 IPsoft
+original version Copyright 2014-2015 IPsoft
+modified 2015- Articulate Software
 
-Author: Adam Pease adam.pease@ipsoft.com
+Author: Adam Pease apease@articulatesoftware.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
