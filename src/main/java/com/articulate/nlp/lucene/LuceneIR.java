@@ -36,23 +36,6 @@ import com.articulate.sigma.StringUtil;
 
 public class LuceneIR {
 
-    public class SearchResult {
-        String id = "";
-        String query = "";
-        HashMap<String,String> answers = new HashMap<>(); // file id, short answer
-
-        public String toString() {
-            StringBuffer sb = new StringBuffer();
-            sb.append(id + "\n");
-            sb.append(query + "\n");
-            for (String k : answers.keySet()) {
-                sb.append(k + "\n");
-                sb.append(answers.get(k) + "\n");
-            }
-            return sb.toString();
-        }
-    }
-
     public static HashMap<SCOREKEY,Integer> docScore = new HashMap<>();
     public static HashMap<SCOREKEY,Integer> sentScore = new HashMap<>();
     public enum SCOREKEY {  TRUEPOS,   // real answer found
@@ -62,11 +45,14 @@ public class LuceneIR {
 
     private static int answerLimit = 5; // number of answers returned to a given question
     public static boolean bm25 = true;
-    public static boolean displaySentence = false;
+    public static boolean displaySentence = true;
+
+    public static final String DOC_CONTENT_FIELD = "content";
+    public static final String SENTENCE_CONTENT_FIELD = "sentence";
 
     /** **************************************************************
      */
-    private static void initScores(HashMap<SCOREKEY,Integer> score) {
+    public static void initScores(HashMap<SCOREKEY,Integer> score) {
 
         score.put(SCOREKEY.TRUEPOS,0);
         score.put(SCOREKEY.FALSEPOS,0);
@@ -85,44 +71,83 @@ public class LuceneIR {
     }
 
     /** **************************************************************
+     * Index sentences in a document
+     * @param standardAnalyzer is the analyzer that must be used later.
+     * @param doc is the document to be indexed.
+     * @param dir is the in memory directory that holds the document
+     *
+     */
+    public static void indexDocInMemory(StandardAnalyzer standardAnalyzer,
+                                        Document doc, Directory dir) {
+
+        try {
+            IndexWriterConfig config = new IndexWriterConfig(standardAnalyzer);
+            if (bm25)
+                // config.setSimilarity(new BM25Similarity((float) 1.2, (float) 0.75)); // SA uses (1,1)
+                config.setSimilarity(new BM25Similarity(1,1)); // SA uses (1,1)
+            IndexWriter writer = new IndexWriter(dir, config);
+
+            Properties properties = new Properties();
+            properties.setProperty("annotators", "tokenize, ssplit");
+            StanfordCoreNLP pipeline = new StanfordCoreNLP(properties);
+            String noXML = StringUtil.removeHTML(doc.get(LuceneIR.DOC_CONTENT_FIELD));
+
+            noXML = noXML.replaceAll("\\n\\n", System.getProperty("line.separator"));
+            noXML = noXML.replace("\n", " ");
+            System.out.println("indexDocInMemory(): noXML: " +
+                    StringUtil.getFirstNChars(noXML,100));
+            List<CoreMap> sentences = pipeline.process(noXML)
+                    .get(CoreAnnotations.SentencesAnnotation.class);
+            for (CoreMap sentence : sentences) { // write sentences to RAMDirectory
+                //System.out.println(sentence.toString());
+                Document document = new Document();
+                document.add(new TextField(LuceneIR.SENTENCE_CONTENT_FIELD, sentence.toString(), Field.Store.YES)); // "document" is a sentence
+                writer.addDocument(document);
+            }
+            writer.close();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** **************************************************************
+     */
+    public ArrayList<String> getSentenceAnswers(Document doc, SearchResult sr, int num) {
+
+        answerLimit = num;
+        return getSentenceAnswers(doc,sr);
+    }
+
+    /** **************************************************************
      * provided a document and a query, return the most likely set
      * of sentences matching the query from the document.
      */
     public ArrayList<String> getSentenceAnswers(Document doc, SearchResult sr) {
 
+        if (doc == null) {
+            System.out.println("error in getSentenceAnswers(): null document");
+            return null;
+        }
         String q = sr.query;
         ArrayList<String> results = new ArrayList<>();
         try {
-            StandardAnalyzer standardAnalyzer = new StandardAnalyzer();
+            //System.out.println("getSentenceAnswers(): Doc: " +
+            //        StringUtil.getFirstNChars(doc.get(LuceneIR.DOC_CONTENT_FIELD),100));
+            StandardAnalyzer standardAnalyzer = new StandardAnalyzer(); // SA uses EnglishAnalyzer
             Directory directory = new RAMDirectory();
-            IndexWriterConfig config = new IndexWriterConfig(standardAnalyzer);
-            if (bm25)
-                config.setSimilarity(new BM25Similarity((float) 1.2, (float) 0.75));
-            IndexWriter writer = new IndexWriter(directory, config);
-
-            Properties properties = new Properties();
-            properties.setProperty("annotators", "tokenize, ssplit");
-            StanfordCoreNLP pipeline = new StanfordCoreNLP(properties);
-            String noXML = StringUtil.removeHTML(doc.get("contents"));
-            noXML = noXML.replaceAll("\\n\\n", System.getProperty("line.separator"));
-            noXML = noXML.replace("\n", " ");
-            List<CoreMap> sentences = pipeline.process(noXML)
-                    .get(CoreAnnotations.SentencesAnnotation.class);
-            for (CoreMap sentence : sentences) {
-                //System.out.println(sentence.toString());
-                Document document = new Document();
-                document.add(new TextField("contents", sentence.toString(), Field.Store.YES)); // "document" is a sentence
-                writer.addDocument(document);
-            }
-            writer.close();
-
+            indexDocInMemory(standardAnalyzer,doc,directory);
+            // now search over the sentences
             IndexReader reader = DirectoryReader.open(directory);
             IndexSearcher searcher = new IndexSearcher(reader);
             if (bm25)
-                searcher.setSimilarity(new BM25Similarity((float) 1.2,(float) 0.75));
-            QueryParser parser = new QueryParser("contents", standardAnalyzer);
+                // searcher.setSimilarity(new BM25Similarity((float) 1.2,(float) 0.75));
+                searcher.setSimilarity(new BM25Similarity(1,1));
+            QueryParser parser = new QueryParser(LuceneIR.SENTENCE_CONTENT_FIELD, standardAnalyzer);
+            //  SA uses       Query query = parser.createMinShouldMatchQuery("sentence", q, 0.3f);
             Query query = parser.parse(q);
             TopDocs sresults = searcher.search(query, answerLimit);
+            System.out.println("getSentenceAnswers(): Hits for " + sr.query + " -->" + sresults.totalHits);
             ScoreDoc[] sdocs = sresults.scoreDocs;
             HashSet<String> foundAnswers = new HashSet<>();
             HashSet<String> falseAnswers = new HashSet<>();
@@ -130,17 +155,17 @@ public class LuceneIR {
             for (ScoreDoc sd : sdocs) {
                 int docnum = sd.doc;
                 Document document = searcher.doc(docnum); // "document" is a sentence
-                if (displaySentence) System.out.println("candidate sentence: " + document.get("contents"));
+                if (displaySentence) System.out.println("candidate sentence: " + document.get(SENTENCE_CONTENT_FIELD));
                 for (String ans : sr.answers.values()) {
-                    if (document.get("contents").contains(ans)) {
-                        System.out.println("Answer sentence found! " + document.get("contents"));
+                    if (document.get(SENTENCE_CONTENT_FIELD).contains(ans)) {
+                        System.out.println("Answer sentence found! " + document.get(SENTENCE_CONTENT_FIELD));
                         sentenceFound = true;
                         foundAnswers.add(ans);
                     }
                 }
                 if (!sentenceFound)
-                    falseAnswers.add(document.get("contents"));
-                results.add(document.get("contents"));
+                    falseAnswers.add(document.get(SENTENCE_CONTENT_FIELD));
+                results.add(document.get(SENTENCE_CONTENT_FIELD));
             }
             sentScore.put(SCOREKEY.TRUEPOS,
                     sentScore.get(SCOREKEY.TRUEPOS) + foundAnswers.size());
@@ -376,7 +401,8 @@ public class LuceneIR {
 
     /** **************************************************************
      * Parse a single file of <DOC>...</DOC> tags and convert them into
-     * separate documents stored in the returned map.
+     * separate documents stored in the returned map. Or if there are no
+     * such tags, just add the whole document.
      *
      * @return a HashMap of document ids that are the keys and values
      * which are the contents of each document
@@ -405,6 +431,9 @@ public class LuceneIR {
                     id = line.substring(7,line.indexOf("<",8)).trim();
                 }
             }
+            if (result.keySet().size() == 0 && doc.length() != 0) {
+                result.put(filename,doc.toString());
+            }
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -416,21 +445,22 @@ public class LuceneIR {
      * Recursively add all documents in the directory to the IndexWriter.  Note that
      * parseDoc() is called because each file actually contains multiple
      * documents.
-     * @param d is the directory path
+     * @param docDir is the directory path to where documents are found
      */
-    public static void indexDocuments(IndexWriter writer, String d) {
+    public static void indexDocuments(IndexWriter writer, String docDir) {
 
         try {
-            File dir = new File(d);
+            System.out.println("indexDocument(): indexing: " + docDir);
+            File dir = new File(docDir);
             File[] files = dir.listFiles();
-            if (files.length <= 1)
-                System.out.println("Error in indexDocument(): no files in " + d);
+            if (files == null || files.length <= 1)
+                System.out.println("Error in indexDocument(): no files in " + docDir);
             for (File f : files) {
                 if (f.isDirectory())
                     indexDocuments(writer,f.getAbsolutePath());
                 else {
-                    System.out.println("Add file: " + f);
                     HashMap<String,String> componentDocs = parseDoc(f.getAbsolutePath());
+                    System.out.println("Add file: " + f + " with " + componentDocs.keySet().size() + " documents inside.");
                     for (String id : componentDocs.keySet()) {
                         Document document = new Document();
                         String path = f.getCanonicalPath();
@@ -497,13 +527,18 @@ public class LuceneIR {
     }
 
     /** **************************************************************
+     * @return the directory into which Lucene writes its index
      */
     public static Directory init(StandardAnalyzer sa) {
 
         Directory directory = null;
         try {
-            String outputDir = "/home/apease/Programs/lucene-6.5.1/testoutput";
-            directory = FSDirectory.open(Paths.get(outputDir));
+            // directory into which Lucene writes its index
+            String indexDir = "/home/apease/Programs/lucene-6.5.1/testoutput";
+            String defaultIndex = System.getenv("LUCENE_DEFAULT_INDEX");
+            if (!StringUtil.emptyString(defaultIndex))
+                indexDir = defaultIndex;
+            directory = FSDirectory.open(Paths.get(indexDir));
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -512,18 +547,22 @@ public class LuceneIR {
     }
 
     /** **************************************************************
+     * Write Lucene's index into the environment path variable LUCENE_DEFAULT_INDEX
+     * @param filesDir is the directory in which there are files to index
      */
-    public static void reindex(Directory directory, StandardAnalyzer sa) {
+    public static void reindex(String filesDir, StandardAnalyzer sa) {
 
         try {
             IndexWriterConfig config = new IndexWriterConfig(sa);
             if (bm25)
                 config.setSimilarity(new BM25Similarity((float) 1.2, (float) 0.75));
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-            IndexWriter writer = new IndexWriter(directory, config);
-
-            indexDocuments(writer, "/home/apease/corpora/Trec5");  // LA, FBIS
-            indexDocuments(writer, "/home/apease/corpora/TREC4");   // CR, FT, FR
+            String indexDir = System.getenv("LUCENE_DEFAULT_INDEX");
+            Directory indexDirectory = FSDirectory.open(Paths.get(indexDir));
+            IndexWriter writer = new IndexWriter(indexDirectory, config);
+            indexDocuments(writer,filesDir);
+            //indexDocuments(writer, "/home/apease/corpora/Trec5");  // LA, FBIS
+            //indexDocuments(writer, "/home/apease/corpora/TREC4");   // CR, FT, FR
             writer.close();
         }
         catch (Exception e) {
@@ -635,7 +674,7 @@ public class LuceneIR {
         //  EnglishMinimalStemFilter, CodePointCountFilter
 
         StandardAnalyzer sa = new StandardAnalyzer();
-        Directory dir = init(sa);
+        Directory indexDir = init(sa); //
         if (args == null || args.length < 1 || args[0].equals("-h")) {
             System.out.println("Information Retrieval");
             System.out.println("  options:");
@@ -660,10 +699,11 @@ public class LuceneIR {
             }
         }
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("r")) {
-            reindex(dir,sa);
+            String filesDir = System.getenv("LUCENE_DEFAULT_INPUT");
+            reindex(filesDir,sa);
         }
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("d")) {
-            runTest(dir,sa);
+            runTest(indexDir,sa);
         }
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("f")) {
             findAnswerDocs();
@@ -671,11 +711,11 @@ public class LuceneIR {
         if (args != null && args.length > 0 && args[0].startsWith("-") && args[0].contains("i")) {
             displaySentence = true;
             answerLimit = 1;
-            interactive(dir,sa);
+            interactive(indexDir,sa);
         }
         if (args != null && args.length > 1 && args[0].startsWith("-") && args[0].contains("q")) {
             LuceneIR lhd = new LuceneIR();
-            lhd.runOneQuery(StringUtil.removeEnclosingQuotes(args[1]),dir,sa);
+            lhd.runOneQuery(StringUtil.removeEnclosingQuotes(args[1]),indexDir,sa);
         }
     }
 }
