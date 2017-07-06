@@ -69,7 +69,7 @@ public class NERAnnotator implements Annotator {
      */
     public static String toSUMO(IntPair ip, List<CoreLabel> tokens) {
 
-        String NERclass = tokens.get(ip.getSource()).ner();
+        String NERclass = tokens.get(ip.getSource()-1).ner();
         if (NERclass.equals("PERSON")) return "Human";
         else if (NERclass.equals("LOCATION")) return "GeographicArea";
         else if (NERclass.equals("ORGANIZATION")) return "Organization";
