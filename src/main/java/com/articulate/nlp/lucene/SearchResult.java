@@ -1,6 +1,7 @@
 package com.articulate.nlp.lucene;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Created by apease on 6/29/17.
@@ -8,6 +9,10 @@ import java.util.HashMap;
 public class SearchResult {
     public String id = "";
     public String query = "";
+    public String UIUCtopCat = "";
+    public String UIUC2ndCat = "";
+    public HashSet<String> sentenceAnswers = new HashSet<>();
+    public String expectedAnswer = "";
     public HashMap<String,String> answers = new HashMap<>(); // file id, short answer
 
     public String toString() {
