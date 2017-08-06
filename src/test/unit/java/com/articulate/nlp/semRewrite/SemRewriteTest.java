@@ -656,6 +656,70 @@ public class SemRewriteTest extends UnitTestBase {
 
         doTest(input, expected);
     }
+    
+    /** *************************************************************
+     * The meeting ended.
+     * 
+     */
+    @Test
+    public void testMeetingEnded() {
+        String input = "root(ROOT-0,EndFn), det(meeting-2,The-1), nsubj(EndFn,meeting-2), sumo(Meeting,meeting-2)";
+
+        String[] expected = {
+                "(earlier (EndFn meeting-2) Now)"
+        };
+
+        doTest(input, expected);
+    }
+    
+    /** *************************************************************
+     * The meeting started.
+     * 
+     */
+    @Test
+    public void testMeetingStarted() {
+        String input = "root(ROOT-0,StartFn), det(meeting-2,The-1), sumo(Meeting,meeting-2), nsubj(StartFn,meeting-2)";
+
+        String[] expected = {
+                "(earlier (StartFn ?meeting-2) Now)"
+        };
+
+        doTest(input, expected);
+    }
+    
+    /** *************************************************************
+     * The meeting started at 1 pm.
+     * 
+     */
+    @Test
+    public void testMeetingStartedAt1pm() {
+        String input = "case(1pm_.-5,at-4), root(ROOT-0,StartFn), det(meeting-2,The-1), nmod:at(StartFn,1pm_.-5), sumo(Meeting,meeting-2), nsubj(StartFn,meeting-2)";
+
+        String[] expected = {
+                "(equal (StartFn ?meeting-2) (HourFn 13))"
+        };
+
+        doTest(input, expected);
+    }
+    
+    /** *************************************************************
+     * I started feeling ill.
+     * 
+     */
+    @Test
+    public void testStartedFeelingIll() {
+        String input = "nsubj(StartFn,I-1), xcomp(StartFn,feeling-3), sumo(EmotionalState,feeling-3), root(ROOT-0,StartFn), sumo(SubjectiveAssessmentAttribute,ill-4), advmod(feeling-3,ill-4)";
+
+        String[] expected = {
+                "(earlier (StartFn ill-4) Now)"
+        };
+
+        doTest(input, expected);
+    }
+    
+    
+    
+    
 
 
 }
