@@ -1589,7 +1589,7 @@ public class Interpreter {
     public void loadRules(String f) {
 
         if (f.indexOf(File.separator.toString(),2) < 0)
-            f = "/home/apease/workspace/sumo/WordNetMappings" + File.separator + f;
+            f = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + f;
         try {
             fname = f;
             RuleSet rsin = RuleSet.readFile(f);
@@ -1610,7 +1610,7 @@ public class Interpreter {
 
        // String filename = KBmanager.getMgr().getPref("kbDir") + File.separator +
                // "WordNetMappings" + File.separator + "SemRewrite.txt";
-        String filename = "/home/apease/workspace/sumo/WordNetMappings" + File.separator + "SemRewrite.txt";
+        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "SemRewrite.txt";
         String pref = KBmanager.getMgr().getPref("SemRewrite");
         if (!Strings.isNullOrEmpty(pref))
             filename = pref;

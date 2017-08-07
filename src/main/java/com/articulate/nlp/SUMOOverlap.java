@@ -68,7 +68,7 @@ public class SUMOOverlap {
         TFIDF cb = null;
         SynsetOverlap so = null;
         try {
-            cb = new TFIDF("/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings/stopwords.txt");
             so = new SynsetOverlap(cb);
         }
         catch (IOException ioe) {

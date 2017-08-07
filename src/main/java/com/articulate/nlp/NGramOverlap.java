@@ -146,7 +146,7 @@ public class NGramOverlap {
         TokenOverlap to = null;
         NGramOverlap ng = null;
         try {
-            cb = new TFIDF("/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings/stopwords.txt");
             ng = new NGramOverlap(cb);
         }
         catch (IOException ioe) {

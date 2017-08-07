@@ -899,10 +899,10 @@ public class TimeBank {
     public static void testText() {
 
         anchorDate = "2015-06-01";
-        //String filename = "/home/apease/Infosys/SampleDocuments/IBEW.txt";
-       // String filename = "/home/apease/Infosys/SampleDocuments/BofAonlineBankingAgreement.txt";
-        //String filename = "/home/apease/corpora/timebank_1_2/data/timeml/ABC19980108.1830.0711.tml";
-        String filename = "/home/apease/Infosys/SampleDocuments/accountingPnP-Wegner.txt";
+        //String filename = System.getProperty("user.home") + "/Infosys/SampleDocuments/IBEW.txt";
+       // String filename = System.getProperty("user.home") + "/Infosys/SampleDocuments/BofAonlineBankingAgreement.txt";
+        //String filename = System.getProperty("user.home") + "/corpora/timebank_1_2/data/timeml/ABC19980108.1830.0711.tml";
+        String filename = System.getProperty("user.home") + "/Infosys/SampleDocuments/accountingPnP-Wegner.txt";
 
         init();
         //processText(filename);
@@ -958,7 +958,7 @@ public class TimeBank {
         }
 
         else if (args[0].equals("-c")) {
-            testTimeBankNew("/home/apease/corpora/timebank_1_2/data/extra");
+            testTimeBankNew(System.getProperty("user.home") + "/corpora/timebank_1_2/data/extra");
         }
         else if (args[0].equals("-u")) {
             testTimeBankUnit();
@@ -982,7 +982,7 @@ public class TimeBank {
             System.out.println("anchor date: " + anchorDate);
             interactive();
         }
-        //testTimeBankNew("/home/apease/corpora/timebank_1_2/test");
+        //testTimeBankNew(System.getProperty("user.home") + "/corpora/timebank_1_2/test");
         //testText();
         //testParseDateString();
     }
