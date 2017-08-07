@@ -82,12 +82,12 @@ public class DependencyConverter {
         BufferedWriter _writer; 
         BufferedReader _error;
         String tmpfname = "tmp.txt";
-//        String execString = System.getProperty("user.home") + "/Programs/java/jdk1.8.0_25/bin/java -mx1000m -classpath " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27" + 
+//        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27" + 
         String stanfordCore = System.getProperty("user.home") + "/Programs/stanford-corenlp-full-2015-12-09";
         String newcore = KBmanager.getMgr().getPref("stanford-core");
         if (!StringUtil.emptyString(newcore))
         	stanfordCore = newcore;
-        String execString = System.getProperty("user.home") + "/Programs/java/jdk1.8.0_60/bin/java -mx1000m -classpath " + stanfordCore +
+        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + stanfordCore + 
                 "/stanford-corenlp-3.5.1.jar edu.stanford.com.articulate.nlp.parser.lexparser.LexicalizedParser " +
                 "-outputFormat typedDependencies " + stanfordCore + "/englishPCFG-mcg.ser.gz " + tmpfname;
                 //"-outputFormat typedDependencies " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27/englishPCFG.ser.gz " + tmpfname;
@@ -153,7 +153,7 @@ public class DependencyConverter {
         String newcore = KBmanager.getMgr().getPref("stanford-core");
         if (!StringUtil.emptyString(newcore))
         	stanfordCore = newcore;
-        String execString = "java -classpath " + stanfordCore + 
+        String execString = System.getProperty("java.home") + "/java -classpath " + stanfordCore + 
                 "/stanford-parser.jar edu.stanford.com.articulate.nlp.process.DocumentPreprocessor " +
                 infile;
         System.out.println("INFO in DependencyConverter.splitSentences(): executing: " + execString);
