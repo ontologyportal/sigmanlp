@@ -154,7 +154,7 @@ public class ShuZiInsQA {
 
         TFIDF cb = null;
         try {
-            cb = new TFIDF(System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings/stopwords.txt");
+            cb = new TFIDF(System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
         }
         catch (IOException ioe) {
             System.out.println("Error in ShuZiInsQA.readAnswers()");
@@ -232,7 +232,7 @@ public class ShuZiInsQA {
         List<Dev> result = new ArrayList<>();
         TFIDF cb = null;
         try {
-            cb = new TFIDF(System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings/stopwords.txt");
+            cb = new TFIDF(System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
         }
         catch (IOException ioe) {
             System.out.println("Error in ShuZiInsQA.readAnswers()");
@@ -287,7 +287,7 @@ public class ShuZiInsQA {
 
         TFIDF cb = null;
         try {
-            cb = new TFIDF(System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings/stopwords.txt");
+            cb = new TFIDF(System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
         }
         catch (IOException ioe) {
             System.out.println("Error in ShuZiInsQA.readAnswers()");
@@ -915,7 +915,7 @@ public class ShuZiInsQA {
             sziq.readVocab();
             sziq.readAnswers();
             a.addAll(sziq.answers);
-            cb = new TFIDF(a,System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings/stopwords.txt");
+            cb = new TFIDF(a,System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
             to = new TokenOverlap(cb);
 
         }
@@ -949,7 +949,7 @@ public class ShuZiInsQA {
         try {
             List<String> a = new ArrayList<>();
             a.addAll(answers);
-            cb = new TFIDF(a,System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings/stopwords.txt");
+            cb = new TFIDF(a,System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
             to = new TokenOverlap(cb);
             ng = new NGramOverlap(cb);
             so = new SynsetOverlap(cb);

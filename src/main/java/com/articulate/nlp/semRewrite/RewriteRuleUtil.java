@@ -101,7 +101,7 @@ public final class RewriteRuleUtil extends RuleSet {
         if (!Strings.isNullOrEmpty(pref))
             f = pref;
         if (f.indexOf(File.separator.toString(), 2) < 0)
-            f = System.getProperty("user.home") + "/.sigmakee/KBs/WordNetMappings" + f;
+            f = System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings" + f;
         try {
             RuleSet rsin = RuleSet.readFile(f);
             rs = canon(rsin);
