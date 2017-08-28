@@ -38,6 +38,10 @@ public class SUMOtoCoSense {
     public static HashMap<String,HashMap<String,Integer>> senses = new HashMap<>();
 
     /***************************************************************
+     * Merge two maps of counts of words that co-occur in a sentence with
+     * a given word sense.
+     * @param wordList1 keys are words and values are counts of that word
+     * @param wordList2 keys are words and values are counts of that word
      */
     private static HashMap<String,Integer> mergeWordCounts(HashMap<String,Integer> wordList1,
                                                            HashMap<String,Integer> wordList2) {
@@ -46,6 +50,17 @@ public class SUMOtoCoSense {
         HashSet<String> words = new HashSet<>();
         words.addAll(wordList1.keySet());
         words.addAll(wordList2.keySet());
+        for (String w : words) {
+            Integer count1 = wordList1.get(w);
+            int c1 = 0;
+            if (count1 != null)
+                c1 = count1.intValue();
+            Integer count2 = wordList2.get(w);
+            int c2 = 0;
+            if (count2 != null)
+                c2 = count2.intValue();
+            wordCounts.put(w,c1 + c2);
+        }
         return wordCounts;
     }
 
@@ -147,6 +162,8 @@ public class SUMOtoCoSense {
     }
 
     /***************************************************************
+     * TODO: implement this - treat all terms in an axiom as words in
+     * a sentence
      */
     public static void axiomsToSenses() {
 
