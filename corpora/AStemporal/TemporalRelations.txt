@@ -1,0 +1,61 @@
+; all the unique <SIGNAL> tag markup in TimeBank 1.2, produced with -  grep -Eo "<SIGNAL[^>]*>([^<]+)" *.tml
+after
+ahead of
+already
+as
+as early as
+as of
+as soon as
+at
+at least until
+At the same time
+before
+between
+by
+during
+Earlier
+effective
+ended
+ending
+followed
+followed by
+following
+follows
+For
+from
+if
+immediately
+in
+in anticipation of
+into
+later
+meanwhile
+on
+Once
+over
+past
+pending
+previous
+Previously
+prior
+prior to
+repeatedly
+'s
+shortly before
+since
+Since then
+so far
+soon after
+Still
+subsequent to
+subsequently
+then
+Thereafter
+through
+throughout
+to
+until
+when
+while
+within
+yet
