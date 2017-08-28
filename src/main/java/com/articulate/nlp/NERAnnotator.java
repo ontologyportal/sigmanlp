@@ -171,7 +171,7 @@ public class NERAnnotator implements Annotator {
             throw new RuntimeException("Unable to find sentences in " + annotation);
         List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
         for (CoreMap sentence : sentences) {
-            List<CoreLabel> tokens = SentenceUtil.getLastSentence(annotation).get(CoreAnnotations.TokensAnnotation.class);
+        	List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             markTokens(tokens);
         }
     }
