@@ -1,3 +1,4 @@
+<%@page import="com.articulate.nlp.brat.BratAnnotationUtil"%>
 <%@ page
    language="java"
    import="com.google.common.collect.ImmutableList,com.articulate.sigma.*,java.util.*,java.io.*"
@@ -12,6 +13,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+
 
 <%
 /** This code is copyright Articulate Software (c) 2017.
@@ -39,6 +41,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     out.println("<html>");
     out.println("  <head>");
     out.println("    <title>Sigma Knowledge Engineering Environment - NLP</title>");
+    out.println("    <link rel=\"stylesheet\" type=\"text/css\" href=\"brat/style-vis.css\" />");
+    out.println("    <script type=\"text/javascript\" src=\"brat/client/lib/head.load.min.js\"></script>");
     out.println("  </head>");
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
@@ -161,8 +165,12 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         }
         out.println("</table><P>");
 
+        out.println("<h2>Visualization</h2>\n");
+        out.println("<div id=\"bratVizDiv\" style=\"\"></div><P>\n");
+        
+        
         List<String> forms = interp.interpret(theText);
-
+        
         out.println("<h2>Dependencies</h2>\n");
         out.println("<table><tr><th>original</th><th>augmented</th><th>substitutors</th></tr><tr><td>\n");
         for (CoreMap sentence : sentences) {
@@ -176,6 +184,11 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         out.println("<td><pre>\n");
         for (String s : interp.augmentedClauses)
             out.println(s);
+        out.println("</pre>");
+
+        out.println("</td>");
+        out.println("<td><pre>\n");
+        //out.println(interp.substitutor.toString());
         out.println("</pre>");
         out.println("</td>");
         out.println("</tr></table>\n");
@@ -212,7 +225,13 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         }
         out.println("</table><P>\n");
 
-        out.println("<b>Sigma sentiment score:</b> " + DB.computeSentiment(theText) + "<P>\n");
+        out.println("<b>Sigma sentiment score:</b> " + DB.computeSentiment(theText) + "</P>\n");
+        //Get data in brat format
+        BratAnnotationUtil bratAnnotationUtil=new BratAnnotationUtil();
+        out.println("<script type=\"text/javascript\">");
+        out.println("var docData="+ bratAnnotationUtil.getBratAnnotations(theText)+";</script>");
+        //Brat integration script
+        out.println("<script type=\"text/javascript\" src=\"js/sigmanlpViz.js\"></script>");
     }
     else
         out.println("Empty input<P>\n");

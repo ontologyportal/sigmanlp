@@ -84,7 +84,17 @@
     <copy todir="${deploy.home}">
       <fileset file="web/simple.css"/>
     </copy>
-
+	
+	<!-- Added to copy brat files -->
+	<copy todir="${deploy.home}/brat">
+      <fileset dir="web/brat"/>
+    </copy>
+	
+	<copy todir="${deploy.home}/js">
+      <fileset dir="web/js"/>
+    </copy>
+	<!-- brat files copied -->
+	
     <copy todir="${deploy.home}/pixmaps">
       <fileset dir="web/pixmaps"/>
     </copy>

@@ -520,7 +520,7 @@ public class TimeBank {
         test(inputSentence,"","");
         inputSentence = "I went to sleep early last night.";
         mark = "<TIMEX3 mod=\"EARLY\" tid=\"t1\" type=\"TIME\" value=\"2017-04-20TNI\">";
-        test(inputSentence,mark,""); // <TIMEX2 VAL=“2000-10-31TNI” MOD=“START”>early last night</TIMEX2>
+        test(inputSentence,mark,""); // <TIMEX2 VAL="2000-10-31TNI" MOD="START">early last night</TIMEX2>
         System.out.println("correct: " + correct);
         System.out.println("incorrect: " + incorrect);
         System.out.println("correctMark: " + correctMark);
