@@ -1,0 +1,510 @@
+T1	RelationWord 0 6	During
+T2	Event 11 15	term
+T3	Event 27 36	transform
+T4	Event 60 68	improved
+R1	relation Arg1:T1 Arg2:T3	
+R2	relation Arg1:T1 Arg2:T4	
+R3	during Arg1:T4 Arg2:T2	
+R4	during Arg1:T3 Arg2:T2	
+T5	RelationWord 874 880	during
+T6	Event 818 827	appointed
+T7	Event 885 889	time
+T8	RelationWord 101 107	During
+T9	Event 112 116	time
+T10	Event 136 146	befriended
+T11	RelationWord 213 222	following
+T12	Event 197 204	suicide
+R5	during Arg1:T6 Arg2:T7	
+R6	relation Arg1:T5 Arg2:T6	
+T13	RelationWord 956 962	during
+T14	RelationWord 2530 2536	During
+T15	RelationWord 3685 3689	Upon
+T16	RelationWord 3992 3999	earlier
+T17	RelationWord 4087 4092	after
+T18	RelationWord 4296 4300	Upon
+T19	RelationWord 4611 4615	Upon
+T20	RelationWord 7499 7504	After
+T29	RelationWord 8805 8811	During
+T30	RelationWord 1079 1085	during
+T31	RelationWord 672 678	during
+T32	RelationWord 1159 1165	during
+T33	RelationWord 1250 1256	During
+T34	RelationWord 1359 1365	During
+T35	RelationWord 1794 1800	During
+T36	RelationWord 1611 1616	after
+T37	RelationWord 1737 1743	during
+T38	RelationWord 2205 2211	During
+T39	RelationWord 2713 2719	During
+T40	RelationWord 2648 2653	after
+T41	RelationWord 2817 2823	Before
+T42	RelationWord 3472 3478	before
+T43	RelationWord 3632 3638	before
+T44	RelationWord 5938 5944	during
+T45	RelationWord 5627 5633	During
+T47	RelationWord 9217 9223	During
+T48	RelationWord 9348 9354	During
+T49	RelationWord 9524 9530	During
+T50	RelationWord 9739 9745	During
+T51	RelationWord 11052 11058	Before
+T53	RelationWord 10413 10419	Whilst
+T54	RelationWord 10557 10563	whilst
+T55	RelationWord 12431 12436	While
+T56	RelationWord 12566 12572	before
+T57	RelationWord 12639 12645	before
+T58	RelationWord 12820 12827	Between
+T59	RelationWord 12718 12724	During
+T60	RelationWord 13269 13274	After
+T61	RelationWord 14012 14017	Until
+T62	RelationWord 15234 15239	until
+T63	RelationWord 15450 15456	during
+T64	RelationWord 15588 15593	since
+T70	RelationWord 2956 2958	As
+T72	RelationWord 5051 5055	upon
+T73	RelationWord 16308 16314	During
+T74	RelationWord 4890 4894	upon
+T75	RelationWord 6494 6500	before
+T76	RelationWord 20775 20785	as long as
+T77	RelationWord 26319 26325	During
+T78	RelationWord 34253 34258	After
+T79	RelationWord 34370 34382	subsequently
+T80	RelationWord 30564 30570	During
+T81	RelationWord 29117 29122	After
+T82	RelationWord 31932 31937	While
+T83	RelationWord 27406 27411	After
+T84	RelationWord 24527 24532	While
+T85	RelationWord 18557 18563	During
+T86	RelationWord 15599 15603	When
+T87	RelationWord 14758 14763	After
+T88	RelationWord 14232 14238	During
+T89	RelationWord 4936 4940	Upon
+T90	RelationWord 2290 2292	In
+T91	RelationWord 5103 5107	Upon
+T92	Event 967 975	Gulf War
+T93	Event 984 993	described
+T94	Event 1017 1025	received
+T95	Event 1086 1099	1968 and 1969
+T96	Event 1280 1302	Clinton administration
+T97	Event 1327 1335	declined
+T98	Event 1619 1632	short illness
+T99	Event 1578 1582	died
+T71	RelationWord 3073 3077	When
+R7	relation Arg1:T8 Arg2:T10	
+R8	during Arg1:T10 Arg2:T9	
+T100	Event 225 256	draft letter to the Vietnam War
+R9	relation Arg1:T13 Arg2:T93	
+R10	during Arg1:T93 Arg2:T92	
+T101	Event 298 302	1860
+T21	Event 312 319	secured
+T22	RelationWord 295 297	In
+R11	relation Arg1:T22 Arg2:T21	
+R12	during Arg1:T21 Arg2:T101	
+T23	Event 571 580	impeached
+T24	Event 681 688	lawsuit
+R13	relation Arg1:T31 Arg2:T24	
+R14	during Arg1:T24 Arg2:T23	
+R15	relation Arg1:T30 Arg2:T94	
+R16	during Arg1:T94 Arg2:T95	
+T25	Event 1140 1146	toured
+T26	Event 1189 1197	campaign
+R17	relation Arg1:T32 Arg2:T25	
+R18	during Arg1:T25 Arg2:T26	
+R19	relation Arg1:T33 Arg2:T97	
+R20	during Arg1:T97 Arg2:T96	
+T27	Event 1375 1383	campaign
+T28	Event 1392 1400	revealed
+R21	relation Arg1:T34 Arg2:T28	
+R22	during Arg1:T28 Arg2:T27	
+T65	Event 1819 1827	campaign
+T66	Event 1848 1851	was
+T69	RelationWord 2104 2109	as of
+T102	Event 2110 2123	February 2014
+T103	Event 2128 2131	had
+T104	Event 2220 2226	tenure
+T105	Event 2248 2258	called for
+T106	Event 2297 2309	first months
+T107	Event 2335 2343	reversed
+T108	Event 2541 2556	first two years
+T109	Event 2574 2580	signed
+T110	Event 2612 2616	born
+T111	Event 2672 2680	admitted
+T112	Event 2724 2728	term
+T113	Event 2784 2797	known to cook
+T114	Event 2828 2832	term
+T115	Event 2842 2853	contributed
+T116	Event 2977 2986	developed
+T117	Event 3025 3029	seen
+T118	Event 3108 3114	struck
+T119	Event 3176 3182	combat
+T120	Event 3435 3438	hit
+T121	Event 3483 3491	election
+T122	Event 3578 3583	known
+T123	Event 3647 3655	deciding
+T124	Event 3694 3699	death
+T125	Event 3716 3725	eulogized
+T126	Event 3869 3875	theory
+T127	Event 4000 4008	concepts
+T128	Event 4066 4072	return
+T129	Event 4103 4111	campaign
+T130	Event 4301 4310	finishing
+T131	Event 4392 4396	came
+T132	Event 4616 4625	finishing
+T133	Event 4647 4656	completed
+T134	RelationWord 4720 4722	In
+T135	Event 4723 4735	October 1906
+T136	Event 4743 4751	admitted
+T137	Event 4895 4904	finishing
+T138	Event 4840 4848	traveled
+T139	Event 4941 4950	finishing
+T140	Event 4971 4988	gained employment
+T141	Event 5013 5021	attended
+T142	Event 5056 5065	finishing
+T143	Event 5108 5117	finishing
+T144	Event 5144 5151	resumed
+T145	RelationWord 5230 5236	whilst
+T146	Event 5211 5218	adopted
+T147	Event 5256 5262	colony
+T148	RelationWord 5331 5337	before
+T149	Event 5312 5319	adopted
+T150	Event 5345 5352	annexed
+T151	Event 5634 5646	World War II
+T152	Event 5669 5681	sought after
+T153	RelationWord 5368 5373	after
+T154	Event 5396 5407	disappeared
+T155	Event 5422 5428	called
+T156	Event 5503 5513	introduced
+T157	RelationWord 5530 5535	after
+T158	Event 5540 5566	1910 Republican revolution
+T159	Event 5921 5927	minted
+T160	Event 5949 5961	18th century
+T161	Event 5977 5983	scored
+T162	Event 6018 6028	end of May
+T163	RelationWord 6007 6013	before
+T164	Event 6096 6102	become
+T165	RelationWord 6108 6113	since
+T167	Event 6175 6183	reaching
+T168	Event 6206 6216	end of May
+T169	RelationWord 6195 6201	before
+T170	RelationWord 6365 6371	before
+T171	Event 6376 6391	end of May 2012
+T172	Event 6344 6353	achieving
+T173	Event 6475 6482	reached
+T174	Event 6505 6523	end of May in 1938
+T175	RelationWord 6779 6785	before
+T176	Event 6790 6800	end of May
+T177	Event 6761 6767	scored
+T179	RelationWord 6904 6909	after
+T178	Event 6887 6893	scored
+T180	Event 6910 6918	resuming
+T181	RelationWord 6979 6984	After
+T182	Event 6985 6992	winning
+T183	Event 7111 7120	announced
+T184	RelationWord 7196 7200	Upon
+T185	Event 7205 7209	vote
+T186	Event 7384 7391	elected
+T187	Event 7515 7521	dinner
+T188	Event 7628 7631	ran
+T189	Event 7722 7729	elected
+T190	Event 7747 7751	1972
+T191	RelationWord 7744 7746	in
+T192	Event 7863 7868	lived
+T193	RelationWord 7889 7895	before
+T194	Event 7896 7902	moving
+T195	RelationWord 8020 8026	before
+T196	Event 7998 8003	lived
+T197	Event 8027 8033	moving
+T198	RelationWord 8228 8234	before
+T199	Event 8235 8243	reaching
+T200	Event 8216 8220	took
+T201	RelationWord 8437 8443	before
+T46	Event 1727 1736	inflation
+T202	Event 1755 1759	term
+R23	relation Arg1:T37 Arg2:T46	
+R24	during Arg1:T46 Arg2:T202	
+R25	relation Arg1:T35 Arg2:T66	
+R26	during Arg1:T66 Arg2:T65	
+R27	relation Arg1:T69 Arg2:T103	
+R28	cooccur Arg1:T103 Arg2:T102	
+R29	relation Arg1:T38 Arg2:T105	
+R30	during Arg1:T105 Arg2:T104	
+R31	relation Arg1:T90 Arg2:T107	
+R32	during Arg1:T107 Arg2:T106	
+R33	relation Arg1:T14 Arg2:T109	
+R34	during Arg1:T109 Arg2:T108	
+R35	relation Arg1:T41 Arg2:T115	
+R36	before Arg1:T115 Arg2:T114	
+R37	relation Arg1:T39 Arg2:T113	
+R38	during Arg1:T113 Arg2:T112	
+R39	relation Arg1:T70 Arg2:T117	
+R40	cooccur Arg1:T117 Arg2:T116	
+R41	relation Arg1:T71 Arg2:T119	
+R42	cooccur Arg1:T119 Arg2:T118	
+R43	relation Arg1:T42 Arg2:T120	
+R44	before Arg1:T120 Arg2:T121	
+R45	relation Arg1:T43 Arg2:T122	
+R46	beforeOrEqual Arg1:T122 Arg2:T123	
+R47	relation Arg1:T15 Arg2:T125	
+R48	cooccur Arg1:T125 Arg2:T124	
+R49	relation Arg1:T16 Arg2:T126	
+R50	earlier Arg1:T126 Arg2:T127	
+R51	relation Arg1:T18 Arg2:T131	
+R52	cooccur Arg1:T131 Arg2:T130	
+R53	relation Arg1:T19 Arg2:T133	
+R54	cooccur Arg1:T133 Arg2:T132	
+R55	relation Arg1:T134 Arg2:T136	
+R56	during Arg1:T136 Arg2:T135	
+R57	relation Arg1:T74 Arg2:T138	
+R58	cooccur Arg1:T138 Arg2:T137	
+R59	relation Arg1:T89 Arg2:T140	
+R60	cooccur Arg1:T140 Arg2:T139	
+R61	relation Arg1:T72 Arg2:T141	
+R62	cooccur Arg1:T141 Arg2:T142	
+R63	relation Arg1:T91 Arg2:T144	
+R64	cooccur Arg1:T144 Arg2:T143	
+R65	relation Arg1:T145 Arg2:T146	
+R66	cooccur Arg1:T146 Arg2:T147	
+R67	relation Arg1:T148 Arg2:T149	
+R68	before Arg1:T149 Arg2:T150	
+R69	relation Arg1:T45 Arg2:T152	
+R70	during Arg1:T152 Arg2:T151	
+R71	relation Arg1:T44 Arg2:T159	
+R72	during Arg1:T159 Arg2:T160	
+R73	relation Arg1:T163 Arg2:T161	
+R74	before Arg1:T161 Arg2:T162	
+T67	Event 6118 6134	Second World War
+R75	relation Arg1:T165 Arg2:T164	
+R76	starts Arg1:T164 Arg2:T67	
+R77	relation Arg1:T169 Arg2:T167	
+R78	before Arg1:T167 Arg2:T168	
+R79	relation Arg1:T170 Arg2:T172	
+R80	before Arg1:T172 Arg2:T171	
+R81	relation Arg1:T75 Arg2:T173	
+R82	before Arg1:T173 Arg2:T174	
+R83	relation Arg1:T175 Arg2:T177	
+R84	before Arg1:T177 Arg2:T176	
+R85	relation Arg1:T184 Arg2:T186	
+R86	cooccur Arg1:T186 Arg2:T185	
+R87	relation Arg1:T191 Arg2:T189	
+R88	during Arg1:T189 Arg2:T190	
+R89	relation Arg1:T193 Arg2:T192	
+R90	before Arg1:T192 Arg2:T194	
+R91	relation Arg1:T195 Arg2:T196	
+R92	before Arg1:T196 Arg2:T197	
+R93	relation Arg1:T198 Arg2:T200	
+R94	before Arg1:T200 Arg2:T199	
+T68	Event 8351 8359	deferred
+T166	Event 8444 8451	signing
+R95	relation Arg1:T201 Arg2:T68	
+R96	before Arg1:T68 Arg2:T166	
+T203	RelationWord 8555 8561	during
+T204	Event 8566 8576	final days
+T205	RelationWord 8577 8583	before
+T206	Event 8596 8600	fell
+T207	Event 8671 8687	proved important
+R97	relation Arg1:T203 Arg2:T207	
+R98	during Arg1:T207 Arg2:T204	
+R99	relation Arg1:T205 Arg2:T204	
+R100	before Arg1:T204 Arg2:T206	
+T208	Event 8816 8827	discussions
+T209	Event 9017 9023	played
+R101	relation Arg1:T29 Arg2:T209	
+R102	during Arg1:T209 Arg2:T208	
+T210	Event 9243 9247	term
+T211	Event 9270 9279	preparing
+R103	relation Arg1:T47 Arg2:T211	
+R104	during Arg1:T211 Arg2:T210	
+T212	Event 9358 9367	interview
+T213	Event 9456 9464	asserted
+R105	relation Arg1:T48 Arg2:T213	
+R106	during Arg1:T213 Arg2:T212	
+T215	Event 9600 9606	stated
+T216	Event 9785 9795	Conference
+T214	Event 9562 9582	conference interview
+R107	relation Arg1:T49 Arg2:T215	
+R108	during Arg1:T215 Arg2:T214	
+T217	Event 9895 9906	established
+R109	relation Arg1:T50 Arg2:T217	
+R110	during Arg1:T217 Arg2:T216	
+T218	Event 10420 10430	in Belfast
+T219	Event 10440 10456	attempts to find
+R111	relation Arg1:T53 Arg2:T219	
+R112	cooccur Arg1:T219 Arg2:T218	
+T220	Event 11069 11075	spread
+T221	Event 11184 11196	participated
+R113	relation Arg1:T51 Arg2:T221	
+R114	before Arg1:T221 Arg2:T220	
+T222	RelationWord 11363 11365	In
+T223	Event 11370 11381	2nd century
+T224	Event 11405 11408	had
+R115	relation Arg1:T222 Arg2:T224	
+R116	during Arg1:T224 Arg2:T223	
+T225	RelationWord 12173 12179	before
+T226	Event 12151 12155	left
+T227	Event 12200 12205	ended
+R117	relation Arg1:T225 Arg2:T226	
+R118	before Arg1:T226 Arg2:T227	
+T228	RelationWord 12386 12392	before
+T229	Event 12393 12402	returning
+T230	Event 12407 12418	dismantling
+T231	Event 12301 12309	building
+R119	relation Arg1:T228 Arg2:T231	
+R120	before Arg1:T231 Arg2:T229	
+R121	before Arg1:T231 Arg2:T230	
+T232	Event 12444 12458	was in Britain
+T233	Event 12498 12502	died
+R122	relation Arg1:T55 Arg2:T233	
+R123	cooccur Arg1:T233 Arg2:T232	
+T234	Event 12551 12558	capture
+R124	relation Arg1:T56 Arg2:T234	
+T235	Event 12585 12597	could escape
+R125	before Arg1:T234 Arg2:T235	
+T236	Event 12634 12638	died
+T237	Event 12653 12656	did
+R126	relation Arg1:T57 Arg2:T236	
+R127	before Arg1:T236 Arg2:T237	
+T238	Event 12735 12741	career
+T239	Event 12750 12758	had seen
+R128	relation Arg1:T59 Arg2:T239	
+R129	during Arg1:T239 Arg2:T238	
+T240	RelationWord 13072 13078	before
+T241	Event 13011 13014	lay
+T242	Event 13095 13102	arrived
+R130	relation Arg1:T240 Arg2:T241	
+R131	before Arg1:T241 Arg2:T242	
+T243	RelationWord 13658 13664	During
+T244	Event 13669 13674	visit
+T245	Event 13680 13684	said
+R132	relation Arg1:T243 Arg2:T245	
+R133	during Arg1:T245 Arg2:T244	
+T246	RelationWord 13976 13982	during
+T247	Event 13987 14008	2nd and 3rd centuries
+T248	Event 13929 13936	reached
+R134	relation Arg1:T246 Arg2:T248	
+R135	during Arg1:T248 Arg2:T247	
+T249	Event 14022 14045	end of the 18th century
+T250	Event 14087 14090	was
+R136	relation Arg1:T61 Arg2:T250	
+R137	finishes Arg1:T250 Arg2:T249	
+T251	Event 14254 14260	crisis
+T252	Event 14354 14361	staying
+R138	relation Arg1:T88 Arg2:T252	
+R139	before Arg1:T252 Arg2:T251	
+T253	RelationWord 14740 14746	during
+T254	Event 14751 14757	winter
+T255	Event 14723 14728	blows
+R140	relation Arg1:T253 Arg2:T255	
+R141	during Arg1:T255 Arg2:T254	
+T256	Event 15442 15449	drafted
+T257	Event 15461 15472	Vietnam War
+R142	relation Arg1:T63 Arg2:T256	
+R143	during Arg1:T256 Arg2:T257	
+T258	Event 16319 16327	campaign
+T259	Event 16335 16346	was accused
+R144	relation Arg1:T73 Arg2:T259	
+R145	during Arg1:T259 Arg2:T258	
+T260	RelationWord 17146 17152	Before
+T261	Event 17153 17168	the end of 1976
+T262	Event 17256 17264	prompted
+R146	relation Arg1:T260 Arg2:T262	
+R147	before Arg1:T262 Arg2:T261	
+T263	RelationWord 17331 17337	During
+T264	Event 17347 17353	period
+T265	Event 17405 17414	completed
+R148	relation Arg1:T263 Arg2:T265	
+R149	before Arg1:T265 Arg2:T264	
+T266	Event 18568 18581	Paris Commune
+T267	Event 18686 18689	was
+R150	relation Arg1:T85 Arg2:T267	
+R151	during Arg1:T267 Arg2:T266	
+T268	RelationWord 19298 19304	During
+T269	Event 19327 19335	campaign
+T270	Event 19378 19385	tweeted
+R152	relation Arg1:T268 Arg2:T270	
+R153	during Arg1:T270 Arg2:T269	
+T271	RelationWord 21913 21919	During
+T272	Event 21920 21932	World War II
+T273	Event 22033 22037	used
+R154	relation Arg1:T271 Arg2:T273	
+R155	during Arg1:T273 Arg2:T272	
+T274	RelationWord 22122 22128	During
+T275	Event 22133 22149	Chinese New Year
+T276	Event 22171 22176	close
+R156	relation Arg1:T274 Arg2:T276	
+R157	before Arg1:T276 Arg2:T275	
+T277	RelationWord 23463 23469	Before
+T278	RelationWord 23978 23984	Before
+T279	Event 23985 23990	going
+T280	Event 23474 23483	formation
+T281	Event 23521 23530	assembled
+R158	relation Arg1:T277 Arg2:T281	
+R159	before Arg1:T281 Arg2:T280	
+T282	Event 24011 24018	decided
+R160	relation Arg1:T278 Arg2:T282	
+R161	before Arg1:T282 Arg2:T279	
+T283	RelationWord 25809 25814	Prior
+T284	Event 25832 25843	involvement
+T285	Event 25851 25854	was
+R162	relation Arg1:T283 Arg2:T285	
+R163	before Arg1:T285 Arg2:T284	
+T286	RelationWord 25940 25946	Around
+T287	Event 25965 25970	death
+T288	Event 25988 25996	appeared
+R164	relation Arg1:T286 Arg2:T288	
+R165	cooccur Arg1:T288 Arg2:T287	
+T289	Event 26845 26857	was arrested
+T290	Event 26944 26952	searched
+T291	RelationWord 26751 26757	Before
+T292	Event 26762 26785	end of his first season
+R166	relation Arg1:T291 Arg2:T290	
+R167	relation Arg1:T291 Arg2:T289	
+R168	before Arg1:T290 Arg2:T292	
+R169	before Arg1:T289 Arg2:T292	
+T293	RelationWord 28059 28065	Before
+T294	Event 28081 28086	began
+T295	Event 28125 28129	were
+R170	relation Arg1:T293 Arg2:T295	
+R171	before Arg1:T295 Arg2:T294	
+T296	RelationWord 28396 28402	During
+T297	Event 28407 28425	first seven months
+T298	Event 28457 28463	drinks
+R172	relation Arg1:T296 Arg2:T298	
+R173	during Arg1:T298 Arg2:T297	
+T299	RelationWord 28637 28643	Before
+T300	Event 28654 28663	abandoned
+T301	Event 28729 28732	was
+R174	relation Arg1:T299 Arg2:T301	
+R175	before Arg1:T301 Arg2:T300	
+T302	RelationWord 22819 22824	While
+T303	Event 22825 22833	in Egypt
+T304	Event 22845 22851	stayed
+R176	relation Arg1:T302 Arg2:T304	
+R177	cooccur Arg1:T304 Arg2:T303	
+T305	RelationWord 10821 10827	during
+T306	Event 10790 10793	was
+T307	Event 10832 10840	Iron Age
+R178	relation Arg1:T305 Arg2:T306	
+R179	during Arg1:T306 Arg2:T307	
+T308	RelationWord 11796 11802	during
+T309	Event 11752 11756	lost
+T52	Event 11803 11817	Late Antiquity
+R180	relation Arg1:T308 Arg2:T309	
+R181	during Arg1:T309 Arg2:T52	
+T310	RelationWord 17713 17719	during
+T311	RelationWord 16155 16161	during
+T312	Event 16184 16192	campaign
+T313	Event 16128 16135	started
+T314	Event 17723 17731	concerts
+T315	Event 17628 17636	bringing
+R182	relation Arg1:T310 Arg2:T315	
+R183	during Arg1:T315 Arg2:T314	
+R184	relation Arg1:T311 Arg2:T313	
+R185	during Arg1:T313 Arg2:T312	
+T316	RelationWord 23212 23218	During
+T317	Event 23223 23232	Consulate
+T318	Event 23243 23248	faced
+R186	relation Arg1:T316 Arg2:T318	
+R187	during Arg1:T318 Arg2:T317	
+T319	RelationWord 30125 30129	Upon
+T320	Event 30130 30138	becoming
+T321	Event 30182 30191	initiated
+R188	relation Arg1:T319 Arg2:T321	
+R189	cooccur Arg1:T321 Arg2:T320	
