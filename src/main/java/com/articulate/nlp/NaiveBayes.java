@@ -55,7 +55,7 @@ public class NaiveBayes {
 
         DocGen dg = DocGen.getInstance();
         if (StringUtil.emptyString(filename))
-            input = dg.readSpreadsheetFile("/home/apease/IPsoft/NB/NBdata.txt", ',');
+            input = dg.readSpreadsheetFile(System.getProperty("user.home") + "/IPsoft/NB/NBdata.txt", ',');
         else
             input = dg.readSpreadsheetFile(filename, ',');
         //System.out.println(input);
@@ -404,8 +404,8 @@ public class NaiveBayes {
 
         // read from a file assuming a list of attributes and a class name last on each line
         DocGen dg = DocGen.getInstance();
-        //NaiveBayes nb = new NaiveBayes("/home/apease/IPsoft/NB/NBdata.txt");
-        //NaiveBayes nb = new NaiveBayes("/home/apease/IPsoft/NB/house-votes-84.data");
+        //NaiveBayes nb = new NaiveBayes(System.getProperty("user.home") + "/IPsoft/NB/NBdata.txt");
+        //NaiveBayes nb = new NaiveBayes(System.getProperty("user.home") + "/IPsoft/NB/house-votes-84.data");
         NaiveBayes nb = null;
         ArrayList<String> values = null;
         if (args.length >= 1) {
@@ -421,7 +421,7 @@ public class NaiveBayes {
             }
         }
         else {
-            nb = new NaiveBayes("/home/apease/IPsoft/NB/pima-indians-diabetes.data");
+            nb = new NaiveBayes(System.getProperty("user.home") + "/IPsoft/NB/pima-indians-diabetes.data");
             values = Lists.newArrayList("4","111","72","47","207","37.1","1.390","56");
             nb.initialize();
             System.out.println("main(): most likely class: " + nb.classify(values));

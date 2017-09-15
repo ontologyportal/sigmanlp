@@ -95,7 +95,7 @@ public class ShuZiInsQA {
      */
     private void readVocab() {
 
-        List<String> lines = readLines("/home/apease/IPsoft/insuranceQA-master/vocabulary-mod");
+        List<String> lines = readLines(System.getProperty("user.home") + "/IPsoft/insuranceQA-master/vocabulary-mod");
         for (String l : lines) {
             String[] elements = l.split("\\t");
             if (elements.length == 2) {
@@ -154,7 +154,7 @@ public class ShuZiInsQA {
 
         TFIDF cb = null;
         try {
-            cb = new TFIDF("/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
         }
         catch (IOException ioe) {
             System.out.println("Error in ShuZiInsQA.readAnswers()");
@@ -163,7 +163,7 @@ public class ShuZiInsQA {
         answers.add(""); // make 0th element blank
         answerNgrams.add(new HashMap<>());
         int linenum = 1;
-        List<String> lines = readLines("/home/apease/IPsoft/insuranceQA-master/answers.label.token_idx");
+        List<String> lines = readLines(System.getProperty("user.home") + "/IPsoft/insuranceQA-master/answers.label.token_idx");
         for (String l : lines) {
             String[] elements = l.split("\\t");
             String answerID = elements[0];
@@ -196,7 +196,7 @@ public class ShuZiInsQA {
      */
     private void readTrainingQuestions() {
 
-        List<String> lines = readLines("/home/apease/IPsoft/insuranceQA-master/question.train.token_idx.label");
+        List<String> lines = readLines(System.getProperty("user.home") + "/IPsoft/insuranceQA-master/question.train.token_idx.label");
         for (String l : lines) {
             String[] elements = l.split("\\t");
             String answer = elements[1];
@@ -232,13 +232,13 @@ public class ShuZiInsQA {
         List<Dev> result = new ArrayList<>();
         TFIDF cb = null;
         try {
-            cb = new TFIDF("/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
         }
         catch (IOException ioe) {
             System.out.println("Error in ShuZiInsQA.readAnswers()");
             ioe.printStackTrace();
         }
-        List<String> lines = readLines("/home/apease/IPsoft/insuranceQA-master/question.dev.label.token_idx.pool");
+        List<String> lines = readLines(System.getProperty("user.home") + "/IPsoft/insuranceQA-master/question.dev.label.token_idx.pool");
         int count = 0;
         for (String l : lines) {
             if (StringUtil.emptyString(l)) continue;
@@ -287,7 +287,7 @@ public class ShuZiInsQA {
 
         TFIDF cb = null;
         try {
-            cb = new TFIDF("/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
         }
         catch (IOException ioe) {
             System.out.println("Error in ShuZiInsQA.readAnswers()");
@@ -336,7 +336,7 @@ public class ShuZiInsQA {
      */
     private ArrayList<Dev> readTestQuestionOneFile() {
 
-        ArrayList<Dev> test = readTestQuestionFile("/home/apease/IPsoft/insuranceQA-master/question.dev.label.token_idx.pool");
+        ArrayList<Dev> test = readTestQuestionFile(System.getProperty("user.home") + "/IPsoft/insuranceQA-master/question.dev.label.token_idx.pool");
         return test;
     }
 
@@ -915,7 +915,7 @@ public class ShuZiInsQA {
             sziq.readVocab();
             sziq.readAnswers();
             a.addAll(sziq.answers);
-            cb = new TFIDF(a,"/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(a,System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
             to = new TokenOverlap(cb);
 
         }
@@ -949,7 +949,7 @@ public class ShuZiInsQA {
         try {
             List<String> a = new ArrayList<>();
             a.addAll(answers);
-            cb = new TFIDF(a,"/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(a,System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
             to = new TokenOverlap(cb);
             ng = new NGramOverlap(cb);
             so = new SynsetOverlap(cb);
