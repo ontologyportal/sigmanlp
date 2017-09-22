@@ -27,10 +27,24 @@ import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.Formula;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class Procedures {
 
     public static boolean debug = false;
+
+    public static final List<String> procNames = Arrays.asList("isCELTclass",
+            "isSubclass", "isInstanceOf", "isSubAttribute");
+
+    /** ***************************************************************
+     */
+    public static boolean isProcPred(String s) {
+
+        if (procNames.contains(s))
+            return true;
+        return false;
+    }
 
     /** ***************************************************************
      * CELT classes which are not SUMO classes, like "person"
@@ -52,7 +66,7 @@ public class Procedures {
                 kb.isSubclass(c.arg1, c.arg2));
 
         if (c.arg2.equals("Person"))
-            if (kb.isSubclass(c.arg1, "Human") || kb.isInstanceOf(c.arg1, "Human") || kb.isSubclass(c.arg1, "SocialRole"))
+            if (kb.isSubclass(c.arg1, "Human") || kb.isInstanceOf(c.arg1, "Human") || kb.isSubclass(c.arg1, "SocialRole") || kb.isInstanceOf(c.arg1, "SocialRole"))
                 return "true";
             else
                 return "false";
