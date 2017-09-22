@@ -146,6 +146,6 @@ public class Coinco {
     public static void main(String[] args) {
 
         Coinco c = new Coinco();
-        c.parse("/home/apease/IPsoft/corpora/coinco/coinco.xml");
+        c.parse(System.getProperty("user.home") + "/IPsoft/corpora/coinco/coinco.xml");
     }
 }

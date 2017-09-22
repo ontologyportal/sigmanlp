@@ -218,7 +218,7 @@ public class MUC {
         //props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
         props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, entitymentions, parse, depparse, hcoref");
         props.setProperty("tokenize.options", "ptb3Escaping=false");
-        //String[] configFileProp = {"-props","/home/apease/Programs/stanford-corenlp-full-2015-04-20/CoreNLP/build/resources/main/edu/stanford/com.articulate.nlp/hcoref/properties/coref-default-dep.properties"};
+        //String[] configFileProp = {"-props",System.getProperty("user.home") + "/Programs/stanford-corenlp-full-2015-12-09/CoreNLP/build/resources/main/edu/stanford/com.articulate.nlp/hcoref/properties/coref-default-dep.properties"};
         String[] configFileProp = {"-props",System.getenv("COREF")};
         props.putAll(StringUtils.argsToPropertiesWithResolve(configFileProp));
         System.out.println("MUC.toCoref(): before initialized pipeline");
@@ -995,11 +995,11 @@ public class MUC {
      */
     public void testMUC() {
 
-        //List<String> lines = cleanSGML("/home/apease/IPsoft/corpora/muc6/data/keys/formal-tst.CO.key.cleanup.09jul96");
-        //List<String> lines = getDocuments("/home/apease/IPsoft/corpora/muc6/data/keys/formal-tst.CO.key.cleanup.09jul96");
+        //List<String> lines = cleanSGML(System.getProperty("user.home") + "/IPsoft/corpora/muc6/data/keys/formal-tst.CO.key.cleanup.09jul96");
+        //List<String> lines = getDocuments(System.getProperty("user.home") + "/IPsoft/corpora/muc6/data/keys/formal-tst.CO.key.cleanup.09jul96");
         List<String> lines = getDocuments(System.getenv("MUCCORPUS") + File.separator + "formal-tst.CO.key.cleanup.09jul96");
-        //List<String> lines = getDocuments("/home/apease/IPsoft/corpora/muc6/data/keys/Wash.txt");
-        //List<String> lines = getDocuments("/home/apease/IPsoft/corpora/muc6/data/keys/891101-0056.co.v0.sgm" + "");
+        //List<String> lines = getDocuments(System.getProperty("user.home") + "/IPsoft/corpora/muc6/data/keys/Wash.txt");
+        //List<String> lines = getDocuments(System.getProperty("user.home") + "/IPsoft/corpora/muc6/data/keys/891101-0056.co.v0.sgm" + "");
         for (String s : lines) {
             String cleanedInput = s.replaceAll("<COREF[^>]+>", "");
             cleanedInput = cleanedInput.replace("</COREF>","");

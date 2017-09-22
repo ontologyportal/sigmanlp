@@ -37,9 +37,9 @@ public class SemEval2007 {
      */
     public static void load() {
 
-        WordNet.wn.readSenseIndex("/home/apease/corpora/WordNet-2.0/dict/index.sense");
+        WordNet.wn.readSenseIndex(System.getProperty("user.home") + "/corpora/WordNet-2.0/dict/index.sense");
         try {
-            WordNetUtilities.updateWNversionReading("/home/apease/corpora/mappings-upc-2007/mapping-30-21/", "30-21");
+            WordNetUtilities.updateWNversionReading(System.getProperty("user.home") + "/corpora/mappings-upc-2007/mapping-30-21/", "30-21");
         }
         catch (IOException ioe) {
             System.out.println("Error in XtendedWN.main()" + ioe.getMessage());

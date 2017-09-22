@@ -123,7 +123,7 @@ public class RuleSet {
      */
     public static void testReadRuleSet() {
     
-        String filename = "/home/apease/IPsoft/SemRewrite.txt";
+        String filename = System.getProperty("user.home") + "/IPsoft/SemRewrite.txt";
         try {
             RuleSet rs = RuleSet.readFile(filename);
         }
