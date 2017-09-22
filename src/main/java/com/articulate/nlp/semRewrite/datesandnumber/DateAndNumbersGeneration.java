@@ -100,9 +100,9 @@ public class DateAndNumbersGeneration {
 	private void measureFn(Tokens token, int count, Utilities utilities) {
 
         if (utilities != null)
-            System.out.println("DateAndNumbersGeneration.measureFn(): " + utilities);
+            System.out.println("DateAndNumbersGeneration.measureFn(): utilities: " + utilities);
         if (token != null)
-            System.out.println("DateAndNumbersGeneration.measureFn(): " + token);
+            System.out.println("DateAndNumbersGeneration.measureFn(): token: " + token);
 		IndexedWord tokenNode = utilities.StanfordDependencies.getNodeByIndex(token.getId());
 		IndexedWord unitOfMeasurementNode = utilities.StanfordDependencies.getParent(tokenNode);
 		IndexedWord measuredEntity = null;
@@ -136,22 +136,27 @@ public class DateAndNumbersGeneration {
 		else if ((measuredEntity == null) && (unitOfMeasurementNode == null)){
 			return;
 		}
-		while ((measuredEntity != null) && (!flag)) {
+		boolean changed = true;
+		while (measuredEntity != null && !flag && changed) {
 			measuredEntityStr = measuredEntity.value() + "-" + measuredEntity.index();
+			System.out.println("DateAndNumbersGeneration.measureFn(): measuredEntityStr: " + measuredEntityStr);
 			if (!visitedNodes.contains(measuredEntityStr)) {
 				visitedNodes.add(measuredEntityStr);
+				changed = true;
 			}
+			else
+			    changed = false;
 			posTagRemoverMatcher = POS_TAG_REMOVER.matcher(measuredEntity.toString());
 			if (posTagRemoverMatcher.find()) {
 				posTagRemover = posTagRemoverMatcher.group(1);
-				if(Utilities.nounTags.contains(posTagRemover)) {
+				if (Utilities.nounTags.contains(posTagRemover)) {
 					break;
 				}
 				//IndexedWord tempMeasuredEntity = StanfordDependencies.getParent(measuredEntity);
 				if (utilities.StanfordDependencies.getParent(measuredEntity) == null) {
 					Set<IndexedWord> childrenSet = utilities.StanfordDependencies.getChildren(measuredEntity);
 					//which means it is unitOfMeasurementNode. Hence remove infinite looping condition
-					if ((childrenSet.size()==1)) {
+					if ((childrenSet.size() == 1)) {
 						measuredEntity = unitOfMeasurementNode;
 						//String lemmatizedWord = lemmatizeWord(measuredEntity);
 						utilities.sumoTerms.add("measure(" + measuredEntity.word() + "-" + measuredEntity.index() +
