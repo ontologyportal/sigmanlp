@@ -21,6 +21,8 @@ import java.util.HashMap;
  */
 public class CLCFCE {
 
+    // Key is filename, value is a list of lines of text.  Sentences
+    // must not cross a line.
     public static HashMap<String,ArrayList<String>> docs = new HashMap<>();
 
     /***************************************************************
