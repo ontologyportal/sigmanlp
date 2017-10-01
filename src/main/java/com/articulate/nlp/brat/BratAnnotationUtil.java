@@ -26,7 +26,8 @@ import edu.stanford.nlp.util.CoreMap;
  * This code is copyright Infosys Ltd 2017.
  * This software is released under the GNU Public License.
  */
-/**
+
+/** *************************************************************
  * 
  * @author mohit.gupta
  *
@@ -41,6 +42,8 @@ public class BratAnnotationUtil {
 	// mapping from term name - index to term id
 	public Map<String, String> termIdMap = new HashMap<>();
 
+    /** *************************************************************
+     */
 	public class BratEntity {
 		private String name;
 		private String id;
@@ -88,9 +91,13 @@ public class BratAnnotationUtil {
 			this.end = end;
 		}
 
+		public String toString() { return name + ":" + id; }
 	}
 
+	/** *************************************************************
+	 */
 	public class BratRelation {
+
 		private String id;
 		private String type;
 		private String startTermId;
@@ -128,9 +135,13 @@ public class BratAnnotationUtil {
 			this.endTermId = endTermId;
 		}
 
+        public String toString() { return type + ":" + startTermId + ":" + endTermId; }
 	}
 
+	/** *************************************************************
+	 */
 	private BratEntity addEntity(String type, BratEntity entity, CoreLabel token, List<BratEntity> result) {
+
 		if (type != null && !type.isEmpty()) {
 			if (entity == null) {
 				entity = new BratEntity();
@@ -141,11 +152,13 @@ public class BratAnnotationUtil {
 				entity.setName(token.get(TextAnnotation.class));
 				bratEntitiesMap.put(entity.getId(), entity);
 				result.add(entity);
-			} else {
+			}
+			else {
 				if (type.equals(entity.getType())) {
 					entity.setEnd(token.endPosition());
 					entity.setName(entity.getName() + " " + token.get(TextAnnotation.class));
-				} else {
+				}
+				else {
 					entity = new BratEntity();
 					entity.setType(type);
 					entity.setStart(token.beginPosition());
@@ -160,8 +173,11 @@ public class BratAnnotationUtil {
 		return entity;
 	}
 
+	/** *************************************************************
+	 */
 	@SuppressWarnings("unchecked")
 	private JSONArray getJSONArrayOfBratEntities(List<BratEntity> bratEntities) {
+
 		JSONArray result = new JSONArray();
 		JSONArray currentEntity;
 		for (BratEntity entity : bratEntities) {
@@ -179,8 +195,11 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
+	/** *************************************************************
+	 */
 	@SuppressWarnings("unchecked")
 	private JSONArray getJSONArrayOfBratRelations(List<BratRelation> bratRelations) {
+
 		JSONArray result = new JSONArray();
 		JSONArray currentRelation;
 		for (BratRelation relation : bratRelations) {
@@ -202,7 +221,10 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
+	/** *************************************************************
+	 */
 	private List<BratRelation> getBratRelations(String input) {
+
 		if (document == null)
 			document = Pipeline.toAnnotation(input);
 
@@ -228,10 +250,15 @@ public class BratAnnotationUtil {
 				result.add(bratRelation);
 			}
 		}
+		System.out.println("getBratRelations(): result: " + result);
 		return result;
 	}
 
+	/** *************************************************************
+	 */
 	private List<BratEntity> getBratEntities(String input) {
+
+		System.out.println("getBratEntities(): " + input);
 		document = Pipeline.toAnnotation(input);
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
 		List<BratEntity> result = new ArrayList<>();
@@ -264,17 +291,18 @@ public class BratAnnotationUtil {
 				termIdMap.put(posEntity.getName() + "-" + token.index(), posEntity.getId());
 			}
 		}
+		System.out.println("getBratEntities(): result: " + result);
 		return result;
 	}
 
-	/**
-	 * 
-	 * @param input
-	 *            Text to be annotated
+	/** ************************************************************
+	 * @param input Text to be annotated
 	 * @return JSON String to be used as docData for brat annotation
 	 */
 	@SuppressWarnings("unchecked")
 	public String getBratAnnotations(String input) {
+
+		System.out.println("getBratAnnotations(): " + input);
 		JSONObject result = new JSONObject();
 		result.put("text", input);
 		List<BratEntity> bratEntities = getBratEntities(input);
