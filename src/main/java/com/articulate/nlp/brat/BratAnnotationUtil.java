@@ -226,10 +226,10 @@ public class BratAnnotationUtil {
         return result;
     }
 
-    private List<BratRelation> getBratRelations(String input) {
+    private List<BratRelation> getBratRelations(String input,Pipeline pipeline) {
 
         if (document == null)
-            document = Pipeline.toAnnotation(input);
+            document = pipeline.annotate(input);
 
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
         List<BratRelation> result = new ArrayList<>();
@@ -256,9 +256,9 @@ public class BratAnnotationUtil {
         return result;
     }
 
-    private List<BratEntity> getBratEntities(String input) {
+    private List<BratEntity> getBratEntities(String input,Pipeline pipeline) {
 
-        document = Pipeline.toAnnotation(input);
+        document = pipeline.annotate(input);
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
         List<BratEntity> result = new ArrayList<>();
         // traversing the sentences of the document
@@ -298,18 +298,26 @@ public class BratAnnotationUtil {
      * @return JSON String to be used as docData for brat annotation
      */
     @SuppressWarnings("unchecked")
-    public String getBratAnnotations(String input) {
+    public String getBratAnnotations(String input,Pipeline pipeline) {
 
         JSONObject result = new JSONObject();
         result.put("text", input);
-        List<BratEntity> bratEntities = getBratEntities(input);
+        List<BratEntity> bratEntities = getBratEntities(input,pipeline);
         JSONArray entitiesArray = getJSONArrayOfBratEntities(bratEntities);
         result.put("entities", entitiesArray);
-        List<BratRelation> bratRelations = getBratRelations(input);
+        List<BratRelation> bratRelations = getBratRelations(input,pipeline);
         JSONArray relationsArray = getJSONArrayOfBratRelations(bratRelations);
         result.put("relations", relationsArray);
         return result.toJSONString();
     }
+    
+    public static void main(String[] args) {
+    	
+		BratAnnotationUtil brt = new BratAnnotationUtil();
+		String sentence = "The problem is that the vehicle in question was indeed not on the street";
+		Pipeline pipeline = new Pipeline(true);
+		System.out.println(brt.getBratAnnotations(sentence, pipeline));
+	}
 
 
 }
