@@ -32,7 +32,7 @@ MA  02111-1307 USA
  * duration.
  */
 public class DateInfo {
-	
+
 	private String year = null;
 	private String month = null;
 	private String day = null;

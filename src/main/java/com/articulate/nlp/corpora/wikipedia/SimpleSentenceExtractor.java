@@ -66,6 +66,9 @@ public class SimpleSentenceExtractor {
     }
 
     /****************************************************************
+     * Process strings nested in delimiters and decide whether to make
+     * their content part of the extracted sentence, or to discard the
+     * content.
      */
     public static void processNest(StringBuffer sb, StringBuffer nested, char ch) {
 
@@ -92,6 +95,7 @@ public class SimpleSentenceExtractor {
     }
 
     /****************************************************************
+     * Read a mediawiki file, handling delimited mediawiki code
      */
     public static String readFile(String filename) {
 
@@ -203,8 +207,9 @@ public class SimpleSentenceExtractor {
 
     /****************************************************************
      */
-    public static void extractOneLine(String line, Pipeline p, int limit) {
+    public static ArrayList<String> extractOneLine(String line, Pipeline p, int limit) {
 
+        ArrayList<String> result = new ArrayList<String>();
         Annotation wholeDocument = new Annotation(line);
         p.pipeline.annotate(wholeDocument);
         List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
@@ -212,8 +217,9 @@ public class SimpleSentenceExtractor {
             List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             if (tokens.size() > 2 && tokens.size() < limit &&
                     initialCapital(tokens) && endPunctuation(tokens))
-                System.out.println(sentence + "\n");
+               result.add(sentence.toString());
         }
+        return result;
     }
 
     /****************************************************************
@@ -230,7 +236,9 @@ public class SimpleSentenceExtractor {
             LineNumberReader lnr = new LineNumberReader(reader);
             String line = null;
             while ((line = lnr.readLine()) != null) {
-                extractOneLine(line,p,limit);
+                ArrayList<String> res = extractOneLine(line,p,limit);
+                for (String s : res)
+                    System.out.println(res + "\n");
             }
         }
         catch(Exception e) {

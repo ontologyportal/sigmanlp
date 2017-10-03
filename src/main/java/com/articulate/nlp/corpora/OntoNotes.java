@@ -72,7 +72,7 @@ public class OntoNotes {
     /***************************************************************
      * Read a text file into lines
      */
-    public ArrayList<String> readFile(String filename) {
+    public static ArrayList<String> readFile(String filename) {
 
         ArrayList<String> result = new ArrayList<>();
         try {

@@ -27,7 +27,9 @@ import edu.stanford.nlp.util.CoreMap;
  * This software is released under the GNU Public License.
  */
 
-/**
+
+/** *************************************************************
+ * 
  * @author mohit.gupta
  */
 public class BratAnnotationUtil {
@@ -308,5 +310,6 @@ public class BratAnnotationUtil {
         result.put("relations", relationsArray);
         return result.toJSONString();
     }
+
 
 }
