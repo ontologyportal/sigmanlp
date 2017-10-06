@@ -18,7 +18,9 @@ import java.util.*;
  * This class marks NER strings and annotates with their SUMO
  * class membership and if a multi-word, their span .
  *
- * @author apease
+ * @author 
+ * apease
+ * Infosys LTD.
  */
 
 public class NERAnnotator implements Annotator {

@@ -1,3 +1,6 @@
+//Author Infosys LTD.
+//Copyright : Infosys LTD, 2017
+//License : GPL v3
 var bratLocation = 'brat';
 head.js(
 // External libraries
