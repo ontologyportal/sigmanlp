@@ -100,5 +100,21 @@ public class InterpretNumerics {
         input = "John killed Mary on 31 March and also in July 1995 by travelling back in time.";
         System.out.println(input);
         System.out.println(interp.interpretSingle(input));
+
+        System.out.println("-------------------------");
+        input = "The $200,000 and $60,000 in the first and fourth charges were not lost";
+        System.out.println(input);
+        System.out.println(interp.interpretSingle(input));
+
+        System.out.println("-------------------------");
+        input = "Of the 11 counts, the applicant was convicted of 9 counts (namely, the 3rd charge to the 11th charge).";
+        System.out.println(input);
+        System.out.println(interp.interpretSingle(input));
+
+        System.out.println("-------------------------");
+        input = "The total amount of monies involved in Charges 1 and 2 was approximately HK$2.7 million.";
+        System.out.println(input);
+        System.out.println(interp.interpretSingle(input));
+
     }
 }

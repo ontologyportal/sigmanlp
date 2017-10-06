@@ -179,7 +179,8 @@ public class Lexer {
         tokenDefs.put(Newline,      Pattern.compile("\\n"));
         tokenDefs.put(WhiteSpace,   Pattern.compile("\\s+"));
         //tokenDefs.put(Ident,        Pattern.compile("\\\"?\\'?[0-9a-zA-Z]\\'?[_\\-a-z0-9_A-Z ]+\\*?\\\"?"));
-        tokenDefs.put(Number,       Pattern.compile("-?[0-9]?[0-9\\.]+(\\d\\d\\d)*[^,()]+")); // allow comma "-?[0-9]?[0-9\\.]+(,\\d\\d\\d)*[^,()]+"
+        tokenDefs.put(Number,       Pattern.compile("-?[0-9]?[0-9\\.]+(\\d\\d\\d)*[^,()]+"));
+        // allow comma "-?[0-9]?[0-9\\.]+(,\\d\\d\\d)*[^,()]+"
         tokenDefs.put(Negation,     Pattern.compile("-"));
         tokenDefs.put(Zero,         Pattern.compile("\\!"));
 
@@ -502,6 +503,7 @@ public class Lexer {
     private static String example3 = "at*";
     private static String example4 = "num(PM-6, 8:30-5)";
     private static String example5 = "name(John-6, \"John\")";
+    private static String example6 = "conj:and($_200,000-2,$_60,000-5)";
     
     /** ***************************************************************
      * Test that comments and whitespace are normally ignored. 
@@ -509,14 +511,13 @@ public class Lexer {
     private static void testLex() {
 
         System.out.println("-------------------------------------------------");
-        System.out.println("INFO in Lexer.testLex(): example2: " + example2);
-        Lexer lex1 = new Lexer(example1);
-        Lexer lex2 = new Lexer(example2);
+        System.out.println("INFO in Lexer.testLex(): example6: " + example6);
+        Lexer lex1 = new Lexer(example6);
         try {
             ArrayList<String> res1 = lex1.lex();
-            System.out.println("INFO in Lexer.testLex(): completed parsing example 1: " + example1);
-            ArrayList<String> res2 = lex2.lex();
-            System.out.println("INFO in Lexer.testLex(): completed parsing example 1: " + example2);
+            System.out.println("INFO in Lexer.testLex(): completed parsing example 6: " + example6);
+            System.out.println("INFO in Lexer.testLex(): completed parsing example 6: " + res1);
+
         }
         catch (Exception e) {
             System.out.println(e.getMessage());
@@ -716,8 +717,8 @@ public class Lexer {
     public static void main(String[] args) {
         
         System.out.println("INFO in Lexer.main()");
-        Interpreter interp = new Interpreter();
         if (args != null && args.length > 1 && args[0].equals("-s")) {
+            Interpreter interp = new Interpreter();
             Lexer lex = new Lexer(args[1]);
             try {
                 System.out.println(lex.lex());
@@ -739,7 +740,7 @@ public class Lexer {
         else {
             //testString();
             testLex();
-            testTerm();
+            //testTerm();
             //testAcceptLit();
             //testErrors();
             //testAcceptClause3();

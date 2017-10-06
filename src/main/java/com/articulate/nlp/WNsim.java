@@ -568,15 +568,15 @@ public class WNsim {
     public static void test() {
 
         //System.out.println("INFO in WNsim.test() ");
-        HashMap<String,HashMap<String,Float>> hm = readTestFile("/home/apease/WordSim/scws.csv",
+        HashMap<String,HashMap<String,Float>> hm = readTestFile(System.getProperty("user.home") + "/WordSim/scws.csv",
                 "([^\\t]+)\\t([^\\t]+)\\t(.*)",false);
-        //HashMap<String,HashMap<String,Float>> hm = readTestFile("/home/apease/WordSim/wordsim353/combined-noHead.tab",
+        //HashMap<String,HashMap<String,Float>> hm = readTestFile(System.getProperty("user.home") + "/WordSim/wordsim353/combined-noHead.tab",
         //        "([^\\t]+)\\t([^\\t]+)\\t(.*)",false);
-        //HashMap<String,HashMap<String,Float>> hm = readTestFile("/home/apease/WordSim/rw/rw.txt",
+        //HashMap<String,HashMap<String,Float>> hm = readTestFile(System.getProperty("user.home") + "/WordSim/rw/rw.txt",
         //        "([^\\t]+)\\t([^\\t]+)\\t([^\\t]+).*",false);
-        //HashMap<String,HashMap<String,Float>> hm = readTestFile("/home/apease/WordSim/Resnik3.txt",
+        //HashMap<String,HashMap<String,Float>> hm = readTestFile(System.getProperty("user.home") + "/WordSim/Resnik3.txt",
         //        "([^ ]+) ([^ ]+) (.*)",false);
-        //HashMap<String,HashMap<String,Float>> hm = readTestFile("/home/apease/WordSim/MEN/MEN_dataset_lemma_form_full",
+        //HashMap<String,HashMap<String,Float>> hm = readTestFile(System.getProperty("user.home") + "/WordSim/MEN/MEN_dataset_lemma_form_full",
         //        "([^ ]+) ([^ ]+) (.*)",true);
         HashMap<String,HashMap<String,Float>> hm2 = new HashMap<>();
         HashMap<String,Float> results1 = new HashMap<>();

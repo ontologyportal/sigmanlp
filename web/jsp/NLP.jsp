@@ -228,9 +228,9 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         out.println("<b>Sigma sentiment score:</b> " + DB.computeSentiment(theText) + "</P>\n");
         // Edited by Infosys LTD.
         //Get data in brat format
-        BratAnnotationUtil bratAnnotationUtil=new BratAnnotationUtil();
+        BratAnnotationUtil bratAnnotationUtil = new BratAnnotationUtil();
         out.println("<script type=\"text/javascript\">");
-        out.println("var docData="+ bratAnnotationUtil.getBratAnnotations(theText)+";</script>");
+        out.println("var docData=" + bratAnnotationUtil.getBratAnnotations(theText) + ";</script>");
         //Brat integration script
         out.println("<script type=\"text/javascript\" src=\"js/sigmanlpViz.js\"></script>");
         // Edit END

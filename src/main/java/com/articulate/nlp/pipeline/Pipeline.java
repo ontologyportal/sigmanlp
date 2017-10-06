@@ -48,7 +48,10 @@ public class Pipeline {
 
     public StanfordCoreNLP pipeline;
     public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
-        "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
+        "ner, nersumo, gender, parse, depparse, entitymentions, wnmw, wsd, tsumo";
+
+    public static final String oldDefaultProp = "tokenize, ssplit, pos, lemma, " +
+            "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
 
     /** ***************************************************************
      */
@@ -72,6 +75,7 @@ public class Pipeline {
         Properties props = new Properties();
         // props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, depparse, dcoref, entitymentions");
         props.put("annotators", propString);
+        props.setProperty("parse.keepPunct", "false");
 
         //props.setProperty("parse.kbest", "2");
         //props.setProperty("depparse.language","English");

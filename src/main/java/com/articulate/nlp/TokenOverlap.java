@@ -53,7 +53,7 @@ public class TokenOverlap {
         TFIDF cb = null;
         TokenOverlap to = null;
         try {
-            cb = new TFIDF("/home/apease/Sigma/KBs/stopwords.txt");
+            cb = new TFIDF(System.getenv("SIGMA_HOME") + "/KBs/WordNetMappings/stopwords.txt");
             to = new TokenOverlap(cb);
         }
         catch (IOException ioe) {

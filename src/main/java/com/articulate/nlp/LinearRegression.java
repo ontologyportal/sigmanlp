@@ -88,7 +88,7 @@ public class LinearRegression {
     public static void run() {
 
         DocGen dg = DocGen.getInstance();
-        ArrayList<ArrayList<String>> input = dg.readSpreadsheetFile("/home/apease/IPsoft/NB/LRdata.csv", ',');
+        ArrayList<ArrayList<String>> input = dg.readSpreadsheetFile(System.getProperty("user.home") + "/IPsoft/NB/LRdata.csv", ',');
         input.remove(0);  // eliminate the "start" line that DocGen adds in
         if (input.size() < 1)
             System.out.println("Error no rows in file");

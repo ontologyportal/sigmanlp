@@ -112,7 +112,7 @@ public class Interpreter {
     public Document userInputs = new Document();
     private ArrayList<Graph> userGraphs = new ArrayList<Graph>();
 
-    private Pipeline p = null;
+    public Pipeline p = null;
     //private String propString =  "tokenize, ssplit, pos, lemma, ner, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
 
     public static ArrayList<String> firedRules = new ArrayList<String>();
@@ -826,7 +826,8 @@ public class Interpreter {
                     tok2span = token2.get(NERAnnotator.NERSpanAnnotation.class);
                 }
             }
-            if ((tok1span != null && tok2span != null && tok1span == tok2span) || arg1.equals(arg2))
+            if ((tok1span != null && tok2span != null && tok1span == tok2span) ||
+                    (arg1 != null && arg1.equals(arg2)))
                 continue; // clauses in the same span are ignored
             else {
                 l.arg1 = arg1;
@@ -852,14 +853,14 @@ public class Interpreter {
             int arg1tok = Literal.tokenNum(l.arg1);
             int arg2tok = Literal.tokenNum(l.arg2);
             boolean foundNumber = false;
-            if (arg1tok >= 0) {
+            if (arg1tok >= 0 && arg1tok < labels.size()) {
                 CoreLabel token = labels.get(arg1tok);
                 String NERtag = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
                 if (NERtag.equals("DATE") || NERtag.equals("NUMBER") || NERtag.equals("ORDINAL") ||
                         NERtag.equals("PERCENT") || NERtag.equals("DURATION") || NERtag.equals("TIME"))
                     foundNumber = true;
             }
-            if (arg2tok >= 0) {
+            if (arg2tok >= 0 && arg2tok < labels.size()) {
                 CoreLabel token = labels.get(arg2tok);
                 String NERtag = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
                 if (NERtag.equals("DATE") || NERtag.equals("NUMBER") || NERtag.equals("ORDINAL") ||
@@ -883,8 +884,15 @@ public class Interpreter {
         //System.out.println("Interpreter.interpretGenCNF(): coref chains");
         SentenceUtil.printCorefChain(wholeDocument);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        return interpretGenCNF(lastSentence);
+    }
 
+    /** *************************************************************
+     * Take in a single sentence and output CNF for further processing.
+     */
+    public CNF interpretGenCNF(CoreMap lastSentence) {
+
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
         if (verboseParse) {
             for (CoreLabel cl : lastSentenceTokens)
                 System.out.println(cl.originalText() + ": " + cl.ner());
@@ -1256,7 +1264,7 @@ public class Interpreter {
                         if (debug) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
                         if (showr)
                             System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
-                        firedRules.add(r.toString());
+                        firedRules.add(r.toString() + " : " + bindings.toString());
                         RHS rhs = r.rhs.applyBindings(bindings);
                         if (r.operator == Rule.RuleOp.IMP) {
                             CNF bindingsRemoved = newInput.removeBound(); // delete the bound clauses
@@ -1589,7 +1597,7 @@ public class Interpreter {
     public void loadRules(String f) {
 
         if (f.indexOf(File.separator.toString(),2) < 0)
-            f = "/home/apease/workspace/sumo/WordNetMappings" + File.separator + f;
+            f = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + f;
         try {
             fname = f;
             RuleSet rsin = RuleSet.readFile(f);
@@ -1610,7 +1618,7 @@ public class Interpreter {
 
        // String filename = KBmanager.getMgr().getPref("kbDir") + File.separator +
                // "WordNetMappings" + File.separator + "SemRewrite.txt";
-        String filename = "/home/apease/workspace/sumo/WordNetMappings" + File.separator + "SemRewrite.txt";
+        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "SemRewrite.txt";
         String pref = KBmanager.getMgr().getPref("SemRewrite");
         if (!Strings.isNullOrEmpty(pref))
             filename = pref;

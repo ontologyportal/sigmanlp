@@ -125,9 +125,11 @@ public class RHS {
             while (it.hasNext()) {
                 String key = it.next();
                 String value = bindings.get(key);
-                if (form != null)
-                    form.theFormula = form.theFormula.replaceAll("\\"+key,value);
-                //System.out.println("INFO in RHS.applyBindings(): " + form.theFormula);
+                //System.out.println("INFO in RHS.applyBindings(): key,bindings: " + key + ", " + bindings);
+                if (form != null && form.theFormula != null) {
+                    form.theFormula = form.theFormula.replace(key, value);
+                    //System.out.println("INFO in RHS.applyBindings(): formula: " + form.theFormula);
+                }
             }
             rhs.form = form;
         }

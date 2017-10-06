@@ -29,7 +29,7 @@ MA  02111-1307 USA
  * which is seems to duplicate
  */
 public class Tokens {
-	
+
 	Integer id;
 	String word;
 	String ner;

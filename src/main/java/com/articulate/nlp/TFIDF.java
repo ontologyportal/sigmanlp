@@ -150,7 +150,7 @@ public class TFIDF {
      * Remove punctuation and contractions from a sentence.
      * @return the sentence in a String minus these elements.
      */
-    public String removePunctuation(String sentence) {
+    public static String removePunctuation(String sentence) {
 
         Matcher m = null;
         if (isNullOrEmpty(sentence))

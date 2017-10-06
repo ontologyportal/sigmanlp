@@ -72,6 +72,13 @@ public class Literal {
      */
     public Literal(String s) {
 
+        //System.out.println("Literal() initial " + s);
+        if (s.contains("(,"))
+            s = s.replace("(,","(COMMA");
+        if (s.contains(",,"))
+            s = s.replace(",,",",COMMA");
+        s = removeNumberWithComma(s);
+        //System.out.println("Literal() before parse " + s);
         try {
             Lexer lex = new Lexer(s + ".");
             lex.look();
@@ -85,9 +92,37 @@ public class Literal {
         }
         catch (Exception ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Literal.parse() " + message);
+            System.out.println("Error in Literal() " + message);
             ex.printStackTrace();
         }
+    }
+
+    /****************************************************************
+     * @return the input string if no number that has a comma otherwise return the matched number
+     */
+    public static String removeNumberWithComma(String s) {
+
+        //System.out.println("removeNumberWithComma() before processing " + s);
+        Pattern p = Pattern.compile("(\\d,\\d\\d\\d[^\\d])");
+        Matcher m = p.matcher(s);
+        while (m.find()) {
+            String res = m.group();
+            String newres = res.replaceAll(",","");
+            s = s.replace(res,newres);
+            //System.out.println("removeNumberWithComma(): " + s);
+            m = p.matcher(s);
+        }
+        //System.out.println("removeNumberWithComma() after processing " + s);
+        return s;
+    }
+
+    /** ***************************************************************
+     */
+    public static boolean isVariable(String s) {
+
+        if (s.indexOf('?') == -1 && s.indexOf('*') == -1)
+            return false;
+        return true;
     }
 
     /****************************************************************
@@ -104,6 +139,8 @@ public class Literal {
      */
     public static int tokenNum(String s) {
 
+        if (StringUtil.emptyString(s))
+            return -1;
         Pattern p = Pattern.compile(".+-(\\d+)");
         Matcher m = p.matcher(s);
         if (m.matches()) {
@@ -529,6 +566,12 @@ public class Literal {
             System.out.println("Literal.testParse(): input: " + input);
             System.out.println("Literal.testParse(): parse: " + new Literal(input));
             input = "conj:and(killed-2,killed-2)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): parse: " + new Literal(input));
+            input = "conj:and($_200,000-2,$_60,000-5)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): parse: " + new Literal(input));
+            input = "year(time-1,1994)";
             System.out.println("Literal.testParse(): input: " + input);
             System.out.println("Literal.testParse(): parse: " + new Literal(input));
         }
