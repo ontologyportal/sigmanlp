@@ -338,10 +338,10 @@ public class TFIDF {
             int tfint = tftermlist.get(term).intValue();
             float idffloat = idf.get(term).floatValue();
             float tfidffloat = idffloat * tfint;
-            tfidflist.put(term,new Float(tfidffloat));
+            tfidflist.put(term,Float.valueOf(tfidffloat));
             euc = euc + (tfidffloat * tfidffloat);
         }
-        euclid.put(int1, new Float((float) Math.sqrt(euc)));
+        euclid.put(int1, Float.valueOf((float) Math.sqrt(euc)));
         tfidf.put(int1, tfidflist);
         //System.out.println("Info in TFIDF.calcOneTFIDF():euclid: " + euclid);
         //System.out.println("Info in TFIDF.calcOneTFIDF():TF/IDF: " + tfidf);
@@ -385,19 +385,19 @@ public class TFIDF {
         HashMap<String,Integer> tdocfreq = new HashMap<String,Integer>();
         for (int i = 0; i < tokens.size(); i++) {
             String token = tokens.get(i);
-            Integer tcount = new Integer(0);
+            Integer tcount = Integer.valueOf(0);
             if (tdocfreq.containsKey(token))
                 tcount = tdocfreq.get(token);
             int tcountint = tcount.intValue() + 1;
-            tcount = new Integer(tcountint);
+            tcount = Integer.valueOf(tcountint);
             tdocfreq.put(token,tcount);
             if (!docfreq.containsKey(token))
-                docfreq.put(token,new Integer(1));
+                docfreq.put(token,Integer.valueOf(1));
             else {
                 if (!tokensNoDup.contains(token)) {
                     Integer intval = docfreq.get(token);
                     int intvalint = intval.intValue();
-                    docfreq.put(token,new Integer(intvalint + 1));
+                    docfreq.put(token,Integer.valueOf(intvalint + 1));
                     tokensNoDup.add(token);
                 }
             }
@@ -485,7 +485,7 @@ public class TFIDF {
 
         HashMap<Integer,Float> result = new HashMap<Integer,Float>();
         // System.out.println("Info in TFIDF.calcSomeDocSim(): ");
-        Integer negone = new Integer(-1);
+        Integer negone = Integer.valueOf(-1);
         HashMap<String,Float> tfidflist = tfidf.get(negone);
         HashMap<String,Float> normquery = new HashMap<String,Float>();
         float euc = euclid.get(negone);
@@ -493,7 +493,7 @@ public class TFIDF {
         while (it2.hasNext()) {
             String term = it2.next();
             float tfidffloat = tfidflist.get(term).floatValue();
-            normquery.put(term,new Float(tfidffloat / euc));
+            normquery.put(term,Float.valueOf(tfidffloat / euc));
         }
         //System.out.println("Info in TFIDF.calcDocSim(): normquery: " + normquery);
         Iterator<String> it1 = docs.iterator();
@@ -532,7 +532,7 @@ public class TFIDF {
     private void calcDocSim() {
 
         //System.out.println("Info in TFIDF.calcDocSim(): tfidf: " + tfidf);
-        Integer negone = new Integer(-1);
+        Integer negone = Integer.valueOf(-1);
         HashMap<String,Float> tfidflist = tfidf.get(negone);
         HashMap<String,Float> normquery = new HashMap<String,Float>();
         float euc = euclid.get(negone);
@@ -540,7 +540,7 @@ public class TFIDF {
         while (it2.hasNext()) {
             String term = it2.next();
             float tfidffloat = tfidflist.get(term).floatValue();
-            normquery.put(term,new Float(tfidffloat / euc));
+            normquery.put(term,Float.valueOf(tfidffloat / euc));
         }
         //System.out.println("Info in TFIDF.calcDocSim(): normquery: " + normquery);
         Iterator<Integer> it1 = tf.keySet().iterator();
@@ -643,7 +643,7 @@ public class TFIDF {
         result.putAll(scoredIDs);
         if (isNullOrEmpty(question))
             System.exit(0);
-        Integer negone = new Integer(-1);
+        Integer negone = Integer.valueOf(-1);
         processDoc(question,negone);
         calcIDF(lines.size()+1);
         calcOneTFIDF(negone);
@@ -682,7 +682,7 @@ public class TFIDF {
         ArrayList<String> result = new ArrayList<String>();
         if (isNullOrEmpty(input))
             System.exit(0);
-        Integer negone = new Integer(-1);
+        Integer negone = Integer.valueOf(-1);
         processDoc(input,negone);
         calcIDF(lines.size()+1);
         calcOneTFIDF(negone);
@@ -762,12 +762,12 @@ public class TFIDF {
             int random = 0;
             Integer index = null;
             random = rand.nextInt(vals.size());
-            index = vals.get(new Integer(random));
+            index = vals.get(Integer.valueOf(random));
             counter--;
             if (!alternating)
-                result.add(lines.get(new Integer(index.intValue())));
+                result.add(lines.get(Integer.valueOf(index.intValue())));
             else
-                result.add(f + ":" + lines.get(new Integer(index.intValue()+1)));
+                result.add(f + ":" + lines.get(Integer.valueOf(index.intValue()+1)));
         }
         //System.out.println("Info in TFIDF.matchInput(): result: " + result);
         return result;

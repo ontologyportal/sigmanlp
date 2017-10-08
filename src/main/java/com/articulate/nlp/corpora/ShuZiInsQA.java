@@ -771,9 +771,9 @@ public class ShuZiInsQA {
         ArrayList<Float> precision = new ArrayList<Float>();
         ArrayList<Float> F1 = new ArrayList<Float>();
         for (int i = 0; i < scoresNegative.size(); i++) {
-            recall.add(new Float(0));
-            precision.add(new Float(0));
-            F1.add(new Float(0));
+            recall.add(Float.valueOf(0));
+            precision.add(Float.valueOf(0));
+            F1.add(Float.valueOf(0));
         }
         for (int i = 0; i < scoresNegative.size(); i++) {
             //recall.set(i,scoresPositive.get(i) / (scoresPositive.get(i) + (numNeg - scoresNegative.get(i))));
@@ -812,8 +812,8 @@ public class ShuZiInsQA {
         int numPos = 0;
         int numNeg = 0;
         for (int i = 0; i < classIndex; i++) {
-            scoresPositive.add(new Float(0));
-            scoresNegative.add(new Float(0));
+            scoresPositive.add(Float.valueOf(0));
+            scoresNegative.add(Float.valueOf(0));
         }
         for (int i = 0; i < 10; i++)
             System.out.println("ShuZiInsQA.score(): classes: " + classifications.get(i));
@@ -889,7 +889,7 @@ public class ShuZiInsQA {
             Dev d = test.get(i);
             Map<String,Integer> m = t1.get(i);
             for (String s : m.keySet()) {
-                if (d.answersID.contains(m.get(s)))
+                if (d.answersID.contains(m.get(s).toString()))
                     totals.put(s,totals.get(s) + 1);
             }
         }

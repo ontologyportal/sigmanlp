@@ -153,7 +153,7 @@ public class WNsim {
 
         for (String s : ts) {
             // System.out.print(WordNet.wn.getWordsFromSynset(s).get(0)+"-" + s + ", ");
-            freqs.put(s, new Integer(1));
+            freqs.put(s, Integer.valueOf(1));
         }
         return computeSubsumingFreq2("100001740", childRels, parentRels);
     }

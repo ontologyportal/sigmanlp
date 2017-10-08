@@ -70,7 +70,7 @@ public class SUMOtoCoSense {
 
         HashMap<String,Integer> wordCounts = new HashMap<>();
         for (String s : wordList) {
-            Integer count = new Integer(0);
+            Integer count = Integer.valueOf(0);
             if (wordCounts.containsKey(s))
                 count = wordCounts.get(s);
             count++;

@@ -148,7 +148,7 @@ public class NaiveBayes {
                     if (values.containsKey(value))
                         values.put(value, values.get(value) + 1);
                     else
-                        values.put(value, new Integer(1));
+                        values.put(value, Integer.valueOf(1));
                     classInfo.put(label.toString(), values);
                 }
             }
@@ -263,7 +263,7 @@ public class NaiveBayes {
     public void calcPriors(int sum) {
 
         for (String s : priorCounts.keySet())
-            priors.put(s,new Float((float) priorCounts.get(s) / (float) sum));
+            priors.put(s,Float.valueOf((float) priorCounts.get(s) / (float) sum));
     }
 
     /** *************************************************************
@@ -344,7 +344,7 @@ public class NaiveBayes {
                     prob = prob * conditional;
                 }
             }
-            probs.put(clss, new Float(prob));
+            probs.put(clss, Float.valueOf(prob));
             if (prob > maxProb) {
                 maxProb = prob;
                 maxClass = clss;

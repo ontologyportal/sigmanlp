@@ -162,7 +162,7 @@ public class KMeans {
             ArrayList<Float> oneCluster = new ArrayList<Float>();
             for (int j = 0; k[i][j] != -1 && j < n - 1; ++j) {
                 //System.out.print(k[i][j] + " ");
-                oneCluster.add(new Float(k[i][j]));
+                oneCluster.add(Float.valueOf(k[i][j]));
             }
             //System.out.println("}");
             result.add(oneCluster);

@@ -216,7 +216,7 @@ public class SimFlood {
                             ((float) Math.max(n1.label.length(),n2.label.length()));
                 //System.out.println("INFO in SimFlood.stringMatch(): " + exactNodes);
                 //System.out.println("INFO in SimFlood.stringMatch(): " + (1-value));
-                result.put(s,new Float(1 - value));
+                result.put(s,Float.valueOf(1 - value));
             }
         }
         return result;
@@ -575,7 +575,7 @@ public class SimFlood {
             if ((!bestMatch.containsKey(first) || val > bestMatchValue.get(first))
                     && !alreadyChosen.contains(second)) {
                 bestMatch.put(first, second);
-                bestMatchValue.put(first, new Float(val));
+                bestMatchValue.put(first, Float.valueOf(val));
                 alreadyChosen.add(second);
                 //System.out.println("Info in SimFlood.selectThreshold(): adding with value: " + val);
             }

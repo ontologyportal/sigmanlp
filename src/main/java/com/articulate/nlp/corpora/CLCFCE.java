@@ -30,11 +30,14 @@ public class CLCFCE {
      */
     private static void processFile(ArrayList<String> doc, String filename) {
 
+        System.out.println("Info in CLCFCE.processFile(): " + filename);
         ArrayList<String> result = new ArrayList<>();
         for (String s : doc) {
             if (s.contains("<p>") && s.contains("</p>")) {
                 s = s.replaceAll("<c>[^<]+</c>",""); // remove corrections to the English
-                result.add(StringUtil.removeHTML(s));
+                s = StringUtil.removeHTML(s);
+                System.out.println("Info in CLCFCE.processFile(): line: " + s);
+                result.add(s);
             }
         }
         docs.put(filename,result);
@@ -49,7 +52,7 @@ public class CLCFCE {
                 if (Files.isRegularFile(filePath) &&
                         filePath.toString().endsWith(".xml")) {
                     ArrayList<String> doc = OntoNotes.readFile(filePath.toString());
-                    processFile(doc,filePath.toString());
+                    processFile(doc,filePath.getFileName().toString());
                 }
             });
         }
