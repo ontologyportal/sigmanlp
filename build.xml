@@ -85,7 +85,7 @@
       <fileset file="web/simple.css"/>
     </copy>
 	
-	<!-- Added to copy brat files -->
+	<!-- Added to copy brat files, author Infosys LTD. -->
 	<copy todir="${deploy.home}/brat">
       <fileset dir="web/brat"/>
     </copy>
