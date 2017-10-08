@@ -111,7 +111,7 @@ public class NaiveBayes {
         for (ArrayList<String> row : input) {
             String clss = row.get(classIndex);
             if (!priorCounts.containsKey(clss))
-                priorCounts.put(clss,new Integer(0));
+                priorCounts.put(clss,Integer.valueOf(0));
             priorCounts.put(clss,priorCounts.get(clss) + 1);
         }
     }

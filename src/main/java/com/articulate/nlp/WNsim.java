@@ -116,7 +116,7 @@ public class WNsim {
                 seen.add(synset);
                 //System.out.println(WordNet.wn.getWordsFromSynset(synset).get(0) + "-" + synset);
                 if (!freqs.keySet().contains(synset)) {
-                    freqs.put(synset, new Integer(WordNet.wn.senseFrequencies.get(synset)));
+                    freqs.put(synset, Integer.valueOf(WordNet.wn.senseFrequencies.get(synset)));
                 }
                 ArrayList<AVPair> wnrels = WordNet.wn.relations.get(synset);
                 for (AVPair avp : wnrels) {
