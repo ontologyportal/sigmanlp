@@ -234,7 +234,7 @@ Authors:
         //Get data in brat format
         BratAnnotationUtil bratAnnotationUtil = new BratAnnotationUtil();
         out.println("<script type=\"text/javascript\">");
-        out.println("var docData=" + bratAnnotationUtil.getBratAnnotations(theText) + ";</script>");
+        out.println("var docData=" + bratAnnotationUtil.getBratAnnotations(theText,wholeDocument) + ";</script>");
         //Brat integration script
         out.println("<script type=\"text/javascript\" src=\"js/sigmanlpViz.js\"></script>");
         // Edit END
@@ -245,5 +245,3 @@ Authors:
 
 </BODY>
 </HTML>
-
- 
