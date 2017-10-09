@@ -118,7 +118,7 @@ public class SVM {
      */
     private void setVector(Vector v, int location, float value) {
 
-        Float result = new Float(value);
+        Float result = Float.valueOf(value);
         v.set(location,result);
     }
 
@@ -126,7 +126,7 @@ public class SVM {
      */
     private void setVector(Vector v, int location, int value) {
 
-        Integer result = new Integer(value);
+        Integer result = Integer.valueOf(value);
         v.set(location,result);
     }
 
@@ -338,14 +338,14 @@ public class SVM {
                 for (p1 = 0; p1 < num1; p1++) {
                     int temp0 = object2int(((sparse_binary_vector) sparse_binary_points.elementAt(i1)).id.elementAt(p1));
                     float temp = object2float(w.elementAt(temp0));
-                    w.set(temp0,new Float(temp + t1));
+                    w.set(temp0,Float.valueOf(temp + t1));
                 }
                 num2 = ((sparse_binary_vector) sparse_binary_points.elementAt(i2)).id.size();
 
                 for (p2 = 0; p2 < num2; p2++)  {
                     int temp0 = object2int(((sparse_binary_vector) sparse_binary_points.elementAt(i2)).id.elementAt(p2));
                     float temp = object2float(w.elementAt(temp0));
-                    w.set(temp0,new Float(temp + t2));
+                    w.set(temp0,Float.valueOf(temp + t2));
                 }
             }
             else if (is_sparse_data && !is_binary) {
@@ -356,7 +356,7 @@ public class SVM {
                     int temp1 = object2int(((sparse_vector) sparse_points.elementAt(i1)).id.elementAt(p1));
                     float temp = object2float(w.elementAt(temp1));
                     float temp2 = object2float(((sparse_vector) sparse_points.elementAt(i1)).val.elementAt(p1));
-                    w.set(temp1,new Float(temp + t1 * temp2));
+                    w.set(temp1,Float.valueOf(temp + t1 * temp2));
                 }
 
                 num2 = ((sparse_vector)sparse_points.elementAt(i2)).id.size();
@@ -366,7 +366,7 @@ public class SVM {
                     float temp = object2float(w.elementAt(temp1));
                     float temp2 = object2float(((sparse_vector) sparse_points.elementAt(i2)).val.elementAt(p2));
                     temp = temp + t2 * temp2;
-                    Float value = new Float(temp);
+                    Float value = Float.valueOf(temp);
                     w.set(temp1,value);
                 }
             }
@@ -374,7 +374,7 @@ public class SVM {
                 for (int i = 0; i < d; i++) {
                     float temp = dense_points[i1][i] * t1 + dense_points[i2][i] * t2;;
                     float temp1 = object2float(w.elementAt(i));
-                    Float value = new Float(temp + temp1);
+                    Float value = Float.valueOf(temp + temp1);
                     w.set(i,value);
                 }
         }
@@ -388,13 +388,13 @@ public class SVM {
                     float tmp = object2float(error_cache.elementAt(i));
                     tmp += t1 * kernel_func(i1,i,kernel_flag) + t2 * kernel_func(i2,i,kernel_flag)
                             - delta_b;
-                    error_cache.set(i,new Float(tmp));
+                    error_cache.set(i,Float.valueOf(tmp));
                 }
-            error_cache.set(i1,new Float(0));
-            error_cache.set(i2,new Float(0));
+            error_cache.set(i1,Float.valueOf(0));
+            error_cache.set(i2,Float.valueOf(0));
         }
-        alph.set(i1,new Float(a1));
-        alph.set(i2,new Float(a2));
+        alph.set(i1,Float.valueOf(a1));
+        alph.set(i2,Float.valueOf(a2));
 
         return 1;
     }
@@ -546,7 +546,7 @@ public class SVM {
                 try {
                     while (st.hasMoreTokens()) {
                         float tmp = Float.valueOf(st.nextToken()).floatValue();
-                        v.add(new Float(tmp));
+                        v.add(Float.valueOf(tmp));
                         //g++;
                     }
                 }
@@ -559,7 +559,7 @@ public class SVM {
 
                 if (this.is_libsvm_file && is_sparse_data ) {
                     tar = Float.valueOf(v.firstElement().toString()).intValue();
-                    target.add(new Integer (tar));
+                    target.add(Integer.valueOf(tar));
 
                     if (!this.is_binary) {
                         if (d < Float.valueOf(v.elementAt(v.size() - 2).toString()).intValue())
@@ -574,7 +574,7 @@ public class SVM {
                 }
                 else {
                     tar = Float.valueOf(v.lastElement().toString()).intValue();
-                    target.add(new Integer (tar));
+                    target.add(Integer.valueOf(tar));
                     v.remove(v.size() - 1);
                     n = v.size();
                 }
@@ -586,7 +586,7 @@ public class SVM {
                             System.out.println("error: line " + line2 + ": attribute index "+ (int)object2float(v.elementAt(i))+ " out of range.\n");
                             System.exit(1);
                         }
-                        x.id.add(new Integer((int)object2float(v.elementAt(i)) - 1));
+                        x.id.add(Integer.valueOf((int)object2float(v.elementAt(i)) - 1));
                     }
                     sparse_binary_points.add(x);
                 }
@@ -602,8 +602,8 @@ public class SVM {
                             }
                             int id = (int) object2float(v.elementAt(i)) - 1;
                             float value = (float) object2float(v.elementAt(i + 1));
-                            x.id.add(new Integer(id));
-                            x.val.add(new Float(value));
+                            x.id.add(Integer.valueOf(id));
+                            x.val.add(Float.valueOf(value));
                         }
                         sparse_points.add(x);
                     }
@@ -617,8 +617,8 @@ public class SVM {
                             }
                             int id = (int) object2float(v.elementAt(i)) - 1;
                             float value = (float) object2float(v.elementAt(i + 1));
-                            x.id.add(new Integer(id));
-                            x.val.add(new Float(value));
+                            x.id.add(Integer.valueOf(id));
+                            x.val.add(Float.valueOf(value));
                         }
                         sparse_points.add(x);
                     }
@@ -738,8 +738,8 @@ public class SVM {
             resize(w,d,2);
             for (int i = 0; i < d; i++) {
                 try {
-                    float weight =	Float.valueOf(is.readLine().toString()).floatValue();
-                    w.set(i,new Float(weight));
+                    float weight = Float.valueOf(is.readLine().toString()).floatValue();
+                    w.set(i,Float.valueOf(weight));
                 }
                 catch (Exception e) {
                     e.printStackTrace();
@@ -749,14 +749,14 @@ public class SVM {
         else {
             try {
                 two_sigma_squared = Float.valueOf(is.readLine().toString()).floatValue();
-                int n_support_vectors =0;
+                int n_support_vectors = 0;
                 n_support_vectors = Integer.valueOf(is.readLine().toString()).intValue();
 
                 resize(alph,n_support_vectors,2);
 
                 for (int i = 0; i < n_support_vectors;i++) {
                     float value = Float.valueOf(is.readLine().toString()).floatValue();
-                    alph.set(i,new Float(value));
+                    alph.set(i,Float.valueOf(value));
                 }
             }
             catch (Exception e) {
@@ -835,9 +835,9 @@ public class SVM {
         }
         for (int i = original; i < newSize; i++) {
             if (type == 1)
-                v.add(new Integer(0));
+                v.add(Integer.valueOf(0));
             else if (type == 2)
-                v.add(new Float(0));
+                v.add(Float.valueOf(0));
         }
     }
 
@@ -847,9 +847,9 @@ public class SVM {
 
         for (int i = 0; i < size; i++) {
             if (type == 1)
-                v.add(i,new Integer(0));
+                v.add(i,Integer.valueOf(0));
             else if (type == 2)
-                v.add(i,new Float(0));
+                v.add(i,Float.valueOf(0));
         }
     }
 
@@ -1059,7 +1059,7 @@ public class SVM {
                             my.precomputed_dot_product[i][j] = my.dot_product_func(i,j,my.dot_product_flag);
                         else {
                             float temp = my.dot_product_func(i,i,my.dot_product_flag);
-                            my.precomputed_self_dot_product.set(i,new Float(temp));
+                            my.precomputed_self_dot_product.set(i,Float.valueOf(temp));
                             my.precomputed_dot_product[i][i] =temp;
                         }
                     }

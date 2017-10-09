@@ -26,6 +26,10 @@ code.  Please cite the following article in any publication with references:
 Pease, A., (2003). The Sigma Ontology Development Environment, 
 in Working Notes of the IJCAI-2003 Workshop on Ontology and Distributed Systems,
 August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
+
+Authors:
+	Adam Pease
+	Infosys LTD.
 */
     if (KBmanager.getMgr() == null) {
         response.sendRedirect("/sigma/login.html");
@@ -226,12 +230,14 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         out.println("</table><P>\n");
 
         out.println("<b>Sigma sentiment score:</b> " + DB.computeSentiment(theText) + "</P>\n");
+        // Edited by Infosys LTD.
         //Get data in brat format
         BratAnnotationUtil bratAnnotationUtil = new BratAnnotationUtil();
         out.println("<script type=\"text/javascript\">");
         out.println("var docData=" + bratAnnotationUtil.getBratAnnotations(theText,wholeDocument) + ";</script>");
         //Brat integration script
         out.println("<script type=\"text/javascript\" src=\"js/sigmanlpViz.js\"></script>");
+        // Edit END
     }
     else
         out.println("Empty input<P>\n");
@@ -239,5 +245,3 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
 
 </BODY>
 </HTML>
-
- 

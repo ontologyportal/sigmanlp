@@ -119,7 +119,7 @@ public class XtendedWN {
                             senses.put(sense,wordList);
                         }
                         for (String word : words) {
-                            Integer count = new Integer(1);
+                            Integer count = Integer.valueOf(1);
                             if (wordList.containsKey(word))
                                 count = count + wordList.get(word);
                             wordList.put(word,count);

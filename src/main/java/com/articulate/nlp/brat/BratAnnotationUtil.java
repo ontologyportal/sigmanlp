@@ -26,13 +26,13 @@ import edu.stanford.nlp.util.CoreMap;
 
 /**
  * This code is copyright Infosys Ltd 2017.
- * This software is released under the GNU Public License.
+ * This software is released under the GNU Public License v3.
  */
 
-/**
- * *************************************************************
+/** *************************************************************
  * 
- * @author mohit.gupta
+ * @author Infosys LTD.
+ *
  */
 public class BratAnnotationUtil {
 
@@ -412,3 +412,5 @@ public class BratAnnotationUtil {
 	}
 
 }
+
+

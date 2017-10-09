@@ -232,7 +232,7 @@ public class KMeansVec {
             for (int j = 0; j < clusters[i].length; j++) {
                 ArrayList<Float> oneVector = new ArrayList<Float>();
                 for (int v = 0; v < numDim && clusters[i][j][v] != -1; v++) {
-                    oneVector.add(new Float(clusters[i][j][v]));
+                    oneVector.add(Float.valueOf(clusters[i][j][v]));
                 }
                 oneCluster.add(oneVector);
             }

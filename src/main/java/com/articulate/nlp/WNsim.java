@@ -116,7 +116,7 @@ public class WNsim {
                 seen.add(synset);
                 //System.out.println(WordNet.wn.getWordsFromSynset(synset).get(0) + "-" + synset);
                 if (!freqs.keySet().contains(synset)) {
-                    freqs.put(synset, new Integer(WordNet.wn.senseFrequencies.get(synset)));
+                    freqs.put(synset, Integer.valueOf(WordNet.wn.senseFrequencies.get(synset)));
                 }
                 ArrayList<AVPair> wnrels = WordNet.wn.relations.get(synset);
                 for (AVPair avp : wnrels) {
@@ -153,7 +153,7 @@ public class WNsim {
 
         for (String s : ts) {
             // System.out.print(WordNet.wn.getWordsFromSynset(s).get(0)+"-" + s + ", ");
-            freqs.put(s, new Integer(1));
+            freqs.put(s, Integer.valueOf(1));
         }
         return computeSubsumingFreq2("100001740", childRels, parentRels);
     }
