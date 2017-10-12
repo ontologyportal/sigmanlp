@@ -112,7 +112,7 @@ Authors:
                 out.println("time token and value: <pre>" + token + ":" + time.value() + "</pre>\n");
                 String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
                 Formula tf = new Formula(tsumo);
-                out.println(tf.htmlFormat(kb) + "<P>\n");
+                out.println(tf.htmlFormat(kb,HTMLformatter.createHrefStart()) + "<P>\n");
             }
         }
 
