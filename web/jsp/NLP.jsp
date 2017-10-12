@@ -210,7 +210,7 @@ Authors:
         if (forms != null) {
             for (String s : forms) {
                 Formula theForm = new Formula(s);
-                out.println(theForm.htmlFormat(kb));
+                out.println(theForm.htmlFormat(kb,HTMLformatter.createHrefStart()));
             }
         }
 
