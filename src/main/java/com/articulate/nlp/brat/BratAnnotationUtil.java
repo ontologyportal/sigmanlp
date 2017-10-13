@@ -32,6 +32,7 @@ import edu.stanford.nlp.util.CoreMap;
 /** *************************************************************
  * 
  * @author Infosys LTD.
+ * contact apease@articulatesoftware.com
  *
  */
 public class BratAnnotationUtil {
@@ -43,6 +44,8 @@ public class BratAnnotationUtil {
 	// mapping from term name - index to term id
 	public Map<String, String> termIdMap = new HashMap<>();
 
+    /** ***************************************************************
+     */
 	public class BratEntity {
 		private String name;
 		private String id;
@@ -102,6 +105,8 @@ public class BratAnnotationUtil {
 
 	}
 
+    /** ***************************************************************
+     */
 	public class BratRelation {
 		private String id;
 		private String type;
@@ -150,6 +155,8 @@ public class BratAnnotationUtil {
 
 	}
 
+    /** ***************************************************************
+     */
 	private BratEntity addEntity(String type, BratEntity entity, CoreLabel token, List<BratEntity> result) {
 
 		if (type != null && !type.isEmpty()) {
@@ -166,7 +173,8 @@ public class BratAnnotationUtil {
 				if (type.equals(entity.getType())) {
 					entity.setEnd(token.endPosition());
 					entity.setName(entity.getName() + " " + token.get(TextAnnotation.class));
-				} else {
+				}
+				else {
 					entity = new BratEntity();
 					entity.setType(type);
 					entity.setStart(token.beginPosition());
@@ -181,6 +189,8 @@ public class BratAnnotationUtil {
 		return entity;
 	}
 
+    /** ***************************************************************
+     */
 	@SuppressWarnings("unchecked")
 	private JSONArray getJSONArrayOfBratEntities(List<BratEntity> bratEntities) {
 
@@ -201,6 +211,8 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
+    /** ***************************************************************
+     */
 	@SuppressWarnings("unchecked")
 	private JSONArray getJSONArrayOfBratRelations(List<BratRelation> bratRelations) {
 
@@ -225,6 +237,8 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
+    /** ***************************************************************
+     */
 	private List<BratRelation> getBratRelations(String input, Annotation document) {
 
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
@@ -252,6 +266,8 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
+    /** ***************************************************************
+     */
 	private List<BratEntity> getBratEntities(String input, Annotation document) {
 
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
@@ -288,7 +304,7 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
-	/**
+    /** ***************************************************************
 	 * @param input
 	 *            Text to be annotated
 	 * @return JSON String to be used as docData for brat annotation
@@ -307,6 +323,8 @@ public class BratAnnotationUtil {
 		return result.toJSONString();
 	}
 
+    /** ***************************************************************
+     */
 	@SuppressWarnings("unchecked")
 	public String getBratAnnotations(List<String> dependencies) {
 
@@ -323,6 +341,8 @@ public class BratAnnotationUtil {
 		return result.toJSONString();
 	}
 
+    /** ***************************************************************
+     */
 	private List<BratRelation> getBratRelationsForDependencyParse(List<String> dependencies) {
 
 		List<BratRelation> result = new ArrayList<>();
@@ -346,6 +366,8 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
+    /** ***************************************************************
+     */
 	private List<BratEntity> getBratEntitiesForDependencyParse(String[] tokens) {
 
 		List<BratEntity> entities = new ArrayList<>();
@@ -365,6 +387,8 @@ public class BratAnnotationUtil {
 		return entities;
 	}
 
+    /** ***************************************************************
+     */
 	private String getSentenceFromTokens(String[] tokens) {
 
 		StringBuilder sentence = new StringBuilder();
@@ -375,6 +399,8 @@ public class BratAnnotationUtil {
 		return sentence.toString().trim();
 	}
 
+    /** ***************************************************************
+     */
 	private String[] getTokensFromDependencies(List<String> dependencies) {
 
 		String first;
@@ -396,6 +422,8 @@ public class BratAnnotationUtil {
 		return result;
 	}
 
+	/** ***************************************************************
+	 */
 	public static void main(String[] args) {
 
 		BratAnnotationUtil brt = new BratAnnotationUtil();
