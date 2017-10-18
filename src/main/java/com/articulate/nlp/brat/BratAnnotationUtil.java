@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.articulate.nlp.semRewrite.Lexer;
+import com.articulate.nlp.semRewrite.Literal;
+import com.articulate.sigma.StringUtil;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -32,6 +35,7 @@ import edu.stanford.nlp.util.CoreMap;
 /** *************************************************************
  * 
  * @author Infosys LTD.
+ * @author Adam Pease
  * contact apease@articulatesoftware.com
  *
  */
@@ -102,7 +106,6 @@ public class BratAnnotationUtil {
 
 			this.end = end;
 		}
-
 	}
 
     /** ***************************************************************
@@ -152,7 +155,6 @@ public class BratAnnotationUtil {
 
 			this.endTermId = endTermId;
 		}
-
 	}
 
     /** ***************************************************************
@@ -169,7 +171,8 @@ public class BratAnnotationUtil {
 				entity.setName(token.get(TextAnnotation.class));
 				bratEntitiesMap.put(entity.getId(), entity);
 				result.add(entity);
-			} else {
+			}
+			else {
 				if (type.equals(entity.getType())) {
 					entity.setEnd(token.endPosition());
 					entity.setName(entity.getName() + " " + token.get(TextAnnotation.class));
@@ -250,14 +253,19 @@ public class BratAnnotationUtil {
 			String startTermId = null;
 			String endTermId = null;
 			for (String dep : dependencies) {
-				startTermId = termIdMap.get(dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim());
-				endTermId = termIdMap.get(dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim());
+                Lexer lex = new Lexer(dep);
+                Literal lit = Literal.parse(lex,0);
+                startTermId = termIdMap.get(lit.arg1);
+                endTermId = termIdMap.get(lit.arg2);
+				//startTermId = termIdMap.get(dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim());
+				//endTermId = termIdMap.get(dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim());
 				if (startTermId == null || endTermId == null) {
 					continue;
 				}
 				bratRelation = new BratRelation();
 				bratRelation.setId('R' + String.valueOf(relationCount++));
-				bratRelation.setType(dep.substring(0, dep.indexOf('(')).trim());
+                bratRelation.setType(lit.pred);
+				//bratRelation.setType(dep.substring(0, dep.indexOf('(')).trim());
 				bratRelation.setStartTermId(startTermId);
 				bratRelation.setEndTermId(endTermId);
 				result.add(bratRelation);
@@ -338,7 +346,8 @@ public class BratAnnotationUtil {
 		List<BratRelation> bratRelations = getBratRelationsForDependencyParse(dependencies);
 		JSONArray relationsArray = getJSONArrayOfBratRelations(bratRelations);
 		result.put("relations", relationsArray);
-		return result.toJSONString();
+        System.out.println("BratAnnotationUtil.getBratAnnotations(): " + result.toJSONString());
+        return result.toJSONString();
 	}
 
     /** ***************************************************************
@@ -350,14 +359,16 @@ public class BratAnnotationUtil {
 		String startTermId = null;
 		String endTermId = null;
 		for (String dep : dependencies) {
-			startTermId = termIdMap.get(dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim());
-			endTermId = termIdMap.get(dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim());
+            Lexer lex = new Lexer(dep);
+            Literal lit = Literal.parse(lex,0);
+			startTermId = termIdMap.get(lit.arg1); //dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim());
+			endTermId = termIdMap.get(lit.arg2); //dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim());
 			if (startTermId == null || endTermId == null) {
 				continue;
 			}
 			bratRelation = new BratRelation();
 			bratRelation.setId('R' + String.valueOf(relationCount++));
-			bratRelation.setType(dep.substring(0, dep.indexOf('(')).trim());
+			bratRelation.setType(lit.pred); //dep.substring(0, dep.indexOf('(')).trim());
 			bratRelation.setStartTermId(startTermId);
 			bratRelation.setEndTermId(endTermId);
 			result.add(bratRelation);
@@ -375,7 +386,12 @@ public class BratAnnotationUtil {
 		int position = 0;
 		for (int i = 1; i < tokens.length; i++) {
 			bratEntity = new BratEntity();
-			bratEntity.setName(tokens[i].substring(0, tokens[i].indexOf('-')));
+			String tok = Literal.tokenOnly(tokens[i]);
+			if (StringUtil.emptyString(tok)) {
+			    System.out.println("Error in BratAnnotationUtil.getBratEntitiesForDependencyParse(): empty token for: " + tokens[i]);
+                continue;
+            }
+			bratEntity.setName(tok); // tokens[i].substring(0, tokens[i].indexOf('-')));
 			bratEntity.setType("");
 			bratEntity.setId('T' + String.valueOf(termCount++));
 			bratEntity.setStart(position);
@@ -393,13 +409,17 @@ public class BratAnnotationUtil {
 
 		StringBuilder sentence = new StringBuilder();
 		for (int i = 1; i < tokens.length; i++) {
-			sentence.append(tokens[i].substring(0, tokens[i].indexOf('-')));
+		    sentence.append(Literal.tokenOnly(tokens[i]));
+			    // sentence.append(tokens[i].substring(0, tokens[i].indexOf('-')));
 			sentence.append(" ");
 		}
 		return sentence.toString().trim();
 	}
 
     /** ***************************************************************
+     * Ignore tokens that are not part of the dependency parse but
+     * are introduced by semantic rewriting preprocessing and therefore
+     * lack a token number
      */
 	private String[] getTokensFromDependencies(List<String> dependencies) {
 
@@ -408,16 +428,25 @@ public class BratAnnotationUtil {
 		Set<String> tokens = new HashSet<>();
 		int max = 0;
 		for (String dep : dependencies) {
-			first = dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim();
-			second = dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim();
-			tokens.add(first);
-			tokens.add(second);
-			max = Math.max(max, Integer.valueOf(first.substring(first.indexOf('-') + 1)));
-			max = Math.max(max, Integer.valueOf(second.substring(second.indexOf('-') + 1)));
+			Lexer lex = new Lexer(dep);
+			Literal lit = Literal.parse(lex,0);
+			//first = dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim();
+			//second = dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim();
+			tokens.add(lit.arg1); //tokens.add(first);
+			tokens.add(lit.arg2); //tokens.add(second);
+			max = Math.max(max,Literal.tokenNum(lit.arg1));
+                    // max = Math.max(max, Integer.valueOf(first.substring(first.indexOf('-') + 1)));
+            max = Math.max(max,Literal.tokenNum(lit.arg2));
+			        //max = Math.max(max, Integer.valueOf(second.substring(second.indexOf('-') + 1)));
 		}
 		String[] result = new String[max + 1];
 		for (String str : tokens) {
-			result[Integer.valueOf(str.substring(str.indexOf('-') + 1))] = str;
+		    int tokNum = Literal.tokenNum(str);
+		    if (tokNum > 0) {
+                result[Literal.tokenNum(str)] = str;
+                //System.out.println("BratAnnotationUtil.getTokensFromDependencies(): adding token: " + str);
+            }
+			//result[Integer.valueOf(str.substring(str.indexOf('-') + 1))] = str;
 		}
 		return result;
 	}
@@ -438,7 +467,6 @@ public class BratAnnotationUtil {
 		brt.termIdMap = new HashMap<>();
 		System.out.println(brt.getBratAnnotations(sentence, document));
 	}
-
 }
 
 
