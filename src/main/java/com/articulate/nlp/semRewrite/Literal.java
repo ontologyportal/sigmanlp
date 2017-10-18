@@ -98,6 +98,22 @@ public class Literal {
     }
 
     /****************************************************************
+     */
+    public static ArrayList<String> stringToLiteralList(String depParse) {
+
+        ArrayList<String> result = new ArrayList<String>();
+        Lexer lex = new Lexer(StringUtil.removeEnclosingCharPair(depParse, 1, '[', ']'));
+        CNF depcnf = CNF.parseSimple(lex);
+
+        for (Clause c : depcnf.clauses) {
+            for (Literal l : c.disjuncts) {
+                result.add(l.toString());
+            }
+        }
+        return result;
+    }
+
+    /****************************************************************
      * @return the input string if no number that has a comma otherwise return the matched number
      */
     public static String removeNumberWithComma(String s) {
@@ -134,8 +150,23 @@ public class Literal {
     }
 
     /** ***************************************************************
+     * @return the token
+     */
+    public static String tokenOnly(String s) {
+
+        if (StringUtil.emptyString(s))
+            return s;
+        Pattern p = Pattern.compile("(.+)-(\\d+)");
+        Matcher m = p.matcher(s);
+        if (m.matches()) {
+            return m.group(1);
+        }
+        return s;
+    }
+
+    /** ***************************************************************
      * @return the token number of the constant or -1 if it is a variable
-     * such as ?foo or foo*
+     * such as ?foo or foo* or a token that doesn't have a token number
      */
     public static int tokenNum(String s) {
 
