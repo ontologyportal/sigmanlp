@@ -24,6 +24,9 @@
     <fileset dir="${basedir}/lib">
         <include name="*.jar"/>
     </fileset>
+      <fileset dir="${sigmakee.home}/lib">
+          <include name="*.jar"/>
+      </fileset>
   </path>
 
   <path id="sourcepath">
@@ -58,6 +61,7 @@
 
     <copy todir="${build.lib}">
       <fileset dir="${basedir}/lib" />
+      <fileset dir="${sigmakee.home}/lib" />
     </copy>
   </target>
   
@@ -84,8 +88,7 @@
     <copy todir="${deploy.home}">
       <fileset file="web/simple.css"/>
     </copy>
-	
-	<!-- Added to copy brat files, author Infosys LTD. -->
+
 	<copy todir="${deploy.home}/brat">
       <fileset dir="web/brat"/>
     </copy>
@@ -93,26 +96,20 @@
 	<copy todir="${deploy.home}/js">
       <fileset dir="web/js"/>
     </copy>
-	<!-- brat files copied -->
 	
     <copy todir="${deploy.home}/pixmaps">
       <fileset dir="web/pixmaps"/>
     </copy>
 
-    <copy todir="${deploy.home}/lib">
-      <fileset file="${basedir}/lib/*.jar" />
+      <mkdir dir="${deploy.lib}"/>
+    <copy todir="${deploy.lib}">
+      <fileset file="${build.lib}/*.jar" />
     </copy>
 
     <!-- Create WEB-INF/classes/ and copy all the loose classes to it. -->
     <mkdir dir="${deploy.classes}"/>
     <copy todir="${deploy.classes}">
       <fileset dir="${build.classes}"/>
-    </copy>
-
-    <!-- Create WEB-INF/lib/ and copy over the needed jar files. -->
-    <mkdir dir="${deploy.lib}"/>
-    <copy todir="${deploy.lib}">
-      <fileset dir="${basedir}/lib" />
     </copy>
   </target>
 
