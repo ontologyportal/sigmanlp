@@ -2,8 +2,10 @@ package com.articulate.nlp.semRewrite;
 
 /*
 Copyright 2014-2015 IPsoft
+          2015-2017 Articulate Software
+          2017-     Infosys
 
-Author: Adam Pease adam.pease@ipsoft.com
+Author: Adam Pease apease@articulatesoftware.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,19 +23,177 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.sigma.KB;
+import com.articulate.sigma.KBmanager;
 import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * <b>Conjunctive Normal Form</b>
  */
-public class CNF {
+public class CNF implements Comparable {
 
     public ArrayList<Clause> clauses = new ArrayList<Clause>();
     public boolean debug = false;
+    public static int varnum = 0; // to ensure unique variable renaming
+
+    /** ***************************************************************
+     */
+    public static CNF fromLiterals(Collection<Literal> lits) {
+
+        CNF result = new CNF();
+        for (Literal lit : lits) {
+            Clause c = new Clause();
+            c.disjuncts.add(lit);
+            result.clauses.add(c);
+        }
+        return result;
+    }
+
+    /** ***************************************************************
+     * rename all variables in the CNF
+     */
+    public CNF renameVariables() {
+
+        HashMap<String,String> varmap = new HashMap<>();
+        CNF result = new CNF();
+        for (Clause c : clauses) {
+            Clause newC = new Clause();
+            for (Literal l : c.disjuncts) {
+                Literal newL = new Literal();
+                newL.pred = l.pred;
+                if (Literal.isVariable(l.arg1)) {
+                    if (varmap.containsKey(l.arg1))
+                        newL.arg1 = varmap.get(l.arg1);
+                    else {
+                        newL.arg1 = "?VAR" + Integer.toString(varnum++);
+                        varmap.put(l.arg1,newL.arg1);
+                    }
+                }
+                else
+                    newL.arg1 = l.arg1;
+
+                if (Literal.isVariable(l.arg2)) {
+                    if (varmap.containsKey(l.arg2))
+                        newL.arg2 = varmap.get(l.arg2);
+                    else {
+                        newL.arg2 = "?VAR" + Integer.toString(varnum++);
+                        varmap.put(l.arg2,newL.arg2);
+                    }
+                }
+                else
+                    newL.arg2 = l.arg2;
+
+                newC.disjuncts.add(newL);
+            }
+            result.clauses.add(newC);
+        }
+        return result;
+    }
+
+    /** ***************************************************************
+     */
+    private HashSet<Literal> getSUMOLiterals(CNF cnf) {
+
+        HashSet<Literal> result = new HashSet<>();
+        for (Clause clause1 : cnf.clauses) {
+            for (Literal d1 : clause1.disjuncts) {
+                if (d1.pred.equals("sumo"))
+                    result.add(d1);
+            }
+        }
+        return result;
+    }
+
+    /** ***************************************************************
+     * More general sumo terms are "smaller", fewer literals are "smaller".
+     * If # of literals is equal, no SUMO terms or identical, or terms at
+     * same level, return 0
+     */
+    private int compareSUMOLiterals(CNF cnf) {
+
+        System.out.println("CNF.compareSUMOLiterals(): this: " + this);
+        System.out.println("CNF.compareSUMOLiterals(): cnf: " + cnf);
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        HashSet<Literal> thisSUMO = getSUMOLiterals(this);
+        HashSet<Literal> cnfSUMO = getSUMOLiterals(cnf);
+        if (thisSUMO.size() == 0 && cnfSUMO.size() == 0)
+            return 0;
+        if (thisSUMO.size() > cnfSUMO.size())
+            return 1;
+        if (thisSUMO.size() < cnfSUMO.size())
+            return -1;
+        int thisScore = 0;
+        int cnfScore = 0;
+        for (Literal l : thisSUMO) {
+            int depth = kb.termDepth(l.arg1);
+            //System.out.println("CNF.compareSUMOLiterals(): depth of: " + l.arg1 + "=" + depth);
+            thisScore = thisScore + depth;
+        }
+        System.out.println("CNF.compareSUMOLiterals(): this score: " + thisScore);
+
+        for (Literal l : cnfSUMO) {
+            int depth = kb.termDepth(l.arg1);
+            //System.out.println("CNF.compareSUMOLiterals(): depth of: " + l.arg1 + "=" + depth);
+            cnfScore = cnfScore + depth;
+        }
+        System.out.println("CNF.compareSUMOLiterals(): cnf score: " + cnfScore);
+
+        if (thisScore > cnfScore) {
+            //System.out.println("CNF.compareSUMOLiterals(): this is 'bigger'");
+            return 1;
+        }
+        if (thisScore < cnfScore) {
+            //System.out.println("CNF.compareSUMOLiterals(): cnf is 'bigger'");
+            return -1;
+        }
+        return 0;
+    }
+
+    /** ***************************************************************
+     * sort clauses alphabetically then compare as strings
+     */
+    public int lexicalOrder(CNF cnf) {
+
+        TreeSet<String> thisSet = new TreeSet<>();
+        TreeSet<String> cnfSet = new TreeSet<>();
+        for (Clause clause1 : cnf.clauses) {
+            for (Literal d1 : clause1.disjuncts)
+                cnfSet.add(d1.toString());
+        }
+        for (Clause clause1 : this.clauses) {
+            for (Literal d1 : clause1.disjuncts)
+                thisSet.add(d1.toString());
+        }
+        return thisSet.toString().compareTo(cnfSet.toString());
+    }
+
+    /** ***************************************************************
+     * fewer clauses are smaller, more general sumo terms are smaller
+     * and if those conditions aren't different, just choose lexical
+     * order
+     */
+    public int compareTo(Object o) {
+
+        if (!(o instanceof CNF))
+            return 0;
+        CNF cnf = (CNF) o;
+        if (this.equals(cnf))
+            return 0;
+        if (this.clauses.size() < cnf.clauses.size())
+            return -1;
+        else if (this.clauses.size() > cnf.clauses.size())
+            return 1;
+        else {
+            //System.out.println("CNF.compareTo() equal length clauses");
+            int SUMOlitVal = this.compareSUMOLiterals(cnf);
+            if (SUMOlitVal == 0)
+                return this.lexicalOrder(cnf);
+            else
+                return SUMOlitVal;
+        }
+    }
 
     /** ***************************************************************
      */
@@ -82,6 +242,44 @@ public class CNF {
         }
         //System.out.println("INFO in CNF.equals(): true!");
         return true;
+    }
+
+    /** ***************************************************************
+     */
+    public static CNF valueOf(String s) {
+
+        Lexer lex = new Lexer(s);
+        return CNF.parseSimple(lex);
+    }
+
+    /** ***************************************************************
+     * @return a CNF object formed from a single (Literal) disjunct
+     */
+    public static CNF valueOf(Literal d) {
+
+        CNF result = new CNF();
+        Clause c = new Clause();
+        c.disjuncts.add(d);
+        result.clauses.add(c);
+        return result;
+    }
+
+    /** ***************************************************************
+     * @return a copy of CNF object minus the given disjunct
+     */
+    public CNF rest(Literal d) {
+
+        CNF result = new CNF();
+        for (Clause c : clauses) {
+            Clause newClause = new Clause();
+            for (Literal d2 : c.disjuncts) {
+                if (!d2.equals(d))
+                    newClause.disjuncts.add(d2);
+            }
+            if (newClause.disjuncts.size() > 0)
+                result.clauses.add(newClause);
+        }
+        return result;
     }
 
     /** ***************************************************************
@@ -265,6 +463,7 @@ public class CNF {
      * Unify this CNF with the argument.  Note that the argument should
      * be a superset of clauses of (or equal to) this instance.  The argument
      * is the "sentence" and this is the "rule"
+     * @return the map of bindings from variables to constants or other variables
      */
     public HashMap<String,String> unify(CNF cnf) {
 
@@ -333,6 +532,9 @@ public class CNF {
         
         Lexer lex = new Lexer("num(?O,?N), +sumo(?C,?O).");
         CNF cnf1 = CNF.parseSimple(lex);
+        System.out.println("INFO in CNF.testParseSimple(): " + cnf1);
+        lex = new Lexer("sumo(Vehicle,?car-6), nmod:in(?put-2,?car-6)");
+        cnf1 = CNF.parseSimple(lex);
         System.out.println("INFO in CNF.testParseSimple(): " + cnf1);
     }
 
@@ -465,7 +667,7 @@ public class CNF {
         //testEquality();
         //testContains();
         //testMerge();
-        testUnify();
-        //testParseSimple();
+        //testUnify();
+        testParseSimple();
     }
 }
