@@ -1,7 +1,10 @@
 package com.articulate.nlp.semRewrite;
 /*
 Copyright 2014-2015 IPsoft
+          2015-2017 Articulate Software
+          2017-     Infosys
 
+Author: Adam Pease apease@articulatesoftware.com
 Author: Peigen You Peigen.You@ipsoft.com
 
 This program is free software; you can redistribute it and/or modify
@@ -145,7 +148,8 @@ public final class RewriteRuleUtil extends RuleSet {
                     }
                     if (input.startsWith("!")) {
                         String path = input.substring(1);
-                        CNF cnf = CommonCNFUtil.loadFileAndFindCommonCNF(path);
+                        CommonCNFUtil ccu = new CommonCNFUtil();
+                        CNF cnf = ccu.loadFileAndFindCommonCNF(path);
                         continue;
                     }
                     if (input.startsWith("@@")) {
