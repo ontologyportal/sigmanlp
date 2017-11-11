@@ -12,6 +12,7 @@ import java.util.*;
 
 /*
 Copyright 2017 Articulate software
+          2017-     Infosys
 
 Author: Adam Pease apease@articulatesoftware.com
 
@@ -184,7 +185,8 @@ public class Searcher {
     }
 
     /***************************************************************
-     * note that since AVPair takes strings, the numerical counts
+     * Compile a frequency list for all the given tokens.
+     * Note that since AVPair takes strings, the numerical counts
      * must be padded with 0's to maintain their order.  Use 10 digits
      * so we can handle billions of terms.
      */
