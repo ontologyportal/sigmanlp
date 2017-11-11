@@ -38,7 +38,8 @@ public class CommonCNFtest extends IntegrationTestBase {
         map.put(0, "Mary drives the car to the store.");
         map.put(1, "John flies a plane to the airport.");
         Map<Integer, CNF> res = CommonCNFUtil.generateCNFForStringSet(map);
-        CNF cnf = CommonCNFUtil.findOneCommonCNF(res.values());
+        CommonCNFUtil ccu = new CommonCNFUtil();
+        CNF cnf = ccu.findOneCommonCNF(res.values());
         Assert.assertTrue(cnf.clauses.size() > 6);
     }
 }
