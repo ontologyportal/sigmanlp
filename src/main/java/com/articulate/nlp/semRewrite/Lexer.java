@@ -1,7 +1,10 @@
 package com.articulate.nlp.semRewrite;
 
 /*
-Author: Adam Pease adam.pease@ipsoft.com
+Copyright 2015-2017 Articulate Software
+          2017-     Infosys
+
+Author: Adam Pease apease@articulatesoftware.com
         Stephan Schulz 
 
 A simple lexical analyser that converts a string into a sequence of
@@ -175,7 +178,7 @@ public class Lexer {
         tokenDefs.put(Clause,       Pattern.compile("/-"));
 
         tokenDefs.put(Plus,         Pattern.compile("\\+"));
-        tokenDefs.put(Var,          Pattern.compile("\\?[a-zA-Z][_a-z0-9_A-Z]*\\*?"));
+        tokenDefs.put(Var,          Pattern.compile("\\?[a-zA-Z][_a-z0-9_A-Z]*-?[0-9]*\\*?"));
         tokenDefs.put(Newline,      Pattern.compile("\\n"));
         tokenDefs.put(WhiteSpace,   Pattern.compile("\\s+"));
         //tokenDefs.put(Ident,        Pattern.compile("\\\"?\\'?[0-9a-zA-Z]\\'?[_\\-a-z0-9_A-Z ]+\\*?\\\"?"));
