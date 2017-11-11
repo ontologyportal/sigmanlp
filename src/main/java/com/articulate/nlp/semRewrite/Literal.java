@@ -2,8 +2,10 @@ package com.articulate.nlp.semRewrite;
 
 /*
 Copyright 2014-2015 IPsoft
+          2015-2017 Articulate Software
+          2017-     Infosys
 
-Author: Adam Pease adam.pease@ipsoft.com
+Author: Adam Pease apease@articulatesoftware.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -136,6 +138,8 @@ public class Literal {
      */
     public static boolean isVariable(String s) {
 
+        if (StringUtil.emptyString(s))
+            return false;
         if (s.indexOf('?') == -1 && s.indexOf('*') == -1)
             return false;
         return true;
@@ -162,6 +166,21 @@ public class Literal {
             return m.group(1);
         }
         return s;
+    }
+
+    /** ***************************************************************
+     * @return true if the string has a token number suffix
+     */
+    public static boolean isToken(String s) {
+
+        if (StringUtil.emptyString(s))
+            return false;
+        Pattern p = Pattern.compile(".+-(\\d+)");
+        Matcher m = p.matcher(s);
+        if (m.matches())
+            return true;
+        else
+            return false;
     }
 
     /** ***************************************************************
@@ -412,6 +431,10 @@ public class Literal {
             else {
                 //System.out.println("INFO in Literal.mguTermList(): t1 " + t1 + " t2 " + t2);
                 if (!t1.equals(t2)) {
+                    // TODO: add test for common parent of SUMO terms
+                    // if (kb.containsTerm(t1) && kb.containsTerm(t2)) {
+                    //    kbCache.findCommonParent(t1,t2)
+                    // }
                     if (t1.indexOf('*') > -1 && t2.indexOf('-') > -1) {
                         if (!t1.substring(0,t1.lastIndexOf('*')).equalsIgnoreCase(t2.substring(0,t2.lastIndexOf('-'))))
                             return null;
