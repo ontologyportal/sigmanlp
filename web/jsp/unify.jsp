@@ -1,7 +1,8 @@
+<%@ include    file="PreludeNLP.jsp" %>
 <%@page import="com.articulate.nlp.brat.BratAnnotationUtil"%>
 <%@ page
    language="java"
-   import="com.google.common.collect.ImmutableList,com.articulate.sigma.*,java.util.*,java.io.*"
+   import="com.google.common.collect.ImmutableList"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
@@ -68,7 +69,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         </td>
         <td>
         <span class="navlinks">
-          <b>[&nbsp;<a href="Properties.jsp">Preferences</a>&nbsp;]</b>
+          <b>[&nbsp;<a href="Properties.jsp">Preferences</a>&nbsp;|&nbsp;<a href="NLP.jsp">NLP</a>&nbsp;|&nbsp;<a href="semconcor.jsp">Concordancer</a>&nbsp;]</b>
+
         </span>
         </td>
     </tr>

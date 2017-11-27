@@ -1,6 +1,7 @@
+<%@ include    file="PreludeNLP.jsp" %>
 <%@ page
    language="java"
-   import="com.google.common.collect.ImmutableList,com.articulate.sigma.*,java.util.*,java.io.*"
+   import="com.google.common.collect.ImmutableList"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>

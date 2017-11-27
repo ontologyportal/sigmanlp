@@ -33,6 +33,8 @@ MA  02111-1307 USA
 */
 public class Searcher {
 
+    public static int countSize = 100; // parameter to optimize searching
+
     /***************************************************************
      * Add HTML markup highlighting the matching phrase
      */
@@ -219,7 +221,11 @@ public class Searcher {
 
     /***************************************************************
      * @return a set of keys of the form filename#sentencenum#linenum
-     * for sentences that contain the given tokens in the given index
+     * for sentences that contain the given tokens in the given index.
+     * If a given token has 100 times the number of instances of the
+     * current token set ignore it, since doing the union of the indexes
+     * will be more expensive than just searching for the token in the
+     * result set.
      */
     public static HashSet<String> fetchFromSortedIndex(Connection conn, String indexName,
                                                  ArrayList<String> tokens) {
@@ -238,6 +244,9 @@ public class Searcher {
             for (AVPair avp : sortedCounts) {
                 String s = avp.value;
                 System.out.println("Searcher.fetchFromSortedIndex(): term count: " + avp.attribute);
+                int termCount = Integer.parseInt(avp.attribute);
+                if (result.size() > 0 && termCount > countSize * result.size())
+                    return result; // don't try to union really big indexes
                 String query = "select * from " + indexName + " where token='" + s + "';";
                 System.out.println("Searcher.fetchFromSortedIndex(): query: " + query);
                 stmt = conn.createStatement();

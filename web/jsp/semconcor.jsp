@@ -1,7 +1,8 @@
+<%@ include    file="PreludeNLP.jsp" %>
 <%@page import="com.articulate.nlp.brat.BratAnnotationUtil"%>
 <%@ page
    language="java"
-   import="com.google.common.collect.ImmutableList,com.articulate.sigma.*,java.util.*,java.io.*"
+   import="com.google.common.collect.ImmutableList"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
@@ -64,14 +65,14 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                     <td align="left" valign="top"><img src="pixmaps/sigmaSymbol.gif"></td>
                     <td>&nbsp;&nbsp;</td>
                     <td align="left" valign="top"><img src="pixmaps/logoText.gif"><BR>
-                        <b>hello</b></td>
+                        <b>Semantic Concordancer</b></td>
                 </tr>
 
             </table>
         </td>
         <td>
         <span class="navlinks">
-          <b>[&nbsp;<a href="Properties.jsp">Preferences</a>&nbsp;]</b>
+          <b>[&nbsp;<a href="Properties.jsp">Preferences</a>&nbsp;|&nbsp;<a href="NLP.jsp">NLP</a>&nbsp;|&nbsp;<a href="unify.jsp">Unify</a>&nbsp;]</b>
         </span>
         </td>
     </tr>
