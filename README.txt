@@ -17,6 +17,8 @@ cp ~/Programs/stanford-corenlp-full-2015-12-09/stanford-corenlp-3.6.0-models.jar
 cd ~/workspace/sigmanlp
 ant
 
+Then follow the steps in "Account Management" below before proceeding
+
 In your .bashrc you'll need to have a greater heap space allocation than for sigmakee alone
 
 export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx5000M"
@@ -29,3 +31,11 @@ Start Tomcat with
 $CATALINA_HOME/bin/startup.sh
 
 http://localhost:8080/sigmanlp/NLP.jsp
+
+Account Management
+==================
+
+Add the following to your $CATALINA_HOME/conf/context.xml
+
+<Context crossContext="true">
+
