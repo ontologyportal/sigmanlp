@@ -69,8 +69,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         </td>
         <td>
         <span class="navlinks">
-          <b>[&nbsp;<a href="Properties.jsp">Preferences</a>&nbsp;|&nbsp;<a href="NLP.jsp">NLP</a>&nbsp;|&nbsp;<a href="semconcor.jsp">Concordancer</a>&nbsp;]</b>
-
+          <b>[&nbsp;<a href="NLP.jsp">NLP</a>&nbsp;|&nbsp;<a href="semconcor.jsp">Concordancer</a>&nbsp;]</b>
         </span>
         </td>
     </tr>
