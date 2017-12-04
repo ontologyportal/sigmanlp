@@ -32,6 +32,11 @@ $CATALINA_HOME/bin/startup.sh
 
 http://localhost:8080/sigmanlp/NLP.jsp
 
+If you want to make a link to the NLP tools available from Sigma's various jsp pages then include
+the following in your config.xml
+
+  <preference name="nlpTools" value="yes" />
+
 Account Management
 ==================
 
