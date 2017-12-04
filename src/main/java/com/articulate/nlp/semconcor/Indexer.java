@@ -57,6 +57,7 @@ public class Indexer {
     //public static final String JDBCString = "jdbc:h2:~/corpora/transJudge";
     public static final String JDBCString = "jdbc:h2:~/corpora/FCE";
     public static String UserName = "";
+    public static int startline = 0;
 
     /****************************************************************
      */
@@ -347,9 +348,14 @@ public class Indexer {
             Reader reader = new InputStreamReader(in);
             LineNumberReader lnr = new LineNumberReader(reader);
             String line = null;
+            if (startline > 0) {
+                while ((line = lnr.readLine()) != null && lnr.getLineNumber() < startline);
+            }
             long t1 = System.currentTimeMillis();
-            while ((line = lnr.readLine()) != null && count++ < maxSent) {
+            while ((line = lnr.readLine()) != null) { // && count++ < maxSent) {
                 extractOneAugmentLine(interp,conn,line,tokensMax,file,lnr.getLineNumber());
+                if (lnr.getLineNumber() % 1000 == 0)
+                    System.out.println("storeWikiText(): line: " + lnr.getLineNumber());
             }
             double seconds = ((System.currentTimeMillis() - t1) / 1000.0);
             System.out.println("time to process: " + seconds + " seconds");
@@ -391,22 +397,43 @@ public class Indexer {
 
     /***************************************************************
      */
-    public static void main(String[] args) throws Exception {
+    public static void help() {
 
         System.out.println("Semantic Concordancer Indexing - commands:");
-        System.out.println("    -keep    - doesn't clear db");
+        System.out.println("    -c          Clear db");
+        System.out.println("    -i <path>   Index corpus in <path> under corpus directory");
+        System.out.println("    -w <line>   Index wikipedia starting at line");
+        System.out.println("    -h          show this Help message");
+    }
+
+    /***************************************************************
+     */
+    public static void main(String[] args) throws Exception {
+
         System.out.println();
         KBmanager.getMgr().initializeOnce();
         UserName = KBmanager.getMgr().getPref("dbUser");
         Class.forName("org.h2.Driver");
-        Connection conn = DriverManager.getConnection(JDBCString, UserName, "");
-        if (args == null || (args != null && args.length > 0 && args[0] != "-keep")) {
+        Connection conn = null;
+        if (args != null && args.length > 1 && args[0].equals("-i")) {
+            conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + args[1], UserName, "");
+            storeCorpusText(conn);
+        }
+        else if (args != null && args.length > 1 && args[0].equals("-w")) {
+            conn = DriverManager.getConnection("jdbc:h2:~/corpora/wikipedia", UserName, "");
+            startline = Integer.parseInt(args[1]);
+            storeWikiText(conn);
+        }
+        if (args != null && args.length > 0 && args[0].equals("-c")) {
             clearDB(conn);
             System.out.println("cleared db");
         }
-        //storeCorpusText(conn);
-        CLCFCE.readCorpus();
-        storeDocCorpusText(conn,CLCFCE.docs);
+        else {
+            help();
+        }
+
+        //CLCFCE.readCorpus();
+        //storeDocCorpusText(conn,CLCFCE.docs);
         conn.close();
     }
 }
