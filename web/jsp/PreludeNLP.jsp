@@ -49,7 +49,7 @@ if (!KBmanager.initialized) {
     return;
 }
 
-if (!role.equalsIgnoreCase("admin")) {
+if (!role.equalsIgnoreCase("admin") && !role.equalsIgnoreCase("user")) {
     mgr.setError("You are not authorized to visit " + pageString);
     response.sendRedirect(HTMLformatter.createHrefStart() + "/sigma/login.html");
     return;
