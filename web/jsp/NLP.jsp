@@ -1,4 +1,4 @@
-<%@ include    file="PreludeNLP.jsp" %>
+<%@ include file="PreludeNLP.jsp" %>
 <%@page import="com.articulate.nlp.brat.BratAnnotationUtil"%>
 <%@ page
    language="java"
@@ -14,7 +14,6 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
-
 
 <%
 /** This code is copyright Articulate Software (c) 2017.
@@ -83,7 +82,7 @@ Authors:
         </td>
         <td>
         <span class="navlinks">
-          <b>[&nbsp;<a href="Properties.jsp">Preferences</a>&nbsp;|&nbsp;<a href="semconcor.jsp">Concordancer</a>&nbsp;|&nbsp;<a href="unify.jsp">Unify</a>&nbsp;]</b>
+          <b>[&nbsp;<a href="semconcor.jsp">Concordancer</a>&nbsp;|&nbsp;<a href="unify.jsp">Unify</a>&nbsp;]</b>
         </span>
         </td>
     </tr>
@@ -183,7 +182,7 @@ Authors:
             List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
             for (String s : dependencies)
                 out.println(s);
-            out.println("</pre>");
+            out.println("</pre><P>");
         }
         out.println("</td>\n");
         out.println("<td><pre>\n");
@@ -211,7 +210,7 @@ Authors:
         if (forms != null) {
             for (String s : forms) {
                 Formula theForm = new Formula(s);
-                out.println(theForm.htmlFormat(kb,HTMLformatter.createHrefStart()));
+                out.println(theForm.htmlFormat(kb,HTMLformatter.createHrefStart()) + "<P>");
             }
         }
 
