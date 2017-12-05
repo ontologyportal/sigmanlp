@@ -24,8 +24,14 @@
     http://github.com/ontologyportal
 */
 ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
-String username = (String) siblingContext.getAttribute("user");
-String role = (String) siblingContext.getAttribute("role");
+String username = "guest";
+if (siblingContext != null && siblingContext.getAttribute("user") != null)
+    username = (String) siblingContext.getAttribute("user");
+
+String role = "guest";
+if (siblingContext != null && siblingContext.getAttribute("role") != null)
+    role = (String) siblingContext.getAttribute("role");
+
 String URLString = request.getRequestURL().toString();
 String pageString = URLString.substring(URLString.lastIndexOf("/") + 1);
 KBmanager mgr = KBmanager.getMgr();
