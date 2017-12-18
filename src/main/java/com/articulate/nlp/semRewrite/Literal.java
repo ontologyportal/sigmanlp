@@ -140,9 +140,32 @@ public class Literal {
 
         if (StringUtil.emptyString(s))
             return false;
-        if (s.indexOf('?') == -1 && s.indexOf('*') == -1)
+        if (s.startsWith("?") || s.endsWith("*"))
+            return true;
+        return false;
+    }
+
+    /** ***************************************************************
+     * a variable in the form ?var
+     */
+    public static boolean isFreeVariable(String s) {
+
+        if (StringUtil.emptyString(s))
             return false;
-        return true;
+        if (s.startsWith("?"))
+            return true;
+        return false;
+    }
+
+    /** ***************************************************************
+     */
+    public static boolean isWordVariable(String s) {
+
+        if (StringUtil.emptyString(s))
+            return false;
+        if (s.endsWith("*"))
+            return true;
+        return false;
     }
 
     /****************************************************************
@@ -154,13 +177,17 @@ public class Literal {
     }
 
     /** ***************************************************************
-     * @return the token
+     * @return the token minus the token number suffix, ? variable prefix
+     * and/or * variable suffix.  Variables with a '*' suffix are assumed
+     * not to have a token number
      */
     public static String tokenOnly(String s) {
 
         if (StringUtil.emptyString(s))
             return s;
-        Pattern p = Pattern.compile("(.+)-(\\d+)");
+        if (s.endsWith("*"))
+            return s.substring(0,s.length()-1);
+        Pattern p = Pattern.compile("\\??(.+)-(\\d+)");
         Matcher m = p.matcher(s);
         if (m.matches()) {
             return m.group(1);
