@@ -12,12 +12,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.articulate.nlp.TFIDF;
+import com.articulate.nlp.corpora.CorpusReader;
 import com.articulate.nlp.corpora.OntoNotes;
 import com.articulate.nlp.corpora.CLCFCE;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.*;
 import com.articulate.sigma.KBmanager;
+import com.articulate.sigma.StringUtil;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -56,7 +58,7 @@ public class Indexer {
     public static final int tokensMax = 25;
     //public static final String JDBCString = "jdbc:h2:~/corpora/transJudge";
     public static final String JDBCString = "jdbc:h2:~/corpora/FCE";
-    public static String UserName = "";
+    public static String UserName = "sa";
     public static int startline = 0;
 
     /****************************************************************
@@ -382,7 +384,28 @@ public class Indexer {
         commands.add(query);
         query = "delete from content";
         commands.add(query);
+        for (String s : commands) {
+            stmt = conn.createStatement();
+            boolean res = stmt.execute(s);
+        }
+    }
 
+    /***************************************************************
+     * clear all the database content
+     */
+    public static void createDB(Connection conn) throws Exception {
+
+        System.out.println("createDB()");
+        Statement stmt = null;
+        ArrayList<String> commands = new ArrayList<>();
+        String command = "CREATE TABLE COUNTS(TOKEN VARCHAR(50), COUNT INT);";
+        commands.add(command);
+        command = "CREATE TABLE DEPINDEX(TOKEN VARCHAR(50),FILE VARCHAR(100),SENTNUM INT,LINENUM INTEGER);";
+        commands.add(command);
+        command = "CREATE TABLE INDEX(TOKEN VARCHAR(50),FILE VARCHAR(100),SENTNUM INT,LINENUM INTEGER);";
+        commands.add(command);
+        command = "CREATE TABLE CONTENT(FILE VARCHAR(100),SENTNUM INT,CONT VARCHAR(1000),DEPENDENCY VARCHAR(2500),LINENUM INTEGER);";
+        commands.add(command);
         try {
             for (String s : commands) {
                 stmt = conn.createStatement();
@@ -400,10 +423,10 @@ public class Indexer {
     public static void help() {
 
         System.out.println("Semantic Concordancer Indexing - commands:");
-        System.out.println("    -c          Clear db");
-        System.out.println("    -i <path>   Index corpus in <path> under corpus directory");
-        System.out.println("    -w <line>   Index wikipedia starting at line");
-        System.out.println("    -h          show this Help message");
+        System.out.println("    -c <db>         Clear db or create if not present");
+        System.out.println("    -i <path>       Index corpus in <path> under corpus directory");
+        System.out.println("    -w <line> <db>  index Wikipedia starting at line with db file name");
+        System.out.println("    -h              show this Help message");
     }
 
     /***************************************************************
@@ -415,25 +438,40 @@ public class Indexer {
         UserName = KBmanager.getMgr().getPref("dbUser");
         Class.forName("org.h2.Driver");
         Connection conn = null;
+        String corporaDir = System.getenv("CORPORA");
         if (args != null && args.length > 1 && args[0].equals("-i")) {
             conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + args[1], UserName, "");
             storeCorpusText(conn);
         }
-        else if (args != null && args.length > 1 && args[0].equals("-w")) {
-            conn = DriverManager.getConnection("jdbc:h2:~/corpora/wikipedia", UserName, "");
+        else if (args != null && args.length > 2 && args[0].equals("-w")) {
+            String dbfilename = args[2];
+            conn = DriverManager.getConnection("jdbc:h2:" + corporaDir + "/wikipedia/" + dbfilename,UserName, "");
             startline = Integer.parseInt(args[1]);
-            storeWikiText(conn);
+            CorpusReader cr = new CorpusReader();
+            cr.regExGoodLine = "";
+            cr.regExRemove = "";
+            String file = corporaDir + "/wikipedia/wikipedia2text-extracted.txt";
+            cr.processFileByLine(conn,file);
+            //storeWikiText(conn);
         }
         if (args != null && args.length > 0 && args[0].equals("-c")) {
-            clearDB(conn);
-            System.out.println("cleared db");
+            String dbFilename = "wiki";
+            if (args.length > 1 && !StringUtil.emptyString(args[1]))
+                dbFilename = args[1];
+            try {
+                conn = DriverManager.getConnection("jdbc:h2:" + corporaDir + File.separator + dbFilename, UserName, "");
+                clearDB(conn);
+            }
+            catch (SQLException e ) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+                createDB(conn);
+            }
+            System.out.println("cleared/created db");
         }
         else {
             help();
         }
-
-        //CLCFCE.readCorpus();
-        //storeDocCorpusText(conn,CLCFCE.docs);
         conn.close();
     }
 }
