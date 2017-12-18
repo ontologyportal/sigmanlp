@@ -54,6 +54,7 @@ public class NERAnnotator implements Annotator {
     }
 
     static final Requirement NERSUMO_REQUIREMENT = new Requirement("nersumo");
+    public static boolean debug = false;
 
     /****************************************************************
      */
@@ -107,7 +108,7 @@ public class NERAnnotator implements Annotator {
         IntPair ip = new IntPair(firstToken, last);
         String sumo = toSUMO(ip,tokens);
         String tokStr = toToken(ip,tokens);
-        System.out.println("NERAnnotator.annotate(): storing: " + tokStr + " " + ip + " " + sumo);
+        if (debug) System.out.println("NERAnnotator.annotate(): storing: " + tokStr + " " + ip + " " + sumo);
         for (int i = firstToken-1; i <= last-1; i++) {
             CoreLabel nertok = tokens.get(i);
             nertok.set(NERSpanAnnotation.class, ip);
