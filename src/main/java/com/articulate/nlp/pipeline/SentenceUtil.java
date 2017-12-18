@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -345,6 +346,19 @@ public class SentenceUtil {
             results.addAll(toDependenciesList(sentence));
         }
         return results;
+    }
+
+    /** ***************************************************************
+     * Also remove tokens with trailing apostrophe - see dependency manual sec 4.6
+     */
+    public static CNF toCNFDependenciesList(List<CoreMap> sentences) {
+
+        //System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
+        ArrayList<String> results = new ArrayList<>();
+        for (CoreMap sentence : sentences) {
+            results.addAll(toDependenciesList(sentence));
+        }
+        return CNF.fromListString(results);
     }
 
     /** ***************************************************************
