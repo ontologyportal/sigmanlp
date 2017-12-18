@@ -27,6 +27,8 @@ ServletContext siblingContext = request.getSession().getServletContext().getCont
 String username = "guest";
 if (siblingContext != null && siblingContext.getAttribute("user") != null)
     username = (String) siblingContext.getAttribute("user");
+else
+    System.out.println("Prelude.jsp: Empty sibling context");
 
 String role = "guest";
 if (siblingContext != null && siblingContext.getAttribute("role") != null)
