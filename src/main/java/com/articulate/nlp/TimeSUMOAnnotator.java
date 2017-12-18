@@ -26,6 +26,8 @@ public class TimeSUMOAnnotator implements Annotator {
         }
     }
 
+    public static boolean debug = false;
+
     static final Requirement TSUMO_REQUIREMENT = new Requirement("tsumo");
 
     /****************************************************************
@@ -41,7 +43,7 @@ public class TimeSUMOAnnotator implements Annotator {
 
         if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Error in TimeSUMOAnnotator.annotate(): Unable to find sentences in " + annotation);
-        System.out.println("TimeSUMOAnnotator.annotate()");
+        if (debug) System.out.println("TimeSUMOAnnotator.annotate()");
         /* List<CoreMap> timexAnnsAll = annotation.get(TimeAnnotations.TimexAnnotations.class);
         System.out.println("TimeSUMOAnnotator.annotate(): doc time annotations: " + timexAnnsAll);
         if (timexAnnsAll != null) {
@@ -58,14 +60,14 @@ public class TimeSUMOAnnotator implements Annotator {
         if (sentences != null) {
             for (CoreMap sentence : sentences) {
                 List<CoreMap> timexAnnsAll = sentence.get(TimeAnnotations.TimexAnnotations.class);
-                System.out.println("TimeSUMOAnnotator.annotate(): sentence time annotations: " + timexAnnsAll);
+                if (debug) System.out.println("TimeSUMOAnnotator.annotate(): sentence time annotations: " + timexAnnsAll);
                 if (timexAnnsAll != null) {
                     for (CoreMap token : timexAnnsAll) {
                         Formula f = TimeBank.processSUtoken(token);
-                        System.out.println("TimeSUMOAnnotator.annotate(): SUtoken: " + token);
+                        if (debug) System.out.println("TimeSUMOAnnotator.annotate(): SUtoken: " + token);
                         if (f != null && !StringUtil.emptyString(f.toString())) {
                             token.set(TimeSUMOAnnotation.class, f.toString());
-                            System.out.println("TimeSUMOAnnotator.annotate(): SUMO: " + f.toString());
+                            if (debug) System.out.println("TimeSUMOAnnotator.annotate(): SUMO: " + f.toString());
                         }
                     }
                 }
