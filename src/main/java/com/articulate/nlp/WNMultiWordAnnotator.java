@@ -152,7 +152,7 @@ public class WNMultiWordAnnotator implements Annotator {
             ArrayList<String> multiWordResult = new ArrayList<String>();
             StringBuffer multiWordToken = new StringBuffer();
             wordIndex = findMultiWord(tokens, i, multiWordResult, multiWordToken);
-            if (multiWordToken.length() > 0)
+            if (multiWordToken.length() > 0 && debug)
                 System.out.println("INFO in WNMultiWordAnnotator.annotate(): found multi-word: " + multiWordToken);
             //multiWordToken.insert(0,"?");
             if (multiWordToken.length() > 0)
@@ -176,7 +176,7 @@ public class WNMultiWordAnnotator implements Annotator {
                     if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for token: " + tok);
                     if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for index: " + index);
                     if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set sumo: " + sumo);
-                    System.out.println("INFO in WNMultiWordAnnotator.annotate(): set token: " +
+                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set token: " +
                             multiWordToken.toString() + " sumo: " + sumo + " ip: " + ip);
                 }
             }
