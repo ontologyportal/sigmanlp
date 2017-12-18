@@ -35,8 +35,21 @@ import java.util.*;
 public class CNF implements Comparable {
 
     public ArrayList<Clause> clauses = new ArrayList<Clause>();
-    public boolean debug = false;
+    public static boolean debug = false;
     public static int varnum = 0; // to ensure unique variable renaming
+
+    /** ***************************************************************
+     */
+    public CNF() {
+    }
+
+    /** ***************************************************************
+     */
+    public CNF(String s) {
+
+        Lexer lex = new Lexer(s);
+        clauses = parseSimple(lex).clauses;
+    }
 
     /** ***************************************************************
      */
@@ -49,6 +62,16 @@ public class CNF implements Comparable {
             result.clauses.add(c);
         }
         return result;
+    }
+
+    /** ***************************************************************
+     * append a literal to this CNF
+     */
+    public void append(Literal lit) {
+
+        Clause c = new Clause();
+        c.disjuncts.add(lit);
+        clauses.add(c);
     }
 
     /** ***************************************************************
@@ -209,6 +232,36 @@ public class CNF implements Comparable {
         }
         //sb.append("]");
         return sb.toString();
+    }
+
+    /** ***************************************************************
+     * When a CNF is a simple list of literals, return them as such.
+     * Otherwise return null;
+     */
+    public List<Literal> toLiterals() {
+
+        List<Literal> result = new ArrayList<>();
+        for (Clause clause : clauses)   {
+            if (clause.disjuncts.size() > 1) {
+                System.out.println("Error in CNF.toLiterals(): disjunctive CNF");
+                return null;
+            }
+            for (Literal l : clause.disjuncts)
+                result.add(l);
+        }
+        return result;
+    }
+
+    /** ***************************************************************
+     */
+    public static CNF fromListString(List<String> liststring) {
+
+        CNF cnf = new CNF();
+        for (String s : liststring)   {
+            Literal l = new Literal(s);
+            cnf.append(l);
+        }
+        return cnf;
     }
 
     /** ***************************************************************
@@ -381,18 +434,19 @@ public class CNF implements Comparable {
             while (!lex.testTok(tokens)) {
                 Clause d = new Clause();
                 Literal c = Literal.parse(lex, 0);
+                if (debug) System.out.println("INFO in CNF.parseSimple(): " + c);
                 d.disjuncts.add(c);
                 cnf.clauses.add(d);
                 if (lex.testTok(Lexer.Comma))
                     lex.next();
                 else if (lex.testTok(Lexer.ClosePar)) {
                     lex.next();
-                    //System.out.println("INFO in CNF.parseSimple(): final token: " + lex.look());
-                    if (!lex.testTok(Lexer.FullStop))
+                    if (debug) System.out.println("INFO in CNF.parseSimple(): final token: " + lex.look());
+                    if (!lex.testTok(Lexer.FullStop) && !lex.look().equals("*EOF*"))  // allow EOF as well as period
                         System.out.println("Error in CNF.parseSimple(): Bad token: " + lex.look());
                 }
                 else
-                    if (!lex.testTok(Lexer.FullStop))
+                    if (!lex.testTok(Lexer.FullStop) && !lex.look().equals("*EOF*")) // allow EOF as well as period
                         System.out.println("Error in CNF.parseSimple(): Bad token: " + lex.look());
             }
         }
@@ -401,7 +455,7 @@ public class CNF implements Comparable {
             System.out.println("Error in CNF.parse(): " + message);
             ex.printStackTrace();
         }
-        //System.out.println("INFO in CNF.parseSimple(): returning: " + cnf);
+        if (debug) System.out.println("INFO in CNF.parseSimple(): returning: " + cnf);
         return cnf;
     }
 
