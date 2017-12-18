@@ -5,6 +5,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -51,6 +52,7 @@ public class WSDAnnotator implements Annotator {
         }
     }
 
+    public static boolean debug = false;
     static final Annotator.Requirement WSD_REQUIREMENT = new Annotator.Requirement("wsd");
 
     /****************************************************************
@@ -64,7 +66,7 @@ public class WSDAnnotator implements Annotator {
      */
     public void annotate(Annotation annotation) {
 
-        System.out.println("WSDAnnotator.annotate():");
+        if (debug) System.out.println("WSDAnnotator.annotate():");
         if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Error in WSDAnnotator.annotate(): Unable to find sentences in " + annotation);
 
@@ -78,6 +80,8 @@ public class WSDAnnotator implements Annotator {
             }
             for (CoreLabel token : tokens) {
                 String lemma = token.lemma();
+                if (lemma.length() == 1 && Pattern.matches("\\p{Punct}", lemma)) // skip punctuation
+                    continue;
                 String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class); // need to convert to Sigma's integer codes
                 char num = WordNetUtilities.posPennToNumber(pos);
                 if (token.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class) != null) // skip multiwords
@@ -86,13 +90,13 @@ public class WSDAnnotator implements Annotator {
                     String sense = WSD.findWordSenseInContextWithPos(lemma, words, Integer.parseInt(Character.toString(num)),true);
                     if (!StringUtil.emptyString(sense)) {
                         token.set(WSDAnnotation.class, sense);
-                        System.out.println("WSDAnnotator.annotate(): adding sense: " + sense);
+                        if (debug) System.out.println("WSDAnnotator.annotate(): adding sense: " + sense);
                         String linkedSUMO = WordNet.wn.getSUMOMapping(sense);
                         if (!StringUtil.emptyString(linkedSUMO)) {
                             String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(sense));
                             if (!StringUtil.emptyString(SUMO)) {
                                 token.set(SUMOAnnotation.class, SUMO);
-                                System.out.println("WSDAnnotator.annotate(): adding SUMO: " + SUMO);
+                                if (debug) System.out.println("WSDAnnotator.annotate(): adding SUMO: " + SUMO);
                             }
                         }
                     }
