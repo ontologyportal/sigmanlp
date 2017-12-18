@@ -34,6 +34,7 @@ MA  02111-1307 USA
 public class Searcher {
 
     public static int countSize = 100; // parameter to optimize searching
+    public static boolean debug = false;
 
     /***************************************************************
      * Add HTML markup highlighting the matching phrase
@@ -56,7 +57,7 @@ public class Searcher {
      */
     public static String highlightDep(String pattern, String depParse) {
 
-        System.out.println("Searcher.highlightDep(): pattern: " + pattern + "\ndepParse: " + depParse);
+        if (debug) System.out.println("Searcher.highlightDep(): pattern: " + pattern + "\ndepParse: " + depParse);
         if (StringUtil.emptyString(pattern))
             return depParse;
         Lexer lex = new Lexer(StringUtil.removeEnclosingCharPair(pattern,1,'[',']'));
@@ -66,8 +67,8 @@ public class Searcher {
         CNF depcnf = CNF.parseSimple(lex);
         HashMap<String,String> bindings = patcnf.unify(depcnf);
 
-        System.out.println("Searcher.highlightDep(): bindings: " + bindings);
-        System.out.println("Searcher.highlightDep(): cnf: " + depcnf);
+        if (debug) System.out.println("Searcher.highlightDep(): bindings: " + bindings);
+        if (debug) System.out.println("Searcher.highlightDep(): cnf: " + depcnf);
         StringBuffer result = new StringBuffer();
         for (Clause c : depcnf.clauses) {
             for (Literal l : c.disjuncts) {
@@ -98,7 +99,7 @@ public class Searcher {
             int count = 0;
             res.next();
             count = res.getInt(1);
-            System.out.println("Number of rows in index: " + count);
+            if (debug) System.out.println("Number of rows in index: " + count);
         }
         catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -117,7 +118,7 @@ public class Searcher {
             String[] sar = key.split("#");
             String query = "select cont from content where file='" + sar[0] +
                     "' and sentnum=" + sar[1] + " and linenum=" + sar[2] + ";";
-            System.out.println("Searcher.fetchSentenceFromKey(): query: " + query);
+            if (debug) System.out.println("Searcher.fetchSentenceFromKey(): query: " + query);
             stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
             while (rs.next()) {
@@ -143,7 +144,7 @@ public class Searcher {
             String[] sar = key.split("#");
             String query = "select dependency from content where file='" + sar[0] +
                     "' and sentnum=" + sar[1] + " and linenum=" + sar[2] + ";";
-            System.out.println("Searcher.fetchDepFromKey(): query: " + query);
+            if (debug) System.out.println("Searcher.fetchDepFromKey(): query: " + query);
             stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
             while (rs.next()) {
@@ -171,7 +172,7 @@ public class Searcher {
                 String[] sar = s.split("#");
                 String query = "select cont,dependency from content where file='" + sar[0] +
                         "' and sentnum=" + sar[1] + " and linenum=" + sar[2] + ";";
-                System.out.println("Searcher.fetchResultStrings(): query: " + query);
+                if (debug) System.out.println("Searcher.fetchResultStrings(): query: " + query);
                 stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(query);
                 while (rs.next()) {
@@ -200,7 +201,7 @@ public class Searcher {
         try {
             for (String s : tokens) {
                 String query = "select * from counts where token='" + s + "';";
-                System.out.println("Searcher.fetchFromIndex(): query: " + query);
+                if (debug) System.out.println("Searcher.fetchFromIndex(): query: " + query);
                 stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(query);
                 while (rs.next()) {
@@ -232,8 +233,8 @@ public class Searcher {
 
         TreeSet<AVPair> sortedCounts = makeCountIndex(conn,tokens);
 
-        System.out.println("Searcher.fetchFromSortedIndex(): " + indexName + "\n" + tokens);
-        System.out.println("Searcher.fetchFromSortedIndex(): sorted counts: " + sortedCounts);
+        if (debug) System.out.println("Searcher.fetchFromSortedIndex(): " + indexName + "\n" + tokens);
+        if (debug) System.out.println("Searcher.fetchFromSortedIndex(): sorted counts: " + sortedCounts);
         HashSet<String> result = new HashSet<>();
         if (!indexName.equalsIgnoreCase("INDEX") && !indexName.equalsIgnoreCase("DEPINDEX")) {
             System.out.println("Error in Searcher.fetchFromSortedIndex(): bad table name " + indexName);
@@ -243,12 +244,12 @@ public class Searcher {
         try {
             for (AVPair avp : sortedCounts) {
                 String s = avp.value;
-                System.out.println("Searcher.fetchFromSortedIndex(): term count: " + avp.attribute);
+                if (debug) System.out.println("Searcher.fetchFromSortedIndex(): term count: " + avp.attribute);
                 int termCount = Integer.parseInt(avp.attribute);
                 if (result.size() > 0 && termCount > countSize * result.size())
                     return result; // don't try to union really big indexes
                 String query = "select * from " + indexName + " where token='" + s + "';";
-                System.out.println("Searcher.fetchFromSortedIndex(): query: " + query);
+                if (debug) System.out.println("Searcher.fetchFromSortedIndex(): query: " + query);
                 stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(query);
                 HashSet<String> newresult = new HashSet<>();
@@ -262,15 +263,15 @@ public class Searcher {
                     result.addAll(newresult);
                 else
                     result.retainAll(newresult);
-                System.out.println("Searcher.fetchFromSortedIndex(): result size: " + result.size());
+                if (debug) System.out.println("Searcher.fetchFromSortedIndex(): result size: " + result.size());
             }
         }
         catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-        System.out.println("Searcher.fetchFromSortedIndex(): result size: " + result.size());
-        System.out.println("Searcher.fetchFromSortedIndex(): result: " + result);
+        if (debug) System.out.println("Searcher.fetchFromSortedIndex(): result size: " + result.size());
+        if (debug) System.out.println("Searcher.fetchFromSortedIndex(): result: " + result);
         return result;
     }
 
@@ -281,7 +282,7 @@ public class Searcher {
     public static HashSet<String> fetchFromIndex(Connection conn, String indexName,
                                                  ArrayList<String> tokens) {
 
-        System.out.println("Searcher.fetchFromIndex(): " + indexName + "\n" + tokens);
+        if (debug) System.out.println("Searcher.fetchFromIndex(): " + indexName + "\n" + tokens);
         HashSet<String> result = new HashSet<>();
         if (!indexName.equalsIgnoreCase("INDEX") && !indexName.equalsIgnoreCase("DEPINDEX")) {
             System.out.println("Error in Searcher.fetchFromIndex(): bad table name " + indexName);
@@ -291,7 +292,7 @@ public class Searcher {
         try {
             for (String s : tokens) {
                 String query = "select * from " + indexName + " where token='" + s + "';";
-                System.out.println("Searcher.fetchFromIndex(): query: " + query);
+                if (debug) System.out.println("Searcher.fetchFromIndex(): query: " + query);
                 stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(query);
                 HashSet<String> newresult = new HashSet<>();
@@ -305,14 +306,14 @@ public class Searcher {
                     result.addAll(newresult);
                 else
                     result.retainAll(newresult);
-                System.out.println("Searcher.fetchFromIndex(): result size: " + result.size());
+                if (debug) System.out.println("Searcher.fetchFromIndex(): result size: " + result.size());
             }
         }
         catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-        System.out.println("Searcher.fetchFromIndex(): result size: " + result.size());
+        if (debug) System.out.println("Searcher.fetchFromIndex(): result size: " + result.size());
         return result;
     }
 
@@ -324,7 +325,7 @@ public class Searcher {
      */
     public static boolean matchDep(CNF smallcnf, String onedep) {
 
-        System.out.println("Searcher.matchDep(): onedep: " + onedep);
+        if (debug) System.out.println("Searcher.matchDep(): onedep: " + onedep);
         onedep = StringUtil.removeEnclosingCharPair(onedep,2,'[',']'); // two layers of brackets
         Lexer lex = new Lexer(onedep);
         CNF depcnf = CNF.parseSimple(lex);
@@ -332,7 +333,7 @@ public class Searcher {
         if (bindings == null)  // remove all that don't unify
             return false;
         else {
-            System.out.println("Searcher.matchDep(): " + bindings);
+            if (debug) System.out.println("Searcher.matchDep(): " + bindings);
             return true;
         }
     }
@@ -349,8 +350,8 @@ public class Searcher {
     public static ArrayList<Integer> matchDependencies(String dep,
                                      ArrayList<String> dependencies) {
 
-        System.out.println("Searcher.matchDependencies(): " + dep);
-        System.out.println("dependencies size: " + dependencies.size());
+        if (debug) System.out.println("Searcher.matchDependencies(): " + dep);
+        if (debug) System.out.println("dependencies size: " + dependencies.size());
         ArrayList<Integer> result = new ArrayList<Integer>();
         if (Strings.isNullOrEmpty(dep) || dep.equals("null"))
             return result;
@@ -374,8 +375,8 @@ public class Searcher {
     public static ArrayList<Integer> matchSentences(String phrase,
                                      ArrayList<String> sentences) {
 
-        System.out.println("Searcher.matchSentences(): " + phrase);
-        System.out.println("sentences size: " + sentences.size());
+        if (debug) System.out.println("Searcher.matchSentences(): " + phrase);
+        if (debug) System.out.println("sentences size: " + sentences.size());
         ArrayList<Integer> result = new ArrayList<Integer>();
         if (Strings.isNullOrEmpty(phrase))
             return result;
@@ -395,7 +396,7 @@ public class Searcher {
                                                ArrayList<String> sentTokens,
                                                ArrayList<String> depTokens) {
 
-        System.out.println("fetchIndexes():" + sentTokens + "\n" + depTokens);
+        if (debug) System.out.println("fetchIndexes():" + sentTokens + "\n" + depTokens);
         HashSet<String> result = new HashSet<String>();
         if (sentTokens != null && sentTokens.size() > 0)
             result = fetchFromSortedIndex(conn,"index",sentTokens);
@@ -413,7 +414,7 @@ public class Searcher {
      */
     public static ArrayList<String> depToTokens(String dep) {
 
-        System.out.println("Searcher.depToTokens(): " + dep);
+        if (debug) System.out.println("Searcher.depToTokens(): " + dep);
         ArrayList<String> result = new ArrayList<String>();
         if (dep == null)
             return result;
@@ -435,12 +436,13 @@ public class Searcher {
     }
 
     /***************************************************************
+     * dbFilepath is assumed to be under CORPORA directory
      */
-    public static void search(String phrase, String dep,
+    public static void search(String dbFilepath, String phrase, String dep,
                               ArrayList<String> sentences,
                               ArrayList<String> dependencies) throws Exception {
 
-        System.out.println("Searcher.search(): " + phrase + "\n" + dep);
+        if (debug) System.out.println("Searcher.search(): " + phrase + "\n" + dep);
         String searchString = phrase;
         String[] ar = searchString.split(" ");
         ArrayList<String> sentTokens = new ArrayList<>();
@@ -449,15 +451,16 @@ public class Searcher {
         ArrayList<String> depTokens = new ArrayList<>();
         depTokens = depToTokens(dep);
 
-        Class.forName("org.h2.Driver");
-        Connection conn = DriverManager.getConnection(Indexer.JDBCString, Indexer.UserName, "");
-        System.out.println("main(): Opened DB " + Indexer.JDBCString);
+        //Class.forName("org.h2.Driver");
+        String corporaDir = System.getenv("CORPORA");
+        Connection conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "");
+        if (debug) System.out.println("main(): Opened DB " + dbFilepath);
         stats(conn);
         Statement stmt = null;
         HashSet<String> result = new HashSet<>();
         try {
             result = fetchIndexes(conn,sentTokens, depTokens);
-            System.out.println("search(): indexes size: " + result.size());
+            if (debug) System.out.println("search(): indexes size: " + result.size());
             ArrayList<String> tempSentences = new ArrayList<>();
             ArrayList<String> tempDependencies = new ArrayList<>();
             fetchResultStrings(conn,result,tempSentences,tempDependencies); // results returned in tempSentences and tempDependencies
@@ -489,14 +492,14 @@ public class Searcher {
 
     /***************************************************************
      */
-    public static void printSearchResults(String phrase, String dep) throws Exception {
+    public static void printSearchResults(String dbFilepath, String phrase, String dep) throws Exception {
 
         System.out.println("Searcher.printSearchResults(): " + phrase + "\n" + dep);
 
         try {
             ArrayList<String> sentences = new ArrayList<>();
             ArrayList<String> dependencies = new ArrayList<>();
-            search(phrase, dep,sentences, dependencies);
+            search(dbFilepath, phrase, dep,sentences, dependencies);
             for (int i = 0; i < sentences.size(); i++) {
                 String s = sentences.get(i);
                 String d = dependencies.get(i);
@@ -511,11 +514,17 @@ public class Searcher {
     }
 
     /** ***************************************************************
+     */
+    public static void interactive() {
+        interactive(Indexer.JDBCString);
+    }
+
+    /** ***************************************************************
      * Allows interactive testing of entering a word, phrase, or dependency
      * pattern and returning the matching sentences, or just the first 10
      * and a count if there are more than 10 results
      */
-    public static void interactive() {
+    public static void interactive(String dbFilepath) {
 
         Interpreter interp = new Interpreter();
         KBmanager.getMgr().initializeOnce();
@@ -540,7 +549,7 @@ public class Searcher {
             if (!Strings.isNullOrEmpty(input) || !Strings.isNullOrEmpty(deps)) {
                 if (Strings.isNullOrEmpty(input) || (!input.equals("exit") && !input.equals("quit"))) {
                     try {
-                        printSearchResults(input, deps);
+                        printSearchResults(dbFilepath, input, deps);
                     }
                     catch (Exception e) {
                         System.out.println(e.getMessage());
@@ -552,6 +561,16 @@ public class Searcher {
     }
 
     /***************************************************************
+     */
+    public static void help() {
+
+        System.out.println("Semantic Concordancer Searching - commands:");
+        System.out.println("    -i <path>       Interactive corpus search");
+        System.out.println("    -t              test searching");
+        System.out.println("    -h              show this Help message");
+    }
+
+    /***************************************************************
      * search for a matching sentence with the first quoted argument
      * being a word or phrase and the second quoted argument being
      * a dependency pattern.
@@ -560,9 +579,13 @@ public class Searcher {
 
         Class.forName("org.h2.Driver");
         if (args != null && args.length > 0 && args[0].equals("-i")) {
-            interactive();
+            if (args.length > 1 && !StringUtil.emptyString(args[1])) {
+                interactive(args[1]);
+            }
+            else
+                interactive();
         }
-        else {
+        else if (args != null && args.length > 0 && args[0].equals("-t")) {
             Connection conn = DriverManager.getConnection(Indexer.JDBCString, Indexer.UserName, "");
             System.out.println("main(): Opened DB " + Indexer.JDBCString);
             String searchString = "in";
@@ -581,7 +604,9 @@ public class Searcher {
             String depString = "sumo(Process,?X)";
             if (args != null && args.length > 1)
                 depString = args[1];
-            printSearchResults(searchString,depString);
+            printSearchResults(Indexer.JDBCString,searchString,depString);
         }
+        else
+            help();
     }
 }
