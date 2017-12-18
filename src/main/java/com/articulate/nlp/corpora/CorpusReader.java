@@ -1,13 +1,14 @@
 package com.articulate.nlp.corpora;
 
+import com.articulate.nlp.semRewrite.Interpreter;
+import com.articulate.nlp.semconcor.Indexer;
+import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.StringUtil;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.LineNumberReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -27,21 +28,52 @@ public class CorpusReader {
 
     // Key is filename, value is a list of lines of text.  Sentences
     // must not cross a line.
-    public static HashMap<String,ArrayList<String>> docs = new HashMap<>();
-    public static String fileExt = ".xml";
-    public static String regExGoodLine = "<p>.+</p>";
-    public static String regExRemove = "<c>[^<]+</c>";
-    public static String regExReplacement = "";
-    public static String corpora = System.getenv("CORPORA");
-    public static String dataDir = corpora + File.separator + "fce-released-dataset/dataset";
-    public static boolean oneFile = false;
-    public static boolean removeHTML = true;
-    public static int startline = 0;
+    public HashMap<String,ArrayList<String>> docs = new HashMap<>();
+    public String fileExt = ".xml";
+    public String regExGoodLine = "<p>.+</p>";
+    public String regExRemove = "<c>[^<]+</c>";
+    public String regExReplacement = "";
+    public String corpora = System.getenv("CORPORA");
+    public String dataDir = "";
+    public boolean oneFile = false;
+    public boolean removeHTML = true;
+    public int startline = 0;
+
+    /***************************************************************
+     * Read and process a single corpus file one line at a time.
+     */
+    public void processFileByLine(Connection conn, String file) {
+
+        try {
+            Interpreter interp = new Interpreter();
+            interp.initialize();
+            InputStream in = new FileInputStream(file);
+            Reader reader = new InputStreamReader(in);
+            LineNumberReader lnr = new LineNumberReader(reader);
+            KBmanager.getMgr().initializeOnce();
+            System.out.println("Info in CorpusReader.processFileByLine(): " + file);
+            String line = "";
+            while ((line = lnr.readLine()) != null) {
+                if (StringUtil.emptyString(regExGoodLine) || line.matches(regExGoodLine)) {
+                    if (!StringUtil.emptyString(regExRemove))
+                        line = line.replaceAll(regExRemove,regExReplacement); // remove corrections to the English
+                    if (removeHTML)
+                        line = StringUtil.removeHTML(line);
+                    Indexer.extractOneAugmentLine(interp,conn,line,Indexer.tokensMax,file,lnr.getLineNumber());
+                    System.out.println("Info in CorpusReader.processFileByLine(): line: " + line);
+                }
+            }
+        }
+        catch (Exception e) {
+            System.out.println("Error in CorpusReader.processFileByLine(): " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     /***************************************************************
      * @return a list of lines of text with markup removed
      */
-    private static void processFile(ArrayList<String> doc, String filename) {
+    private void processFile(ArrayList<String> doc, String filename) {
 
         System.out.println("Info in CorpusReader.processFile(): " + filename);
         ArrayList<String> result = new ArrayList<>();
@@ -81,7 +113,7 @@ public class CorpusReader {
 
     /***************************************************************
      */
-    public static void readFiles(String dir) {
+    public void readFiles(String dir) {
 
         try {
             if (oneFile) {
@@ -106,9 +138,15 @@ public class CorpusReader {
 
     /***************************************************************
      */
-    public static void readCorpus() {
+    public void readCorpus() {
 
         System.out.println("Info in CorpusReader.readCorpus(): starting read");
         readFiles(dataDir);
+    }
+
+    /***************************************************************
+     */
+    public static void main(String[] args) {
+
     }
 }
