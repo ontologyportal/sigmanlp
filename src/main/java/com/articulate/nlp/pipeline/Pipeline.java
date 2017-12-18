@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.sigma.StringUtil;
 import com.articulate.sigma.KBmanager;
 import com.google.common.base.Strings;
@@ -41,17 +42,23 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
 public class Pipeline {
 
     public StanfordCoreNLP pipeline;
+    public static boolean debug = false;
     public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
         "ner, nersumo, gender, parse, depparse, entitymentions, wnmw, wsd, tsumo";
 
     public static final String oldDefaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
+
+    public static String anchorDate = "2017-04-21";
 
     /** ***************************************************************
      */
@@ -71,7 +78,7 @@ public class Pipeline {
      */
     public Pipeline(boolean useDefaultPCFGModel, String propString) {
 
-        System.out.println("Pipeline(): initializing with " + propString);
+        if (debug) System.out.println("Pipeline(): initializing with " + propString);
         Properties props = new Properties();
         // props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, depparse, dcoref, entitymentions");
         props.put("annotators", propString);
@@ -85,6 +92,9 @@ public class Pipeline {
         }
         if (propString.contains("tsumo")) {
             props.put("customAnnotatorClass.tsumo", "com.articulate.nlp.TimeSUMOAnnotator");
+            Date today = Calendar.getInstance().getTime();
+            SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
+            anchorDate = format1.format(today);
         }
         if (propString.contains("nersumo")) {
             props.put("customAnnotatorClass.nersumo", "com.articulate.nlp.NERAnnotator");
@@ -115,6 +125,7 @@ public class Pipeline {
         // create an empty Annotation just with the given text
         Annotation document = new Annotation(text);
         // run all Annotators on this text
+        document.set(CoreAnnotations.DocDateAnnotation.class, anchorDate);
         pipeline.annotate(document);
         return document;
     }
@@ -139,8 +150,20 @@ public class Pipeline {
     public List<String> toDependencies(String input) {
 
         Annotation wholeDocument = annotate(input);
+        wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, anchorDate);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
         List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+        return dependencies;
+    }
+
+    /** ***************************************************************
+     */
+    public CNF toCNFDependencies(String input) {
+
+        Annotation wholeDocument = annotate(input);
+        wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, anchorDate);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        CNF dependencies = SentenceUtil.toCNFDependenciesList(ImmutableList.of(lastSentence));
         return dependencies;
     }
 
