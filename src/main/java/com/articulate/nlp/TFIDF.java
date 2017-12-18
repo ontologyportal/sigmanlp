@@ -277,7 +277,7 @@ public class TFIDF {
     /** ***************************************************************
      * @return an ArrayList of the string split by spaces.
      */
-    private static ArrayList<String> splitToArrayList(String st) {
+    public static ArrayList<String> splitToArrayList(String st) {
 
         if (isNullOrEmpty(st)) {
             System.out.println("Error in TFIDF.splitToArrayList(): empty string input");
