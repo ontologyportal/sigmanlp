@@ -118,6 +118,8 @@ public class Interpreter {
     public static ArrayList<String> firedRules = new ArrayList<String>();
     public static ArrayList<String> augmentedClauses = new ArrayList<String>();
     public static ClauseSubstitutor substitutor = null;
+    public static DateAndNumbersGeneration generator = new DateAndNumbersGeneration();
+    public static StanfordDateTimeExtractor sde = new StanfordDateTimeExtractor();
 
     /** *************************************************************
      */
@@ -893,7 +895,7 @@ public class Interpreter {
     public CNF interpretGenCNF(CoreMap lastSentence) {
 
         List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
-        if (verboseParse) {
+        if (verboseParse && debug) {
             for (CoreLabel cl : lastSentenceTokens)
                 System.out.println(cl.originalText() + ": " + cl.ner());
         }
@@ -910,20 +912,20 @@ public class Interpreter {
         results = consolidateSpans(lastSentenceTokens,results);
         //System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
         results = replaceInstances(results);
-        System.out.println("Interpreter.interpretGenCNF(): after instance replacement: " + results);
+        if (debug) System.out.println("Interpreter.interpretGenCNF(): after instance replacement: " + results);
 
         List<String> posInformation = SentenceUtil.findPOSInformation(lastSentenceTokens, dependenciesList);
         // TODO: This is not the best way to substitute POS information
         //posInformation = SubstitutionUtil.groupClauses(substitutor, posInformation);
         results.addAll(posInformation);
 
-        DateAndNumbersGeneration generator = new DateAndNumbersGeneration();
-        StanfordDateTimeExtractor sde = new StanfordDateTimeExtractor();
         List<Tokens> tokenList = new ArrayList<Tokens>();
         sde.populateParserInfo(lastSentence,tokenList);
+
         List<String> timeResults = generator.generateSumoTerms(tokenList, sde);
         results = scrubMeasures(results,lastSentence); // remove original date/time/measure literals
         results.addAll(timeResults);
+
 
         if (!lemmaLiteral) // if true, then explicit lemma added by
             results = lemmatizeResults(results, lastSentenceTokens);
@@ -933,7 +935,7 @@ public class Interpreter {
         String in = StringUtil.removeEnclosingCharPair(results.toString(),Integer.MAX_VALUE,'[',']');
         Lexer lex = new Lexer(in);
         CNF cnf = CNF.parseSimple(lex);
-        System.out.println("Interpreter.interpretGenCNF(): cnf: " + cnf);
+        if (debug) System.out.println("Interpreter.interpretGenCNF(): cnf: " + cnf);
         return cnf;
     }
 
