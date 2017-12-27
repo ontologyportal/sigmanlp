@@ -28,16 +28,18 @@ String username = "guest";
 if (siblingContext != null && siblingContext.getAttribute("user") != null)
     username = (String) siblingContext.getAttribute("user");
 else
-    System.out.println("Prelude.jsp: Empty sibling context");
+    System.out.println("PreludeNLP.jsp: Empty sibling context");
 
 String role = "guest";
 if (siblingContext != null && siblingContext.getAttribute("role") != null)
     role = (String) siblingContext.getAttribute("role");
+System.out.println("PreludeNLP.jsp: username:role  " + username + " : " + role);
 
 String URLString = request.getRequestURL().toString();
 String pageString = URLString.substring(URLString.lastIndexOf("/") + 1);
+System.out.println("PreludeNLP.jsp: KBmanager initialized  " + KBmanager.initialized);
+System.out.println("PreludeNLP.jsp: KBmanager initializing  " + KBmanager.initializing);
 KBmanager mgr = KBmanager.getMgr();
-System.out.println("PreludeNLP.jsp: username:role  " + username + " : " + role);
 
 String hostname = KBmanager.getMgr().getPref("hostname");
 if (hostname == null)
@@ -52,7 +54,7 @@ if (StringUtil.emptyString(role)) { // role is [guest | user | admin]
 
 if (!KBmanager.initialized) {
     KBmanager.getMgr().initializeOnce();
-    System.out.println("Prelude.jsp: initializing.  Redirecting to init.jsp.");
+    System.out.println("PreludeNLP.jsp: initializing.  Redirecting to init.jsp.");
     response.sendRedirect(HTMLformatter.createHrefStart() + "/sigma/init.jsp");
     return;
 }
