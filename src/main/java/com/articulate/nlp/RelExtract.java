@@ -1,12 +1,22 @@
 package com.articulate.nlp;
 
+import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Clause;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.nlp.semconcor.Searcher;
 import com.articulate.sigma.*;
+import com.articulate.sigma.nlg.LanguageFormatter;
 import com.articulate.sigma.nlg.NLGUtils;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import edu.stanford.nlp.ling.CoreAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.TypesafeMap;
 
 import java.util.*;
 
@@ -35,18 +45,48 @@ import java.util.*;
  */
 public class RelExtract {
 
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     /** *************************************************************
+     * Copy SUMO categories in the outputMap that are associated with
+     * tokens into the tokens in the cnf
      */
-    public static CNF toCNF(Interpreter interp, String input) {
+    public static void addCategories(CNF cnf, ArrayList<CoreLabel> outputMap) {
 
-        if (input.contains("such that"))
-            input = input.substring(input.indexOf("such that") + 10,input.length());
+        for (Clause c : cnf.clauses) {
+            for (Literal l : c.disjuncts) {
+                for (CoreLabel cl : outputMap) {
+                    //if (debug) System.out.println("addCategories(): " + l.clArg1.toString() + " =? " + cl.toString());
+                    if (cl.toString().equals(l.clArg1.toString())) {
+                        //if (debug) System.out.println("addCategories(): " + l.clArg1.category());
+                        l.clArg1.setCategory(cl.category());
+                    }
+                    if (cl.toString().equals(l.clArg2.toString())) {
+                        //if (debug) System.out.println("addCategories(): " + l.clArg1.category());
+                        l.clArg2.setCategory(cl.category());
+                    }
+                }
+            }
+        }
+    }
+
+    /** *************************************************************
+     * Remove the standard phrasing at the beginning of a NLG-produced
+     * sentence and get the dependency parse for it.  Add a period at the
+     * end of the sentence
+     */
+    public static CNF toCNF(Interpreter interp, String input, ArrayList<CoreLabel> outputMap) {
+
+        input = LanguageFormatter.removePreamble(input);
         input = Character.toUpperCase(input.charAt(0)) + input.substring(1) + ".";
+        if (debug) System.out.println("toCNF(): input " + input);
         //System.out.println(interp.p.toDependencies(result));
         //return interp.interpretGenCNF(input);
-        return interp.p.toCNFDependencies(input);
+        //CNF result = interp.p.toCNFDependencies(input);
+        CNF result = interp.p.toCNFEdgeDependencies(input);
+        addCategories(result,outputMap);
+        if (debug) System.out.println("toCNF():result " + result);
+        return result;
     }
 
     /** *************************************************************
@@ -63,24 +103,31 @@ public class RelExtract {
     }
 
     /** *************************************************************
-     * retain only the literals in the dependency parse that also are
-     * from the original format string
+     * Retain only the literals involving tokens in the dependency parse that also are
+     * from the original format string.  Literals involving tokens that are arguments and
+     * not from the format string will have a non-empty type (which means a CoreLabel.category()).
      */
     public static CNF formatWordsOnly(CNF cnfinput, String format) {
 
+        if (debug) System.out.println("RelExtract.formatWordsOnly(): " + cnfinput);
         List<Literal> literalList = cnfinput.toLiterals();
         CNF cnf = new CNF();
-        String[] words = format.split(" ");
-        System.out.println("formatWordsOntly(): " + Arrays.toString(words));
-        for (String w : words) {
-            if (StringUtil.emptyString(w))
-                continue;
-            for (Literal lit : literalList) {
-                if (w.equals(Literal.tokenOnly(lit.arg1)) ||
-                    w.equals(Literal.tokenOnly(lit.arg2)))
-                    cnf.append(lit);
+        String[] wordsAr = format.split(" ");
+        ArrayList<String> words = new ArrayList<>();
+        words.addAll(Arrays.asList(wordsAr));
+        if (debug)  System.out.println("RelExtract.formatWordsOnly(): input: " + Arrays.asList(wordsAr).toString());
+        for (Literal lit : literalList) {
+            if (debug) System.out.println("RelExtract.formatWordsOnly(): lit: " + lit);
+            if (debug) System.out.println("RelExtract.formatWordsOnly(): arg1 cat: " + lit.clArg1.category());
+            if (debug) System.out.println("RelExtract.formatWordsOnly(): arg2 cat: " + lit.clArg2.category());
+            if (StringUtil.emptyString(lit.clArg1.category())) {
+                cnf.append(lit);
+            }
+            else if (StringUtil.emptyString(lit.clArg2.category())) {
+                cnf.append(lit);
             }
         }
+        if (debug) System.out.println("RelExtract.formatWordsOnly(): result: " + cnf);
         return cnf;
     }
 
@@ -126,28 +173,24 @@ public class RelExtract {
      */
     public static CNF toVariables(CNF input, String formatString) {
 
-        String[] words = formatString.split(" ");
-        CNF result = new CNF();
-        for (String w : words) {
-            if (StringUtil.emptyString(w))
-                continue;
-            for (Clause c : input.clauses) {
-                for (Literal lit : c.disjuncts) {
-                    if (w.equalsIgnoreCase(Literal.tokenOnly(lit.arg1)) && !lit.arg1.endsWith("*"))
-                        lit.arg1 = Literal.tokenOnly(lit.arg1) + "*";
-                    if (w.equalsIgnoreCase(Literal.tokenOnly(lit.arg2)) && !lit.arg2.endsWith("*"))
-                        lit.arg2 = Literal.tokenOnly(lit.arg2) + "*";
-                }
-            }
-        }
+        if (debug) System.out.println("RelExtract.toVariables(): input: " + input);
         for (Clause c : input.clauses) {
             for (Literal lit : c.disjuncts) {
-                if (!lit.arg1.endsWith("*"))
-                    lit.arg1 = "?" + lit.arg1;
-                if (!lit.arg2.endsWith("*"))
-                    lit.arg2 = "?" + lit.arg2;
+                if (StringUtil.emptyString(lit.clArg1.category()))
+                    lit.clArg1.set(LanguageFormatter.VariableAnnotation.class,lit.clArg1.value() + "*");
+                else
+                    lit.clArg1.set(LanguageFormatter.VariableAnnotation.class,"?" + lit.clArg1.value() + "-" + lit.clArg1.index());
+                if (StringUtil.emptyString(lit.clArg2.category()))
+                    lit.clArg2.set(LanguageFormatter.VariableAnnotation.class,lit.clArg2.value() + "*");
+                else
+                    lit.clArg2.set(LanguageFormatter.VariableAnnotation.class,"?" + lit.clArg2.value() + "-" + lit.clArg2.index());
+                //if (!lit.arg1.endsWith("*"))
+                //    lit.setarg1("?" + lit.arg1);
+                //if (!lit.arg2.endsWith("*"))
+                 //   lit.setarg2("?" + lit.arg2);
             }
         }
+        if (debug) System.out.println("RelExtract.toVariables(): result: " + printCNFVariables(input));
         return input;
     }
 
@@ -176,37 +219,108 @@ public class RelExtract {
     }
 
     /** *************************************************************
-     * only allow for word variables (which have a trailing '*')
+     * only check for words from the original format statement, which
+     * do not have a CoreNLP category() value
      */
     public static boolean stopWordsOnly(CNF cnf) {
 
-        //System.out.println("stopWordsOnly(): " + cnf);
+        if (debug) System.out.println("stopWordsOnly(): " + cnf);
         for (Clause c : cnf.clauses) {
             for (Literal l : c.disjuncts) {
                 if (l.pred.equals("sumo") || l.pred.equals("isSubclass"))
                     continue;
-                String arg1Tok = Literal.tokenOnly(l.arg1);
-                //System.out.println("stopWordsOnly(): " + arg1Tok);
-                if (!StringUtil.emptyString(arg1Tok) && l.arg1.endsWith("*")) {
-                    arg1Tok = arg1Tok.substring(0,arg1Tok.length());
-                    if (!WordNet.wn.isStopWord(arg1Tok)) {
-                        //System.out.println("stopWordsOnly(): found non-stop word " + arg1Tok);
+                //printCoreLabel(l.clArg1);
+                if (l.clArg1 != null && l.clArg1.category() == null) {
+                    if (!WordNet.wn.isStopWord(l.clArg1.word())) {
+                        if (debug) System.out.println("stopWordsOnly(): found non-stop word " + l.clArg1.word());
                         return false;
                     }
+                    else if (debug) System.out.println("stopWordsOnly(): found stop word " + l.clArg1.word());
                 }
-                String arg2Tok = Literal.tokenOnly(l.arg2);
-                //System.out.println("stopWordsOnly(): " + arg2Tok);
-                if (!StringUtil.emptyString(arg2Tok) && l.arg2.endsWith("*")) {
-                    arg2Tok = arg2Tok.substring(0,arg2Tok.length());
-                    if (!WordNet.wn.isStopWord(arg2Tok)) {
-                        //System.out.println("stopWordsOnly(): found non-stop word " + arg2Tok);
+
+                //printCoreLabel(l.clArg2);
+                if (l.clArg2 != null && l.clArg2.category() == null) {
+                    if (!WordNet.wn.isStopWord(l.clArg2.word())) {
+                        if (debug) System.out.println("stopWordsOnly(): found non-stop word " + l.clArg2.word());
                         return false;
                     }
+                    else if (debug) System.out.println("stopWordsOnly(): found stop word " + l.clArg2.word());
                 }
             }
         }
-        //System.out.println("stopWordsOnly(): " + cnf + " has only stop words");
+        if (debug) System.out.println("stopWordsOnly(): " + cnf + " has only stop words");
         return true;
+    }
+
+    /** *************************************************************
+     */
+    public static CNF promoteVariables(CNF pattern) {
+
+        CNF result = new CNF();
+        for (Clause c : pattern.clauses) {
+            for (Literal l : c.disjuncts) {
+                Literal newl = new Literal(l);
+                String var1 = l.clArg1.getString(LanguageFormatter.VariableAnnotation.class);
+                if (!StringUtil.emptyString(var1))
+                    newl.clArg1.setValue(var1);
+                newl.arg1 = newl.clArg1.value();
+                String var2 = l.clArg2.getString(LanguageFormatter.VariableAnnotation.class);
+                if (!StringUtil.emptyString(var2))
+                    newl.clArg2.setValue(var2);
+                result.append(newl);
+                newl.arg2 = newl.clArg2.value();
+            }
+        }
+        return result;
+    }
+
+    /** *************************************************************
+     */
+    public static void searchForOnePattern(String rel, CNF pattern) {
+
+        ArrayList<String> dependencies = null;
+        ArrayList<String> sentences = null;
+        String dbFilepath = "wikipedia/wiki1";
+        pattern = promoteVariables(pattern); // make the variable annotation the value
+        if (!stopWordsOnly(pattern)) {
+            try {
+                CNF noTypes = removeTypes(pattern);
+                System.out.println("searchForOnePattern(): no types: " + noTypes);
+                dependencies = new ArrayList<String>();
+                sentences = new ArrayList<String>();
+                Searcher.search(dbFilepath, "", noTypes.toString(), sentences, dependencies);
+                if (sentences.size() > 0) {
+                    for (int i = 0; i < sentences.size(); i++) {
+                        System.out.println("test(): without types: relation: " + rel);
+                        System.out.println("cnf: " + noTypes.toString());
+                        System.out.println("stop words only: " + stopWordsOnly(noTypes));
+                        System.out.println("dep: " + dependencies.get(i));
+                        System.out.println("sentence: " + sentences.get(i));
+                        System.out.println();
+                    }
+                }
+                dependencies = new ArrayList<String>();
+                sentences = new ArrayList<String>();
+                System.out.println("searchForOnePattern(): with types: " + pattern);
+                Searcher.search(dbFilepath, "", pattern.toString(), sentences, dependencies);
+                if (sentences.size() > 0) {
+                    for (int i = 0; i < sentences.size(); i++) {
+                        System.out.println("test(): relation: " + rel);
+                        System.out.println("cnf: " + pattern.toString());
+                        System.out.println("stop words only: " + stopWordsOnly(pattern));
+                        System.out.println("dep: " + dependencies.get(i));
+                        System.out.println("sentence: " + sentences.get(i));
+                        System.out.println();
+                    }
+                }
+            }
+            catch (Exception e) {
+                System.out.println("Error in RelExtract.test()");
+                e.printStackTrace();
+            }
+        }
+        else
+            System.out.println("test(): stop words only in: " + pattern);
     }
 
     /** *************************************************************
@@ -214,48 +328,8 @@ public class RelExtract {
     public static void test(HashMap<String,CNF> patterns) {
 
         System.out.println("*************** RelExtract.test() ***********************");
-        ArrayList<String> dependencies = null;
-        ArrayList<String> sentences = null;
-        String dbFilepath = "wikipedia/wiki1";
         for (String rel : patterns.keySet()) {
-            CNF cnf = patterns.get(rel);
-            if (!stopWordsOnly(cnf)) {
-                try {
-                    CNF noTypes = removeTypes(cnf);
-                    dependencies = new ArrayList<String>();
-                    sentences = new ArrayList<String>();
-                    Searcher.search(dbFilepath, "", noTypes.toString(), sentences, dependencies);
-                    if (sentences.size() > 0) {
-                        for (int i = 0; i < sentences.size(); i++) {
-                            System.out.println("test(): without types: relation: " + rel);
-                            System.out.println("cnf: " + noTypes.toString());
-                            System.out.println("stop words only: " + stopWordsOnly(noTypes));
-                            System.out.println("dep: " + dependencies.get(i));
-                            System.out.println("sentence: " + sentences.get(i));
-                            System.out.println();
-                        }
-                    }
-                    dependencies = new ArrayList<String>();
-                    sentences = new ArrayList<String>();
-                    Searcher.search(dbFilepath, "", cnf.toString(), sentences, dependencies);
-                    if (sentences.size() > 0) {
-                        for (int i = 0; i < sentences.size(); i++) {
-                            System.out.println("test(): relation: " + rel);
-                            System.out.println("cnf: " + cnf.toString());
-                            System.out.println("stop words only: " + stopWordsOnly(cnf));
-                            System.out.println("dep: " + dependencies.get(i));
-                            System.out.println("sentence: " + sentences.get(i));
-                            System.out.println();
-                        }
-                    }
-                }
-                catch (Exception e) {
-                    System.out.println("Error in RelExtract.test()");
-                    e.printStackTrace();
-                }
-            }
-            else
-                System.out.println("test(): stop words only in: " + cnf);
+            searchForOnePattern(rel, patterns.get(rel));
         }
     }
 
@@ -273,40 +347,114 @@ public class RelExtract {
 
     /** *************************************************************
      */
-    public static CNF addTypes(CNF cnfInput, HashMap<String,String> outputMap,
-                               String rel, KB kb) {
+    public static HashSet<Literal> generateSUMO(CoreLabel cl, HashSet<String> typeGenerated, int varnum) {
 
+        //System.out.println("generateSUMO(): ");
+        //printCoreLabel(cl);
+        HashSet<Literal> result = new HashSet<>();
+        String arg = Integer.toString(cl.index());
+        int argnum = Integer.parseInt(arg);
+        String type = "";
+        type = cl.category();
+        if (StringUtil.emptyString(type)) {
+            System.out.println("RelExtract.generateSUMO(): no type found for " + cl);
+            return null;
+        }
+        if (typeGenerated.contains(type))
+            return null;
+        typeGenerated.add(cl.toString());
+        if (!type.endsWith("+")) {
+            result.add(new Literal("sumo(" + type + ",?" + cl + ")"));
+            return result;
+        }
+        else {
+            result.add(new Literal("sumo(?TYPEVAR" + Integer.toString(varnum) + "," + cl + ")"));
+            result.add(new Literal("isSubclass(" + type.substring(0,type.length()-1) + ",?TYPEVAR" + Integer.toString(varnum) + ")"));
+            varnum++;
+        }
+        return result;
+    }
+
+    /** *************************************************************
+     */
+    public static CNF addTypes(CNF cnfInput) {
+
+        HashSet<String> typeGenerated = new HashSet<>();
+        HashSet<Literal> sumoLit = new HashSet<>();
         int varnum = 0;
         CNF cnfnew = new CNF();
         List<Literal> cnflist = cnfInput.toLiterals();
-        for (Literal l : cnflist)
+        for (Literal l : cnflist) {
             cnfnew.append(l);
-        for (String key : outputMap.keySet()) {
-            String arg = Integer.toString(Literal.tokenNum(key));
-            int argnum = Integer.parseInt(arg);
-            String type = "";
-            if (debug) System.out.println("addTypes(): " + kb.kbCache.signatures.get(rel));
-            if (debug) System.out.println("addTypes(): " + arg);
-            if (kb.kbCache.signatures.get(rel) != null && kb.kbCache.signatures.get(rel).size() > argnum)
-                type = kb.kbCache.signatures.get(rel).get(argnum);
-            if (StringUtil.emptyString(type)) {
-                System.out.println("RelExtract.addTypes(): no type signature found for " + rel +
-                     " for argument number " + arg);
-                continue;
-            }
-            if (!type.endsWith("+")) {
-                cnfnew.append(new Literal("sumo(" + type + "," + outputMap.get(key) + ")"));
-            }
-            else {
-                cnfnew.append(new Literal("sumo(?TYPEVAR" + Integer.toString(varnum) + "," + outputMap.get(key) + ")"));
-                cnfnew.append(new Literal("isSubclass(" + type.substring(0,type.length()-1) + ",?TYPEVAR" + Integer.toString(varnum) + ")"));
-                varnum++;
-            }
+            HashSet<Literal> temp = generateSUMO(l.clArg1,typeGenerated,varnum);
+            if (temp != null)
+                sumoLit.addAll(temp);
+            temp = generateSUMO(l.clArg2,typeGenerated,varnum);
+            if (temp != null)
+                sumoLit.addAll(temp);
         }
+        if (sumoLit != null)
+            cnfnew.appendAll(sumoLit);
         return cnfnew;
     }
 
     /** *************************************************************
+     * Process one SUMO format statement to create a dependency parse
+     * pattern that can match free text.  Use language generation
+     * to create a sentence from the format statement, then run
+     * dependency parsing, then modify the dependency parse to keep
+     * just the essential parts of the pattern and add SUMO type
+     * restrictions.
+     *
+     * Words appearing in the format statement become word variables (word*),
+     * words that are the arguments to the relation become free variables
+     * (?word) that have an associated sumo type
+     */
+    public static HashMap<String,CNF> processOneRelation(Formula form,
+                  KB kb, Interpreter interp) {
+
+        HashMap<String,CNF> resultSet = new HashMap<String,CNF>();
+        String rel = form.getArgument(2);
+        if (rel.endsWith("Fn"))
+            return null;
+        String formatString = form.getArgument(3);
+        String formulaString = buildFormulaString(kb,rel);
+        if (StringUtil.emptyString(formatString))
+            return null;
+
+        System.out.println();
+        System.out.println("processOneRelation(): formula: " + formulaString);
+        String nlgString = StringUtil.filterHtml(NLGUtils.htmlParaphrase("", formulaString,
+                kb.getFormatMap("EnglishLanguage"), kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage"));
+        System.out.println("nlg: " + nlgString);
+        System.out.println("output map: " + NLGUtils.outputMap);
+
+        if (StringUtil.emptyString(nlgString))
+            return null;
+        CNF cnf = toCNF(interp, nlgString, NLGUtils.outputMap);
+        formatString = removeFormatChars(formatString);
+        CNF filtered = formatWordsOnly(cnf, formatString);
+        filtered = toVariables(filtered, formatString);
+        System.out.println(filtered);
+        filtered = removeRoot(filtered);
+        filtered = removeDet(filtered);
+        HashSet<Literal> litSet = new HashSet<>();
+        litSet.addAll(filtered.toLiterals());
+        System.out.println(litSet);
+        CNF cnfResult = CNF.fromLiterals(litSet);
+        System.out.println("processOneRelation(): without types: " + cnfResult);
+        CNF withTypes = addTypes(cnfResult);
+        System.out.println("processOneRelation(): with types: " + withTypes);
+        if (!stopWordsOnly(cnfResult))
+            resultSet.put(rel, withTypes);
+        System.out.println("processOneRelation(): result: " + resultSet);
+        System.out.println();
+        return resultSet;
+    }
+
+    /** *************************************************************
+     * Process all the format statements in SUMO to create dependency
+     * parse templates that match them.
      */
     public static HashMap<String,CNF> process() {
 
@@ -324,50 +472,56 @@ public class RelExtract {
         KB kb = KBmanager.getMgr().getKB("SUMO");
         ArrayList<Formula> forms = kb.ask("arg",0,"format");
         for (Formula f : forms) {
-            String rel = f.getArgument(2);
-            if (rel.endsWith("Fn"))
-                continue;
-            String formatString = f.getArgument(3);
-            String formulaString = buildFormulaString(kb,rel);
-            if (StringUtil.emptyString(formatString))
-                continue;
-
-            System.out.println();
-            System.out.println("formula: " + formulaString);
-            String nlgString = StringUtil.filterHtml(NLGUtils.htmlParaphrase("", formulaString,
-                        kb.getFormatMap("EnglishLanguage"), kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage"));
-            System.out.println("nlg: " + nlgString);
-            System.out.println("output map: " + NLGUtils.outputMap);
-
-            if (StringUtil.emptyString(nlgString))
-                continue;
-            CNF cnf = toCNF(interp, nlgString);
-            formatString = removeFormatChars(formatString);
-            CNF filtered = formatWordsOnly(cnf, formatString);
-            filtered = toVariables(filtered,formatString);
-            System.out.println(filtered);
-            filtered = removeRoot(filtered);
-            filtered = removeDet(filtered);
-            HashSet<Literal> litSet = new HashSet<>();
-            litSet.addAll(filtered.toLiterals());
-            System.out.println(litSet);
-            CNF cnfResult = CNF.fromLiterals(litSet);
-            System.out.println("without types: " + cnfResult);
-            CNF withTypes = addTypes(cnfResult, NLGUtils.outputMap,rel,kb);
-            System.out.println("with types: " + withTypes);
-            if (!stopWordsOnly(cnfResult))
-                resultSet.put(rel,withTypes);
-            System.out.println();
+            HashMap<String,CNF> temp = processOneRelation(f,kb,interp);
+            if (temp != null)
+                resultSet.putAll(temp);
         }
         return resultSet;
     }
 
     /** *************************************************************
+     * only check for words from the original format statement, which
+     * do not have a CoreNLP category() value
      */
-    public static void testProcess() {
+    public static String printCNFVariables(CNF cnf) {
 
-        System.out.println("RelExtract.process()");
-        HashMap<String,CNF> resultSet = new HashMap<String,CNF>();
+        StringBuffer sb = new StringBuffer();
+        if (debug) System.out.println("printCNFVariables(): " + cnf);
+        for (Clause c : cnf.clauses) {
+            for (Literal l : c.disjuncts) {
+                if (!StringUtil.emptyString(sb.toString()))
+                    sb.append(", ");
+                sb.append(l.pred + "(");
+                if (!StringUtil.emptyString(l.clArg1.getString(LanguageFormatter.VariableAnnotation.class)))
+                    sb.append(l.clArg1.getString(LanguageFormatter.VariableAnnotation.class));
+                else {
+                    if (l.clArg1.index() == -1)
+                        sb.append(l.clArg1.value());
+                    else
+                        sb.append(l.clArg1.toString());
+                }
+                sb.append(",");
+                if (!StringUtil.emptyString(l.clArg2.getString(LanguageFormatter.VariableAnnotation.class)))
+                    sb.append(l.clArg2.getString(LanguageFormatter.VariableAnnotation.class));
+                else {
+                    if (l.clArg2.index() == -1)
+                        sb.append(l.clArg2.value());
+                    else
+                        sb.append(l.clArg2.toString());
+                }
+                sb.append(")");
+            }
+        }
+        return sb.toString();
+    }
+
+    /** *************************************************************
+     */
+    public static void testProcessAndSearch() {
+
+        System.out.println("RelExtract.testProcess()");
+        String rel = "engineeringSubcomponent";
+        Formula f = new Formula("(format EnglishLanguage engineeringSubcomponent \"%1 is %n a &%component of %2\")");
         KBmanager.getMgr().initializeOnce();
         Interpreter interp = new Interpreter();
         try {
@@ -378,73 +532,82 @@ public class RelExtract {
             e.printStackTrace();
         }
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        ArrayList<Formula> forms = kb.ask("arg",0,"format");
-        Formula f = new Formula("(format EnglishLanguage subOrganization \"%1 is %n a part of the organization %2\")");
-        String rel = f.getArgument(2);
-        String formatString = f.getArgument(3);
-        String formulaString = buildFormulaString(kb,rel);
-        if (StringUtil.emptyString(formatString))
-            return;
+        HashMap<String,CNF> result = processOneRelation(f,kb,interp);
+        System.out.println("RelExtract.testProcess(): " + printCNFVariables(result.get(rel)));
+        searchForOnePattern(rel,result.get(rel));
+    }
 
-        System.out.println();
-        System.out.println("formula: " + formulaString);
-        String nlgString = StringUtil.filterHtml(NLGUtils.htmlParaphrase("", formulaString,
-                kb.getFormatMap("EnglishLanguage"), kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage"));
-        System.out.println("nlg: " + nlgString);
-        System.out.println("output map: " + NLGUtils.outputMap);
+    /** *************************************************************
+     */
+    public static void testProcess() {
 
-        if (StringUtil.emptyString(nlgString))
-            return;
-        CNF cnf = toCNF(interp, nlgString);
-        formatString = removeFormatChars(formatString);
-        CNF filtered = formatWordsOnly(cnf, formatString);
-        filtered = toVariables(filtered,formatString);
-        System.out.println(filtered);
-        filtered = removeRoot(filtered);
-        filtered = removeDet(filtered);
-        HashSet<Literal> litSet = new HashSet<>();
-        litSet.addAll(filtered.toLiterals());
-        System.out.println(litSet);
-        CNF cnfResult = CNF.fromLiterals(litSet);
-        System.out.println("without types: " + cnfResult);
-        CNF withTypes = addTypes(cnfResult, NLGUtils.outputMap,rel,kb);
-        System.out.println("with types: " + withTypes);
-        if (!stopWordsOnly(cnfResult))
-            resultSet.put(rel,withTypes);
+        System.out.println("RelExtract.testProcess()");
+        Formula f = new Formula("(format EnglishLanguage engineeringSubcomponent \"%1 is %n a &%component of %2\")");
+        KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        HashMap<String,CNF> result = processOneRelation(f,kb,interp);
+        System.out.println("RelExtract.testProcess(): " + printCNFVariables(result.get("engineeringSubcomponent")));
+    }
+
+    /** *************************************************************
+     * Show the useful fields of a CoreLabel.  We're not concerned
+     * with character-level information at our level of analysis.
+     */
+    public static void printCoreLabel(CoreLabel cl) {
+
+        //System.out.println("after: " + cl.after());
+        //System.out.println("before: " + cl.before());
+        //System.out.println("beginPosition: " + cl.beginPosition());
+        System.out.println("category: " + cl.category());
+        //System.out.println("docID: " + cl.docID());
+        //System.out.println("endPosition: " + cl.endPosition());
+        System.out.println("index: " + cl.index());
+        System.out.println("lemma: " + cl.lemma());
+        System.out.println("ner: " + cl.ner());
+        System.out.println("originalText: " + cl.originalText());
+        System.out.println("sentIndex: " + cl.sentIndex());
+        System.out.println("tag: " + cl.tag());
+        System.out.println("toString: " + cl.toString());
+        System.out.println("value: " + cl.value());
+        System.out.println("word: " + cl.word());
+        System.out.println("keyset: " + cl.keySet());
+        System.out.println("variable: " + cl.getString(LanguageFormatter.VariableAnnotation.class));
         System.out.println();
     }
 
     /** *************************************************************
      */
-    public static String processPosNeg(String format) {
+    public static void testCoreLabel() {
 
-        StringBuffer sb = new StringBuffer();
-        ArrayList<String> ar = TFIDF.splitToArrayList(format);
-        for (String s : ar) {
-            if (s.startsWith("%p") || s.startsWith("%n")) {
-                if (s.startsWith("%p{"))
-                    sb.append(s.substring(3,s.length()-1) + " ");
+        String input = "Robert is a tall man.";
+        System.out.println("RelExtract.testCoreLabel():");
+        KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        Annotation anno = interp.p.annotate(input);
+        List<CoreMap> sentences = anno.get(CoreAnnotations.SentencesAnnotation.class);
+        System.out.println("RelExtract.testCoreLabel(): input: " + input);
+        for (CoreMap sentence : sentences) {
+            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            for (CoreLabel cl : tokens) {
+                printCoreLabel(cl);
             }
-            else
-                sb.append(s + " ");
         }
-        return sb.toString().trim().replaceAll("  "," ");
-    }
-
-    /** *************************************************************
-     * assume no adjacent arguments
-     */
-    public static ArrayList<AVPair> alignFormat(String sentence, String format) {
-
-        ArrayList<AVPair> result = new ArrayList<AVPair>(); // attribute is from format, value from sentence
-        format = processPosNeg(format);
-        ArrayList<String> arFormat = TFIDF.splitToArrayList(format);
-        ArrayList<String> arSent = TFIDF.splitToArrayList(sentence);
-        int index = 0;
-        boolean done = false;
-        for (int i = 0; i < arSent.size(); i++) {
-        }
-        return result;
     }
 
     /** *************************************************************
@@ -471,9 +634,12 @@ public class RelExtract {
      */
     public static void main(String[] args) {
 
-        testProcess();
+        //testCoreLabel();
+        //testProcess();
         //testStopWordsOnly();
         //HashMap<String,CNF> resultSet = process();
         //test(resultSet);
+
+        testProcessAndSearch();
     }
 }
