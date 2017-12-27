@@ -75,6 +75,15 @@ public class CNF implements Comparable {
     }
 
     /** ***************************************************************
+     * append all literal to this CNF
+     */
+    public void appendAll(HashSet<Literal> lits) {
+
+        for (Literal lit : lits)
+            append(lit);
+    }
+
+    /** ***************************************************************
      * rename all variables in the CNF
      */
     public CNF renameVariables() {
@@ -256,6 +265,7 @@ public class CNF implements Comparable {
      */
     public static CNF fromListString(List<String> liststring) {
 
+        System.out.println("CNF.fromListString(): " + liststring);
         CNF cnf = new CNF();
         for (String s : liststring)   {
             Literal l = new Literal(s);
