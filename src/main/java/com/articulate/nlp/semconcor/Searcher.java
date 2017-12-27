@@ -327,6 +327,8 @@ public class Searcher {
 
         if (debug) System.out.println("Searcher.matchDep(): onedep: " + onedep);
         onedep = StringUtil.removeEnclosingCharPair(onedep,2,'[',']'); // two layers of brackets
+        if (StringUtil.emptyString(onedep))
+            return false;
         Lexer lex = new Lexer(onedep);
         CNF depcnf = CNF.parseSimple(lex);
         HashMap<String,String> bindings = smallcnf.unify(depcnf);
@@ -451,7 +453,7 @@ public class Searcher {
         ArrayList<String> depTokens = new ArrayList<>();
         depTokens = depToTokens(dep);
 
-        //Class.forName("org.h2.Driver");
+        Class.forName("org.h2.Driver");
         String corporaDir = System.getenv("CORPORA");
         Connection conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "");
         if (debug) System.out.println("main(): Opened DB " + dbFilepath);
