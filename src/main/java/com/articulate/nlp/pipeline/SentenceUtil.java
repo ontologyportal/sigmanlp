@@ -31,10 +31,12 @@ import edu.stanford.nlp.ling.CoreAnnotations.*;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.util.CoreMap;
 import com.articulate.nlp.constants.LangLib;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -333,6 +335,26 @@ public class SentenceUtil {
                 deps.add(dep);
             }
         return deps;
+    }
+
+    /** ***************************************************************
+     */
+    public static ArrayList<SemanticGraphEdge> toEdgesList(CoreMap sentence) {
+
+        ArrayList<SemanticGraphEdge> results = new ArrayList<>();
+        SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+        //System.out.println("SentenceUtil.toDependenciesList(): deps: " + dependencies.toList());
+        if (dependencies == null) {
+            System.out.println("SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
+            return null;
+        }
+        Iterable<SemanticGraphEdge>	e = dependencies.edgeIterable();
+        Iterator<SemanticGraphEdge> edges = e.iterator();
+        //System.out.println("SentenceUtil.toDependenciesList(): results: " + results);
+        while (edges.hasNext()) {
+            results.add(edges.next());
+        }
+        return results;
     }
 
     /** ***************************************************************
