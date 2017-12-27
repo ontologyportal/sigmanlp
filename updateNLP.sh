@@ -1,4 +1,5 @@
 ../sigmakee/updateSigma.sh
+cd $ONTOLOGYPORTAL_GIT/sigmanlp
 git pull
 echo "waiting 10 seconds"
 sleep 10
