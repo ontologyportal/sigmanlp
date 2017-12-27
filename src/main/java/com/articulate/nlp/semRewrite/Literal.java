@@ -23,7 +23,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.RelExtract;
 import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.nlg.LanguageFormatter;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.trees.Dependency;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -44,12 +48,16 @@ import java.util.regex.Pattern;
  */
 public class Literal {
 
+    public static boolean debug = true;
+
     public boolean negated = false;
     public boolean preserve = false;
     public boolean bound = false; // bound clauses in a delete rule get deleted
     public String pred;
     public String arg1;
+    public CoreLabel clArg1 = new CoreLabel();
     public String arg2;
+    public CoreLabel clArg2 = new CoreLabel();
 
     // from http://universaldependencies.org/u/dep/index.html
     public static final List<String> dependencyTags = Arrays.asList("acl",
@@ -72,9 +80,22 @@ public class Literal {
 
     /****************************************************************
      */
+    public Literal(Dependency d) {
+
+        clArg1 = (CoreLabel) d.governor();
+        arg1 = clArg1.value() + "-" + clArg1.index();
+        clArg2 = (CoreLabel) d.dependent();
+        arg2 = clArg2.value() + "-" + clArg2.index();
+        pred = (String) d.name();
+    }
+
+    /****************************************************************
+     */
     public Literal(String s) {
 
-        //System.out.println("Literal() initial " + s);
+        if (StringUtil.emptyString(s))
+            return;
+        if (debug)System.out.println("Literal() initial string " + s);
         if (s.contains("(,"))
             s = s.replace("(,","(COMMA");
         if (s.contains(",,"))
@@ -85,18 +106,85 @@ public class Literal {
             Lexer lex = new Lexer(s + ".");
             lex.look();
             Literal lit = Literal.parse(lex, 0);
+            if (debug) System.out.println("Literal() parsed: " + lit);
             negated = lit.negated;
             pred = lit.pred;
             //if (!acceptedPredicate(pred))
             //    System.out.println("Error in Literal(): unknown pred in: " + lit);
+
             arg1 = lit.arg1;
+            clArg1 = new CoreLabel();
+            int targ1 = tokenNum(arg1);
+            clArg1.setIndex(targ1);
+            if (targ1 == -1) {
+                clArg1.setValue(arg1);
+                clArg1.setWord(arg1);
+                clArg1.setOriginalText(arg1);
+            }
+            else {
+                clArg1.setValue(tokenOnly(arg1));
+                clArg1.setWord(tokenOnly(arg1));
+                clArg1.setOriginalText(tokenOnly(arg1));
+            }
+            if (isVariable(arg1))
+                clArg1.set(LanguageFormatter.VariableAnnotation.class,arg1);
+
             arg2 = lit.arg2;
+            clArg2 = new CoreLabel();
+            int targ2 = tokenNum(arg2);
+            clArg2.setIndex(targ2);
+            if (targ2 == -1) {
+                clArg2.setValue(arg2);
+                clArg2.setWord(arg2);
+                clArg2.setOriginalText(arg2);
+            }
+            else {
+                clArg2.setValue(tokenOnly(arg2));
+                clArg2.setWord(tokenOnly(arg2));
+                clArg2.setOriginalText(tokenOnly(arg2));
+            }
+            if (isVariable(arg2))
+                clArg2.set(LanguageFormatter.VariableAnnotation.class,arg2);
         }
         catch (Exception ex) {
             String message = ex.getMessage();
             System.out.println("Error in Literal() " + message);
             ex.printStackTrace();
         }
+    }
+
+    /****************************************************************
+     */
+    public Literal(Literal l) {
+
+        clArg1 = new CoreLabel(l.clArg1);
+        clArg2 = new CoreLabel(l.clArg2);
+        pred = l.pred;
+        arg1 = l.arg1;
+        arg2 = l.arg2;
+        negated = l.negated;
+        preserve = l.preserve;
+        bound = l.bound;
+    }
+
+    /****************************************************************
+     */
+    public void setarg1(String s) {
+
+        arg1 = s;
+        clArg1 = new CoreLabel();
+        clArg1.setValue(tokenOnly(s));
+        clArg1.setIndex(tokenNum(s));
+    }
+
+    /****************************************************************
+     */
+    public void setarg2(String s) {
+
+        arg2 = s;
+        clArg2 = new CoreLabel();
+        clArg2.setValue(tokenOnly(s));
+        clArg2.setIndex(tokenNum(s));
     }
 
     /****************************************************************
