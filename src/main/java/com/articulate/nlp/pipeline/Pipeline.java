@@ -22,16 +22,20 @@ MA  02111-1307 USA
 */
 
 import com.articulate.nlp.semRewrite.CNF;
+import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.sigma.StringUtil;
 import com.articulate.sigma.KBmanager;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.time.TimeAnnotations;
 import edu.stanford.nlp.time.TimeAnnotator;
+import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.util.CoreMap;
 import com.articulate.nlp.WNMultiWordAnnotator;
 import com.articulate.nlp.WSDAnnotator;
@@ -43,15 +47,12 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class Pipeline {
 
     public StanfordCoreNLP pipeline;
-    public static boolean debug = false;
+    public static boolean debug = true;
     public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
         "ner, nersumo, gender, parse, depparse, entitymentions, wnmw, wsd, tsumo";
 
@@ -165,6 +166,36 @@ public class Pipeline {
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
         CNF dependencies = SentenceUtil.toCNFDependenciesList(ImmutableList.of(lastSentence));
         return dependencies;
+    }
+
+    /** ***************************************************************
+     * get the dependency parse for the input and convert to CNF.  Remov
+     * punctuation
+     */
+    public CNF toCNFEdgeDependencies(String input) {
+
+        Annotation wholeDocument = annotate(input);
+        wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, anchorDate);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        ArrayList<SemanticGraphEdge> dependencies = SentenceUtil.toEdgesList(lastSentence);
+        if (debug) System.out.println("toCNFEdgeDependencies(): " + dependencies);
+        CNF newcnf = new CNF();
+        for (SemanticGraphEdge sge : dependencies) {
+            if (debug) System.out.println("toCNFEdgeDependencies(): " + sge);
+            if (sge.getRelation().toString().equals("punct"))
+                continue;
+            IndexedWord gov = sge.getGovernor();
+            IndexedWord dep = sge.getDependent();
+            GrammaticalRelation gr = sge.getRelation();
+            Literal lit = new Literal();
+            lit.clArg1 = new CoreLabel(gov);
+            lit.arg1 = lit.clArg1.toString();
+            lit.clArg2 = new CoreLabel(dep);
+            lit.arg2 = lit.clArg2.toString();
+            lit.pred = gr.toString();
+            newcnf.append(lit);
+        }
+        return newcnf;
     }
 
     /** ***************************************************************
