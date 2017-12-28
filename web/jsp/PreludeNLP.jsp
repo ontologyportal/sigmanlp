@@ -24,11 +24,13 @@
     http://github.com/ontologyportal
 */
 ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
+if (siblingContext == null)
+    System.out.println("PreludeNLP.jsp: Empty sibling context");
 String username = "guest";
 if (siblingContext != null && siblingContext.getAttribute("user") != null)
     username = (String) siblingContext.getAttribute("user");
 else
-    System.out.println("PreludeNLP.jsp: Empty sibling context");
+    System.out.println("PreludeNLP.jsp: Empty or null sibling context");
 
 String role = "guest";
 if (siblingContext != null && siblingContext.getAttribute("role") != null)
