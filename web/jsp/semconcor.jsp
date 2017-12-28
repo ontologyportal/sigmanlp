@@ -44,6 +44,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     out.println("  </head>");
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
+    String dbFilepath = "wikipedia/wiki1";
     String theText = request.getParameter("textContent");
     if (theText == null || theText.equals("null"))
         theText = "";
@@ -97,7 +98,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     if (!StringUtil.emptyString(theText) || !StringUtil.emptyString(dep)) {
         ArrayList<String> sentences = new ArrayList<>();
         ArrayList<String> dependencies = new ArrayList<>();
-        Searcher.search(theText,dep,sentences,dependencies);
+        Searcher.search(dbFilepath,theText,dep,sentences,dependencies);
         HashSet<String> printed = new HashSet<>();
 
         out.println("<P>");
