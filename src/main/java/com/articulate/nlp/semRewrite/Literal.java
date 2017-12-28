@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  */
 public class Literal {
 
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     public boolean negated = false;
     public boolean preserve = false;
