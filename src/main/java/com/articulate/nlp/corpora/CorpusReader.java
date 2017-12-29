@@ -7,10 +7,12 @@ import com.articulate.sigma.StringUtil;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 /** This code is copyright Teknowledge (c) 2003, Articulate Software (c) 2003-2017,
  Infosys (c) 2017-present.
@@ -33,11 +35,31 @@ public class CorpusReader {
     public String regExGoodLine = "<p>.+</p>";
     public String regExRemove = "<c>[^<]+</c>";
     public String regExReplacement = "";
-    public String corpora = System.getenv("CORPORA");
+    public static String corpora = System.getenv("CORPORA");
     public String dataDir = "";
     public boolean oneFile = false;
     public boolean removeHTML = true;
     public int startline = 0;
+
+    /***************************************************************
+     * Find all corpus databases under the corpora directory
+     */
+    public static ArrayList<String> findCorporaDBs() {
+
+        ArrayList<String> result = new ArrayList<String>();
+        try {
+            Path p = Paths.get(corpora);
+            final int maxDepth = 10;
+            Stream<Path> matches = Files.find(p, maxDepth, (path, basicFileAttributes) ->
+                    String.valueOf(path).endsWith(".mv.db"));
+            matches.map(path -> path.toString().substring(corpora.length()+1,path.toString().length()-6)).forEach(result::add);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            return result;
+        }
+        return result;
+    }
 
     /***************************************************************
      * Read and process a single corpus file one line at a time.
@@ -148,5 +170,6 @@ public class CorpusReader {
      */
     public static void main(String[] args) {
 
+        System.out.println(findCorporaDBs());
     }
 }
