@@ -39,6 +39,11 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     out.println("  </head>");
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
+    String pageName = "SRRules";
+    pageString = "Semantic Rewriting Rules";
+%>
+<%@include file="CommonHeader.jsp" %>
+<%
     String theText = request.getParameter("textContent");
     if (StringUtil.emptyString(theText))
         theText = "Robert kicks the cart.";
