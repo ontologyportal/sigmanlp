@@ -53,28 +53,12 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     String kbHref = HTMLformatter.createKBHref("SUMO","EnglishLanguage");
     String wnHref = kbHref.replace("Browse.jsp","WordNet.jsp");
     String file = request.getParameter("file");
-%>
-<table width="95%" cellspacing="0" cellpadding="0">
-    <tr>
-        <td valign="top">
-            <table cellspacing="0" cellpadding="0">
-                <tr>
-                    <td align="left" valign="top"><img src="pixmaps/sigmaSymbol.gif"></td>
-                    <td>&nbsp;&nbsp;</td>
-                    <td align="left" valign="top"><img src="pixmaps/logoText.gif"><BR>
-                        <b>Semantic Concordancer</b></td>
-                </tr>
 
-            </table>
-        </td>
-        <td>
-        <span class="navlinks">
-          <b>[&nbsp;<a href="NLP.jsp">NLP</a>&nbsp;|&nbsp;<a href="semconcor.jsp">Concordancer</a>&nbsp;]</b>
-        </span>
-        </td>
-    </tr>
-</table>
-<br><table ALIGN="LEFT" WIDTH=80%><tr><TD BGCOLOR='#AAAAAA'>
+    String pageName = "unify";
+    pageString = "Unify Sentences";
+%>
+<%@include file="CommonHeader.jsp" %><table ALIGN="LEFT" WIDTH=80%><tr><TD BGCOLOR='#AAAAAA'>
+
 <IMG SRC='pixmaps/1pixel.gif' width=1 height=1 border=0></TD></tr></table><BR>
 
     <form name="unify" id="unify" action="unify.jsp" method="GET">
