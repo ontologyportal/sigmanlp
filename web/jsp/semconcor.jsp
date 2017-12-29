@@ -45,6 +45,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     out.println("  <body bgcolor=\"#FFFFFF\">");
 
     String dbFilepath = "wikipedia/wiki1";
+    if (!StringUtil.emptyString(corpus))
+        dbFilepath = corpus;
     String theText = request.getParameter("textContent");
     if (theText == null || theText.equals("null"))
         theText = "";
@@ -57,31 +59,15 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     String kbHref = HTMLformatter.createKBHref("SUMO","EnglishLanguage");
     String wnHref = kbHref.replace("Browse.jsp","WordNet.jsp");
     String depGraph = request.getParameter("depGraph");
-%>
-<table width="95%" cellspacing="0" cellpadding="0">
-    <tr>
-        <td valign="top">
-            <table cellspacing="0" cellpadding="0">
-                <tr>
-                    <td align="left" valign="top"><img src="pixmaps/sigmaSymbol.gif"></td>
-                    <td>&nbsp;&nbsp;</td>
-                    <td align="left" valign="top"><img src="pixmaps/logoText.gif"><BR>
-                        <b>Semantic Concordancer</b></td>
-                </tr>
 
-            </table>
-        </td>
-        <td>
-        <span class="navlinks">
-          <b>[&nbsp;<a href="NLP.jsp">NLP</a>&nbsp;|&nbsp;<a href="unify.jsp">Unify</a>&nbsp;]</b>
-        </span>
-        </td>
-    </tr>
-</table>
+    String pageName = "semconcor";
+    pageString = "Semantic Concordancer";
+%>
+<%@include file="CommonHeader.jsp" %>
 <br><table ALIGN="LEFT" WIDTH=80%><tr><TD BGCOLOR='#AAAAAA'>
 <IMG SRC='pixmaps/1pixel.gif' width=1 height=1 border=0></TD></tr></table><BR>
 
-    <form name="timeTest" id="timeTest" action="semconcor.jsp" method="GET">
+
         <b>Search for a word or phrase: </b>&nbsp;
         <input type="text" name="textContent" size="60" value="<%=theText %>"><br>
         <b>or a dependency pattern: </b>&nbsp;
@@ -90,10 +76,8 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         <input type="checkbox" name="depGraph" value="checked" <%=depGraph %>><br>
         <input type="submit" name="submit" value="Submit">
     </form><p>
-
 </ul>
 <p>
-
 <%
     if (!StringUtil.emptyString(theText) || !StringUtil.emptyString(dep)) {
         ArrayList<String> sentences = new ArrayList<>();
@@ -126,7 +110,6 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                 printed.add(s);
             }
         }
-
         %>
             <form name="interp" id="interp" action="NLP.jsp" method="GET">
                 <input type="hidden" name="textContent" size="60" value="<%=theText %>">
