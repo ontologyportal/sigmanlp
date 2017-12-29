@@ -36,6 +36,11 @@ String role = "guest";
 if (siblingContext != null && siblingContext.getAttribute("role") != null)
     role = (String) siblingContext.getAttribute("role");
 System.out.println("PreludeNLP.jsp: username:role  " + username + " : " + role);
+String welcomeString = " : Welcome guest : <a href=\"login.html\">log in</a>";
+if (!StringUtil.emptyString(username))
+    welcomeString = " : Welcome " + username;
+String corpus = "";
+corpus = request.getParameter("corpus");
 
 String URLString = request.getRequestURL().toString();
 String pageString = URLString.substring(URLString.lastIndexOf("/") + 1);
