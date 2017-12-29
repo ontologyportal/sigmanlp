@@ -66,28 +66,12 @@ Authors:
     if (reload != null)
         interp.loadRules();
 
+    String pageName = "NLP";
+    pageString = "NLP Interface";
 %>
-<table width="95%" cellspacing="0" cellpadding="0">
-    <tr>
-        <td valign="top">
-            <table cellspacing="0" cellpadding="0">
-                <tr>
-                    <td align="left" valign="top"><img src="pixmaps/sigmaSymbol.gif"></td>
-                    <td>&nbsp;&nbsp;</td>
-                    <td align="left" valign="top"><img src="pixmaps/logoText.gif"><BR>
-                        <b>hello</b></td>
-                </tr>
-                
-            </table>
-        </td>
-        <td>
-        <span class="navlinks">
-          <b>[&nbsp;<a href="semconcor.jsp">Concordancer</a>&nbsp;|&nbsp;<a href="unify.jsp">Unify</a>&nbsp;]</b>
-        </span>
-        </td>
-    </tr>
-</table>
-<br><table ALIGN="LEFT" WIDTH=80%><tr><TD BGCOLOR='#AAAAAA'>
+<%@include file="CommonHeader.jsp" %>
+
+<table ALIGN="LEFT" WIDTH=80%><tr><TD BGCOLOR='#AAAAAA'>
 <IMG SRC='pixmaps/1pixel.gif' width=1 height=1 border=0></TD></tr></table><BR>
 
     <form name="timeTest" id="timeTest" action="NLP.jsp" method="GET">
