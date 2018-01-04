@@ -26,6 +26,7 @@ MA  02111-1307 USA
 import com.articulate.nlp.RelExtract;
 import com.articulate.sigma.StringUtil;
 import com.articulate.sigma.nlg.LanguageFormatter;
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.trees.Dependency;
 
@@ -151,6 +152,20 @@ public class Literal {
             System.out.println("Error in Literal() " + message);
             ex.printStackTrace();
         }
+    }
+
+    /****************************************************************
+     */
+    public Literal(String p, CoreLabel cl1, CoreLabel cl2) {
+
+        clArg1 = cl1;
+        clArg2 = cl2;
+        pred = p;
+        arg1 = cl1.toString();
+        arg2 = cl2.toString();
+        negated = false;
+        preserve = false;
+        bound = false;
     }
 
     /****************************************************************
@@ -326,6 +341,30 @@ public class Literal {
         if (preserve)
             sb.append("+");
         sb.append(pred + "(" + arg1 + "," + arg2 + ")");
+        return sb.toString();
+    }
+
+    /** ***************************************************************
+     */
+    public String toLabels() {
+
+        StringBuffer sb = new StringBuffer();
+        if (bound)
+            sb.append("X");
+        if (negated)
+            sb.append("~");
+        if (preserve)
+            sb.append("+");
+        String firstArg = arg1;
+        if (!StringUtil.emptyString(clArg1.getString(LanguageFormatter.VariableAnnotation.class)))
+            firstArg = clArg1.getString(LanguageFormatter.VariableAnnotation.class);
+        String secondArg = arg2;
+        if (!StringUtil.emptyString(clArg2.getString(LanguageFormatter.VariableAnnotation.class)))
+            secondArg = clArg2.getString(LanguageFormatter.VariableAnnotation.class);
+        sb.append(pred + "(" + firstArg + "," + secondArg + ")");
+        RelExtract.printCoreLabel(clArg1);
+        RelExtract.printCoreLabel(clArg2);
+
         return sb.toString();
     }
     
