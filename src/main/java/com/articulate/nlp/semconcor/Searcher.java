@@ -323,15 +323,26 @@ public class Searcher {
      * @param smallcnf the dependency pattern to search for.
      * @param onedep the dependency match candidate
      */
-    public static boolean matchDep(CNF smallcnf, String onedep) {
+    public static HashMap<String,String> matchDepBind(CNF smallcnf, String onedep) {
 
-        if (debug) System.out.println("Searcher.matchDep(): onedep: " + onedep);
         onedep = StringUtil.removeEnclosingCharPair(onedep,2,'[',']'); // two layers of brackets
         if (StringUtil.emptyString(onedep))
-            return false;
+            return null;
         Lexer lex = new Lexer(onedep);
         CNF depcnf = CNF.parseSimple(lex);
         HashMap<String,String> bindings = smallcnf.unify(depcnf);
+        return bindings;
+    }
+
+    /***************************************************************
+     * Note that dependency patterns must be simple CNF - no disjuncts
+     * and only positive literals
+     * @param smallcnf the dependency pattern to search for.
+     * @param onedep the dependency match candidate
+     */
+    public static boolean matchDep(CNF smallcnf, String onedep) {
+
+        HashMap<String,String> bindings = matchDepBind(smallcnf,onedep);
         if (bindings == null)  // remove all that don't unify
             return false;
         else {
