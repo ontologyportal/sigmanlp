@@ -51,11 +51,11 @@ public class RelExtract {
      * Copy SUMO categories in the outputMap that are associated with
      * tokens into the tokens in the cnf
      */
-    public static void addCategories(CNF cnf, ArrayList<CoreLabel> outputMap) {
+    public static void addCategories(CNF cnf, HashMap<String,CoreLabel> outputMap) {
 
         for (Clause c : cnf.clauses) {
             for (Literal l : c.disjuncts) {
-                for (CoreLabel cl : outputMap) {
+                for (CoreLabel cl : outputMap.values()) {
                     //if (debug) System.out.println("addCategories(): " + l.clArg1.toString() + " =? " + cl.toString());
                     if (cl.toString().equals(l.clArg1.toString())) {
                         //if (debug) System.out.println("addCategories(): " + l.clArg1.category());
@@ -75,7 +75,7 @@ public class RelExtract {
      * sentence and get the dependency parse for it.  Add a period at the
      * end of the sentence
      */
-    public static CNF toCNF(Interpreter interp, String input, ArrayList<CoreLabel> outputMap) {
+    public static CNF toCNF(Interpreter interp, String input, HashMap<String,CoreLabel> outputMap) {
 
         input = LanguageFormatter.removePreamble(input);
         input = Character.toUpperCase(input.charAt(0)) + input.substring(1) + ".";
@@ -253,6 +253,8 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * Make the value() of each CoreLabel equal to its VariableAnnotation,
+     * if present.
      */
     public static CNF promoteVariables(CNF pattern) {
 
@@ -275,6 +277,89 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * Get a CoreLabel from the pattern in which the value() matches
+     * the token
+     */
+    public static CoreLabel getMatchingCL(String token, CNF pattern) {
+
+        CoreLabel cl = null;
+        for (Clause c : pattern.clauses) {
+            for (Literal l : c.disjuncts) {
+                if (l.clArg1.value().equals(token))
+                    return l.clArg1;
+                if (l.clArg2.value().equals(token))
+                    return l.clArg2;
+            }
+        }
+        return cl;
+    }
+
+    /** *************************************************************
+     * Add class membership to the instances in the generated formula.
+     */
+    public static Literal findConstantInCNF(CNF pattern, String pred, String constant) {
+
+        if (debug) System.out.println("findConstantInCNF(): " + pred + ", " + constant);
+        for (Clause c : pattern.clauses) {
+            for (Literal l : c.disjuncts) {
+                if (debug) System.out.println(l);
+                if (l.pred.equals(pred) && l.arg2.equals(constant))
+                    return l;
+            }
+        }
+        if (debug) System.out.println();
+        return null;
+    }
+
+    /** *************************************************************
+     * Add class membership to the instances in the generated formula.
+     */
+    public static Formula addFormulaTypes(Formula f, CNF pattern, HashMap<String,String> bindings) {
+
+        Formula fnew = new Formula();
+        StringBuffer sb = new StringBuffer();
+        sb.append("(and ");
+        sb.append(f.toString());
+        for (String s : bindings.values()) {
+            Literal l = findConstantInCNF(pattern,"sumo",s);
+            if (l != null)
+                sb.append("(instance " + s + " " + l.arg1 + ")");
+        }
+        sb.append(")");
+        fnew.read(sb.toString());
+        return fnew;
+    }
+
+    /** *************************************************************
+     * Generate a formula, which is a single relation rel with parameters
+     * filled in from the set of bindings and the pattern.
+     */
+    public static Formula generateFormula(CNF pattern, CNF dep, HashMap<String,String> bindings, String rel) {
+
+        Formula f = new Formula();
+        ArrayList<String> args = new ArrayList();
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        int arity = kb.kbCache.getArity(rel);
+        for (int i = 0; i <= arity; i++)
+            args.add("");
+        for (String s : bindings.keySet()) {
+            CoreLabel cl = getMatchingCL(s,pattern);
+            int arg = cl.get(LanguageFormatter.RelationArgumentAnnotation.class);
+            args.set(arg,bindings.get(s));
+        }
+        StringBuffer sb = new StringBuffer();
+        sb.append("(" + rel + " ");
+        sb.append(args.get(1));
+        for (int i = 2; i < args.size(); i++)
+            sb.append(" " + args.get(i));
+        sb.append(")");
+        f.read(sb.toString());
+        return addFormulaTypes(f,dep,bindings);
+    }
+
+    /** *************************************************************
+     * print matches for a pattern that corresponds to a particular
+     * relation
      */
     public static void searchForOnePattern(String rel, CNF pattern) {
 
@@ -294,8 +379,13 @@ public class RelExtract {
                         System.out.println("test(): without types: relation: " + rel);
                         System.out.println("cnf: " + noTypes.toString());
                         System.out.println("stop words only: " + stopWordsOnly(noTypes));
-                        System.out.println("dep: " + dependencies.get(i));
                         System.out.println("sentence: " + sentences.get(i));
+                        System.out.println("dep: " + dependencies.get(i));
+                        System.out.println("pattern: " + noTypes);
+                        HashMap<String,String> bindings = Searcher.matchDepBind(noTypes,dependencies.get(i));
+                        System.out.println("bindings: " + bindings);
+                        CNF depcnf = new CNF(StringUtil.removeEnclosingCharPair(dependencies.get(i).toString(),1,'[',']'));
+                        System.out.println(generateFormula(noTypes,depcnf,bindings,rel));
                         System.out.println();
                     }
                 }
@@ -310,6 +400,12 @@ public class RelExtract {
                         System.out.println("stop words only: " + stopWordsOnly(pattern));
                         System.out.println("dep: " + dependencies.get(i));
                         System.out.println("sentence: " + sentences.get(i));
+                        System.out.println("dep: " + dependencies.get(i));
+                        System.out.println("pattern: " + pattern);
+                        HashMap<String,String> bindings = Searcher.matchDepBind(pattern,dependencies.get(i));
+                        System.out.println("bindings: " + bindings);
+                        CNF depcnf = new CNF(StringUtil.removeEnclosingCharPair(dependencies.get(i).toString(),1,'[',']'));
+                        System.out.println(generateFormula(pattern,depcnf,bindings,rel));
                         System.out.println();
                     }
                 }
@@ -347,29 +443,56 @@ public class RelExtract {
 
     /** *************************************************************
      */
+    public static void addArgsToCNF(CNF cnfResult, HashMap<String,CoreLabel> outputMap) {
+
+        for (Clause c : cnfResult.clauses) {
+            for (Literal l : c.disjuncts) {
+                if (outputMap.keySet().contains(l.clArg1.toString())) {
+                    CoreLabel clOutputMap = outputMap.get(l.clArg1.toString());
+                    l.clArg1.set(LanguageFormatter.RelationArgumentAnnotation.class, clOutputMap.get(LanguageFormatter.RelationArgumentAnnotation.class));
+                }
+                if (outputMap.keySet().contains(l.clArg2.toString())) {
+                    CoreLabel clOutputMap = outputMap.get(l.clArg2.toString());
+                    l.clArg2.set(LanguageFormatter.RelationArgumentAnnotation.class, clOutputMap.get(LanguageFormatter.RelationArgumentAnnotation.class));
+                }
+            }
+        }
+    }
+
+    /** *************************************************************
+     * Generate literals with a "sumo" and possibly "isSubclass" predicate
+     * that express the SUMO types of dependency tokens
+     */
     public static HashSet<Literal> generateSUMO(CoreLabel cl, HashSet<String> typeGenerated, int varnum) {
 
-        //System.out.println("generateSUMO(): ");
-        //printCoreLabel(cl);
+        if (debug) System.out.println("RelExtract.generateSUMO(): ");
+        if (debug) printCoreLabel(cl);
         HashSet<Literal> result = new HashSet<>();
-        String arg = Integer.toString(cl.index());
-        int argnum = Integer.parseInt(arg);
         String type = "";
         type = cl.category();
         if (StringUtil.emptyString(type)) {
             System.out.println("RelExtract.generateSUMO(): no type found for " + cl);
             return null;
         }
-        if (typeGenerated.contains(type))
+        if (typeGenerated.contains(cl.toString()))
             return null;
         typeGenerated.add(cl.toString());
         if (!type.endsWith("+")) {
-            result.add(new Literal("sumo(" + type + ",?" + cl + ")"));
+            cl.setValue("?" + cl.toString());
+            cl.set(LanguageFormatter.VariableAnnotation.class,cl.value());
+            CoreLabel clVar = new CoreLabel();
+            clVar.setValue(type);
+            result.add(new Literal("sumo",clVar,cl));
             return result;
         }
         else {
-            result.add(new Literal("sumo(?TYPEVAR" + Integer.toString(varnum) + "," + cl + ")"));
-            result.add(new Literal("isSubclass(" + type.substring(0,type.length()-1) + ",?TYPEVAR" + Integer.toString(varnum) + ")"));
+            CoreLabel clVar = new CoreLabel();
+            clVar.setValue("?TYPEVAR" + Integer.toString(varnum));
+            clVar.set(LanguageFormatter.VariableAnnotation.class,clVar.value());
+            result.add(new Literal("sumo",clVar,cl));
+            CoreLabel clType = new CoreLabel();
+            clType.setValue(type.substring(0,type.length()-1));
+            result.add(new Literal("isSubclass",clType,clVar));
             varnum++;
         }
         return result;
@@ -442,6 +565,7 @@ public class RelExtract {
         litSet.addAll(filtered.toLiterals());
         System.out.println(litSet);
         CNF cnfResult = CNF.fromLiterals(litSet);
+        addArgsToCNF(cnfResult,NLGUtils.outputMap);
         System.out.println("processOneRelation(): without types: " + cnfResult);
         CNF withTypes = addTypes(cnfResult);
         System.out.println("processOneRelation(): with types: " + withTypes);
@@ -454,10 +578,13 @@ public class RelExtract {
 
     /** *************************************************************
      * Process all the format statements in SUMO to create dependency
-     * parse templates that match them.
+     * parse templates that match them.  Each relation should have a
+     * single augmented dependency parse pattern that results.
      */
     public static HashMap<String,CNF> process() {
 
+        long startTime = System.currentTimeMillis();
+        int formCount = 0;
         System.out.println("RelExtract.process()");
         HashMap<String,CNF> resultSet = new HashMap<String,CNF>();
         KBmanager.getMgr().initializeOnce();
@@ -473,10 +600,36 @@ public class RelExtract {
         ArrayList<Formula> forms = kb.ask("arg",0,"format");
         for (Formula f : forms) {
             HashMap<String,CNF> temp = processOneRelation(f,kb,interp);
+            if (temp == null)
+                continue;
+            String rel = f.getArgument(2);
+            if (temp.get(rel) == null)
+                continue;
+            searchForOnePattern(rel,temp.get(rel));
             if (temp != null)
                 resultSet.putAll(temp);
+
+            formCount++;
+            long currentTime = System.currentTimeMillis();
+            long avg = (currentTime - startTime) / formCount;
+            System.out.println("process(): avg time per form (seconds): " + (avg / 1000));
         }
         return resultSet;
+    }
+
+    /** *************************************************************
+     * show the full CoreLabels in each Literal of the CNF
+     */
+    public static String toCNFLabels(CNF cnf) {
+
+        StringBuffer sb = new StringBuffer();
+        for (Clause c : cnf.clauses) {
+            for (Literal l : c.disjuncts) {
+                sb.append(l.toLabels());
+                sb.append(", ");
+            }
+        }
+        return sb.toString().substring(0,sb.toString().length()-2);
     }
 
     /** *************************************************************
@@ -554,33 +707,43 @@ public class RelExtract {
         }
         KB kb = KBmanager.getMgr().getKB("SUMO");
         HashMap<String,CNF> result = processOneRelation(f,kb,interp);
-        System.out.println("RelExtract.testProcess(): " + printCNFVariables(result.get("engineeringSubcomponent")));
+        System.out.println("RelExtract.testProcess(): " + toCNFLabels(result.get("engineeringSubcomponent")));
+    }
+
+    /** *************************************************************
+     */
+    public static void printCoreLabel(CoreLabel cl) {
+
+        System.out.println(toCoreLabelString(cl));
     }
 
     /** *************************************************************
      * Show the useful fields of a CoreLabel.  We're not concerned
      * with character-level information at our level of analysis.
      */
-    public static void printCoreLabel(CoreLabel cl) {
+    public static String toCoreLabelString(CoreLabel cl) {
 
+        StringBuffer sb = new StringBuffer();
         //System.out.println("after: " + cl.after());
         //System.out.println("before: " + cl.before());
         //System.out.println("beginPosition: " + cl.beginPosition());
-        System.out.println("category: " + cl.category());
-        //System.out.println("docID: " + cl.docID());
-        //System.out.println("endPosition: " + cl.endPosition());
-        System.out.println("index: " + cl.index());
-        System.out.println("lemma: " + cl.lemma());
-        System.out.println("ner: " + cl.ner());
-        System.out.println("originalText: " + cl.originalText());
-        System.out.println("sentIndex: " + cl.sentIndex());
-        System.out.println("tag: " + cl.tag());
-        System.out.println("toString: " + cl.toString());
-        System.out.println("value: " + cl.value());
-        System.out.println("word: " + cl.word());
-        System.out.println("keyset: " + cl.keySet());
-        System.out.println("variable: " + cl.getString(LanguageFormatter.VariableAnnotation.class));
-        System.out.println();
+        sb.append("category: " + cl.category() + "\n");
+        //sb.append("docID: " + cl.docID());
+        //sb.append("endPosition: " + cl.endPosition());
+        sb.append("index: " + cl.index() + "\n");
+        sb.append("lemma: " + cl.lemma() + "\n");
+        sb.append("ner: " + cl.ner() + "\n");
+        sb.append("originalText: " + cl.originalText() + "\n");
+        sb.append("sentIndex: " + cl.sentIndex() + "\n");
+        sb.append("tag: " + cl.tag() + "\n");
+        sb.append("toString: " + cl.toString() + "\n");
+        sb.append("value: " + cl.value() + "\n");
+        sb.append("word: " + cl.word() + "\n");
+        //sb.append("keyset: " + cl.keySet() + "\n");
+        sb.append("variable: " + cl.getString(LanguageFormatter.VariableAnnotation.class) + "\n");
+        sb.append("arg: " + cl.get(LanguageFormatter.RelationArgumentAnnotation.class) + "\n");
+        sb.append("\n");
+        return sb.toString();
     }
 
     /** *************************************************************
@@ -640,6 +803,7 @@ public class RelExtract {
         //HashMap<String,CNF> resultSet = process();
         //test(resultSet);
 
-        testProcessAndSearch();
+        //testProcessAndSearch();
+        process();
     }
 }
