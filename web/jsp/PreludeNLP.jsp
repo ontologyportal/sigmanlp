@@ -26,16 +26,20 @@
 ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
 if (siblingContext == null)
     System.out.println("PreludeNLP.jsp: Empty sibling context");
-String username = "guest";
+String username = (String) session.getAttribute("user");
+if (StringUtil.emptyString(username))
+    username = "guest";
 if (siblingContext != null && siblingContext.getAttribute("user") != null)
     username = (String) siblingContext.getAttribute("user");
-else
-    System.out.println("PreludeNLP.jsp: Empty or null sibling context");
-
-String role = "guest";
+String role = (String) session.getAttribute("role");
+if (StringUtil.emptyString(role))
+    role = "guest";
 if (siblingContext != null && siblingContext.getAttribute("role") != null)
     role = (String) siblingContext.getAttribute("role");
+session.setAttribute("user",username);
+session.setAttribute("role",role);
 System.out.println("PreludeNLP.jsp: username:role  " + username + " : " + role);
+
 String welcomeString = " : Welcome guest : <a href=\"login.html\">log in</a>";
 if (!StringUtil.emptyString(username))
     welcomeString = " : Welcome " + username;
@@ -68,7 +72,7 @@ if (!KBmanager.initialized) {
 
 if (!role.equalsIgnoreCase("admin") && !role.equalsIgnoreCase("user")) {
     mgr.setError("You are not authorized to visit " + pageString);
-    response.sendRedirect(HTMLformatter.createHrefStart() + "/sigma/login.html");
+    response.sendRedirect(HTMLformatter.createHrefStart() + "login.html");
     return;
 }
 
