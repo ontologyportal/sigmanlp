@@ -33,7 +33,7 @@ if (ps.userExists(userName)) {
         session.setAttribute("user",u.username);
         session.setAttribute("role",u.role);
         ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
-        if (siblingContext != null {
+        if (siblingContext != null) {
             siblingContext.setAttribute("user",u.username);
             siblingContext.setAttribute("role",u.role);
         }
