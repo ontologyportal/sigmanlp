@@ -89,17 +89,15 @@ public class Searcher {
      * a testing method to help validate there's a connection to the
      * intended DB
      */
-    public static void stats(Connection conn) {
+    public static void showTable(Connection conn, String tableName) {
 
+        System.out.println("showTable(): for " + tableName);
         Statement stmt = null;
-        String result = null;
         try {
             stmt = conn.createStatement();
-            ResultSet res = stmt.executeQuery("SELECT COUNT(*) FROM INDEX");
-            int count = 0;
-            res.next();
-            count = res.getInt(1);
-            if (debug) System.out.println("Number of rows in index: " + count);
+            ResultSet res = stmt.executeQuery("show columns from " + tableName + ";");
+            while (res.next())
+                System.out.println(res.getString("FIELD"));
         }
         catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -199,6 +197,7 @@ public class Searcher {
         TreeSet<AVPair> countIndex = new TreeSet<AVPair>();
         Statement stmt = null;
         try {
+            System.out.println("Searcher.makeCountIndex(): " + conn.getCatalog());
             for (String s : tokens) {
                 String query = "select * from counts where token='" + s + "';";
                 if (debug) System.out.println("Searcher.fetchFromIndex(): query: " + query);
@@ -468,10 +467,12 @@ public class Searcher {
         String corporaDir = System.getenv("CORPORA");
         Connection conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "");
         if (debug) System.out.println("main(): Opened DB " + dbFilepath);
-        stats(conn);
+
         Statement stmt = null;
         HashSet<String> result = new HashSet<>();
         try {
+            showTable(conn, "index");
+            showTable(conn, "counts");
             result = fetchIndexes(conn,sentTokens, depTokens);
             if (debug) System.out.println("search(): indexes size: " + result.size());
             ArrayList<String> tempSentences = new ArrayList<>();
@@ -578,9 +579,9 @@ public class Searcher {
     public static void help() {
 
         System.out.println("Semantic Concordancer Searching - commands:");
-        System.out.println("    -i <path>       Interactive corpus search");
-        System.out.println("    -t              test searching");
-        System.out.println("    -h              show this Help message");
+        System.out.println("    -i <path>                     Interactive corpus search");
+        System.out.println("    -t \"<optional search string>\" test searching");
+        System.out.println("    -h                            show this Help message");
     }
 
     /***************************************************************
@@ -599,8 +600,11 @@ public class Searcher {
                 interactive();
         }
         else if (args != null && args.length > 0 && args[0].equals("-t")) {
-            Connection conn = DriverManager.getConnection(Indexer.JDBCString, Indexer.UserName, "");
-            System.out.println("main(): Opened DB " + Indexer.JDBCString);
+            //System.out.println("main(): Opening DB " + Indexer.JDBCString);
+            //Connection conn = DriverManager.getConnection(Indexer.JDBCString, Indexer.UserName, "");
+            //System.out.println("main(): Opened DB " + Indexer.JDBCString);
+            //showTable(conn,"index");
+            //showTable(conn,"counts");
             String searchString = "in";
             Interpreter interp = new Interpreter();
             KBmanager.getMgr().initializeOnce();
@@ -612,12 +616,16 @@ public class Searcher {
                 e.printStackTrace();
                 return;
             }
-            if (args != null && args.length > 0)
-                searchString = args[0];
-            String depString = "sumo(Process,?X)";
+            if (args != null && args.length > 1)
+                searchString = StringUtil.removeEnclosingQuotes(args[1]);
+            else
+                searchString = "";
+            String depString = "";
+            if (searchString == "")
+                 depString = "sumo(FinancialTransaction,?X)";
             if (args != null && args.length > 1)
                 depString = args[1];
-            printSearchResults(Indexer.JDBCString,searchString,depString);
+            printSearchResults("FCE",searchString,depString);
         }
         else
             help();
