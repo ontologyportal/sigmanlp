@@ -457,7 +457,7 @@ public class Indexer {
 
         System.out.println();
         KBmanager.getMgr().initializeOnce();
-        UserName = KBmanager.getMgr().getPref("dbUser");
+        UserName = Indexer.UserName;
         Class.forName("org.h2.Driver");
         Connection conn = null;
         String corporaDir = System.getenv("CORPORA");
