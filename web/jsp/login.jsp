@@ -39,7 +39,7 @@ if (ps.userExists(userName)) {
         }
         System.out.println("login.jsp: Set sibling context");
         System.out.println("login.jsp: Successful login for " + u.username + " with role " + u.role);
-        response.sendRedirect("KBs.jsp");
+        response.sendRedirect("NLP.jsp");
     }
     else {
         System.out.println("Bad login attempt in login.jsp - no matching password for " + u.username);
