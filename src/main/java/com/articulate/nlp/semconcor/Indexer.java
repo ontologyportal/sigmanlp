@@ -51,6 +51,28 @@ and store in an H2 SQL database
 java -jar h2*.jar
 
 to start the server
+
+DB schema created in createDB() is
+
+ CONTENT
+   FILE
+   SENTNUM
+   CONT
+   DEPENDENCY
+   LINENUM
+ COUNTS
+   TOKEN
+   COUNT
+ DEPINDEX
+   TOKEN
+   FILE
+   SENTNUM
+   LINENUM
+ INDEX
+   TOKEN
+   FILE
+   SENTNUM
+   LINENUM
 */
 
 public class Indexer {
