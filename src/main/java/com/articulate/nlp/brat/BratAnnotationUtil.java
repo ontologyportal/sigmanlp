@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.articulate.nlp.WSDAnnotator;
 import com.articulate.nlp.semRewrite.Lexer;
 import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.sigma.StringUtil;
@@ -51,145 +52,75 @@ public class BratAnnotationUtil {
     /** ***************************************************************
      */
 	public class BratEntity {
+
 		private String name;
 		private String id;
 		private String type;
 		private int start;
 		private int end;
 
-		public String getName() {
+		public String getName() { return name; }
 
-			return name;
-		}
+		public void setName(String name) { this.name = name; }
 
-		public void setName(String name) {
+		public String getId() { return id; }
 
-			this.name = name;
-		}
+		public void setId(String id) { this.id = id; }
 
-		public String getId() {
+		public String getType() { return type; }
 
-			return id;
-		}
+		public void setType(String type) { this.type = type; }
 
-		public void setId(String id) {
+		public int getStart() { return start; }
 
-			this.id = id;
-		}
+		public void setStart(int start) { this.start = start; }
 
-		public String getType() {
+		public int getEnd() { return end; }
 
-			return type;
-		}
-
-		public void setType(String type) {
-
-			this.type = type;
-		}
-
-		public int getStart() {
-
-			return start;
-		}
-
-		public void setStart(int start) {
-
-			this.start = start;
-		}
-
-		public int getEnd() {
-
-			return end;
-		}
-
-		public void setEnd(int end) {
-
-			this.end = end;
-		}
+		public void setEnd(int end) { this.end = end; }
 	}
 
     /** ***************************************************************
      */
 	public class BratRelation {
+
 		private String id;
 		private String type;
 		private String startTermId;
 		private String endTermId;
 
-		public String getId() {
+		public String getId() { return id; }
 
-			return id;
-		}
+		public void setId(String id) { this.id = id; }
 
-		public void setId(String id) {
+		public String getType() { return type; }
 
-			this.id = id;
-		}
+		public void setType(String type) { this.type = type; }
 
-		public String getType() {
+		public String getStartTermId() { return startTermId; }
 
-			return type;
-		}
+		public void setStartTermId(String startTermId) { this.startTermId = startTermId; }
 
-		public void setType(String type) {
+		public String getEndTermId() { return endTermId; }
 
-			this.type = type;
-		}
-
-		public String getStartTermId() {
-
-			return startTermId;
-		}
-
-		public void setStartTermId(String startTermId) {
-
-			this.startTermId = startTermId;
-		}
-
-		public String getEndTermId() {
-
-			return endTermId;
-		}
-
-		public void setEndTermId(String endTermId) {
-
-			this.endTermId = endTermId;
-		}
+		public void setEndTermId(String endTermId) { this.endTermId = endTermId; }
 	}
 
     /** ***************************************************************
      */
-	private BratEntity addEntity(String type, BratEntity entity, CoreLabel token, List<BratEntity> result) {
+	private BratEntity addEntity(String type, String value, CoreLabel token) {
 
+	    BratEntity be = new BratEntity();
 		if (type != null && !type.isEmpty()) {
-			if (entity == null) {
-				entity = new BratEntity();
-				entity.setType(type);
-				entity.setStart(token.beginPosition());
-				entity.setEnd(token.endPosition());
-				entity.setId('T' + String.valueOf(termCount++));
-				entity.setName(token.get(TextAnnotation.class));
-				bratEntitiesMap.put(entity.getId(), entity);
-				result.add(entity);
-			}
-			else {
-				if (type.equals(entity.getType())) {
-					entity.setEnd(token.endPosition());
-					entity.setName(entity.getName() + " " + token.get(TextAnnotation.class));
-				}
-				else {
-					entity = new BratEntity();
-					entity.setType(type);
-					entity.setStart(token.beginPosition());
-					entity.setEnd(token.endPosition());
-					entity.setId('T' + String.valueOf(termCount++));
-					entity.setName(token.get(TextAnnotation.class));
-					bratEntitiesMap.put(entity.getId(), entity);
-					result.add(entity);
-				}
-			}
+            be = new BratEntity();
+            be.setId('T' + String.valueOf(termCount++));
+            be.setType(type + ":" + value);
+            be.setName(token.value());
+            be.setStart(token.beginPosition());
+            be.setEnd(token.endPosition());
+            bratEntitiesMap.put(be.getId(), be);
 		}
-		return entity;
+		return be;
 	}
 
     /** ***************************************************************
@@ -290,12 +221,24 @@ public class BratAnnotationUtil {
 			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
 				// NER label of the token
 				String ner = token.get(NamedEntityTagAnnotation.class);
-				if (!ner.equalsIgnoreCase("O")) {
-					nerEntity = addEntity(ner, nerEntity, token, result);
+				if (!StringUtil.emptyString(ner) && !ner.equalsIgnoreCase("O")) {
+				    System.out.println("getBratEntities(): ner: " + ner);
+					nerEntity = addEntity("NER",token.get(NamedEntityTagAnnotation.class),token);
+					result.add(nerEntity);
+                    bratEntitiesMap.put(nerEntity.getId(), nerEntity);
+                    termIdMap.put(nerEntity.getName() + "-" + token.index(), nerEntity.getId());
 				}
 				// NER SUMO annotation of the token
 				String sumo = token.get(NERAnnotator.NERSUMOAnnotation.class);
-				sumoEntity = addEntity(sumo, sumoEntity, token, result);
+				if (StringUtil.emptyString(sumo))
+				    sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                System.out.println("getBratEntities(): sumo: " + sumo);
+                if (!StringUtil.emptyString(sumo)) {
+                    sumoEntity = addEntity("SUMO", sumo, token);
+                    result.add(sumoEntity);
+                    bratEntitiesMap.put(sumoEntity.getId(), sumoEntity);
+                    termIdMap.put(sumoEntity.getName() + "-" + token.index(), sumoEntity.getId());
+                }
 				// POS tag of the token
 				String pos = token.get(PartOfSpeechAnnotation.class);
 				posEntity = new BratEntity();
@@ -313,23 +256,51 @@ public class BratAnnotationUtil {
 	}
 
     /** ***************************************************************
+     * @param input
+     *            Text to be annotated
+     * @return JSON String to be used as docData for brat annotation
+     */
+    @SuppressWarnings("unchecked")
+    public JSONObject getBratAnnotationsJSON(String input, Annotation document) {
+
+        JSONObject result = new JSONObject();
+        result.put("text", input);
+        List<BratEntity> bratEntities = getBratEntities(input, document);
+        JSONArray entitiesArray = getJSONArrayOfBratEntities(bratEntities);
+        result.put("entities", entitiesArray);
+        List<BratRelation> bratRelations = getBratRelations(input, document);
+        JSONArray relationsArray = getJSONArrayOfBratRelations(bratRelations);
+        result.put("relations", relationsArray);
+        return result;
+    }
+
+    /** ***************************************************************
 	 * @param input
 	 *            Text to be annotated
 	 * @return JSON String to be used as docData for brat annotation
 	 */
 	@SuppressWarnings("unchecked")
 	public String getBratAnnotations(String input, Annotation document) {
-		
-		JSONObject result = new JSONObject();
-		result.put("text", input);
-		List<BratEntity> bratEntities = getBratEntities(input, document);
-		JSONArray entitiesArray = getJSONArrayOfBratEntities(bratEntities);
-		result.put("entities", entitiesArray);
-		List<BratRelation> bratRelations = getBratRelations(input, document);
-		JSONArray relationsArray = getJSONArrayOfBratRelations(bratRelations);
-		result.put("relations", relationsArray);
-		return result.toJSONString();
+
+		return getBratAnnotationsJSON(input,document).toJSONString();
 	}
+
+    /** ***************************************************************
+     */
+    public static String toBratStandoff(List<BratRelation> rels, List<BratEntity> entities) {
+
+        StringBuffer sb = new StringBuffer();
+
+        for (BratEntity be : entities) {
+            sb.append(be.getId() + "\t" + be.getType() + " " + be.getStart() +
+                    " " + be.getEnd() + "\t" + be.getName() + "\n");
+        }
+        for (BratRelation br : rels) {
+            sb.append(br.getId() + "\t" + br.getType() + " Arg1:" + br.getStartTermId() +
+                    " Arg2:" + br.getEndTermId() + "\n");
+        }
+        return sb.toString();
+    }
 
     /** ***************************************************************
      */
@@ -456,7 +427,8 @@ public class BratAnnotationUtil {
 	public static void main(String[] args) {
 
 		BratAnnotationUtil brt = new BratAnnotationUtil();
-		String sentence = "The problem is that the vehicle in question was indeed not on the street";
+		String sentence = "The problem is that the vehicle in question was indeed not on the street in Hong Kong.";
+		sentence = "Takayasu arteritis (TA) is an inflammatory process frequently associated with stenosis and obliteration of the aorta and its primary branches.";
 		Pipeline pipeline = new Pipeline(true);
 		Annotation document = pipeline.annotate(sentence);
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
@@ -465,7 +437,13 @@ public class BratAnnotationUtil {
 		brt.termCount = 1;
 		brt.relationCount = 1;
 		brt.termIdMap = new HashMap<>();
-		System.out.println(brt.getBratAnnotations(sentence, document));
+		//System.out.println("main(): annotations: " + brt.getBratAnnotations(sentence, document));
+		////System.out.println();
+       // System.out.println("main(): json: " + brt.getBratAnnotationsJSON(sentence, document));
+        //System.out.println();
+        List<BratEntity> bratEntities = brt.getBratEntities(sentence,document);
+        List<BratRelation> bratRelations = brt.getBratRelations(sentence,document);
+        System.out.println("main(): standoff: " + toBratStandoff(bratRelations,bratEntities));
 	}
 }
 
