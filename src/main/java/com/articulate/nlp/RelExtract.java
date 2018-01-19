@@ -712,6 +712,31 @@ public class RelExtract {
 
     /** *************************************************************
      */
+    public static void testPattern(String rel) {
+
+        System.out.println("RelExtract.testPattern()");
+        KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        List<Formula> forms = kb.askWithRestriction(0,"format",2,rel);
+        if (forms == null || forms.size() < 1) {
+            System.out.println("RelExtract.testPattern(): no format for relation " + rel);
+            return;
+        }
+        Formula f = forms.get(0);
+        HashMap<String,CNF> result = processOneRelation(f,kb,interp);
+        System.out.println("RelExtract.testPattern(): " + toCNFLabels(result.get(rel)));
+    }
+
+    /** *************************************************************
+     */
     public static void printCoreLabel(CoreLabel cl) {
 
         System.out.println(toCoreLabelString(cl));
@@ -793,6 +818,16 @@ public class RelExtract {
         System.out.println(stopWordsOnly(cnf));
     }
 
+    /***************************************************************
+     */
+    public static void help() {
+
+        System.out.println("Relation Extraction - commands:");
+        System.out.println("    -t <rel>     generate pattern for rel");
+        System.out.println("    -p           process all relations");
+        System.out.println("    -h           show this Help message");
+    }
+
     /** *************************************************************
      */
     public static void main(String[] args) {
@@ -804,6 +839,13 @@ public class RelExtract {
         //test(resultSet);
 
         //testProcessAndSearch();
-        process();
+        if (args == null || args.length < 1 || args[0].equals("-h"))
+            help();
+        else if (args[0].equals("-p"))
+            process();
+        else if (args.length > 1 && args[0].equals("-t"))
+            testPattern(args[1]);
+        else
+            help();
     }
 }
