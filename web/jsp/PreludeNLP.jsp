@@ -75,7 +75,7 @@ if (!KBmanager.initialized) {
 
 if (!role.equalsIgnoreCase("admin") && !role.equalsIgnoreCase("user")) {
     mgr.setError("You are not authorized to visit " + pageString);
-    response.sendRedirect(hrefStart + "/login.html");
+    response.sendRedirect(hrefStart + "/sigmanlp/login.html");
     return;
 }
 
