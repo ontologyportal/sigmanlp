@@ -62,17 +62,21 @@ if (port == null)
 if (StringUtil.emptyString(role)) { // role is [guest | user | admin]
     role = "guest";
 }
+String hrefStart = HTMLformatter.createHrefStart();
+System.out.println("PreludeNLP.jsp: href start " + hrefStart);
 
 if (!KBmanager.initialized) {
     KBmanager.getMgr().initializeOnce();
     System.out.println("PreludeNLP.jsp: initializing.  Redirecting to init.jsp.");
-    response.sendRedirect(HTMLformatter.createHrefStart() + "/sigma/init.jsp");
+    String URLString = request.getRequestURL().toString();
+    String withoutPageURLString = URLString.substring(0,URLString.lastIndexOf("/"));
+    response.sendRedirect(withoutPageURLString + "/sigma/init.jsp");
     return;
 }
 
 if (!role.equalsIgnoreCase("admin") && !role.equalsIgnoreCase("user")) {
     mgr.setError("You are not authorized to visit " + pageString);
-    response.sendRedirect(HTMLformatter.createHrefStart() + "login.html");
+    response.sendRedirect(hrefStart + "login.html");
     return;
 }
 
