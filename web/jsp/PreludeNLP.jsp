@@ -68,8 +68,8 @@ System.out.println("PreludeNLP.jsp: href start " + hrefStart);
 if (!KBmanager.initialized) {
     KBmanager.getMgr().initializeOnce();
     System.out.println("PreludeNLP.jsp: initializing.  Redirecting to init.jsp.");
-    String withoutPageURLString = URLString.substring(0,URLString.lastIndexOf("/"));
-    response.sendRedirect(withoutPageURLString + "/sigma/init.jsp");
+    String withoutPageURLString = URLString.substring(0,URLString.lastIndexOf("/")+1);
+    response.sendRedirect(withoutPageURLString + "init.jsp");
     return;
 }
 
