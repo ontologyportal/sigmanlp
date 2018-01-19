@@ -68,14 +68,14 @@ System.out.println("PreludeNLP.jsp: href start " + hrefStart);
 if (!KBmanager.initialized) {
     KBmanager.getMgr().initializeOnce();
     System.out.println("PreludeNLP.jsp: initializing.  Redirecting to init.jsp.");
-    String withoutPageURLString = URLString.substring(0,URLString.lastIndexOf("/")+1);
-    response.sendRedirect(withoutPageURLString + "init.jsp");
+    String withoutPageURLString = URLString.substring(0,URLString.lastIndexOf("/"));
+    response.sendRedirect(withoutPageURLString + "/init.jsp");
     return;
 }
 
 if (!role.equalsIgnoreCase("admin") && !role.equalsIgnoreCase("user")) {
     mgr.setError("You are not authorized to visit " + pageString);
-    response.sendRedirect(hrefStart + "login.html");
+    response.sendRedirect(hrefStart + "/login.html");
     return;
 }
 
