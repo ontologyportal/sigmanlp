@@ -52,7 +52,7 @@ import java.util.*;
 public class Pipeline {
 
     public StanfordCoreNLP pipeline;
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
         "ner, nersumo, gender, parse, depparse, entitymentions, wnmw, wsd, tsumo";
 
