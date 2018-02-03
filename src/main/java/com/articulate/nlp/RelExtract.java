@@ -18,6 +18,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.TypesafeMap;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -46,6 +47,7 @@ import java.util.*;
 public class RelExtract {
 
     public static boolean debug = false;
+    private static int varnum = 0;
 
     /** *************************************************************
      * Copy SUMO categories in the outputMap that are associated with
@@ -90,15 +92,29 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * TODO: refactor to generate both the positive and negative pattern
      */
     public static String removeFormatChars(String s) {
 
         s = s.replaceAll("&%","");
-        s = s.replaceAll("%n\\{[^}]+\\}","");
+        s = s.replaceAll("%n\\{[^}]+\\}","");       // assume only positive patterns
+        s = s.replaceAll("%p\\{([^}]+)\\}","$1");
         s = s.replaceAll("%.","");
         s = s.replaceAll("\\{","");
         s = s.replaceAll("\\}","");
         s = s.replaceAll("  "," ");
+        return s;
+    }
+
+    /** *************************************************************
+     * TODO: refactor to generate both the positive and negative pattern
+     */
+    public static String removePosNeg(String s) {
+
+        s = s.replaceAll("%n\\{[^}]+\\}","");       // assume only positive patterns
+        s = s.replaceAll("%p\\{([^}]+)\\}","$1");
+        s = s.replaceAll("  "," ");
+        s = StringUtil.removeEnclosingQuotes(s);
         return s;
     }
 
@@ -463,7 +479,7 @@ public class RelExtract {
      * Generate literals with a "sumo" and possibly "isSubclass" predicate
      * that express the SUMO types of dependency tokens
      */
-    public static HashSet<Literal> generateSUMO(CoreLabel cl, HashSet<String> typeGenerated, int varnum) {
+    public static HashSet<Literal> generateSUMO(CoreLabel cl, HashSet<String> typeGenerated) {
 
         if (debug) System.out.println("RelExtract.generateSUMO(): ");
         if (debug) printCoreLabel(cl);
@@ -471,30 +487,33 @@ public class RelExtract {
         String type = "";
         type = cl.category();
         if (StringUtil.emptyString(type)) {
-            System.out.println("RelExtract.generateSUMO(): no type found for " + cl);
+            if (debug) System.out.println("RelExtract.generateSUMO(): no type found for " + cl);
             return null;
         }
         if (typeGenerated.contains(cl.toString()))
             return null;
         typeGenerated.add(cl.toString());
-        if (!type.endsWith("+")) {
-            cl.setValue("?" + cl.toString());
-            cl.set(LanguageFormatter.VariableAnnotation.class,cl.value());
-            CoreLabel clVar = new CoreLabel();
-            clVar.setValue(type);
-            result.add(new Literal("sumo",clVar,cl));
+        /* if (!type.endsWith("+")) {
+            cl.setValue("?" + cl.value());
+            //cl.set(LanguageFormatter.VariableAnnotation.class,cl.value());
+            CoreLabel classLabel = new CoreLabel();
+            classLabel.setValue(type);
+            String classVar = "?CL" + Integer.toString(varnum++);
+            result.add(new Literal("sumo",classLabel,cl));
+            if (debug) System.out.println("RelExtract.generateSUMO(): result: " + result);
             return result;
         }
-        else {
+        else { */
             CoreLabel clVar = new CoreLabel();
             clVar.setValue("?TYPEVAR" + Integer.toString(varnum));
             clVar.set(LanguageFormatter.VariableAnnotation.class,clVar.value());
             result.add(new Literal("sumo",clVar,cl));
             CoreLabel clType = new CoreLabel();
-            clType.setValue(type.substring(0,type.length()-1));
-            result.add(new Literal("isSubclass",clType,clVar));
+            clType.setValue(type.substring(0,type.length()));
+            result.add(new Literal("isSubclass",clVar,clType));
             varnum++;
-        }
+        //}
+        if (debug) System.out.println("RelExtract.generateSUMO(): result: " + result);
         return result;
     }
 
@@ -504,15 +523,15 @@ public class RelExtract {
 
         HashSet<String> typeGenerated = new HashSet<>();
         HashSet<Literal> sumoLit = new HashSet<>();
-        int varnum = 0;
+        Integer varnum = 0;
         CNF cnfnew = new CNF();
         List<Literal> cnflist = cnfInput.toLiterals();
         for (Literal l : cnflist) {
             cnfnew.append(l);
-            HashSet<Literal> temp = generateSUMO(l.clArg1,typeGenerated,varnum);
+            HashSet<Literal> temp = generateSUMO(l.clArg1,typeGenerated);
             if (temp != null)
                 sumoLit.addAll(temp);
-            temp = generateSUMO(l.clArg2,typeGenerated,varnum);
+            temp = generateSUMO(l.clArg2,typeGenerated);
             if (temp != null)
                 sumoLit.addAll(temp);
         }
@@ -541,39 +560,93 @@ public class RelExtract {
         if (rel.endsWith("Fn"))
             return null;
         String formatString = form.getArgument(3);
+        String oldFormatString = new String(formatString);
+        formatString = removePosNeg(formatString);
+        if (debug) System.out.println("no pos/neg format String: " + formatString);
+        kb.getFormatMap("EnglishLanguage").put(rel,formatString); // hack to alter the format String
         String formulaString = buildFormulaString(kb,rel);
         if (StringUtil.emptyString(formatString))
             return null;
 
-        System.out.println();
-        System.out.println("processOneRelation(): formula: " + formulaString);
+        if (debug) System.out.println();
+        if (debug) System.out.println("processOneRelation(): formula: " + formulaString);
         String nlgString = StringUtil.filterHtml(NLGUtils.htmlParaphrase("", formulaString,
                 kb.getFormatMap("EnglishLanguage"), kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage"));
-        System.out.println("nlg: " + nlgString);
-        System.out.println("output map: " + NLGUtils.outputMap);
+        if (debug) System.out.println("nlg: " + nlgString);
+        if (debug) System.out.println("output map: " + NLGUtils.outputMap);
 
         if (StringUtil.emptyString(nlgString))
             return null;
         CNF cnf = toCNF(interp, nlgString, NLGUtils.outputMap);
+        kb.getFormatMap("EnglishLanguage").put(rel,oldFormatString); // restore the original
         formatString = removeFormatChars(formatString);
+        if (debug) System.out.println("without format chars: " + formatString);
         CNF filtered = formatWordsOnly(cnf, formatString);
         filtered = toVariables(filtered, formatString);
-        System.out.println(filtered);
+        if (debug) System.out.println(filtered);
         filtered = removeRoot(filtered);
         filtered = removeDet(filtered);
         HashSet<Literal> litSet = new HashSet<>();
         litSet.addAll(filtered.toLiterals());
-        System.out.println(litSet);
+        if (debug) System.out.println(litSet);
         CNF cnfResult = CNF.fromLiterals(litSet);
         addArgsToCNF(cnfResult,NLGUtils.outputMap);
-        System.out.println("processOneRelation(): without types: " + cnfResult);
+        if (debug) System.out.println("processOneRelation(): without types: " + cnfResult);
         CNF withTypes = addTypes(cnfResult);
-        System.out.println("processOneRelation(): with types: " + withTypes);
+        if (debug) System.out.println("processOneRelation(): with types: " + withTypes);
         if (!stopWordsOnly(cnfResult))
             resultSet.put(rel, withTypes);
-        System.out.println("processOneRelation(): result: " + resultSet);
-        System.out.println();
+        if (debug) System.out.println("processOneRelation(): result: " + resultSet);
+        if (debug) System.out.println();
         return resultSet;
+    }
+
+    /** *************************************************************
+     */
+    public static String addRHS(String rel, CNF lhs) {
+
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        int valence = kb.kbCache.valences.get(rel);
+        String[] stmt = new String[valence + 1];
+        for (Clause c : lhs.clauses) {
+            for (Literal l : c.disjuncts) {
+                if (l.clArg1.containsKey(LanguageFormatter.RelationArgumentAnnotation.class)) {
+                    int arg = l.clArg1.get(LanguageFormatter.RelationArgumentAnnotation.class);
+                    if (arg > 0 && arg < valence + 1) {
+                        stmt[arg] = l.clArg1.get(LanguageFormatter.VariableAnnotation.class);
+                        if (debug) System.out.println("addRHS():added");
+                        if (debug) printCoreLabel(l.clArg1);
+                    }
+                    else {
+                        if (debug) System.out.println("Error in addRHS(): arg out of bounds for ");
+                        if (debug) printCoreLabel(l.clArg1);
+                    }
+                }
+                if (l.clArg2.containsKey(LanguageFormatter.RelationArgumentAnnotation.class)) {
+                    int arg = l.clArg2.get(LanguageFormatter.RelationArgumentAnnotation.class);
+                    if (arg > 0 && arg < valence + 1) {
+                        stmt[arg] = l.clArg2.get(LanguageFormatter.VariableAnnotation.class);
+                        if (debug) System.out.println("addRHS():added");
+                        if (debug) printCoreLabel(l.clArg2);
+                    }
+                    else {
+                        if (debug) System.out.println("Error in addRHS(): arg out of bounds for ");
+                        if (debug) printCoreLabel(l.clArg2);
+                    }
+                }
+            }
+        }
+        StringBuffer resultStr = new StringBuffer();
+        resultStr.append("{(" + rel + " ");
+        for (int i = 1; i < valence + 1; i++) {
+            if (i > 1)
+                resultStr.append(" ");
+            resultStr.append(stmt[i]);
+            if (stmt[i] == null)
+                return null;
+        }
+        resultStr.append(")}");
+        return resultStr.toString();
     }
 
     /** *************************************************************
@@ -581,7 +654,58 @@ public class RelExtract {
      * parse templates that match them.  Each relation should have a
      * single augmented dependency parse pattern that results.
      */
-    public static HashMap<String,CNF> process() {
+    public static void generateOneRelationPattern(Formula f, KB kb, Interpreter interp) {
+
+        HashMap<String,CNF> temp = processOneRelation(f,kb,interp);
+        if (temp == null)
+            return;
+        String rel = f.getArgument(2);
+        if (temp.get(rel) == null)
+            return;
+        CNF lhs = temp.get(rel);
+        String rhs = addRHS(rel,lhs);
+        if (rhs != null)
+            System.out.println(printCNFVariables(lhs) + " ==> " + rhs + ".\n");
+    }
+
+    /** *************************************************************
+     * Process all the format statements in SUMO to create dependency
+     * parse templates that match them.  Each relation should have a
+     * single augmented dependency parse pattern that results.
+     */
+    public static void generateRelationPatterns() {
+
+        long startTime = System.currentTimeMillis();
+        int formCount = 0;
+        System.out.println("; RelExtract.generateRelationPatterns()");
+        KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        ArrayList<Formula> forms = kb.ask("arg",0,"format");
+        for (Formula f : forms) {
+            varnum = 0;
+            generateOneRelationPattern(f,kb,interp);
+            formCount++;
+            long currentTime = System.currentTimeMillis();
+            long avg = (currentTime - startTime) / formCount;
+            if (debug) System.out.println("; RelExtract.generateRelationPatterns(): avg time per form (seconds): " + (avg / 1000));
+        }
+    }
+
+    /** *************************************************************
+     * Process all the format statements in SUMO to create dependency
+     * parse templates that match them.  Each relation should have a
+     * single augmented dependency parse pattern that results. Then
+     * search over a corpus for matches.
+     */
+    public static HashMap<String,CNF> processAndSearch() {
 
         long startTime = System.currentTimeMillis();
         int formCount = 0;
@@ -666,6 +790,75 @@ public class RelExtract {
             }
         }
         return sb.toString();
+    }
+
+    /** *************************************************************
+     */
+    public static void sentenceExtract(String sent) {
+
+        System.out.println("; RelExtract.sentenceExtract()");
+        KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
+        interp.initOnce(filename);
+        ArrayList<CNF> inputs = Lists.newArrayList(interp.interpretGenCNF(sent));
+        ArrayList<String> kifClauses = interp.interpretCNF(inputs);
+    }
+
+    /** *************************************************************
+     */
+    public static void interactive() {
+
+        System.out.println("; RelExtract.sentenceExtract()");
+        KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
+        interp.initOnce(filename);
+        String input = "";
+        Scanner scanner = new Scanner(System.in);
+        do {
+            System.out.print("Enter sentence: ");
+            input = scanner.nextLine().trim();
+            if (!StringUtil.emptyString(input) && !input.equals("exit") && !input.equals("quit")) {
+                if (input.equals("reload")) {
+                    System.out.println("reloading semantic rewriting rules for relation extraction");
+                    interp.loadRules(filename);
+                }
+                else if (input.equals("debug")) {
+                    interp.debug = true;
+                    System.out.println("debugging messages on");
+                }
+                else if (input.equals("nodebug")) {
+                    interp.debug = false;
+                    System.out.println("debugging messages off");
+                }
+                else {
+                    ArrayList<CNF> inputs = Lists.newArrayList(interp.interpretGenCNF(input));
+                    ArrayList<String> kifClauses = interp.interpretCNF(inputs);
+                    System.out.println(kifClauses);
+                }
+            }
+        } while (!StringUtil.emptyString(input) && !input.equals("exit") && !input.equals("quit"));
+    }
+
+    /** *************************************************************.
+     */
+    public static void testGenerateRelationPattern() {
+
+        System.out.println("; RelExtract.testGenerateRelationPattern()");
+        KBmanager.getMgr().initializeOnce();
+        Interpreter interp = new Interpreter();
+        try {
+            interp.initialize();
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        ArrayList<Formula> forms = kb.askWithRestriction(0,"format",2,"wears");
+        System.out.println("; RelExtract.testGenerateRelationPattern()" + forms);
+        generateOneRelationPattern(forms.get(0),kb,interp);
     }
 
     /** *************************************************************
@@ -823,8 +1016,12 @@ public class RelExtract {
     public static void help() {
 
         System.out.println("Relation Extraction - commands:");
-        System.out.println("    -t <rel>     generate pattern for rel");
-        System.out.println("    -p           process all relations");
+        System.out.println("    -t <rel>     generaTe pattern for rel");
+        System.out.println("    -p           Process all relations and search");
+        System.out.println("    -r           generate Relation patterns");
+        System.out.println("    -o           generate One relation pattern");
+        System.out.println("    -x \"text\"    eXtract relations from one sentence");
+        System.out.println("    -i           Interactive relation extraction");
         System.out.println("    -h           show this Help message");
     }
 
@@ -842,9 +1039,17 @@ public class RelExtract {
         if (args == null || args.length < 1 || args[0].equals("-h"))
             help();
         else if (args[0].equals("-p"))
-            process();
+            processAndSearch();
         else if (args.length > 1 && args[0].equals("-t"))
             testPattern(args[1]);
+        else if (args.length > 1 && args[0].equals("-x"))
+            sentenceExtract(StringUtil.removeEnclosingQuotes(args[1]));
+        else if (args.length == 1 && args[0].equals("-r"))
+            generateRelationPatterns();
+        else if (args.length == 1 && args[0].equals("-o"))
+            testGenerateRelationPattern();
+        else if (args.length == 1 && args[0].equals("-i"))
+            interactive();
         else
             help();
     }
