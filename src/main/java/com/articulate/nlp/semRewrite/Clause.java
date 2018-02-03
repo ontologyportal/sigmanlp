@@ -194,12 +194,13 @@ public class Clause {
             for (int j = 0; j < disjuncts.size(); j++) {
                 Literal c2 = disjuncts.get(j);
                 HashMap<String,String> bindings = c2.mguTermList(c1);
-                if (debug) System.out.println("INFO in Disjunct.unify(): checking " + c1 + " against " + c2);
+                if (debug) System.out.println("INFO in Clause.unify(): checking " + c1 + " against " + c2);
                 if (bindings != null) {
                     if (c1.preserve)
                         c2.preserve = true;
                     c2.bound = true; // mark as bound in case the rule consumes the clauses ( a ==> rule not a ?=>)
-                    if (debug) System.out.println("INFO in Disjunct.unify(): bound: " + c2);
+                    if (debug) System.out.println("INFO in Clause.unify(): bound: " + c2);
+                    if (debug) System.out.println("INFO in Clause.unify(): bindings: " + bindings);
                     return bindings;
                 }
             }
