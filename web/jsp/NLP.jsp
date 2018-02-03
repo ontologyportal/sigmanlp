@@ -40,6 +40,10 @@ Authors:
     Interpreter interp = new Interpreter();
     interp.initialize();
 
+    Interpreter interpRel = new Interpreter();
+    String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
+    interpRel.initOnce(filename);
+
     String propString =  "tokenize, ssplit, pos, lemma, parse, depparse, ner, wsd, wnmw, tsumo, sentiment";
     Pipeline p = new Pipeline(true,propString);
     out.println("<html>");
@@ -63,8 +67,10 @@ Authors:
     String wnHref = kbHref.replace("Browse.jsp","WordNet.jsp");
 
     String reload = request.getParameter("reload");
-    if (reload != null)
+    if (reload != null) {
         interp.loadRules();
+        interpRel.loadRules(filename);
+    }
 
     String pageName = "NLP";
     pageString = "NLP Interface";
@@ -156,9 +162,6 @@ Authors:
         out.println("<h2>Visualization</h2>\n");
         out.println("<div id=\"bratVizDiv\" style=\"\"></div><P>\n");
         
-        
-        List<String> forms = interp.interpret(theText);
-        
         out.println("<h2>Dependencies</h2>\n");
         out.println("<table><tr><th>original</th><th>augmented</th><th>substitutors</th></tr><tr><td>\n");
         for (CoreMap sentence : sentences) {
@@ -182,6 +185,16 @@ Authors:
         out.println("</tr></table>\n");
         out.println("<P>");
 
+        out.println("<h2>Relations</h2>\n");
+        ArrayList<CNF> inputs = new ArrayList<>();
+        System.out.println("NLP.jsp: Running relation extraction");
+        inputs.add(interpRel.interpretGenCNF(theText));
+        ArrayList<String> kifClauses = interpRel.interpretCNF(inputs);
+        out.println("<pre>");
+        out.println(kifClauses);
+        out.println("</pre>");
+        out.println("<P>");
+
         out.println("<h2>Interpretation</h2>\n");
         %>
             <form name="interp" id="interp" action="NLP.jsp" method="GET">
@@ -190,7 +203,8 @@ Authors:
                 <input type="submit" name="reload" value="reload">
             </form><p>
         <%
-
+        System.out.println("NLP.jsp: Running language to logic");
+        List<String> forms = interp.interpret(theText);
         if (forms != null) {
             for (String s : forms) {
                 Formula theForm = new Formula(s);
