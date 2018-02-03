@@ -533,7 +533,7 @@ public class Literal {
      */
     public HashMap<String,String> mguTermList(Literal l2) {
 
-        //System.out.println("INFO in Literal.mguTermList(): attempting to unify " + this + " and " + l2);
+        if (debug) System.out.println("INFO in Literal.mguTermList(): attempting to unify " + this + " and " + l2);
         HashMap<String,String> subst = new HashMap<String,String>();
         
         if (!pred.equals(l2.pred)) 
@@ -545,9 +545,9 @@ public class Literal {
                 t1 = arg2;            
                 t2 = l2.arg2;
             }
-            //System.out.println("INFO in Literal.mguTermList(): attempting to unify arguments " + t1 + " and " + t2);
+            if (debug) System.out.println("INFO in Literal.mguTermList(): attempting to unify arguments " + t1 + " and " + t2);
             if (t1.startsWith("?")) {
-                //System.out.println("INFO in Literal.mguTermList(): here 1");
+                if (debug) System.out.println("INFO in Literal.mguTermList(): here 1");
                 if (t1.equals(t2))
                     // We could always test this upfront, but that would
                     // require an expensive check every time. 
@@ -570,7 +570,7 @@ public class Literal {
                 subst.put(t1, t2);
             }
             else if (t2.startsWith("?")) {
-                //System.out.println("INFO in Literal.mguTermList(): here 2");
+                if (debug) System.out.println("INFO in Literal.mguTermList(): here 2");
                 // Symmetric case - We know that t1!=t2, so we can drop this check
                 if (occursCheck(t2, this))
                     return null;
@@ -583,7 +583,7 @@ public class Literal {
                 subst.put(t2, t1);
             }
             else {
-                //System.out.println("INFO in Literal.mguTermList(): t1 " + t1 + " t2 " + t2);
+                if (debug) System.out.println("INFO in Literal.mguTermList(): t1 " + t1 + " t2 " + t2);
                 if (!t1.equals(t2)) {
                     // TODO: add test for common parent of SUMO terms
                     // if (kb.containsTerm(t1) && kb.containsTerm(t2)) {
@@ -602,7 +602,7 @@ public class Literal {
                 }
             }
         }
-        //System.out.println("INFO in Literal.mguTermList(): subst on exit: " + subst);
+        if (debug) System.out.println("INFO in Literal.mguTermList(): subst on exit: " + subst);
         return subst;
     }
     
