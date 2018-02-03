@@ -114,7 +114,11 @@ public class RHS {
      * TODO: note that a replace for ?A will erroneously match ?AB
      */
     public RHS applyBindings(HashMap<String,String> bindings) {
-        
+
+        if (bindings == null) {
+            System.out.println("Error in RHS.applyBindings(): null bindings");
+            return this;
+        }
         RHS rhs = new RHS();
         if (cnf != null) {
             rhs.cnf = cnf.applyBindings(bindings);
