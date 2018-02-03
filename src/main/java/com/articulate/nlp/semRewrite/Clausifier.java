@@ -230,10 +230,34 @@ public class Clausifier {
      */
     public static CNF clausify(LHS lhs) {
 
-        //System.out.println("INFO in Clausifier.clausify(): (lhs) " + lhs);
+        System.out.println("INFO in Clausifier.clausify(): (lhs) " + lhs);
         LHS result = moveNegationsIn(lhs);
         result = distributeAndOverOr(result);
-        return separateConjunctions(result);
+        CNF cnf = separateConjunctions(result);
+        return sort(cnf);
+    }
+
+    /** ***************************************************************
+     * sort the clauses to put procedures at the end of the list
+     */
+    public static CNF sort(CNF cnf) {
+
+        System.out.println("Clausifier.sort(): input: " + cnf);
+        CNF cnfnew = new CNF();
+        CNF procs = new CNF();
+        for (Clause c : cnf.clauses) {
+            if (c.disjuncts.size() > 1)
+                System.out.println("Error in Clausifier.sort(): complex disjunct not allowed: " + cnf);
+            for (Literal d : c.disjuncts) {
+                if (Procedures.isProcPred(d.pred))
+                    procs.append(d);
+                else
+                    cnfnew.append(d);
+            }
+        }
+        cnfnew.appendAll(procs);
+        System.out.println("Clausifier.sort(): output: " + cnfnew);
+        return cnfnew;
     }
 
     /** ***************************************************************
@@ -245,10 +269,11 @@ public class Clausifier {
         RuleSet newrs = new RuleSet();
         for (int i = 0; i < rs.rules.size(); i++) {
             Rule r = rs.rules.get(i);
-            //System.out.println("INFO in Clausifier.clausify(): " + r.lhs);
+            System.out.println("INFO in Clausifier.clausify(): " + r.lhs);
             LHS result = moveNegationsIn(r.lhs);
             result = distributeAndOverOr(result);
             r.cnf = separateConjunctions(result);
+            r.cnf = sort(r.cnf);
             newrs.rules.add(r);
         }
         return newrs;
