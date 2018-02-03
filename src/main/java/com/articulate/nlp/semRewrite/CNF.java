@@ -35,7 +35,7 @@ import java.util.*;
 public class CNF implements Comparable {
 
     public ArrayList<Clause> clauses = new ArrayList<Clause>();
-    public static boolean debug = false;
+    public static boolean debug = true;
     public static int varnum = 0; // to ensure unique variable renaming
 
     /** ***************************************************************
@@ -67,6 +67,16 @@ public class CNF implements Comparable {
     /** ***************************************************************
      * append a literal to this CNF
      */
+    public void prepend(Literal lit) {
+
+        Clause c = new Clause();
+        c.disjuncts.add(lit);
+        clauses.add(0,c);
+    }
+
+    /** ***************************************************************
+     * append a literal to this CNF
+     */
     public void append(Literal lit) {
 
         Clause c = new Clause();
@@ -81,6 +91,17 @@ public class CNF implements Comparable {
 
         for (Literal lit : lits)
             append(lit);
+    }
+
+    /** ***************************************************************
+     * append all literal to this CNF
+     */
+    public void appendAll(CNF cnfnew) {
+
+        for (Clause c : cnfnew.clauses) {
+            for (Literal lit : c.disjuncts)
+                this.append(lit);
+        }
     }
 
     /** ***************************************************************
@@ -508,14 +529,14 @@ public class CNF implements Comparable {
      */
     private HashMap<String,String> unifyDisjunct(Clause d1, CNF cnf2, CNF cnf1, HashMap<String,String> bindings) {
 
-        //System.out.println("INFO in CNF.unifyDisjunct(): checking " + d1 + " against " + cnf2);
+        if (debug) System.out.println("INFO in CNF.unifyDisjunct(): checking " + d1 + " against " + cnf2);
         HashMap<String,String> result = new HashMap<String,String>();
         for (Clause d2 : cnf2.clauses) {  // sentence
-            //System.out.println("INFO in CNF.unifyDisjunct(): checking " + d1 + " against " + d2);
+            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): checking " + d1 + " against " + d2);
             HashMap<String,String> bindings2 = d2.unify(d1);
-            //System.out.println("INFO in CNF.unifyDisjunct(): d1 " + d1 + " d2 " + d2);
-            //System.out.println("INFO in CNF.unifyDisjunct(): checked " + d1 + " against " + d2);
-            //System.out.println("INFO in CNF.unifyDisjunct(): bindings " + bindings2);
+            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): d1 " + d1 + " d2 " + d2);
+            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): checked " + d1 + " against " + d2);
+            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): bindings " + bindings2);
             if (bindings2 != null) {
                 return bindings2;
             }
@@ -534,24 +555,25 @@ public class CNF implements Comparable {
         CNF cnfnew2 = cnf.deepCopy();  // sentence
         CNF cnfnew1 = this.deepCopy(); // rule
         boolean negatedClause = false;
-        //System.out.println("INFO in CNF.unify(): cnf 1 " + cnf);
-        //System.out.println("INFO in CNF.unify(): this " + this);
+        if (debug) System.out.println("INFO in CNF.unify(): cnf 1 (sentence): " + cnf);
+        if (debug) System.out.println("INFO in CNF.unify(): this (rule): " + this);
         HashMap<String,String> result = new HashMap<String,String>();
         for (int i = 0; i < cnfnew1.clauses.size(); i++) {  // rule
             Clause d1 = cnfnew1.clauses.get(i);
+            if (debug) System.out.println("INFO in CNF.unify(): disjunct: " + d1);
             if (d1.disjuncts.size() == 1 && d1.disjuncts.get(0).negated)
                 negatedClause = true;
             HashMap<String,String> result2 = unifyDisjunct(d1,cnfnew2,cnfnew1,result);
-            if (debug) System.out.println("INFO in CNF.unify(): results2 " + result2);
-            //System.out.println("INFO in CNF.unify(): cnfnew1 " + cnfnew1);
-            //System.out.println("INFO in CNF.unify(): cnfnew2 " + cnfnew2);
+            if (debug) System.out.println("INFO in CNF.unify(): result2 " + result2);
+            if (debug) System.out.println("INFO in CNF.unify(): cnfnew1 " + cnfnew1);
+            if (debug) System.out.println("INFO in CNF.unify(): cnfnew2 " + cnfnew2);
             if (negatedClause) {
                 if (result2 != null) { // successful binding is a failure for a negated clause
-                    //System.out.println("INFO in CNF.unify(): found a binding for a negated clause " + cnfnew1 +  " with " + cnfnew2);
+                    if (debug) System.out.println("INFO in CNF.unify(): found a binding for a negated clause " + cnfnew1 +  " with " + cnfnew2);
                     cnf.clearBound();
                     return null;
                 }
-                //System.out.println("INFO in CNF.unify(): no binding for a negated clause " + d1 +  " with " + cnfnew2);
+                if (debug) System.out.println("INFO in CNF.unify(): no binding for a negated clause " + d1 +  " with " + cnfnew2);
                 cnf.clearBound(); 
             }
             else {
@@ -562,11 +584,11 @@ public class CNF implements Comparable {
                 else {
                     cnf.copyBoundFlags(cnfnew2);
                     cnfnew1 = cnfnew1.applyBindings(result2);
-                    //System.out.println("INFO in CNF.unify(): cnf 1 " + cnfnew1);
-                    //System.out.println("INFO in CNF.unify(): cnf 2 " + cnfnew2);
+                    if (debug) System.out.println("INFO in CNF.unify(): cnf 1 " + cnfnew1);
+                    if (debug) System.out.println("INFO in CNF.unify(): cnf 2 " + cnfnew2);
                     cnfnew2 = cnfnew2.applyBindings(result2);
                     result.putAll(result2);
-                    //System.out.println("INFO in CNF.unify(): bindings " + result);
+                    if (debug) System.out.println("INFO in CNF.unify(): bindings " + result);
                 }
             }
         }
@@ -629,7 +651,28 @@ public class CNF implements Comparable {
             al.add(cnf2);
         System.out.println("INFO in CNF.testEquality(): should be 1: " + al.size());
     }
-    
+
+    /** *************************************************************
+     * A test method
+     */
+    public static void testUnify2() {
+
+        System.out.println("INFO in CNF.testUnify2(): -------------------------------------");
+        String rule = "nmod:to(be_born*,?H2), sumo(Human,?H), sumo(Human,?H2), nsubjpass(be_born*,?H) ==> (parent(?H,?H2)).";
+        Rule r = new Rule();
+        r = Rule.parseString(rule);
+        System.out.println(r.toString());
+        CNF cnf1 = Clausifier.clausify(r.lhs);
+        Lexer lex = new Lexer("nsubjpass(be_born-2,John-1), attribute(John-1,Male),   " +
+                "sumo(Human,John-1), sumo(Human,Mary-5), nmod:to(be_born-2,Mary-5), case(Mary-5,to-4), root(ROOT-0,be_born-2), sumo(Birth,be_born-2).");
+        CNF cnf = CNF.parseSimple(lex);
+        System.out.println("INFO in CNF.testUnify(): cnf " + cnf);
+        System.out.println("INFO in CNF.testUnify(): cnf1 " + cnf1);
+        System.out.println("INFO in CNF.testUnify(): bindings: " + cnf1.unify(cnf));
+        System.out.println("INFO in CNF.testUnify(): cnf " + cnf);
+        System.out.println("INFO in CNF.testUnify(): expecting: parent(?John-1,Mary-5).");
+    }
+
     /** *************************************************************
      * A test method
      */
@@ -707,7 +750,7 @@ public class CNF implements Comparable {
         CNF cnf2 = CNF.parseSimple(lex2);
         System.out.println("INFO in CNF.testUnify(): cnf " + cnf2);
         System.out.println("INFO in CNF.testUnify(): cnf1 " + cnf12);
-        System.out.println("INFO in CNF.testUnify(): bindings (should be null): " + cnf12.unify(cnf2));
+        System.out.println("INFO in CNF.testUnify(): bindings (should be ?V=moves-2): " + cnf12.unify(cnf2));
 
         System.out.println("INFO in CNF.testUnify(): -------------------------------------");
         String rule4 = "StartTime(?V,?T), day(?T,?D), month(?T,?M), year(?T,?Y).";
@@ -731,7 +774,7 @@ public class CNF implements Comparable {
         //testEquality();
         //testContains();
         //testMerge();
-        //testUnify();
-        testParseSimple();
+        testUnify2();
+        //testParseSimple();
     }
 }
