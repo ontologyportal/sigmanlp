@@ -197,7 +197,7 @@ public class Searcher {
         TreeSet<AVPair> countIndex = new TreeSet<AVPair>();
         Statement stmt = null;
         try {
-            System.out.println("Searcher.makeCountIndex(): " + conn.getCatalog());
+            if (debug) System.out.println("Searcher.makeCountIndex(): " + conn.getCatalog());
             for (String s : tokens) {
                 String query = "select * from counts where token='" + s + "';";
                 if (debug) System.out.println("Searcher.fetchFromIndex(): query: " + query);
@@ -471,8 +471,8 @@ public class Searcher {
         Statement stmt = null;
         HashSet<String> result = new HashSet<>();
         try {
-            showTable(conn, "index");
-            showTable(conn, "counts");
+            if (debug) showTable(conn, "index");
+            if (debug) showTable(conn, "counts");
             result = fetchIndexes(conn,sentTokens, depTokens);
             if (debug) System.out.println("search(): indexes size: " + result.size());
             ArrayList<String> tempSentences = new ArrayList<>();
