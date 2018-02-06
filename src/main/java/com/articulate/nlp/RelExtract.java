@@ -602,6 +602,8 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * if there is a null in one of the parameters of the returned
+     * relation statements,, prefix the result with a ';' character
      */
     public static String addRHS(String rel, CNF lhs) {
 
@@ -643,7 +645,7 @@ public class RelExtract {
                 resultStr.append(" ");
             resultStr.append(stmt[i]);
             if (stmt[i] == null)
-                return null;
+                resultStr.insert(0,"; ");
         }
         resultStr.append(")}");
         return resultStr.toString();
@@ -664,7 +666,9 @@ public class RelExtract {
             return;
         CNF lhs = temp.get(rel);
         String rhs = addRHS(rel,lhs);
-        if (rhs != null)
+        if (rhs.startsWith("; "))
+            System.out.println("; " + printCNFVariables(lhs) + " ==> " + rhs.substring(2) + ".\n");
+        else
             System.out.println(printCNFVariables(lhs) + " ==> " + rhs + ".\n");
     }
 
@@ -677,7 +681,7 @@ public class RelExtract {
 
         long startTime = System.currentTimeMillis();
         int formCount = 0;
-        System.out.println("; RelExtract.generateRelationPatterns()");
+        //System.out.println("; RelExtract.generateRelationPatterns()");
         KBmanager.getMgr().initializeOnce();
         Interpreter interp = new Interpreter();
         try {
@@ -695,7 +699,7 @@ public class RelExtract {
             formCount++;
             long currentTime = System.currentTimeMillis();
             long avg = (currentTime - startTime) / formCount;
-            if (debug) System.out.println("; RelExtract.generateRelationPatterns(): avg time per form (seconds): " + (avg / 1000));
+            //if (debug) System.out.println("; RelExtract.generateRelationPatterns(): avg time per form (seconds): " + (avg / 1000));
         }
     }
 
