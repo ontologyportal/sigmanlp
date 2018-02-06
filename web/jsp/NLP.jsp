@@ -74,6 +74,14 @@ Authors:
 
     String pageName = "NLP";
     pageString = "NLP Interface";
+
+    System.out.println("NLP.jsp: Running language to logic");
+    List<String> forms = interp.interpret(theText);
+    ArrayList<CNF> inputs = new ArrayList<>();
+    System.out.println("NLP.jsp: Running relation extraction");
+    inputs.add(interpRel.interpretGenCNF(theText));
+    System.out.println("NLP.jsp: inputs: " + inputs);
+    ArrayList<String> kifClauses = interpRel.interpretCNF(inputs);
 %>
 <%@include file="CommonHeader.jsp" %>
 
@@ -96,7 +104,7 @@ Authors:
         p.pipeline.annotate(wholeDocument);
         List<CoreMap> timexAnnsAll = wholeDocument.get(TimeAnnotations.TimexAnnotations.class);
         if (timexAnnsAll != null && timexAnnsAll.size() > 0) {
-            out.println("<h2>Time</h2>\n");
+            out.println("<h2>Time</h2>\n"); // -----------------------------------------------------------
             for (CoreMap token : timexAnnsAll) {
                 Timex time = token.get(TimeAnnotations.TimexAnnotation.class);
                 out.println("time token and value: <pre>" + token + ":" + time.value() + "</pre>\n");
@@ -107,7 +115,7 @@ Authors:
         }
 
         out.println("<P>\n");
-        out.println("<h2>Tokens</h2>\n");
+        out.println("<h2>Tokens</h2>\n"); // -------------------------------------------------------------
         List<String> senses = new ArrayList<String>();
         List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
         for (CoreMap sentence : sentences) {
@@ -159,10 +167,10 @@ Authors:
         }
         out.println("</table><P>");
 
-        out.println("<h2>Visualization</h2>\n");
+        out.println("<h2>Visualization</h2>\n"); // ------------------------------------------------------
         out.println("<div id=\"bratVizDiv\" style=\"\"></div><P>\n");
         
-        out.println("<h2>Dependencies</h2>\n");
+        out.println("<h2>Dependencies</h2>\n"); // -------------------------------------------------------
         out.println("<table><tr><th>original</th><th>augmented</th><th>substitutors</th></tr><tr><td>\n");
         for (CoreMap sentence : sentences) {
             out.println("<pre>");
@@ -185,17 +193,13 @@ Authors:
         out.println("</tr></table>\n");
         out.println("<P>");
 
-        out.println("<h2>Relations</h2>\n");
-        ArrayList<CNF> inputs = new ArrayList<>();
-        System.out.println("NLP.jsp: Running relation extraction");
-        inputs.add(interpRel.interpretGenCNF(theText));
-        ArrayList<String> kifClauses = interpRel.interpretCNF(inputs);
+        out.println("<h2>Relations</h2>\n"); // ----------------------------------------------------------
         out.println("<pre>");
         out.println(kifClauses);
         out.println("</pre>");
         out.println("<P>");
 
-        out.println("<h2>Interpretation</h2>\n");
+        out.println("<h2>Interpretation</h2>\n"); // -----------------------------------------------------
         %>
             <form name="interp" id="interp" action="NLP.jsp" method="GET">
                 <input type="hidden" name="textContent" size="60" value="<%=theText %>">
@@ -203,8 +207,6 @@ Authors:
                 <input type="submit" name="reload" value="reload">
             </form><p>
         <%
-        System.out.println("NLP.jsp: Running language to logic");
-        List<String> forms = interp.interpret(theText);
         if (forms != null) {
             for (String s : forms) {
                 Formula theForm = new Formula(s);
@@ -212,7 +214,7 @@ Authors:
             }
         }
 
-        out.println("<h2>Sentiment</h2>\n");
+        out.println("<h2>Sentiment</h2>\n"); // ----------------------------------------------------------
         out.println("<table>");
         for (CoreMap sentence : sentences) {
             String sentiment = sentence.get(SentimentCoreAnnotations.SentimentClass.class);
