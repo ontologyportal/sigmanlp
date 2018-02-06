@@ -35,7 +35,7 @@ import java.util.*;
 public class CNF implements Comparable {
 
     public ArrayList<Clause> clauses = new ArrayList<Clause>();
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static int varnum = 0; // to ensure unique variable renaming
 
     /** ***************************************************************
