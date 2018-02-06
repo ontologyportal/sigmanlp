@@ -82,6 +82,7 @@ public class Procedures {
     }
 
     /** ***************************************************************
+     * if subclass or equal return true
      */
     public static String isSubclass(Literal c) {
 
@@ -89,6 +90,8 @@ public class Procedures {
         if (debug) System.out.println("INFO in Procedures.isSubclass(): " + c);
         if (debug) System.out.println("INFO in Procedures.isSubclass(): " +
                 kb.isSubclass(c.arg1, c.arg2));
+        if (c.arg1.equals(c.arg2))
+            return "true";
         if (kb.isSubclass(c.arg1, c.arg2))
             return "true";
         else
