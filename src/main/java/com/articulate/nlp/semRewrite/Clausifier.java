@@ -32,6 +32,7 @@ MA  02111-1307 USA
 public class Clausifier {
 
     public static boolean changed = false;
+    public static boolean debug = false;
     
     /** ***************************************************************
      * -(p | q) becomes -p , -q
@@ -230,7 +231,7 @@ public class Clausifier {
      */
     public static CNF clausify(LHS lhs) {
 
-        System.out.println("INFO in Clausifier.clausify(): (lhs) " + lhs);
+        if (debug) System.out.println("INFO in Clausifier.clausify(): (lhs) " + lhs);
         LHS result = moveNegationsIn(lhs);
         result = distributeAndOverOr(result);
         CNF cnf = separateConjunctions(result);
@@ -242,7 +243,7 @@ public class Clausifier {
      */
     public static CNF sort(CNF cnf) {
 
-        System.out.println("Clausifier.sort(): input: " + cnf);
+        if (debug) System.out.println("Clausifier.sort(): input: " + cnf);
         CNF cnfnew = new CNF();
         CNF procs = new CNF();
         for (Clause c : cnf.clauses) {
@@ -256,7 +257,7 @@ public class Clausifier {
             }
         }
         cnfnew.appendAll(procs);
-        System.out.println("Clausifier.sort(): output: " + cnfnew);
+        if (debug) System.out.println("Clausifier.sort(): output: " + cnfnew);
         return cnfnew;
     }
 
@@ -269,7 +270,7 @@ public class Clausifier {
         RuleSet newrs = new RuleSet();
         for (int i = 0; i < rs.rules.size(); i++) {
             Rule r = rs.rules.get(i);
-            System.out.println("INFO in Clausifier.clausify(): " + r.lhs);
+            if (debug) System.out.println("INFO in Clausifier.clausify(): " + r.lhs);
             LHS result = moveNegationsIn(r.lhs);
             result = distributeAndOverOr(result);
             r.cnf = separateConjunctions(result);
