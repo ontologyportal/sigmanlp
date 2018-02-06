@@ -33,6 +33,8 @@ import java.text.ParseException;
  */
 public class Rule {
 
+    public static boolean debug = false;
+
     public CNF cnf; // this is where the left hand side actually is, after clausification
     public enum RuleOp {IMP, OPT, CLAUSE}
     public LHS lhs;
@@ -140,7 +142,7 @@ public class Rule {
             System.out.println("Error in RULE.parse(): " + message);
             ex.printStackTrace();
         }
-        System.out.println("Info in Rule.parse(): returning: " + r);
+        if (debug) System.out.println("Info in Rule.parse(): returning: " + r);
         return r;
     }
 
