@@ -1440,11 +1440,13 @@ public class Interpreter {
         String rule = "";
         String fact = "";
         Clause.debug = true;
+        Interpreter.debug = true;
+        CNF.debug = true;
         Scanner scanner = new Scanner(System.in);
         do {
             System.out.print("Enter rule: ");
             rule = scanner.nextLine().trim();
-            if (!StringUtil.emptyString(rule)) {
+            if (!StringUtil.emptyString(rule) && !rule.equals("exit") && !rule.equals("quit")) {
                 System.out.print("Enter fact: ");
                 fact = scanner.nextLine().trim();
                 if (!StringUtil.emptyString(fact)) {
