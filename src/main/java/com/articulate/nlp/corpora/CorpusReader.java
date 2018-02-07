@@ -93,7 +93,7 @@ public class CorpusReader {
     }
 
     /***************************************************************
-     * @return a list of lines of text with markup removed
+     * store in docs a list of lines of text with markup removed
      */
     private void processFile(ArrayList<String> doc, String filename) {
 
