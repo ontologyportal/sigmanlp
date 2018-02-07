@@ -933,6 +933,7 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * print the string generated in toCoreLabelString()
      */
     public static void printCoreLabel(CoreLabel cl) {
 
@@ -969,6 +970,8 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * test printing of complete information in CoreLabels using
+     * printCoreLabel()
      */
     public static void testCoreLabel() {
 
@@ -996,6 +999,7 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * test if stop words are correctly removed from CNF dependency forms
      */
     public static void testStopWordsOnly() {
 
