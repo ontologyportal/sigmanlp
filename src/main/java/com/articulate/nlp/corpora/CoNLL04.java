@@ -1,9 +1,12 @@
 package com.articulate.nlp.corpora;
 
+import com.articulate.nlp.RelExtract;
 import com.articulate.sigma.StringUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+
+import static com.articulate.nlp.RelExtract.sentenceExtract;
 
 /**
  * Created by apease on 2/6/18.
@@ -92,7 +95,7 @@ public class CoNLL04 {
      */
     public void parse() {
 
-        ArrayList<String> lines = CorpusReader.readFile(System.getenv("CORPORA") + File.separator + "conll04.corp");
+        ArrayList<String> lines = CorpusReader.readFile(System.getenv("CORPORA") + File.separator + "conll04-little.corp");
         boolean inSent = true; // in the sentence or in the relation list
         Sent sent = new Sent();
         StringBuffer sentAccum = new StringBuffer();
@@ -152,10 +155,36 @@ public class CoNLL04 {
 
     /***************************************************************
      */
+    public String relsToString(ArrayList<Relation> rels) {
+
+        StringBuffer sb = new StringBuffer();
+        for (Relation r : rels) {
+            sb.append(r.toString());
+        }
+        return sb.toString();
+    }
+
+    /***************************************************************
+     */
+    public void extractAll() {
+
+        for (Sent s : sentences) {
+            if (s.relations.size() > 0) {
+                System.out.println("\n" + s.sentString);
+                System.out.println("CoNLL: relations: " + RelExtract.sentenceExtract(s.sentString));
+                System.out.println("CoNLL: expected relations: " + relsToString(s.relations));
+            }
+        }
+    }
+
+    /***************************************************************
+     */
     public static void main(String[] args) {
 
+        RelExtract.initOnce();
         CoNLL04 coNLL = new CoNLL04();
         coNLL.parse();
-        System.out.println(coNLL.toString());
+        //System.out.println(coNLL.toString());
+        coNLL.extractAll();
     }
 }
