@@ -38,6 +38,8 @@ public class DateAndNumbersGeneration {
 	static enum DateComponent {
 		DAY, MONTH, YEAR
 	}
+
+	public static boolean debug = false;
 	
 	static final Pattern HOUR_MINUTE_PATTERN = Pattern.compile("^T([0-9]{2}):([0-9]{2})$");
 	static final Pattern HOUR_MINUTE_SECOND_PATTERN = Pattern.compile("^T([0-9]{2}):([0-9]{2}):([0-9]{2})$");
@@ -99,9 +101,9 @@ public class DateAndNumbersGeneration {
 	 */
 	private void measureFn(Tokens token, int count, Utilities utilities) {
 
-        if (utilities != null)
+        if (utilities != null && debug)
             System.out.println("DateAndNumbersGeneration.measureFn(): utilities: " + utilities);
-        if (token != null)
+        if (token != null && debug)
             System.out.println("DateAndNumbersGeneration.measureFn(): token: " + token);
 		IndexedWord tokenNode = utilities.StanfordDependencies.getNodeByIndex(token.getId());
 		IndexedWord unitOfMeasurementNode = utilities.StanfordDependencies.getParent(tokenNode);
@@ -139,7 +141,7 @@ public class DateAndNumbersGeneration {
 		boolean changed = true;
 		while (measuredEntity != null && !flag && changed) {
 			measuredEntityStr = measuredEntity.value() + "-" + measuredEntity.index();
-			System.out.println("DateAndNumbersGeneration.measureFn(): measuredEntityStr: " + measuredEntityStr);
+			if (debug) System.out.println("DateAndNumbersGeneration.measureFn(): measuredEntityStr: " + measuredEntityStr);
 			if (!visitedNodes.contains(measuredEntityStr)) {
 				visitedNodes.add(measuredEntityStr);
 				changed = true;
@@ -175,9 +177,9 @@ public class DateAndNumbersGeneration {
 						if (posTagRemoverMatcher.find()) {
 							childPosTagRemover = posTagRemoverMatcher.group(1); 
 						}
-						System.out.println("DateAndNumbersGeneration.measureFn(): visited: " + visitedNodes);
-                        System.out.println("DateAndNumbersGeneration.measureFn(): noun tags: " + Utilities.nounTags);
-                        System.out.println("DateAndNumbersGeneration.measureFn(): childPosTagRemover: " + childPosTagRemover);
+						if (debug) System.out.println("DateAndNumbersGeneration.measureFn(): visited: " + visitedNodes);
+						if (debug) System.out.println("DateAndNumbersGeneration.measureFn(): noun tags: " + Utilities.nounTags);
+						if (debug) System.out.println("DateAndNumbersGeneration.measureFn(): childPosTagRemover: " + childPosTagRemover);
 						if (childPosTagRemover != null && !(visitedNodes.contains(child.toString() + "-" + child.index())) &&
 								(Utilities.nounTags.contains(childPosTagRemover.replaceFirst("\\/", "")))){
 							if ((utilities.StanfordDependencies.reln(measuredEntity, child) != null) &&
