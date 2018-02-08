@@ -53,7 +53,7 @@ public class WSDAnnotator implements Annotator {
     }
 
     public static boolean debug = false;
-    static final Annotator.Requirement WSD_REQUIREMENT = new Annotator.Requirement("wsd");
+    //static final Annotator.Requirement WSD_REQUIREMENT = new Annotator.Requirement("wsd");
 
     /****************************************************************
      */
@@ -108,22 +108,19 @@ public class WSDAnnotator implements Annotator {
     /****************************************************************
      */
     @Override
-    public Set<Annotator.Requirement> requires() {
+    public Set<Class<? extends CoreAnnotation>> requires() {
 
-        ArrayList<Annotator.Requirement> al = new ArrayList<>();
-        al.add(TOKENIZE_REQUIREMENT);
-        al.add(SSPLIT_REQUIREMENT);
-        al.add(LEMMA_REQUIREMENT);
-        //al.add(NER_REQUIREMENT);
-        ArraySet<Annotator.Requirement> result = new ArraySet<>();
-        result.addAll(al);
-        return result;
+        return Collections.unmodifiableSet(new ArraySet<>(Arrays.asList(
+                CoreAnnotations.TokensAnnotation.class,
+                CoreAnnotations.SentencesAnnotation.class,
+                CoreAnnotations.LemmaAnnotation.class)));
     }
 
     /****************************************************************
      */
     @Override
-    public Set<Annotator.Requirement> requirementsSatisfied() {
-        return Collections.singleton(WSD_REQUIREMENT);
+    public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
+
+        return Collections.singleton(WSDAnnotator.WSDAnnotation.class);
     }
 }

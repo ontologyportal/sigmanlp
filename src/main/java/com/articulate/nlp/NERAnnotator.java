@@ -41,7 +41,7 @@ public class NERAnnotator implements Annotator {
     }
 
     //spans are set to token numbers not array position index
-    public static class NERSpanAnnotation  extends SpanAnnotation {
+    public static class NERSpanAnnotation extends SpanAnnotation {
         public Class<IntPair> getType() {
             return IntPair.class;
         }
@@ -53,7 +53,7 @@ public class NERAnnotator implements Annotator {
         }
     }
 
-    static final Requirement NERSUMO_REQUIREMENT = new Requirement("nersumo");
+    // static final Requirement NERSUMO_REQUIREMENT = new Requirement("nersumo");
     public static boolean debug = false;
 
     /****************************************************************
@@ -180,7 +180,7 @@ public class NERAnnotator implements Annotator {
     }
 
     /****************************************************************
-     */
+
     @Override
     public Set<Requirement> requires() {
 
@@ -193,13 +193,23 @@ public class NERAnnotator implements Annotator {
         result.addAll(al);
         return result;
     }
+*/
+
+    @Override
+    public Set<Class<? extends CoreAnnotation>> requires() {
+
+        return Collections.unmodifiableSet(new ArraySet<>(Arrays.asList(
+                CoreAnnotations.TokensAnnotation.class,
+                CoreAnnotations.SentencesAnnotation.class,
+                CoreAnnotations.LemmaAnnotation.class)));
+    }
 
     /****************************************************************
      */
     @Override
-    public Set<Requirement> requirementsSatisfied() {
+    public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
 
-        return Collections.singleton(NERSUMO_REQUIREMENT);
+        return Collections.singleton(NERAnnotator.NERAnnotation.class);
     }
 
     /****************************************************************

@@ -50,7 +50,7 @@ public class WNMultiWordAnnotator implements Annotator {
         }
     }
 
-    static final Annotator.Requirement WNMW_REQUIREMENT = new Annotator.Requirement("wnmw");
+    //static final Annotator.Requirement WNMW_REQUIREMENT = new Annotator.Requirement("wnmw");
     public static boolean debug = false;
 
     /****************************************************************
@@ -203,24 +203,20 @@ public class WNMultiWordAnnotator implements Annotator {
     /****************************************************************
      */
     @Override
-    public Set<Annotator.Requirement> requires() {
+    public Set<Class<? extends CoreAnnotation>> requires() {
 
-        ArrayList<Annotator.Requirement> al = new ArrayList<>();
-        al.add(TOKENIZE_REQUIREMENT);
-        al.add(SSPLIT_REQUIREMENT);
-        al.add(LEMMA_REQUIREMENT);
-        //al.add(NER_REQUIREMENT);
-        ArraySet<Annotator.Requirement> result = new ArraySet<>();
-        result.addAll(al);
-        return result;
+        return Collections.unmodifiableSet(new ArraySet<>(Arrays.asList(
+                CoreAnnotations.TokensAnnotation.class,
+                CoreAnnotations.SentencesAnnotation.class,
+                CoreAnnotations.LemmaAnnotation.class)));
     }
 
     /****************************************************************
      */
     @Override
-    public Set<Annotator.Requirement> requirementsSatisfied() {
+    public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
 
-        return Collections.singleton(WNMW_REQUIREMENT);
+        return Collections.singleton(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
     }
 
     /****************************************************************

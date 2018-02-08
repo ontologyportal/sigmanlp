@@ -28,7 +28,7 @@ public class TimeSUMOAnnotator implements Annotator {
 
     public static boolean debug = false;
 
-    static final Requirement TSUMO_REQUIREMENT = new Requirement("tsumo");
+    //static final Requirement TSUMO_REQUIREMENT = new Requirement("tsumo");
 
     /****************************************************************
      */
@@ -78,25 +78,21 @@ public class TimeSUMOAnnotator implements Annotator {
     /****************************************************************
      */
     @Override
-    public Set<Requirement> requires() {
+    public Set<Class<? extends CoreAnnotation>>  requires() {
 
-        ArrayList<Requirement> al = new ArrayList<>();
-        al.add(TOKENIZE_REQUIREMENT);
-        al.add(SSPLIT_REQUIREMENT);
-        al.add(LEMMA_REQUIREMENT);
-        al.add(NER_REQUIREMENT);
-        //al.add(SUTIME_REQUIREMENT);
-        ArraySet<Requirement> result = new ArraySet<>();
-        result.addAll(al);
-        return result;
+        return Collections.unmodifiableSet(new ArraySet<>(Arrays.asList(
+                CoreAnnotations.TokensAnnotation.class,
+                CoreAnnotations.SentencesAnnotation.class,
+                CoreAnnotations.LemmaAnnotation.class,
+                NERAnnotator.NERAnnotation.class)));
     }
 
     /****************************************************************
      */
     @Override
-    public Set<Requirement> requirementsSatisfied() {
+    public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
 
-        return Collections.singleton(TSUMO_REQUIREMENT);
+        return Collections.singleton(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
     }
 }
 
