@@ -91,6 +91,8 @@ public class Literal {
     }
 
     /****************************************************************
+     * remove commas from numbers and apostrophes in contractions and
+     * possessives before parsing
      */
     public Literal(String s) {
 
@@ -102,6 +104,7 @@ public class Literal {
         if (s.contains(",,"))
             s = s.replace(",,",",COMMA");
         s = removeNumberWithComma(s);
+        s = removeApostrophe(s);
         //System.out.println("Literal() before parse " + s);
         try {
             Lexer lex = new Lexer(s + ".");
@@ -223,8 +226,8 @@ public class Literal {
      */
     public static String removeNumberWithComma(String s) {
 
-        //System.out.println("removeNumberWithComma() before processing " + s);
-        Pattern p = Pattern.compile("(\\d,\\d\\d\\d[^\\d])");
+        if (debug) System.out.println("removeNumberWithComma() before processing " + s);
+        Pattern p = Pattern.compile("[\\(\\,_](\\d{1,3},\\d\\d\\d[^\\d])");
         Matcher m = p.matcher(s);
         while (m.find()) {
             String res = m.group();
@@ -233,7 +236,26 @@ public class Literal {
             //System.out.println("removeNumberWithComma(): " + s);
             m = p.matcher(s);
         }
-        //System.out.println("removeNumberWithComma() after processing " + s);
+        if (debug) System.out.println("removeNumberWithComma() after processing " + s);
+        return s;
+    }
+
+    /****************************************************************
+     * @return the input string if no apostrophe found
+     */
+    public static String removeApostrophe(String s) {
+
+        if (debug) System.out.println("removeApostrophe() before processing " + s);
+        Pattern p = Pattern.compile("[\\(\\,]'[^\\)\\,]+");
+        Matcher m = p.matcher(s);
+        while (m.find()) {
+            String res = m.group();
+            String newres = res.replaceAll("'","");
+            s = s.replace(res,newres);
+            //System.out.println("removeNumberWithComma(): " + s);
+            m = p.matcher(s);
+        }
+        if (debug) System.out.println("removeApostrophe() after processing " + s);
         return s;
     }
 
@@ -620,16 +642,17 @@ public class Literal {
      */
     public static Literal parse(Lexer lex, int startLine) {
 
+        if (debug) System.out.println("INFO in Literal.parse(0): " + lex.line);
         String errStart = "Parsing error in " + RuleSet.filename;
         String errStr;
         Literal cl = new Literal();
         try {
-            //System.out.println("INFO in Literal.parse(1): " + lex.look());
+            if (debug) System.out.println("INFO in Literal.parse(1): " + lex.look());
             if (lex.testTok(Lexer.Plus)) {
                 cl.preserve = true;
                 lex.next();
             }
-            //System.out.println("INFO in Literal.parse(2): " + lex.look());
+            if (debug) System.out.println("INFO in Literal.parse(2): " + lex.look());
             cl.pred = lex.next();
             /* if (!acceptedPredicate(cl.pred)) {
                 System.out.println("Error in Literal.parse(): unknown pred '" + cl.pred + "' in: " + cl);
@@ -637,23 +660,23 @@ public class Literal {
                 System.out.println(errStr);
                 //throw new ParseException(errStr, startLine);
             } */
-            //System.out.println("INFO in Literal.parse(3): " + lex.look());
+            if (debug) System.out.println("INFO in Literal.parse(3): " + lex.look());
             if (!lex.testTok(Lexer.OpenPar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
             }
             lex.next();
-            //System.out.println("INFO in Literal.parse(4): " + lex.look());
+            if (debug) System.out.println("INFO in Literal.parse(4): " + lex.look());
             cl.arg1 = lex.next();
-            //System.out.println("INFO in Literal.parse(5): " + lex.look());
+            if (debug) System.out.println("INFO in Literal.parse(5): " + lex.look());
             if (!lex.testTok(Lexer.Comma)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
             }
             lex.next();
-            //System.out.println("INFO in Literal.parse(6): " + lex.look());
+            if (debug) System.out.println("INFO in Literal.parse(6): " + lex.look());
             cl.arg2 = lex.next();
-            //System.out.println("INFO in Literal.parse(7): " + lex.look());
+            if (debug) System.out.println("INFO in Literal.parse(7): " + lex.look());
             if (!lex.testTok(Lexer.ClosePar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
@@ -762,7 +785,8 @@ public class Literal {
      * A test method for parsing a Literal
      */
     public static void testParse() {
-        
+
+        debug = true;
         try {
             String input = "+det(bank-2, The-1).";
             Lexer lex = new Lexer(input);
@@ -782,6 +806,12 @@ public class Literal {
             input = "year(time-1,1994)";
             System.out.println("Literal.testParse(): input: " + input);
             System.out.println("Literal.testParse(): parse: " + new Literal(input));
+            input = "nummod(Palestinians-22,300-21)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): parse: " + new Literal(input));
+            input = "sumo(Attribute,'s-33),";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): parse: " + new Literal(input));
         }
         catch (Exception ex) {
             String message = ex.getMessage();
@@ -789,7 +819,46 @@ public class Literal {
             ex.printStackTrace();
         }   
     }
-    
+
+    /** *************************************************************
+     * A test method for parsing a Literal
+     */
+    public static void testRemoveNumberWithComma() {
+
+        debug = true;
+        try {
+            String input = "+det(bank-2, The-1).";
+            Lexer lex = new Lexer(input);
+            lex.look();
+            input = "sumo(PsychologicalAttribute,loves-3)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
+            input = "valueToken(3000000,3000000-5)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
+            input = "conj:and(killed-2,killed-2)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
+            input = "conj:and($_200,000-2,$_60,000-5)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
+            input = "year(time-1,1994)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
+            input = "nummod(Palestinians-22,300-21)";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
+            input = "sumo(Attribute,'s-33),";
+            System.out.println("Literal.testParse(): input: " + input);
+            System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
+        }
+        catch (Exception ex) {
+            String message = ex.getMessage();
+            System.out.println("Error in Literal.parse() " + message);
+            ex.printStackTrace();
+        }
+    }
+
     /** *************************************************************
      * A test method
      */
@@ -797,6 +866,7 @@ public class Literal {
 
         //testGetArg();
         testParse();
+        //testRemoveNumberWithComma();
         //testUnify();
         //testRegexUnify();
     }
