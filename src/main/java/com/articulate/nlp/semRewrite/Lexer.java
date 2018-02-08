@@ -189,7 +189,7 @@ public class Lexer {
 
         tokenDefs.put(SemiComment,  Pattern.compile(";[^\\n]*"));
         tokenDefs.put(Directive,    Pattern.compile("#[^\\n]*"));
-        tokenDefs.put(QuotedString, Pattern.compile("'[^']*'"));
+        tokenDefs.put(QuotedString, Pattern.compile("\"[^\"]*\""));
         tokenDefs.put(Ident,        Pattern.compile("[^,()]+"));
         tokenDefs.put(Stop,         Pattern.compile("stop"));
         
@@ -721,12 +721,12 @@ public class Lexer {
         
         System.out.println("INFO in Lexer.main()");
         if (args != null && args.length > 1 && args[0].equals("-s")) {
-            Interpreter interp = new Interpreter();
+            //Interpreter interp = new Interpreter();
             Lexer lex = new Lexer(args[1]);
             try {
-                System.out.println(lex.lex());
+                System.out.println("main(): Lexer: " + lex.lex());
                 lex = new Lexer(args[1]);
-                System.out.println(lex.lexTypes());
+                System.out.println("main(): types: " + lex.lexTypes());
             }
             catch (Exception e) {
                 System.out.println(e.getMessage());
@@ -734,7 +734,7 @@ public class Lexer {
             }        
         }
         else if (args != null && args.length > 0 && args[0].equals("-h")) {
-            System.out.println("Semantic Rewriting with SUMO, Sigma and E");
+            System.out.println("Lexer");
             System.out.println("  options:");
             System.out.println("  -h - show this help screen");
             System.out.println("  -s - runs one conversion of one quoted input");
