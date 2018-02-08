@@ -48,6 +48,7 @@ public class RelExtract {
 
     public static boolean debug = false;
     private static int varnum = 0;
+    private static Interpreter interp = null;
 
     /** *************************************************************
      * Copy SUMO categories in the outputMap that are associated with
@@ -798,15 +799,22 @@ public class RelExtract {
 
     /** *************************************************************
      */
-    public static void sentenceExtract(String sent) {
+    public static void initOnce() {
 
         System.out.println("; RelExtract.sentenceExtract()");
         KBmanager.getMgr().initializeOnce();
-        Interpreter interp = new Interpreter();
+        interp = new Interpreter();
         String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
         interp.initOnce(filename);
+    }
+
+    /** *************************************************************
+     */
+    public static ArrayList<String> sentenceExtract(String sent) {
+
         ArrayList<CNF> inputs = Lists.newArrayList(interp.interpretGenCNF(sent));
         ArrayList<String> kifClauses = interp.interpretCNF(inputs);
+        return kifClauses;
     }
 
     /** *************************************************************
@@ -1044,6 +1052,7 @@ public class RelExtract {
         //test(resultSet);
 
         //testProcessAndSearch();
+        initOnce();
         if (args == null || args.length < 1 || args[0].equals("-h"))
             help();
         else if (args[0].equals("-p"))
