@@ -69,7 +69,7 @@ public class Interpreter {
 
     private static final Pattern ENDING_IN_PUNC_PATTERN = Pattern.compile(".*[.?!]$");
 
-    public static boolean debug = true;
+    public static boolean debug = false;
     public boolean initialized = false;
 
     public RuleSet rs = null;
@@ -848,7 +848,7 @@ public class Interpreter {
      */
     public List<String> scrubMeasures(List<String> depClauses, CoreMap lastSentence) {
 
-        List<String> results =  new ArrayList<>();
+        List<String> results = new ArrayList<>();
         List<CoreLabel> labels = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
         List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
         for (String literal : depClauses) {
@@ -925,6 +925,7 @@ public class Interpreter {
         sde.populateParserInfo(lastSentence,tokenList);
 
         List<String> timeResults = generator.generateSumoTerms(tokenList, sde);
+        if (debug) System.out.println("Interpreter.interpretGenCNF(): before scrub measures: " + results);
         results = scrubMeasures(results,lastSentence); // remove original date/time/measure literals
         results.addAll(timeResults);
 
@@ -2139,6 +2140,21 @@ public class Interpreter {
 
     /** ***************************************************************
      */
+    public static void testNumberSentence() throws IOException {
+
+        //String input = "He referred to beatings by soldiers of protesters in the occupied West Bank and Gaza Strip ," +
+        //        " where more than 300 Palestinians have been killed and thousands wounded .";
+        String input = "As one of her songs , ` ` A Moment Before the Storm , ' ' puts it : " +
+                "` ` My brother isn 't a cruel soldier , but he 's cold in his soul .";
+        Interpreter interp = new Interpreter();
+        debug = false;
+        KBmanager.getMgr().initializeOnce();
+        interp.initialize();
+        interp.interpretSingle(input);
+    }
+
+    /** ***************************************************************
+     */
     public static void main(String[] args) throws IOException {
 
         System.out.println("INFO in Interpreter.main()");
@@ -2181,13 +2197,14 @@ public class Interpreter {
         else {
             //testUnify();
             //testUnify8();
-            testInterpret3();
+            //testInterpret3();
             //testInterpretGenCNF();
             //testPreserve();
             //testQuestionPreprocess();
             //testPostProcess();
             //testTimeDateExtraction();
             //testAddQuantification();
+            testNumberSentence();
         }
     }
 }
