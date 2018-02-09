@@ -83,9 +83,10 @@ public class TimeSUMOAnnotator implements Annotator {
         return Collections.unmodifiableSet(new ArraySet<>(Arrays.asList(
                 CoreAnnotations.TokensAnnotation.class,
                 CoreAnnotations.SentencesAnnotation.class,
-                CoreAnnotations.LemmaAnnotation.class,
-                NERAnnotator.NERAnnotation.class)));
+                CoreAnnotations.LemmaAnnotation.class)));
     }
+
+    //     NERAnnotator.NERAnnotation.class
 
     /****************************************************************
      */
