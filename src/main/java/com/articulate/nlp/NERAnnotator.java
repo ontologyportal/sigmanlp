@@ -60,7 +60,7 @@ public class NERAnnotator implements Annotator {
      */
     public NERAnnotator(String name, Properties props) {
 
-        KBmanager.getMgr().initializeOnce();
+        //KBmanager.getMgr().initializeOnce();
     }
 
     /****************************************************************
