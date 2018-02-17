@@ -92,6 +92,9 @@ public class Interpreter {
     //show the proof in console
     public static boolean verboseProof = false;
     public static boolean removePolite = true;
+    public static boolean replaceInstances = true;
+    public static String sumoInstance = "sumoInstance";
+    //public static String sumoInstance = "sumoInstance";
 
     //timeout value
     public static int timeOut_value = 30;
@@ -237,6 +240,20 @@ public class Interpreter {
     }
 
     /** *************************************************************
+     * create class membership statements for instances so that
+     * isChildOf() literals paired with sumo() literals in rules
+     * can match instance inputs, which otherwise would have been
+     * replaced in replaceInstances()
+     */
+    private static List<String> createParents(Set<String> input, String term) {
+
+        List<String> result = new ArrayList<>();
+        for (String s : input)
+            result.add("sumo(" + s + "," + term + ")");
+        return result;
+    }
+
+    /** *************************************************************
      * replace all word tokens with SUMO instance terms.  For example
      *   prep_on(Adele-4,Spotify-6), sumoInstance(SpotifyApp,Spotify-6)
      * becomes
@@ -244,15 +261,18 @@ public class Interpreter {
      */
     public static List<String> replaceInstances(List<String> input) {
 
-        //System.out.println("INFO in Interpreter.replaceInstances(): input: " + input);
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        if (debug) System.out.println("INFO in Interpreter.replaceInstances(): input: " + input);
         Map<String,String> replacements = new HashMap<String,String>();
         Set<String> contents = new HashSet<String>();
         List<String> results = new ArrayList<String>();
         for (String s : input) {
-            if (s.startsWith("sumoInstance(")) {
+            if (s.startsWith(sumoInstance + "(")) {
                 String arg1 = getArg(s,1);
                 String arg2 = getArg(s,2);
                 replacements.put(arg2,arg1);
+                HashSet<String> parents = kb.immediateParents(arg1);
+                contents.addAll(createParents(parents,arg1));
             }
             else
                 contents.add(s);
@@ -265,7 +285,7 @@ public class Interpreter {
                 stringNew = stringNew.replace(key,replacements.get(key));
             results.add(stringNew);
         }
-        //System.out.println("INFO in Interpreter.replaceInstances(): results: " + results);
+        if (debug) System.out.println("INFO in Interpreter.replaceInstances(): results: " + results);
         return results;
     }
 
@@ -315,7 +335,7 @@ public class Interpreter {
                 String token = cl.get(WNMultiWordAnnotator.WNMWTokenAnnotation.class);
                 if (kb.isInstance(sumo)) {
                     if (debug) System.out.println("INFO in Interpreter.findWSD(): instance:  " + sumo);
-                    results.add("sumoInstance(" + sumo + "," + token + ")");
+                    results.add(sumoInstance + "(" + sumo + "," + token + ")");
                 }
                 else
                     results.add("sumo(" + sumo + "," + token + ")");
@@ -339,7 +359,7 @@ public class Interpreter {
                         !qwords.contains(cl.originalText().toLowerCase()) && !excluded(cl.originalText())) {
                     if (kb.isInstance(sumo)) {
                         if (debug) System.out.println("INFO in Interpreter.findWSD(): instance:  " + sumo);
-                        results.add("sumoInstance(" + sumo + "," + cl + ")");
+                        results.add(sumoInstance + "(" + sumo + "," + cl + ")");
                     }
                     else
                         results.add("sumo(" + sumo + "," + cl + ")");
@@ -350,112 +370,6 @@ public class Interpreter {
         //results.addAll(clauses);
         return Lists.newArrayList(results);
     }
-
-    /** *************************************************************
-     * @return a list of strings in the format sumo(Class,word-num) or
-     * sumoInstance(Inst,word-num) that specify the SUMO class of each
-     * word that isn't a stopword.
-
-    public static List<String> findWSD(List<String> clauses, Map<String, String> posMap, EntityTypeParser etp) {
-
-        boolean debug = true;
-        if (debug) System.out.println("INFO in Interpreter.findWSD(): " + clauses);
-        KB kb = KBmanager.getMgr().getKB("SUMO");
-        DependencyConverter.readFirstNames();
-
-        Set<String> results = Sets.newHashSet();
-
-        HashMap<String,String> purewords = extractWords(clauses);
-        ArrayList<String> pure = Lists.newArrayList(purewords.keySet());
-        if (debug) System.out.println("INFO in Interpreter.findWSD(): words: " + pure);
-        for (Map.Entry<String, String> pureWordEntry : purewords.entrySet()) {
-            String clauseKey = pureWordEntry.getKey();
-            String pureWord = pureWordEntry.getValue();
-            if (debug) System.out.println("INFO in Interpreter.findWSD(): pureWord: " + pureWord);
-            if (WordNet.wn.stopwords.contains(pureWord) ||
-                    qwords.contains(pureWord.toLowerCase()) ||
-                    excluded(pureWord))
-                continue;
-            if (etp.equalsToEntityType(clauseKey, PERSON)) {
-                String[] split = pureWord.split("_");
-                String humanReadable = String.join(" ", split);
-
-                results.add("names(" + clauseKey + ",\"" + humanReadable + "\")");
-
-                Set<String> wordNetResults = ImmutableSet.of();
-                if (split.length > 1) {
-                    wordNetResults = findWordNetResults(pureWord , clauseKey);
-                    results.addAll(wordNetResults);
-                }
-
-                if (wordNetResults.isEmpty()) {
-                    results.add("sumo(Human," + clauseKey + ")");
-                    String sexAttribute = getGenderAttribute(split[0]);
-                    if (!sexAttribute.isEmpty()) {
-                        results.add("attribute(" + clauseKey + "," + sexAttribute + ")");
-                    }
-                }
-            }
-            else {
-                if (debug) System.out.println("INFO in Interpreter.findWSD(): pureWord, pure: " +
-                        pureWord + ", " +  pure);
-                String pos = posMap.get(clauseKey);
-                String id = Strings.isNullOrEmpty(pos)
-                        ? WSD.findWordSenseInContext(pureWord, pure)
-                        : WSD.findWordSenseInContextWithPos(pureWord, pure, WordNetUtilities.sensePOS(pos),false);
-                if (debug) System.out.println("INFO in Interpreter.findWSD(): id: " + id);
-
-                if (!Strings.isNullOrEmpty(id)) {
-                    String sumo = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(id));
-                    //System.out.println("INFO in Interpreter.findWSD(): sumo: " + sumo);
-                    if (!Strings.isNullOrEmpty(sumo)) {
-                        if (sumo.contains(" ")) {  // TODO: if multiple mappings...
-                            sumo = sumo.substring(0,sumo.indexOf(" ")-1);
-                        }
-                        if (kb.isInstance(sumo)) {
-                            if (debug) System.out.println("INFO in Interpreter.findWSD(): instance:  " + sumo);
-                            results.add("sumoInstance(" + sumo + "," + clauseKey + ")");
-                        }
-                        else
-                            results.add("sumo(" + sumo + "," + clauseKey + ")");
-                    }
-                }
-                else {
-                    Set<String> wordNetResults = findWordNetResults(pureWord, clauseKey);
-                    if (debug) System.out.println("INFO in Interpreter.findWSD(): wordnet:  " + wordNetResults);
-                    if (!wordNetResults.isEmpty()) {
-                        results.addAll(wordNetResults);
-                    }
-                    else {
-                        Collection<EntityType> knownTypes = etp.getEntityTypes(clauseKey);
-                        if (!knownTypes.isEmpty()) {
-                            String[] split = pureWord.split("_");
-                            for (String word : split) {
-                                String synset = WSD.getBestDefaultSense(word.replace(" ", "_"));
-                                if (!Strings.isNullOrEmpty(synset)) {
-                                    String sumo = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(synset));
-                                    if (!Strings.isNullOrEmpty(sumo)) {
-                                        if (sumo.indexOf(" ") > -1) {  // TODO: if multiple mappings...
-                                            sumo = sumo.substring(0, sumo.indexOf(" ") - 1);
-                                        }
-                                        for (EntityType type : knownTypes) {
-                                            if (kb.isSubclass(sumo, type.getSumoClass())) {
-                                                results.add("sumo(" + sumo + "," + clauseKey + ")");
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (debug) System.out.println("INFO in Interpreter.findWSD(): " + results);
-        //results.addAll(clauses);
-
-        return Lists.newArrayList(results);
-    } */
 
     /** *************************************************************
      */
@@ -469,7 +383,7 @@ public class Interpreter {
             //System.out.println("INFO in Interpreter.findWordNetResults(): sumo: " + sumo);
             if (!Strings.isNullOrEmpty(sumo)) {
                 if (isInstance(sumo)) {
-                    results.add("sumoInstance(" + sumo + "," + valueToAdd + ")");
+                    results.add(sumoInstance + "(" + sumo + "," + valueToAdd + ")");
                 }
                 else {
                     if (sumo.indexOf(" ") > -1) {  // TODO: if multiple mappings...
@@ -913,7 +827,8 @@ public class Interpreter {
         //System.out.println("Interpreter.interpretGenCNF(): before consolidate: " + results);
         results = consolidateSpans(lastSentenceTokens,results);
         //System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
-        results = replaceInstances(results);
+        if (replaceInstances)
+            results = replaceInstances(results);
         if (debug) System.out.println("Interpreter.interpretGenCNF(): after instance replacement: " + results);
 
         List<String> posInformation = SentenceUtil.findPOSInformation(lastSentenceTokens, dependenciesList);
@@ -1257,14 +1172,14 @@ public class Interpreter {
                 for (int i = 0; i < rs.rules.size(); i++) {
                     Rule r = rs.rules.get(i).deepCopy();
                     //System.out.println("INFO in Interpreter.interpretCNF(): new input 0.5: " + newInput);
-                    //if (debug) System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
+                    if (debug) System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                     HashMap<String,String> bindings = r.cnf.unify(newInput);
                     if (bindings == null) {
                         newInput.clearBound();
                     }
                     else {
                         bindingFound = true;
-                        //System.out.println("INFO in Interpreter.interpretCNF(): new input 1: " + newInput);
+                        System.out.println("INFO in Interpreter.interpretCNF(): new input 1: " + newInput);
                         if (debug) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
                         if (showr)
                             System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
@@ -1935,6 +1850,7 @@ public class Interpreter {
             KBmanager.getMgr().initializeOnce();
             Interpreter interp = new Interpreter();
             interp.initialize();
+            debug = true;
             String sent = "Juan Lopez loves New York City.";
             interp.interpretSingle(sent);
         }
@@ -2155,6 +2071,32 @@ public class Interpreter {
 
     /** ***************************************************************
      */
+    public static void showHelp() {
+
+        System.out.println("Semantic Rewriting with SUMO, Sigma and E");
+        System.out.println("  options:");
+        System.out.println("  -h - show this help screen");
+        System.out.println("  -s - runs one conversion of one sentence");
+        System.out.println("  -i - runs a loop of conversions of one sentence at a time,");
+        System.out.println("  -t - test unification of a rule with a set of facts,");
+        System.out.println("       prompting the user for more.  Empty line to exit.");
+        System.out.println("       'load filename' will load a specified rewriting rule set.");
+        System.out.println("       'ir/autoir/noir' will determine whether TF/IDF is run always, on inference failure or never.");
+        System.out.println("       'reload' (no quotes) will reload the rewriting rule set.");
+        System.out.println("       'inference/noinference' will turn on/off inference.");
+        System.out.println("       'debug/nodebug' will turn on/off debugging messages.");
+        System.out.println("       'sim/nosim' will turn on/off similarity flooding (and toggle inference).");
+        System.out.println("       'addUnprocessed/noUnprocessed' will add/not add unprocessed clauses.");
+        System.out.println("       'showr/noshowr' will show/not show what rules get matched.");
+        System.out.println("       'showrhs/noshowrhs' will show/not show what right hand sides get asserted.");
+        System.out.println("       'lemma/nolemma' will add an explicit lemma() literal, or replace token ids with lemmas.");
+        System.out.println("       'quit' to quit");
+        System.out.println("       Ending a sentence with a question mark will trigger a query,");
+        System.out.println("       otherwise results will be asserted to the KB. Don't end commands with a period.");
+    }
+
+    /** ***************************************************************
+     */
     public static void main(String[] args) throws IOException {
 
         System.out.println("INFO in Interpreter.main()");
@@ -2173,38 +2115,21 @@ public class Interpreter {
             interp.testUnifyInter();
         }
         else if (args != null && args.length > 0 && args[0].equals("-h")) {
-            System.out.println("Semantic Rewriting with SUMO, Sigma and E");
-            System.out.println("  options:");
-            System.out.println("  -h - show this help screen");
-            System.out.println("  -s - runs one conversion of one sentence");
-            System.out.println("  -i - runs a loop of conversions of one sentence at a time,");
-            System.out.println("  -t - test unification of a rule with a set of facts,");
-            System.out.println("       prompting the user for more.  Empty line to exit.");
-            System.out.println("       'load filename' will load a specified rewriting rule set.");
-            System.out.println("       'ir/autoir/noir' will determine whether TF/IDF is run always, on inference failure or never.");
-            System.out.println("       'reload' (no quotes) will reload the rewriting rule set.");
-            System.out.println("       'inference/noinference' will turn on/off inference.");
-            System.out.println("       'debug/nodebug' will turn on/off debugging messages.");
-            System.out.println("       'sim/nosim' will turn on/off similarity flooding (and toggle inference).");
-            System.out.println("       'addUnprocessed/noUnprocessed' will add/not add unprocessed clauses.");
-            System.out.println("       'showr/noshowr' will show/not show what rules get matched.");
-            System.out.println("       'showrhs/noshowrhs' will show/not show what right hand sides get asserted.");
-            System.out.println("       'lemma/nolemma' will add an explicit lemma() literal, or replace token ids with lemmas.");
-            System.out.println("       'quit' to quit");
-            System.out.println("       Ending a sentence with a question mark will trigger a query,");
-            System.out.println("       otherwise results will be asserted to the KB. Don't end commands with a period.");
+            showHelp();
         }
         else {
+            showHelp();
+            System.out.println();
             //testUnify();
             //testUnify8();
-            //testInterpret3();
+            testInterpret2();
             //testInterpretGenCNF();
             //testPreserve();
             //testQuestionPreprocess();
             //testPostProcess();
             //testTimeDateExtraction();
             //testAddQuantification();
-            testNumberSentence();
+            //testNumberSentence();
         }
     }
 }
