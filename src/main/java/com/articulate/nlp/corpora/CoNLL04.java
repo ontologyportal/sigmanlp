@@ -15,7 +15,7 @@ import static com.articulate.nlp.RelExtract.sentenceExtract;
  * Description as per http://cogcomp.org/page/resource_view/43
  * Available relations are:
  * located in, work for, organization based in, live in, and kill
- *
+ * [RAP - these should correspond to located, employs (also leader), located (with arg1 as Organization), inhabits, SUMO needs a relation for kill]
  * The format of each block is:
 
  a sentence in table format
@@ -95,7 +95,7 @@ public class CoNLL04 {
      */
     public void parse() {
 
-        ArrayList<String> lines = CorpusReader.readFile(System.getenv("CORPORA") + File.separator + "conll04-little.corp");
+        ArrayList<String> lines = CorpusReader.readFile(System.getenv("CORPORA") + File.separator + "conll04.corp");
         boolean inSent = true; // in the sentence or in the relation list
         Sent sent = new Sent();
         StringBuffer sentAccum = new StringBuffer();
@@ -168,13 +168,25 @@ public class CoNLL04 {
      */
     public void extractAll() {
 
+        int totalGroundTruth = 0;
+        int totalExtracted = 0;
         for (Sent s : sentences) {
             if (s.relations.size() > 0) {
-                System.out.println("\n" + s.sentString);
-                System.out.println("CoNLL: relations: " + RelExtract.sentenceExtract(s.sentString));
-                System.out.println("CoNLL: expected relations: " + relsToString(s.relations));
+                System.out.println("\nextractAll(): " + s.sentString);
+                ArrayList<String> kifClauses = null;
+                try {
+                    kifClauses = RelExtract.sentenceExtract(s.sentString);
+                    if (kifClauses.size() > 0)
+                        totalExtracted++;
+                    System.out.println("CoNLL: relations: " + kifClauses);
+                    System.out.println("CoNLL: expected relations: " + relsToString(s.relations));
+                    if (s.relations.size() > 0)
+                        totalGroundTruth++;
+                }
+                catch (Exception e) { e.printStackTrace(); }
             }
         }
+        System.out.println("CoNLL04.extractAll(): expected: " + totalGroundTruth + " found: " + totalExtracted);
     }
 
     /***************************************************************
