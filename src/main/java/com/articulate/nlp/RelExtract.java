@@ -804,7 +804,7 @@ public class RelExtract {
         System.out.println("; RelExtract.sentenceExtract()");
         KBmanager.getMgr().initializeOnce();
         interp = new Interpreter();
-        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
+        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations-test.txt";
         interp.initOnce(filename);
     }
 
@@ -813,6 +813,14 @@ public class RelExtract {
     public static ArrayList<String> sentenceExtract(String sent) {
 
         ArrayList<CNF> inputs = Lists.newArrayList(interp.interpretGenCNF(sent));
+        ArrayList<String> kifClauses = interp.interpretCNF(inputs);
+        return kifClauses;
+    }
+
+    /** *************************************************************
+     */
+    public static ArrayList<String> cnfExtract(ArrayList<CNF> inputs) {
+
         ArrayList<String> kifClauses = interp.interpretCNF(inputs);
         return kifClauses;
     }
