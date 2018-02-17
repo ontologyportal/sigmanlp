@@ -465,14 +465,14 @@ public class CNF implements Comparable {
             while (!lex.testTok(tokens)) {
                 Clause d = new Clause();
                 Literal c = Literal.parse(lex, 0);
-                if (debug) System.out.println("INFO in CNF.parseSimple(): " + c);
+                //if (debug) System.out.println("INFO in CNF.parseSimple(): " + c);
                 d.disjuncts.add(c);
                 cnf.clauses.add(d);
                 if (lex.testTok(Lexer.Comma))
                     lex.next();
                 else if (lex.testTok(Lexer.ClosePar)) {
                     lex.next();
-                    if (debug) System.out.println("INFO in CNF.parseSimple(): final token: " + lex.look());
+                    //if (debug) System.out.println("INFO in CNF.parseSimple(): final token: " + lex.look());
                     if (!lex.testTok(Lexer.FullStop) && !lex.look().equals("*EOF*"))  // allow EOF as well as period
                         System.out.println("Error in CNF.parseSimple(): Bad token: " + lex.look());
                 }
@@ -486,7 +486,7 @@ public class CNF implements Comparable {
             System.out.println("Error in CNF.parse(): " + message);
             ex.printStackTrace();
         }
-        if (debug) System.out.println("INFO in CNF.parseSimple(): returning: " + cnf);
+        //if (debug) System.out.println("INFO in CNF.parseSimple(): returning: " + cnf);
         return cnf;
     }
 
