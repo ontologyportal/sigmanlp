@@ -13,9 +13,26 @@ import com.articulate.nlp.corpora.TimeBank;
 import java.util.*;
 
 /**
+ * Copyright 2017 Articulate Software, 2018 Infosys
+
+ Author: Adam Pease
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program ; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ MA  02111-1307 USA
+
  * This class marks time expressions in SUMO, derived from SUTime.
- *
- * @author apease
  */
 
 public class TimeSUMOAnnotator implements Annotator {
@@ -27,14 +44,13 @@ public class TimeSUMOAnnotator implements Annotator {
     }
 
     public static boolean debug = false;
-
     //static final Requirement TSUMO_REQUIREMENT = new Requirement("tsumo");
 
     /****************************************************************
      */
     public TimeSUMOAnnotator(String name, Properties props) {
 
-        KBmanager.getMgr().initializeOnce();
+        //KBmanager.getMgr().initializeOnce();
     }
 
     /****************************************************************
@@ -84,9 +100,8 @@ public class TimeSUMOAnnotator implements Annotator {
                 CoreAnnotations.TokensAnnotation.class,
                 CoreAnnotations.SentencesAnnotation.class,
                 CoreAnnotations.LemmaAnnotation.class)));
+        //     NERAnnotator.NERAnnotation.class
     }
-
-    //     NERAnnotator.NERAnnotation.class
 
     /****************************************************************
      */
