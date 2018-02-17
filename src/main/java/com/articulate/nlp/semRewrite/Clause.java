@@ -1,9 +1,10 @@
 package com.articulate.nlp.semRewrite;
 
 /*
-Copyright 2014-2015 IPsoft
+original version Copyright 2014-2015 IPsoft
+modified 2015- Articulate Software
 
-Author: Adam Pease adam.pease@ipsoft.com
+Author: Adam Pease apease@articulatesoftware.com
 
 In conjunctive normal form (CNF) a formula is a conjunct of 
 disjuncts.  This is the list of disjuncts.
@@ -170,13 +171,15 @@ public class Clause {
     /** *************************************************************
      * The argument to this method is the rule and this is the sentence
      * @return the set of variable bindings.  The key is the variable
-     * and the value is the binding.
+     * and the value is the binding.  Note that the list of procedures
+     * and their string identifiers must match those in Procedures.java .
+     * If the argument is a procedure then ignore "this".
      */
     public HashMap<String,String> unify(Clause d) {
         
         for (int i = 0; i < d.disjuncts.size(); i++) {
             Literal c1 = d.disjuncts.get(i);  // rule
-            //System.out.println("INFO in Disjunct.unify(): checking " + c1);
+            System.out.println("INFO in Clause.unify(): checking " + c1);
             if (c1.pred.equals("isCELTclass") && c1.isGround())
                 if (Procedures.isCELTclass(c1).equals("true"))
                     return new HashMap<String,String>();
@@ -186,10 +189,14 @@ public class Clause {
             if (c1.pred.equals("isInstanceOf") && c1.isGround())
                 if (Procedures.isInstanceOf(c1).equals("true"))
                     return new HashMap<String,String>();
+            if (c1.pred.equals("isChildOf") && c1.isGround())
+                if (Procedures.isChildOf(c1).equals("true"))
+                    return new HashMap<String,String>();
             if (c1.pred.equals("isSubAttribute") && c1.isGround())
                 if (Procedures.isSubAttribute(c1).equals("true")) {
                     return new HashMap<String,String>();
                 }
+            if (debug) System.out.println("INFO in Clause.unify(): done checking procedures");
 
             for (int j = 0; j < disjuncts.size(); j++) {
                 Literal c2 = disjuncts.get(j);
@@ -205,8 +212,8 @@ public class Clause {
                 }
             }
         }
-        //System.out.println("INFO in Disjunct.unify(): this: " + this);
-        //System.out.println("INFO in Disjunct.unify(): d: " + d);
+        System.out.println("INFO in Clause.unify(): this: " + this);
+        System.out.println("INFO in Clause.unify(): d: " + d);
         return null;
     }
 
