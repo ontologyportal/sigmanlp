@@ -1,10 +1,11 @@
 package com.articulate.nlp.semRewrite;
 
 /*
-Copyright 2014-2015 IPsoft
+Author: Sofia Athenikos
+Author: Adam Pease apease@articulatesoftware.com
 
-Author: Adam Pease adam.pease@ipsoft.com
-Author: Sofia Athenikos sofia.athenikos@ipsoft.com
+original version Copyright 2014-2015 IPsoft
+modified 2015- Articulate Software
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
+
+Note that the list of String identifiers for the procedures must
+match those listed in Clause.unify()
 */
 
 import com.articulate.sigma.KB;
@@ -35,7 +39,7 @@ public class Procedures {
     public static boolean debug = false;
 
     public static final List<String> procNames = Arrays.asList("isCELTclass",
-            "isSubclass", "isInstanceOf", "isSubAttribute");
+            "isSubclass", "isInstanceOf", "isSubAttribute", "isChildOf");
 
     /** ***************************************************************
      */
@@ -62,7 +66,7 @@ public class Procedures {
             //    return "true";
             return "false";
         }
-        if (debug) System.out.println("INFO in Procedures.isCELTclass(): isSubclass" +
+        if (debug) System.out.println("INFO in Procedures.isCELTclass(): KB.isSubclass(): " +
                 kb.isSubclass(c.arg1, c.arg2));
 
         if (c.arg2.equals("Person"))
@@ -77,19 +81,32 @@ public class Procedures {
                 return "false";
         else if (kb.isSubclass(c.arg1, c.arg2) || kb.isInstanceOf(c.arg1,c.arg2))
             return "true";
-        else
+        else {
+            if (debug) System.out.println("INFO in Procedures.isCELTclass(): returning false");
             return "false";
+        }
     }
 
     /** ***************************************************************
      * if subclass or equal return true
+     * kb.isSubclass(child,parent)
      */
     public static String isSubclass(Literal c) {
 
         KB kb = KBmanager.getMgr().getKB("SUMO");
+        if (debug) System.out.println("INFO in Procedures.isSubclass():term set size: " + kb.terms.size());
         if (debug) System.out.println("INFO in Procedures.isSubclass(): " + c);
-        if (debug) System.out.println("INFO in Procedures.isSubclass(): " +
+        if (debug) System.out.println(": " + c);
+        if (debug) System.out.println("INFO in Procedures.isSubclass(): kb contains (first arg): " + c.arg1 + " : " + kb.terms.contains(c.arg1));
+        if (debug) System.out.println("INFO in Procedures.isSubclass(): kb contains (second arg): " + c.arg2 + " : " + kb.terms.contains(c.arg2));
+        if (debug) System.out.println("INFO in Procedures.isSubclass(): kb.isSubclass(" + c.arg1 + "," + c.arg2 + "): " +
                 kb.isSubclass(c.arg1, c.arg2));
+        if (debug) System.out.println("INFO in Procedures.isSubclass(): kb.childOf(" + c.arg1 + "," + c.arg2 + "): " +
+                kb.childOf(c.arg1, c.arg2));
+        if (debug) System.out.println("INFO in Procedures.isSubclass(): kb.isChildOf(" + c.arg1 + "," + c.arg2 + "): " +
+                kb.isChildOf(c.arg1, c.arg2));
+        if (debug) System.out.println("INFO in Procedures.isSubclass(): kbCache.childOfP(" + c.arg1 + "," + c.arg2 + "): " +
+                kb.kbCache.childOfP("subclass",c.arg1, c.arg2));
         if (c.arg1.equals(c.arg2))
             return "true";
         if (kb.isSubclass(c.arg1, c.arg2))
@@ -112,6 +129,17 @@ public class Procedures {
         if (debug) System.out.println("INFO in Procedures.isInstanceOf(): " + c);
         if (debug) System.out.println("INFO in Procedures.isInstanceOf(): " + kb.isInstanceOf(c.arg1, c.arg2));
         if (kb.isInstanceOf(c.arg1, c.arg2))
+            return "true";
+        else
+            return "false";
+    }
+
+    /** ***************************************************************
+     * Check both instances and classes with isInstanceOf() and isSubclass()
+     */
+    public static String isChildOf(Literal c) {
+
+        if (isInstanceOf(c).equals("true") || isSubclass(c).equals("true"))
             return "true";
         else
             return "false";
