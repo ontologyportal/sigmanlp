@@ -57,7 +57,7 @@ public class WNMultiWordAnnotator implements Annotator {
      */
     public WNMultiWordAnnotator(String name, Properties props) {
 
-        KBmanager.getMgr().initializeOnce();
+        //KBmanager.getMgr().initializeOnce();
     }
 
     /** ***************************************************************

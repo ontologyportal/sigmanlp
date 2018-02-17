@@ -59,7 +59,7 @@ public class WSDAnnotator implements Annotator {
      */
     public WSDAnnotator(String name, Properties props) {
 
-        KBmanager.getMgr().initializeOnce();
+        //KBmanager.getMgr().initializeOnce();
     }
 
     /****************************************************************
