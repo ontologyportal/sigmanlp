@@ -2071,11 +2071,35 @@ public class Interpreter {
 
     /** ***************************************************************
      */
+    public void findSUMO(String input) {
+
+        System.out.println("Interpreter.findSUMO()");
+        Clause.debug = false;
+        Interpreter interp = null;
+        KBmanager.getMgr().initializeOnce();
+        try {
+            interp = new Interpreter();
+            interp.initialize();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //String input = "Amelia Mary Earhart was an American aviator.";
+        input = StringUtil.removeEnclosingChar(input,1,'"');
+        System.out.println("Interpreter.findSUMO()" + input);
+        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<String> wsds = interp.findWSD(lastSentence);
+        System.out.println(wsds);
+    }
+
+    /** ***************************************************************
+     */
     public static void showHelp() {
 
         System.out.println("Semantic Rewriting with SUMO, Sigma and E");
         System.out.println("  options:");
         System.out.println("  -h - show this help screen");
+        System.out.println("  -x <sent> - extract a set of sumo concepts from a sentence");
         System.out.println("  -s - runs one conversion of one sentence");
         System.out.println("  -i - runs a loop of conversions of one sentence at a time,");
         System.out.println("  -t - test unification of a rule with a set of facts,");
@@ -2105,7 +2129,10 @@ public class Interpreter {
             KBmanager.getMgr().initializeOnce();
             interp.initialize();
         }
-        if (args != null && args.length > 0 && args[0].equals("-s")) {
+        if (args != null && args.length > 1 && args[0].equals("-x")) {
+            interp.findSUMO(args[1]);
+        }
+        else if (args != null && args.length > 0 && args[0].equals("-s")) {
             interp.interpretSingle(args[1]);
         }
         else if (args != null && args.length > 0 && args[0].equals("-i")) {
