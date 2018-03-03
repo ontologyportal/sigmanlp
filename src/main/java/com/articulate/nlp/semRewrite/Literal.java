@@ -283,6 +283,7 @@ public class Literal {
     }
 
     /** ***************************************************************
+     * a variable in the from var*
      */
     public static boolean isWordVariable(String s) {
 
