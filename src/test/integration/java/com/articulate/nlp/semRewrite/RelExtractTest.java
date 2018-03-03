@@ -49,7 +49,7 @@ public class RelExtractTest extends IntegrationTestBase {
         interpreter.inference = false;
         Interpreter.debug = true;
         Interpreter.replaceInstances = true;
-        CNF.debug = true;
+        //CNF.debug = true;
         //Procedures.debug = true;
         //KBcache.debug = true;
         //RHS.debug = true;
@@ -145,7 +145,8 @@ public class RelExtractTest extends IntegrationTestBase {
                 "lemma(wear, wears-2), \n" +
                 "number(SINGULAR, shirt-4), \n" +
                 "lemma(shirt, shirt-4)";
-        String rule = "dobj(?wear,?item-6), lemma(wear, ?wear), nsubj(?wear,?animal-2), sumo(?TYPEVAR1,?animal-2), isSubclass(?TYPEVAR1,Animal), sumo(?TYPEVAR0,?item-6), isSubclass(?TYPEVAR0,WearableItem) ==> {(wears ?animal-2 ?item-6)}.";
+        String rule = "dobj(?wear,?item-6), lemma(wear, ?wear), nsubj(?wear,?animal-2), sumo(?TYPEVAR1,?animal-2), " +
+                "isSubclass(?TYPEVAR1,Animal), sumo(?TYPEVAR0,?item-6), isSubclass(?TYPEVAR0,WearableItem) ==> {(wears ?animal-2 ?item-6)}.";
         String expected = "(wears Robert-1 shirt-4)";
 
         doRuleTest(input, rule, expected);
@@ -171,6 +172,7 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testSimpleSent1() {
 
+        Interpreter.debug = true;
         System.out.println("INFO in RelExtractTest.testSimpleSent1()");
         String input = "Robert wears a shirt";
         String expected = "(wears Robert-1 shirt-4)";
@@ -343,9 +345,42 @@ public class RelExtractTest extends IntegrationTestBase {
     public void testSentHakawatiTheatre() {
 
         System.out.println("INFO in RelExtractTest.testSentHakawatiTheatre()");
-        String input = " An art exhibit at the Hakawati Theatre in Arab east Jerusalem was a series of portraits of Palestinians killed in the rebellion .";
+        String input = " An art exhibit at the Hakawati Theatre in Arab east Jerusalem " +
+                "was a series of portraits of Palestinians killed in the rebellion .";
         String expected = "(located Hakawati_Theatre-6 JerusalemIsrael)";
 
         doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testUnify10() {
+
+        System.out.println("INFO in RelExtractTest.testUnify10(): -------------------------------------");
+        String rule4 = "isChildOf(Human,Object).";
+        CNF cnf4 = new CNF(rule4);
+        String cnfstr5 = "a(bar,baz)";
+        CNF cnf5 = new CNF(cnfstr5);
+        System.out.println("INFO in RelExtractTest.testUnify10(): cnf " + cnf4);
+        System.out.println("INFO in RelExtractTest.testUnify10(): cnf1 " + cnf5);
+        System.out.println("result: " + cnf4.unify(cnf5).toString());
+        assertEquals("{}",cnf4.unify(cnf5).toString());
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testUnify11() {
+
+        System.out.println("INFO in RelExtractTest.testUnify11(): -------------------------------------");
+        String rule4 = "isChildOf(?X,Object), a(?X,?Y).";
+        CNF cnf4 = new CNF(rule4);
+        String cnfstr5 = "a(Human,baz)";
+        CNF cnf5 = new CNF(cnfstr5);
+        System.out.println("INFO in RelExtractTest.testUnify11(): cnf " + cnf4);
+        System.out.println("INFO in RelExtractTest.testUnify11(): cnf1 " + cnf5);
+        System.out.println("result: " + cnf4.unify(cnf5).toString());
+        assertEquals("{}",cnf4.unify(cnf5).toString());
     }
 }
