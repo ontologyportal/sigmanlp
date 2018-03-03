@@ -40,6 +40,79 @@ public class CNF implements Comparable {
 
     /** ***************************************************************
      */
+    public class Subst implements Comparable {
+
+        public HashMap<String,String> substMap = new HashMap<>();
+
+        public String toString() {
+            return substMap.toString();
+        }
+
+        /** ***************************************************************
+         * Overridden equals method.
+         */
+        public boolean equals(Object obj) {
+
+            //System.out.println("Subst.equals(): " + this + " : " + obj);
+            if (!(obj instanceof Subst))
+                return false;
+            Subst sub = (Subst) obj;
+            if (obj == this)
+                return true;
+            return this.compareTo(sub) == 0;
+        }
+
+        /** ***************************************************************
+         */
+        public int hashCode() {
+            return toString().hashCode();
+        }
+
+        /** ***************************************************************
+         * sort clauses alphabetically then compare as strings
+         */
+        public int lexicalOrder(Subst sub) {
+
+            TreeSet<String> thisKeys = new TreeSet<>();
+            TreeSet<String> subKeys = new TreeSet<>();
+            for (String s : sub.substMap.keySet())
+                subKeys.add(s);
+            for (String s : this.substMap.keySet())
+                thisKeys.add(s);
+            int keyComp = thisKeys.toString().compareTo(subKeys.toString());
+            if (keyComp != 0)
+                return keyComp;
+
+            TreeSet<String> thisValues = new TreeSet<>();
+            TreeSet<String> subValues = new TreeSet<>();
+            for (String s : sub.substMap.values())
+                subValues.add(s);
+            for (String s : this.substMap.values())
+                thisValues.add(s);
+            int valueComp = thisValues.toString().compareTo(subValues.toString());
+                return valueComp;
+        }
+
+        /** ***************************************************************
+         */
+        public int compareTo(Object o) {
+
+            //System.out.println("Subst.compareTo(): " + this + " : " + o);
+            if (!(o instanceof Subst))
+                return 0;
+            Subst sub = (Subst) o;
+            if (this.substMap.keySet().size() < sub.substMap.keySet().size())
+                return -1;
+            else if (this.substMap.keySet().size() > sub.substMap.keySet().size())
+                return 1;
+            else {
+               return this.lexicalOrder(sub);
+            }
+        }
+    }
+
+    /** ***************************************************************
+     */
     public CNF() {
     }
 
@@ -61,6 +134,59 @@ public class CNF implements Comparable {
             c.disjuncts.add(lit);
             result.clauses.add(c);
         }
+        return result;
+    }
+
+    /** ***************************************************************
+     * Get all predicate names that aren't procedure calls or generated
+     * automatically to augment the dependency parse tags
+     */
+    public HashSet<String> getPreds() {
+
+        HashSet<String> result = new HashSet<>();
+        for (Clause c : clauses) {
+            for (Literal l : c.disjuncts) {
+                if (!Procedures.isProcPred(l.pred) && !Interpreter.addedTags.contains(l.pred))
+                    result.add(l.pred);
+            }
+        }
+        //System.out.println("CNF.getPreds(): result: " + result);
+        return result;
+    }
+
+    /** ***************************************************************
+     * Get all the constants.  If it's a word variable save just the
+     * content and remove the asterisk suffix.  If it's a token, remove
+     * the token number suffix. For use in pruning application rules, this
+     * routine assumes that procedures and sumo clauses are not considered.
+     */
+    public HashSet<String> getTerms() {
+
+        HashSet<String> result = new HashSet<>();
+        for (Clause c : clauses) {
+            for (Literal l : c.disjuncts) {
+                if (!Procedures.isProcPred(l.pred) && !Interpreter.addedTags.contains(l.pred)) {
+                    if (!Literal.isVariable(l.arg1)) {
+                        if (Literal.isToken(l.arg1))
+                            result.add(Literal.tokenOnly(l.arg1));
+                        else
+                            result.add(l.arg1);
+                    }
+                    if (Literal.isWordVariable(l.arg1))
+                        result.add(Literal.tokenOnly(l.arg1));
+
+                    if (!Literal.isVariable(l.arg2)) {
+                        if (Literal.isToken(l.arg2))
+                            result.add(Literal.tokenOnly(l.arg2));
+                        else
+                            result.add(l.arg2);
+                    }
+                    if (Literal.isWordVariable(l.arg2))
+                        result.add(Literal.tokenOnly(l.arg2));
+                }
+            }
+        }
+        //System.out.println("CNF.getPreds(): result: " + result);
         return result;
     }
 
@@ -544,58 +670,160 @@ public class CNF implements Comparable {
         return null;
     }
 
-    /** ***************************************************************
-     * Unify this CNF with the argument.  Note that the argument should
-     * be a superset of clauses of (or equal to) this instance.  The argument
-     * is the "sentence" and this is the "rule"
-     * @return the map of bindings from variables to constants or other variables
+    /** *************************************************************
+     */
+    public HashMap<String,String> composeBindings(HashMap<String,String> bindold,
+                                                  HashMap<String,String> bindnew) {
+
+        if (debug) System.out.println("INFO in CNF.composeBindings(): compose: " + bindold + " and " + bindnew);
+        if (bindold == null)
+            return bindnew;
+        if (bindnew == null)
+            return bindold;
+        HashMap<String,String> result = new HashMap<String,String>();
+        for (String oldKey : bindold.keySet()) {
+            String oldVal = bindold.get(oldKey);
+            if (bindnew.containsKey(oldVal)) {
+                result.put(oldKey, bindnew.get(oldVal));
+            }
+            else {
+                result.put(oldKey, oldVal);
+            }
+        }
+        for (String newKey : bindnew.keySet()) {
+            if (!result.containsKey(newKey)) {
+                result.put(newKey, bindnew.get(newKey));
+            }
+        }
+        if (debug) System.out.println("INFO in CNF.composeBindings(): return: " + result);
+        return result;
+    }
+
+    /** *************************************************************
+     */
+    public CNF applyBindings(HashMap<String,String> bindings, CNF cnf) {
+
+        CNF result = new CNF();
+        if (debug) System.out.println("INFO in CNF.applyBindings(): apply binding: " + bindings);
+        if (debug) System.out.println("INFO in CNF.applyBindings(): to: " + cnf);
+        for (Clause c : cnf.clauses) {
+            result.clauses.add(c.applyBindings(bindings));
+        }
+        if (debug) System.out.println("INFO in CNF.applyBindings(): result: " + result);
+        return result;
+    }
+
+    /** *************************************************************
+     * Look for a clause in cnf to unify with c.  Return all possibilities.
+     * If no unifications are found, return null.
+     */
+    public HashSet<Subst> unifyRecurse(Clause c, CNF cnf) {
+
+        CNF cnfCopy = cnf.deepCopy();
+        if (debug) System.out.println("");
+        if (debug) System.out.println("INFO in CNF.unifyRecurse(c): clause: " + c);
+        if (debug) System.out.println("INFO in CNF.unifyRecurse(c): cnf 'content': " + cnf);
+        HashSet<Subst> result = new HashSet<Subst>();
+        boolean modelFound = false;
+        for (Clause c2 : cnfCopy.clauses) {
+            Clause cCopy = c.deepCopy();
+            Clause c2Copy = c2.deepCopy();
+            HashMap<String,String> bind = c2Copy.unify(cCopy);
+            // HashMap<String,String> bind = cCopy.unify(c2);
+            if (bind != null) {
+                modelFound = true;
+                if (debug) System.out.println("INFO in CNF.unifyRecurse(c): found binding: " + bind);
+                Subst s = new Subst();
+                s.substMap = bind;
+                result.add(s);
+            }
+        }
+        if (debug) System.out.println("INFO in CNF.unifyRecurse(): result (clause): " + result);
+        if (!modelFound)
+            return null;
+        return result;
+    }
+
+    /** *************************************************************
+     * Iterate through all possibilities of applying a given clause
+     * from the "rule" to the "content", then recurse on applying the
+     * remaining clauses.  Note that every clause in this must unify
+     * consistently with some clause in cnf or the routine will return
+     * null.
+     */
+    public HashSet<Subst> unifyRecurse(CNF cnf) {
+
+        if (debug) System.out.println("");
+        if (debug) System.out.println("INFO in CNF.unifyRecurse(): cnf 'rule': " + this);
+        if (debug) System.out.println("INFO in CNF.unifyRecurse(): cnf 'content': " + cnf);
+        HashSet<Subst> result = new HashSet<Subst>();
+        if (this.clauses.size() == 0)
+            return result;
+        boolean modelFound = false;
+        for (Clause c : this.clauses) {
+            Clause cCopy = c.deepCopy();
+            CNF cnfCopy = cnf.deepCopy();
+            HashSet<Subst> bindList = unifyRecurse(cCopy,cnfCopy);
+            if (debug) System.out.println("INFO in CNF.unifyRecurse(): returning from clause recurse with: " + bindList);
+            if (debug) System.out.println("INFO in CNF.unifyRecurse(): current result: " + result);
+            if (debug && bindList != null) System.out.println("INFO in CNF.unifyRecurse(): " + bindList.size());
+            CNF thiscopy = this.deepCopy();
+            thiscopy.clauses.remove(c);
+            if (bindList != null) {
+                if (thiscopy.clauses.size() == 0) {
+                    result.addAll(bindList);
+                    modelFound = true;
+                }
+                else {
+                    for (Subst s : bindList) {
+                        CNF another = thiscopy.deepCopy();
+                        another = applyBindings(s.substMap, another);
+                        cnfCopy = cnf.deepCopy();
+                        HashSet<Subst> subst2 = another.unifyRecurse(cnfCopy);
+                        if (debug)
+                            System.out.println("INFO in CNF.unifyRecurse(): returning from recurse with: " + subst2);
+                        if (subst2 != null) {
+                            modelFound = true;
+                            if (subst2.size() == 0)
+                                result.add(s);
+                            else {
+                                for (Subst s2 : subst2) {
+                                    Subst substnew = new Subst();
+                                    substnew.substMap = composeBindings(s.substMap, s2.substMap);
+                                    result.add(substnew);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (debug) System.out.println("INFO in CNF.unifyRecurse(): current result: " + result);
+        }
+        if (!modelFound) {
+            if (debug) System.out.println("INFO in CNF.unifyRecurse(): no models found to complete: " + result);
+            return null;
+        }
+        else
+            if (debug) System.out.println("INFO in CNF.unifyRecurse(): result: " + result);
+        return result;
+    }
+
+    /** *************************************************************
      */
     public HashMap<String,String> unify(CNF cnf) {
 
-        CNF cnfnew2 = cnf.deepCopy();  // sentence
-        CNF cnfnew1 = this.deepCopy(); // rule
-        boolean negatedClause = false;
-        if (debug) System.out.println("INFO in CNF.unify(): cnf 1 (sentence): " + cnf);
-        if (debug) System.out.println("INFO in CNF.unify(): this (rule): " + this);
-        HashMap<String,String> result = new HashMap<String,String>();
-        for (int i = 0; i < cnfnew1.clauses.size(); i++) {  // rule
-            Clause d1 = cnfnew1.clauses.get(i);
-            if (debug) System.out.println("INFO in CNF.unify(): disjunct: " + d1);
-            if (d1.disjuncts.size() == 1 && d1.disjuncts.get(0).negated)
-                negatedClause = true;
-            HashMap<String,String> result2 = unifyDisjunct(d1,cnfnew2,cnfnew1,result);
-            if (debug) System.out.println("INFO in CNF.unify(): result2 " + result2);
-            if (debug) System.out.println("INFO in CNF.unify(): cnfnew1 " + cnfnew1);
-            if (debug) System.out.println("INFO in CNF.unify(): cnfnew2 " + cnfnew2);
-            if (negatedClause) {
-                if (result2 != null) { // successful binding is a failure for a negated clause
-                    if (debug) System.out.println("INFO in CNF.unify(): found a binding for a negated clause " + cnfnew1 +  " with " + cnfnew2);
-                    cnf.clearBound();
-                    return null;
-                }
-                if (debug) System.out.println("INFO in CNF.unify(): no binding for a negated clause " + d1 +  " with " + cnfnew2);
-                cnf.clearBound(); 
-            }
-            else {
-                if (result2 == null) { // every clause in the rule must match to succeed
-                    cnf.clearBound(); // if no success, wipe all the intermediate bindings.
-                    return null;
-                }
-                else {
-                    cnf.copyBoundFlags(cnfnew2);
-                    cnfnew1 = cnfnew1.applyBindings(result2);
-                    if (debug) System.out.println("INFO in CNF.unify(): cnf 1 " + cnfnew1);
-                    if (debug) System.out.println("INFO in CNF.unify(): cnf 2 " + cnfnew2);
-                    cnfnew2 = cnfnew2.applyBindings(result2);
-                    result.putAll(result2);
-                    if (debug) System.out.println("INFO in CNF.unify(): bindings " + result);
-                }
-            }
-        }
-        if (result.keySet().size() == 0)
-            result = null;
-        //cnf.clearBound(); // if no success, wipe all the intermediate bindings.
-        return result;
+        if (debug) System.out.println("INFO in CNF.unify(): cnf 'rule': " + this);
+        if (debug) System.out.println("INFO in CNF.unify(): cnf content: " + cnf);
+        HashSet<Subst> substList = this.unifyRecurse(cnf);
+        if (debug) System.out.println("INFO in CNF.unifyNew(): substList: " + substList);
+        if (substList == null)
+            return null;
+        if (substList.size() == 0)
+            return (new Subst()).substMap; // empty map
+        ArrayList<Subst> result = new ArrayList<>();
+        result.addAll(substList);
+        if (debug) System.out.println("INFO in CNF.unify(): result: " + result);
+        return result.get(0).substMap;
     }
 
     /** *************************************************************
@@ -634,6 +862,21 @@ public class CNF implements Comparable {
         Lexer lex2 = new Lexer("sumo(BodyMotion,Bob-2), sumo(Human,John-1).");
         CNF cnf2 = CNF.parseSimple(lex2);
         System.out.println("INFO in CNF.testEquality(): should be true: " + cnf1.equals(cnf2));
+    }
+
+    /** *************************************************************
+     * A test method
+     */
+    public void testSubst() {
+
+        Subst s1 = new Subst();
+        s1.substMap.put("?X","val");
+        Subst s2 = new Subst();
+        s2.substMap.put("?X","val");
+        HashSet<Subst> set = new HashSet<>();
+        set.add(s1);
+        set.add(s2);
+        System.out.println(set);
     }
 
     /** *************************************************************
@@ -774,7 +1017,14 @@ public class CNF implements Comparable {
         //testEquality();
         //testContains();
         //testMerge();
-        testUnify2();
+        //testUnify2();
         //testParseSimple();
+        //CNF cnf = new CNF();
+        //cnf.testSubst();
+
+        String clauses = "nsubj(drives-2,John-1), root(ROOT-0,drives-2), sumo(Transportation,drives-2), sumo(Human,John-1).";
+        Lexer lex = new Lexer(clauses);
+        CNF cnf = CNF.parseSimple(lex);
+        System.out.println(cnf.getPreds());
     }
 }
