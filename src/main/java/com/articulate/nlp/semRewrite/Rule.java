@@ -22,6 +22,7 @@ MA  02111-1307 USA
 */
 
 import java.text.ParseException;
+import java.util.HashSet;
 
 /** *************************************************************
  * Rule ::= LHS ==> RHS.     Obligatory rewrite
@@ -42,6 +43,8 @@ public class Rule {
     public RHS rhs;
     public Literal clause;
     public int startLine = -1;
+    public HashSet<String> preds = new HashSet<>(); // all non-procedure predicates in cnf
+    public HashSet<String> terms = new HashSet<>(); // all non-variable terms in non-procedure predicates in cnf
 
     /** ***************************************************************
      */
@@ -71,6 +74,22 @@ public class Rule {
     }
 
     /** ***************************************************************
+     * set during clausification
+     */
+    public void setPreds() {
+
+        preds = cnf.getPreds();
+    }
+
+    /** ***************************************************************
+     * set during clausification
+     */
+    public void setTerms() {
+
+        terms = cnf.getTerms();
+    }
+
+    /** ***************************************************************
      */
     public Rule deepCopy() {
 
@@ -85,6 +104,8 @@ public class Rule {
         if (clause != null)
             r.clause = clause.deepCopy();
         r.startLine = startLine;
+        r.preds.addAll(preds);
+        r.terms.addAll(terms);
         return r;
     }
 
