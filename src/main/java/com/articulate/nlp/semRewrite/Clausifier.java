@@ -275,6 +275,8 @@ public class Clausifier {
             result = distributeAndOverOr(result);
             r.cnf = separateConjunctions(result);
             r.cnf = sort(r.cnf);
+            r.setPreds();
+            r.setTerms();
             newrs.rules.add(r);
         }
         return newrs;
