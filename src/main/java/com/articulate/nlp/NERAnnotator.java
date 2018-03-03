@@ -75,6 +75,11 @@ public class NERAnnotator implements Annotator {
         String NERclass = tokens.get(ip.getSource()-1).ner();
         if (NERclass.equals("PERSON")) return "Human";
         else if (NERclass.equals("LOCATION")) return "GeographicArea";
+        else if (NERclass.equals("CITY")) return "City";
+        else if (NERclass.equals("STATE_OR_PROVINCE")) return "StateOrProvince";
+        else if (NERclass.equals("COUNTRY")) return "Nation";
+        else if (NERclass.equals("NATIONALITY")) return "EthnicGroup";
+        else if (NERclass.equals("RELIGION")) return "BeliefGroup";
         else if (NERclass.equals("ORGANIZATION")) return "Organization";
         return "";
     }
