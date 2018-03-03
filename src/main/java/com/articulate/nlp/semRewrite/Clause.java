@@ -179,7 +179,7 @@ public class Clause {
         
         for (int i = 0; i < d.disjuncts.size(); i++) {
             Literal c1 = d.disjuncts.get(i);  // rule
-            System.out.println("INFO in Clause.unify(): checking " + c1);
+            if (debug) System.out.println("INFO in Clause.unify(): checking " + c1);
             if (c1.pred.equals("isCELTclass") && c1.isGround())
                 if (Procedures.isCELTclass(c1).equals("true"))
                     return new HashMap<String,String>();
@@ -212,8 +212,8 @@ public class Clause {
                 }
             }
         }
-        System.out.println("INFO in Clause.unify(): this: " + this);
-        System.out.println("INFO in Clause.unify(): d: " + d);
+        if (debug) System.out.println("INFO in Clause.unify(): this: " + this);
+        if (debug) System.out.println("INFO in Clause.unify(): d: " + d);
         return null;
     }
 
