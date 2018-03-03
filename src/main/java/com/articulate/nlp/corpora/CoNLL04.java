@@ -29,7 +29,7 @@ import static com.articulate.nlp.RelExtract.sentenceExtract;
  col-5: Part-of-speech tags
  col-6: Words
 
- A relation descriptor has three fileds.
+ A relation descriptor has three fields.
 
  1st field : the element number of the first argument.
  2nd field : the element number of the second argument.
