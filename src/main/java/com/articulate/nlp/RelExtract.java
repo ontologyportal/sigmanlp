@@ -799,13 +799,20 @@ public class RelExtract {
 
     /** *************************************************************
      */
-    public static void initOnce() {
+    public static void initOnce(String rulebaseFilename) {
 
-        System.out.println("; RelExtract.sentenceExtract()");
+        System.out.println("; RelExtract.initOnce()");
         KBmanager.getMgr().initializeOnce();
         interp = new Interpreter();
-        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations-test.txt";
+        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + rulebaseFilename;
         interp.initOnce(filename);
+    }
+
+    /** *************************************************************
+     */
+    public static void initOnce() {
+
+        initOnce("Relations-test.txt");
     }
 
     /** *************************************************************
@@ -830,10 +837,8 @@ public class RelExtract {
     public static void interactive() {
 
         System.out.println("; RelExtract.sentenceExtract()");
-        KBmanager.getMgr().initializeOnce();
-        Interpreter interp = new Interpreter();
-        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
-        interp.initOnce(filename);
+        String filename = "Relations.txt";
+        initOnce(filename);
         String input = "";
         Scanner scanner = new Scanner(System.in);
         do {
