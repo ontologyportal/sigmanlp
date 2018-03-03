@@ -62,10 +62,15 @@ public class Interpreter {
     private static final String ANSWER_NO = "No.";
     private static final String ANSWER_UNDEFINED = "I don't know.";
 
-    private static final String PHRASAL_VERB_PARTICLE_TAG = "prt(";
-    private static final String SUMO_TAG = "sumo(";
-    private static final String TENSE_TAG = "tense(";
-    private static final String NUMBER_TAG = "number(";
+    private static final String PHRASAL_VERB_PARTICLE_TAG = "prt";
+    private static final String SUMO_TAG = "sumo";
+    private static final String TENSE_TAG = "tense";
+    private static final String NUMBER_TAG = "number";
+    private static final String ATTRIBUTE_TAG = "attribute";
+    private static final String ROOT_TAG = "root";
+
+      // referenced in CNF.getPreds()
+    public static List<String> addedTags = Lists.newArrayList(SUMO_TAG, TENSE_TAG, NUMBER_TAG,ATTRIBUTE_TAG,ROOT_TAG);
 
     private static final Pattern ENDING_IN_PUNC_PATTERN = Pattern.compile(".*[.?!]$");
 
@@ -311,7 +316,7 @@ public class Interpreter {
     /** *************************************************************
      * @return a list of strings in the format sumo(Class,word-num) or
      * sumoInstance(Inst,word-num) that specify the SUMO class of each
-     * dismabiguated word or multi-word
+     * disambiguated word or multi-word
      */
     public static List<String> findWSD(CoreMap cm) {
 
@@ -321,8 +326,10 @@ public class Interpreter {
         Set<String> results = Sets.newHashSet();
         String sumo = null;
         for (CoreLabel cl : sent) {
+            if (debug) System.out.println();
             String nerType = cl.get(CoreAnnotations.NamedEntityTagAnnotation.class);
             if (debug) System.out.println("INFO in Interpreter.findWSD(): token: " + cl);
+            if (debug) System.out.println("INFO in Interpreter.findWSD(): ner: " + nerType);
             String sexAttribute = cl.get(MachineReadingAnnotations.GenderAnnotation.class);
             if (debug) System.out.println("INFO in Interpreter.findWSD(): Stanford gender: " +
                     sexAttribute);
@@ -364,6 +371,9 @@ public class Interpreter {
                     else
                         results.add("sumo(" + sumo + "," + cl + ")");
                 }
+                if (debug) System.out.println("INFO in Interpreter.findWSD(): nersumo: " + cl.get(NERAnnotator.NERSUMOAnnotation.class));
+                if (StringUtil.emptyString(sumo) && !StringUtil.emptyString(cl.get(NERAnnotator.NERSUMOAnnotation.class)))
+                    results.add("sumo(" + cl.get(NERAnnotator.NERSUMOAnnotation.class) + "," + cl + ")");
             }
         }
         if (debug) System.out.println("INFO in Interpreter.findWSD(): " + results);
@@ -930,8 +940,8 @@ public class Interpreter {
         String[] elems;
 
         for (String dependency : results) {
-            if (dependency.startsWith(PHRASAL_VERB_PARTICLE_TAG)) {
-                int index = (PHRASAL_VERB_PARTICLE_TAG).length();
+            if (dependency.startsWith(PHRASAL_VERB_PARTICLE_TAG + "(")) {
+                int index = (PHRASAL_VERB_PARTICLE_TAG + "(").length();
                 String verbAndParticle = dependency.substring(index, dependency.length()-1);
                 elems = verbAndParticle.split(",");
                 verb = elems[0].trim();
@@ -954,8 +964,8 @@ public class Interpreter {
         List<String> newResults = Lists.newArrayList();
 
         for (String dependency : results) {
-            if (!dependency.startsWith(PHRASAL_VERB_PARTICLE_TAG) &&
-                    !(dependency.startsWith(SUMO_TAG) && dependency.contains(verb))) {
+            if (!dependency.startsWith(PHRASAL_VERB_PARTICLE_TAG + "(") &&
+                    !(dependency.startsWith(SUMO_TAG + "(") && dependency.contains(verb))) {
 //                String newDependency = modifyDependencyElem(dependency, verbNum);
                 String newDependency = dependency;
                 if (newDependency.contains(verb)) {
@@ -972,7 +982,7 @@ public class Interpreter {
     private static boolean containsPhrasalVerbs(List<String> results) {
 
         for (String dependency : results) {
-            if (dependency.startsWith(PHRASAL_VERB_PARTICLE_TAG)) {
+            if (dependency.startsWith(PHRASAL_VERB_PARTICLE_TAG + "(")) {
                 return true;
             }
         }
@@ -994,8 +1004,8 @@ public class Interpreter {
         String[] subElems;
         int subElemNum;
 
-        if (!newDependency.startsWith(SUMO_TAG) && !newDependency.startsWith(TENSE_TAG) &&
-                !newDependency.startsWith(NUMBER_TAG)) {
+        if (!newDependency.startsWith(SUMO_TAG + "(") && !newDependency.startsWith(TENSE_TAG + "(") &&
+                !newDependency.startsWith(NUMBER_TAG + "(")) {
             elem = elems[0].trim();
             subElems = elem.split("-");
             subElemNum = Integer.parseInt(subElems[1]);
@@ -1150,6 +1160,30 @@ public class Interpreter {
     }
 
     /** *************************************************************
+     * a pre-filter for rule matching that makes sure terms required
+     * for a rule to fire are present in the input CNF.  This can fail
+     * quickly without attempting full unification
+     */
+    private boolean termCoverage(HashSet<String> inputPreds, HashSet<String> inputTerms, Rule r) {
+
+        HashSet<String> predsSet = new HashSet<>();
+        predsSet.addAll(r.preds);
+        predsSet.retainAll(inputPreds);
+        if (r.preds.size() != predsSet.size())
+            return false;
+
+        HashSet<String> termSet = new HashSet<>();
+        predsSet.addAll(r.terms);
+        predsSet.retainAll(inputTerms);
+        if (r.terms.size() != termSet.size())
+            return false;
+        else
+            return true;
+    }
+
+    /** *************************************************************
+     * Apply all the rules in the RuleSet to the input CNF form,
+     * matching left hand sides and generating the right hand side.
      */
     public ArrayList<String> interpretCNF(ArrayList<CNF> inputs) {
 
@@ -1168,8 +1202,15 @@ public class Interpreter {
             CNF newInput = null;
             for (int j = 0; j < inputs.size(); j++) {
                 newInput = inputs.get(j).deepCopy();
+                HashSet<String> preds = newInput.getPreds();
+                HashSet<String> terms = newInput.getTerms();
+                //System.out.println("Interpreter.interpretCNF(): input preds: " + preds);
                 //System.out.println("INFO in Interpreter.interpretCNF(): new input 0: " + newInput);
                 for (int i = 0; i < rs.rules.size(); i++) {
+                    //System.out.println("Interpreter.interpretCNF(): rule preds: " + rs.rules.get(i).preds);
+                    if (!termCoverage(preds,terms,rs.rules.get(i)))
+                        continue;
+                    //System.out.println("Interpreter.interpretCNF(): predicates match");
                     Rule r = rs.rules.get(i).deepCopy();
                     //System.out.println("INFO in Interpreter.interpretCNF(): new input 0.5: " + newInput);
                     if (debug) System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
@@ -1179,9 +1220,9 @@ public class Interpreter {
                     }
                     else {
                         bindingFound = true;
-                        System.out.println("INFO in Interpreter.interpretCNF(): new input 1: " + newInput);
+                        if (debug) System.out.println("INFO in Interpreter.interpretCNF(): new input 1: " + newInput);
                         if (debug) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
-                        if (showr)
+                        if (showr && debug)
                             System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                         firedRules.add(r.toString() + " : " + bindings.toString());
                         RHS rhs = r.rhs.applyBindings(bindings);
