@@ -29,10 +29,32 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class Clause {
+public class Clause implements Comparable {
 
     public ArrayList<Literal> disjuncts = new ArrayList<Literal>();
     public static boolean debug = false;
+
+    /** ***************************************************************
+     * fewer clauses are smaller, more general sumo terms are smaller
+     * and if those conditions aren't different, just choose lexical
+     * order
+     */
+    public int compareTo(Object o) {
+
+        if (!(o instanceof Clause))
+            return 0;
+        Clause c = (Clause) o;
+        if (this.equals(c))
+            return 0;
+        if (this.disjuncts.size() < c.disjuncts.size())
+            return -1;
+        else if (this.disjuncts.size() > c.disjuncts.size())
+            return 1;
+        else {
+            //System.out.println("CNF.compareTo() equal length clauses");
+            return this.toString().compareTo(c.toString());
+        }
+    }
 
     /** *************************************************************
      */
