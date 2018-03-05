@@ -1,5 +1,6 @@
 package com.articulate.nlp.semRewrite;
 
+import com.articulate.sigma.KBmanager;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -281,5 +282,19 @@ public class CNFTest {
         System.out.println("INFO in CNFTest.testUnify9(): cnf1 " + cnf5);
         System.out.println("result: " + cnf4.unify(cnf5).toString());
         assertEquals("{?X=nnn, ?Y=dontcare}",cnf4.unify(cnf5).toString());
+    }
+
+    /** ***************************************************************
+     */
+    public static void testSort() {
+
+        String input = "dobj(ate-3, chicken-4), sumo(Eating,ate-3), sumo(Man,George-1), nmod:in(ate-3, December-6), " +
+                "compound(Washington-2, George-1), root(ROOT-0, ate-3), sumo(ChickenMeat,chicken-4).";
+        CNF cnf4 = new CNF(input);
+        String sorted = "compound(Washington-2, George-1), dobj(ate-3, chicken-4), " +
+                "nmod:in(ate-3, December-6), root(ROOT-0, ate-3), sumo(Eating,ate-3), sumo(Man,George-1), " +
+                " sumo(ChickenMeat,chicken-4).";
+        System.out.println("result: " + cnf4.toSortedString());
+        assertEquals(cnf4.toSortedString(),sorted);
     }
 }
