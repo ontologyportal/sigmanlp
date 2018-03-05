@@ -292,8 +292,8 @@ public class CNF implements Comparable {
      */
     private int compareSUMOLiterals(CNF cnf) {
 
-        System.out.println("CNF.compareSUMOLiterals(): this: " + this);
-        System.out.println("CNF.compareSUMOLiterals(): cnf: " + cnf);
+        //System.out.println("CNF.compareSUMOLiterals(): this: " + this);
+        //System.out.println("CNF.compareSUMOLiterals(): cnf: " + cnf);
         KB kb = KBmanager.getMgr().getKB("SUMO");
         HashSet<Literal> thisSUMO = getSUMOLiterals(this);
         HashSet<Literal> cnfSUMO = getSUMOLiterals(cnf);
@@ -387,6 +387,29 @@ public class CNF implements Comparable {
                 sb.append(", ");
         }
         //sb.append("]");
+        return sb.toString();
+    }
+
+    /** ***************************************************************
+     */
+    public String toSortedString() {
+
+        CNF newcnf = new CNF();
+        newcnf.clauses.addAll(clauses);
+        Collections.sort(newcnf.clauses);
+        return newcnf.toString();
+    }
+
+    /** ***************************************************************
+     */
+    public static String toSortedString(ArrayList<CNF> cnfs) {
+
+        ArrayList<CNF> newcnfs = new ArrayList();
+        newcnfs.addAll(cnfs);
+        Collections.sort(newcnfs);
+        StringBuffer sb = new StringBuffer();
+        for (CNF c : newcnfs)
+            sb.append(c.toSortedString());
         return sb.toString();
     }
 
@@ -1008,7 +1031,30 @@ public class CNF implements Comparable {
         System.out.println("INFO in CNF.testUnify(): cnf1 " + cnf5);
         System.out.println("INFO in CNF.testUnify(): bindings: " + cnf4.unify(cnf5));
     }
-    
+
+    /** ***************************************************************
+     */
+    public static void testSort() {
+
+        String input = "dobj(ate-3, chicken-4), sumo(Eating,ate-3), sumo(Man,George-1), nmod:in(ate-3, December-6), " +
+                "compound(Washington-2, George-1), root(ROOT-0, ate-3), sumo(ChickenMeat,chicken-4).";
+        CNF cnf4 = new CNF(input);
+        String sorted = "compound(Washington-2, George-1), dobj(ate-3, chicken-4), " +
+                "nmod:in(ate-3, December-6), root(ROOT-0, ate-3), sumo(Eating,ate-3), sumo(Man,George-1), " +
+                " sumo(ChickenMeat,chicken-4).";
+        System.out.println("result: " + cnf4.toSortedString());
+    }
+
+    /** ***************************************************************
+     */
+    public static void testParse() {
+
+        String clauses = "nsubj(drives-2,John-1), root(ROOT-0,drives-2), sumo(Transportation,drives-2), sumo(Human,John-1).";
+        Lexer lex = new Lexer(clauses);
+        CNF cnf = CNF.parseSimple(lex);
+        System.out.println(cnf.getPreds());
+    }
+
     /** *************************************************************
      * A test method
      */
@@ -1021,10 +1067,6 @@ public class CNF implements Comparable {
         //testParseSimple();
         //CNF cnf = new CNF();
         //cnf.testSubst();
-
-        String clauses = "nsubj(drives-2,John-1), root(ROOT-0,drives-2), sumo(Transportation,drives-2), sumo(Human,John-1).";
-        Lexer lex = new Lexer(clauses);
-        CNF cnf = CNF.parseSimple(lex);
-        System.out.println(cnf.getPreds());
+        testSort();
     }
 }
