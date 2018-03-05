@@ -168,6 +168,7 @@ public class CoNLL04 {
      */
     public void extractAll() {
 
+        long startTime = System.currentTimeMillis();
         int totalGroundTruth = 0;
         int totalExtracted = 0;
         for (Sent s : sentences) {
@@ -187,6 +188,9 @@ public class CoNLL04 {
             }
         }
         System.out.println("CoNLL04.extractAll(): expected: " + totalGroundTruth + " found: " + totalExtracted);
+        double seconds = ((System.currentTimeMillis() - startTime) / 1000.0);
+        System.out.println("time to process: " + seconds + " seconds (not counting init)");
+        System.out.println("time to process: " + (seconds / sentences.size()) + " seconds per sentence");
     }
 
     /***************************************************************
