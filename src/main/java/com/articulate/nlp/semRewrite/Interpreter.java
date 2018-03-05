@@ -1192,7 +1192,7 @@ public class Interpreter {
             return null;
         }
         ArrayList<String> kifoutput = new ArrayList<String>();
-        if (debug) System.out.println("INFO in Interpreter.interpretCNF(): inputs: " + inputs);
+        System.out.println("INFO in Interpreter.interpretCNF(): inputs: " + CNF.toSortedString(inputs));
         boolean bindingFound = true;
         int counter = 0;
         while (bindingFound && counter < 10 && inputs != null && inputs.size() > 0) {
