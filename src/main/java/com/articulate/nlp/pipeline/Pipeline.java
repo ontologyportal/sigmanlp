@@ -54,7 +54,7 @@ public class Pipeline {
     public StanfordCoreNLP pipeline;
     public static boolean debug = false;
     public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
-        "ner, nersumo, gender, parse, depparse, entitymentions, wnmw, wsd, tsumo";
+        "ner, nersumo, gender, parse, depparse, wnmw, wsd, tsumo"; // regexner and entitymentions now run automatically from ner
 
     public static final String oldDefaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
