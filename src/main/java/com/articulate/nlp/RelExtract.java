@@ -812,7 +812,7 @@ public class RelExtract {
      */
     public static void initOnce() {
 
-        initOnce("Relations-test.txt");
+        initOnce("Relations.txt");
     }
 
     /** *************************************************************
