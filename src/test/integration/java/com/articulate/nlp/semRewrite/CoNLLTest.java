@@ -54,13 +54,14 @@ public class CoNLLTest extends IntegrationTestBase {
         //Literal.debug = true;
         KBmanager.getMgr().initializeOnce();
         interpreter.initialize();
-        RelExtract.initOnce("Relations-test.txt");
+        RelExtract.initOnce("Relations.txt");
     }
 
     /****************************************************************
      */
     private void doOneResultTest(String input, String expectedOutput) {
 
+        long startTime = System.currentTimeMillis();
         ArrayList<CNF> inputs = Lists.newArrayList(interpreter.interpretGenCNF(input));
         System.out.println();
         System.out.println("-------------------");
@@ -73,6 +74,8 @@ public class CoNLLTest extends IntegrationTestBase {
         String result = "";
         if (kifClauses != null && kifClauses.size() > 0)
             result = kifClauses.get(0);
+        double seconds = ((System.currentTimeMillis() - startTime) / 1000.0);
+        System.out.println("time to process: " + seconds + " seconds (not counting init)");
         assertEquals(expectedOutput,result);
     }
 
@@ -160,6 +163,55 @@ public class CoNLLTest extends IntegrationTestBase {
         System.out.println("INFO in CoNLLTest.testSentWright()");
         String input = "Wright , a University of Texas law professor , is happy.";
         String expected = "(employs UniversityOfTexas Wright)";
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentBattavia() {
+
+        System.out.println("INFO in CoNLLTest.testSentBattavia()");
+        String input = " One message came from Anderson 's sister , Peggy Say of Batavia , N.Y.";
+        String expected = "(located Battavia NewYork)";
+        // should also say that Peggy lives in Batavia but that's not marked in the corpus
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentGainesville() {
+
+        System.out.println("INFO in CoNLLTest.testSentGainesville()");
+        String input = "The third Weerts child , 12-year-old Tanya , died Saturday evening at Shands Hospital in nearby Gainesville .";
+        String expected = "(located ShandsHospital Gainesville)";
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentZambia() {
+
+        System.out.println("INFO in CoNLLTest.testSentZambia()");
+        String input = "Crocodiles in Zambia 's Kafue River have devoured five people since the beginning of the year";
+        String expected = "(located KafueRiver Zambia)";  // CoreNLP NER divides Kafue and River but also makes it a compound()
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentNsukka() {
+
+        System.out.println("INFO in CoNLLTest.testSentZambia()");
+        String input = "The registrar of the University of Nigeria 's Nsukka campus , U. Umeh , said he had closed the university on the advice of the government .";
+        String expected = "(located NsukkaCampus Nigeria)";  // CoreNLP NER divides Kafue and River but also makes it a compound()
 
         doOneResultTest(input, expected);
     }
