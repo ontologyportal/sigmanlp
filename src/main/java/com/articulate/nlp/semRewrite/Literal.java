@@ -47,7 +47,7 @@ import java.util.regex.Pattern;
  * and whether it has already been successfully bound to another
  * literal during unification.
  */
-public class Literal {
+public class Literal implements Comparable {
 
     public static boolean debug = false;
 
@@ -203,6 +203,30 @@ public class Literal {
         clArg2 = new CoreLabel();
         clArg2.setValue(tokenOnly(s));
         clArg2.setIndex(tokenNum(s));
+    }
+
+    /** ***************************************************************
+     */
+    public int compareTo(Object o) {
+
+        if (!(o instanceof Literal))
+            return 0;
+        Literal l = (Literal) o;
+        if (this.equals(l))
+            return 0;
+        if (pred.equals(l.pred)) {
+            if (arg1.equals(l.arg1)) {
+                if (arg2.equals(l.arg2)) {
+                    return 0;
+                }
+                else
+                    return arg2.compareTo(l.arg2);
+            }
+            else
+                return arg1.compareTo(l.arg1);
+        }
+        else
+            return pred.compareTo(l.pred);
     }
 
     /****************************************************************
