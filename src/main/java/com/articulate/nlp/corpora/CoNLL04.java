@@ -106,7 +106,9 @@ public class CoNLL04 {
                     sentAccum = new StringBuffer();
                 }
                 if (!inSent) { // transition out of relation list: all relations read
-                    sentences.add(sent);
+                    if (sent.sentString.endsWith(".") || sent.sentString.endsWith("!") ||
+                            sent.sentString.endsWith("?")) // ignore things like titles that aren't a sentence
+                        sentences.add(sent);
                     sent = new Sent();
                 }
                 inSent = !inSent;
