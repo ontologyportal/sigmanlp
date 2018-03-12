@@ -574,7 +574,8 @@ public class Literal implements Comparable {
     /** ***************************************************************
      * Unify all terms in term1 with the corresponding terms in term2 with a
      * common substitution. Note that unlike general unification, we have
-     * a fixed argument list of 2.   
+     * a fixed argument list of 2.
+     * If the argument is a ground procedure, handle the matching in Procedures.
      * @return the set of substitutions with the variable as the key and
      * the binding as the value in the HashMap.
      */
@@ -582,7 +583,9 @@ public class Literal implements Comparable {
 
         if (debug) System.out.println("INFO in Literal.mguTermList(): attempting to unify " + this + " and " + l2);
         HashMap<String,String> subst = new HashMap<String,String>();
-        
+
+        if (Procedures.isProcPred(l2.pred) && l2.isGround())
+            return Procedures.procUnify(this,l2);
         if (!pred.equals(l2.pred)) 
             return null;        
         for (int arg = 1; arg < 3; arg++) {           
