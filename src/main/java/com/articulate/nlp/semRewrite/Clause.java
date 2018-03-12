@@ -195,7 +195,9 @@ public class Clause implements Comparable {
      * @return the set of variable bindings.  The key is the variable
      * and the value is the binding.  Note that the list of procedures
      * and their string identifiers must match those in Procedures.java .
-     * If the argument is a procedure then ignore "this".
+     * If the argument is a procedure we try not only to run the procedure
+     * but also to match sumo terms that might satisfy the procedure.  The
+     * latter is done in Literal.mguTermList()
      */
     public HashMap<String,String> unify(Clause d) {
         
