@@ -46,7 +46,7 @@ public class CoNLLTest extends IntegrationTestBase {
         interpreter = new Interpreter();
         interpreter.inference = false;
         Interpreter.debug = true;
-        Interpreter.replaceInstances = true;
+        Interpreter.replaceInstances = false;
         //CNF.debug = true;
         //Procedures.debug = true;
         //KBcache.debug = true;
@@ -85,7 +85,6 @@ public class CoNLLTest extends IntegrationTestBase {
     @Test
     public void testSimpleSent1() {
 
-        Interpreter.debug = true;
         System.out.println("INFO in CoNLLTest.testSimpleSent1()");
         String input = "Robert wears a shirt";
         String expected = "(wears Robert-1 shirt-4)";
@@ -101,7 +100,7 @@ public class CoNLLTest extends IntegrationTestBase {
         System.out.println("INFO in CoNLLTest.testSentHakawatiTheatre()");
         String input = " An art exhibit at the Hakawati Theatre in Arab east Jerusalem " +
                 "was a series of portraits of Palestinians killed in the rebellion .";
-        String expected = "(located Hakawati_Theatre-6 JerusalemIsrael)";
+        String expected = "(located Hakawati_Theatre-6 Jerusalem-11)";
 
         doOneResultTest(input, expected);
     }
@@ -150,7 +149,7 @@ public class CoNLLTest extends IntegrationTestBase {
 
         System.out.println("INFO in CoNLLTest.testSentWork()");
         String input = "W. Dale Nelson covers the White House for The Associated Press .";
-        String expected = "(employs WDaleNelson TheAssociatedPress)";
+        String expected = "(employs Associated_Press-10 W._Dale_Nelson-1)";
 
         doOneResultTest(input, expected);
     }
@@ -170,11 +169,11 @@ public class CoNLLTest extends IntegrationTestBase {
     /****************************************************************
      */
     @Test
-    public void testSentBattavia() {
+    public void testSentBatavia() {
 
-        System.out.println("INFO in CoNLLTest.testSentBattavia()");
+        System.out.println("INFO in CoNLLTest.testSentBatavia()");
         String input = " One message came from Anderson 's sister , Peggy Say of Batavia , N.Y.";
-        String expected = "(located Battavia NewYork)";
+        String expected = "(located Batavia-12 N.Y.-14)";
         // should also say that Peggy lives in Batavia but that's not marked in the corpus
 
         doOneResultTest(input, expected);
@@ -211,7 +210,55 @@ public class CoNLLTest extends IntegrationTestBase {
 
         System.out.println("INFO in CoNLLTest.testSentZambia()");
         String input = "The registrar of the University of Nigeria 's Nsukka campus , U. Umeh , said he had closed the university on the advice of the government .";
-        String expected = "(located NsukkaCampus Nigeria)";  // CoreNLP NER divides Kafue and River but also makes it a compound()
+        String expected = "(located NsukkaCampus Nigeria)";
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentBedford() {
+
+        System.out.println("INFO in CoNLLTest.testSentBedford()");
+        String input = "He said he is not sure what caused the rift between the brothers , who grew up in Bedford in southern Indiana playing basketball and fishing together.";
+        String expected = "(located Bedford Indiana)";
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentMadagascar() {
+
+        System.out.println("INFO in CoNLLTest.testSentMadagascar()");
+        String input = "The program , financed with a grant from the United States Agency for International Development , is aimed at reducing infant mortality in Madagascar , an island nation in the Indian Ocean off the eastern coast of Africa.";
+        String expected = "(located Madagascar IndianOcean)";
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentMadonna() {
+
+        System.out.println("INFO in CoNLLTest.testSentMadonna()");
+        String input = "As a real native Detroiter , I want to remind everyone that Madonna is from Bay City , Mich. , a nice place in the thumb of the state 's lower peninsula .";
+        String expected = "(birthplace Madonna-13 Bay_City-16)";
+
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentWilson() {
+
+        System.out.println("INFO in CoNLLTest.testSentWilson()");
+        String input = "True , Woodrow Wilson was born in Virginia , but he won his political fame as governor of New Jersey , so he hardly counted as a Southerner in political terms .";
+        String expected = "(birthplace Woodrow_Wilson-3 Virginia-8)";
 
         doOneResultTest(input, expected);
     }
