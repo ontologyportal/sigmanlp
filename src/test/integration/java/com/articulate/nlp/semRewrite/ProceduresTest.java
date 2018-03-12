@@ -5,6 +5,8 @@ import com.articulate.sigma.KBmanager;
 import org.junit.Before;
 import org.junit.Test;
 
+import static junit.framework.TestCase.assertTrue;
+
 /*
 Copyright 2017-     Infosys
 
@@ -33,6 +35,7 @@ public class ProceduresTest extends IntegrationTestBase {
     public void setUpInterpreter() {
 
         KBmanager.getMgr().initializeOnce();
+        Procedures.debug = true;
     }
 
     /****************************************************************
@@ -45,5 +48,33 @@ public class ProceduresTest extends IntegrationTestBase {
         String lit = "isChildOf(Clothing,Artifact)";
         Literal l = new Literal(lit);
         assert(Procedures.isChildOf(l).equals("true"));
+    }
+
+    /****************************************************************
+     * Robert wears a shirt
+     */
+    @Test
+    public void testIsCELTclass1() {
+
+        System.out.println("INFO in ProceduresTest.testIsCELTclass1()");
+        String lit = "isCELTclass(PresidentOfTheUnitedStates,Person)";
+        Literal l = new Literal(lit);
+        System.out.println("INFO in ProceduresTest.testIsCELTclass1()" + Procedures.isCELTclass(l));
+        assert(Procedures.isCELTclass(l).equals("true"));
+    }
+
+    /****************************************************************
+     * Robert wears a shirt
+     */
+    @Test
+    public void testProcUnify1() {
+
+        System.out.println("INFO in testProcUnify1.testProcUnify1()");
+        String lit1 = "sumo(PresidentOfTheUnitedStates,Woodrow_Wilson-3)";
+        Literal l1 = new Literal(lit1);
+        String lit2 = "isCELTclass(Woodrow_Wilson-3,Person)";
+        Literal l2 = new Literal(lit2);
+        System.out.println("INFO in ProceduresTest.testProcUnify1()" + Procedures.procUnify(l1,l2));
+        assertTrue(Procedures.procUnify(l1,l2) != null);
     }
 }
