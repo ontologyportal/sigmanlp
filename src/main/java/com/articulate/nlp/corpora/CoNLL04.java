@@ -1,6 +1,7 @@
 package com.articulate.nlp.corpora;
 
 import com.articulate.nlp.RelExtract;
+import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.sigma.StringUtil;
 
 import java.io.File;
@@ -15,7 +16,7 @@ import static com.articulate.nlp.RelExtract.sentenceExtract;
  * Description as per http://cogcomp.org/page/resource_view/43
  * Available relations are:
  * located in, work for, organization based in, live in, and kill
- * [RAP - these should correspond to located, employs (also leader), located (with arg1 as Organization), inhabits, SUMO needs a relation for kill]
+ * [RAP - these should correspond to located, employs (also leader), located (with arg1 as Organization), inhabits or birthplace, SUMO needs a relation for kill]
  * The format of each block is:
 
  a sentence in table format
@@ -199,6 +200,7 @@ public class CoNLL04 {
      */
     public static void main(String[] args) {
 
+        Interpreter.replaceInstances = false;
         RelExtract.initOnce();
         CoNLL04 coNLL = new CoNLL04();
         coNLL.parse();
