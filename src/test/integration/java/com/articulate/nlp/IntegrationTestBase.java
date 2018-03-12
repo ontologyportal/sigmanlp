@@ -23,11 +23,20 @@ public class IntegrationTestBase extends SigmaTestBase {
      * File object pointing to this test's resources directory.
      */
     public static final File RESOURCES_FILE;
+
     static  {
+
         URI uri = null;
         try {
-            uri = CLASS.getClassLoader().getResource("./resources").toURI();
-        } catch (URISyntaxException e) {
+            //ClassLoader classLoader = CLASS.getClassLoader();
+            //System.out.println("Integration test base: " + classLoader.getResource("."));
+            //uri = classLoader.getResource("../resources").toURI();
+            uri = new URI("file:" + System.getenv("ONTOLOGYPORTAL_GIT") + "/sigmanlp/src/test/integration/java/resources");
+            System.out.println("Integration test base: " + uri);
+        }
+        catch (URISyntaxException e) {
+            System.out.println("IntegrationTestBase uri:" + uri);
+            System.out.println(e.getMessage());
             e.printStackTrace();
         }
         RESOURCES_FILE = new File(uri);
@@ -44,6 +53,7 @@ public class IntegrationTestBase extends SigmaTestBase {
     /****************************************************************/
     @BeforeClass
     public static void setup() throws IOException {
+
         long startTime = System.currentTimeMillis();
 
         //SigmaTestBase.doSetUp(xmlReader);
