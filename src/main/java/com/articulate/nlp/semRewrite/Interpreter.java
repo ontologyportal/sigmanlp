@@ -98,7 +98,7 @@ public class Interpreter {
     public static boolean verboseProof = false;
     public static boolean removePolite = true;
     public static boolean replaceInstances = true;
-    public static String sumoInstance = "sumoInstance";
+    public static String sumoInstance = "sumo";
     //public static String sumoInstance = "sumoInstance";
 
     //timeout value
@@ -837,9 +837,10 @@ public class Interpreter {
         //System.out.println("Interpreter.interpretGenCNF(): before consolidate: " + results);
         results = consolidateSpans(lastSentenceTokens,results);
         //System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
-        if (replaceInstances)
+        if (replaceInstances) {
             results = replaceInstances(results);
-        if (debug) System.out.println("Interpreter.interpretGenCNF(): after instance replacement: " + results);
+            if (debug) System.out.println("Interpreter.interpretGenCNF(): after instance replacement: " + results);
+        }
 
         List<String> posInformation = SentenceUtil.findPOSInformation(lastSentenceTokens, dependenciesList);
         // TODO: This is not the best way to substitute POS information
@@ -1164,7 +1165,13 @@ public class Interpreter {
      * for a rule to fire are present in the input CNF.  This can fail
      * quickly without attempting full unification
      */
-    private boolean termCoverage(HashSet<String> inputPreds, HashSet<String> inputTerms, Rule r) {
+    public boolean termCoverage(HashSet<String> inputPreds, HashSet<String> inputTerms, Rule r) {
+
+        //System.out.println("Interpreter.termCoverage(): input preds: " + inputPreds);
+        //System.out.println("Interpreter.termCoverage(): input terms: " + inputTerms);
+
+        //System.out.println("Interpreter.termCoverage(): rule preds: " + r.preds);
+        //System.out.println("Interpreter.termCoverage(): rule terms: " + r.terms);
 
         HashSet<String> predsSet = new HashSet<>();
         predsSet.addAll(r.preds);
@@ -1173,8 +1180,8 @@ public class Interpreter {
             return false;
 
         HashSet<String> termSet = new HashSet<>();
-        predsSet.addAll(r.terms);
-        predsSet.retainAll(inputTerms);
+        termSet.addAll(r.terms);
+        termSet.retainAll(inputTerms);
         if (r.terms.size() != termSet.size())
             return false;
         else
