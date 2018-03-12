@@ -32,6 +32,7 @@ import com.articulate.sigma.Formula;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class Procedures {
@@ -40,6 +41,8 @@ public class Procedures {
 
     public static final List<String> procNames = Arrays.asList("isCELTclass",
             "isSubclass", "isInstanceOf", "isSubAttribute", "isChildOf");
+
+    public static final List<String> procClasses = Arrays.asList("Super", "Person", "Time");
 
     /** ***************************************************************
      */
@@ -55,9 +58,16 @@ public class Procedures {
      */
     public static String isCELTclass(Literal c) {
 
+        if (!c.pred.equals("isCELTclass")) {
+            System.out.println("Error in Procedures.isCELTclass(): bad predicate: " + c.pred);
+            return "false";
+        }
         // debugging terms
         if (c.arg1.equals("Sub") && c.arg2.equals("Super"))
             return "true";
+
+        if (!procClasses.contains(c.arg2))
+            System.out.println("Warning in Procedures.isCELTclass(): unreserved CELT class: " + c.arg2);
 
         KB kb = KBmanager.getMgr().getKB("SUMO");
         if (debug) System.out.println("INFO in Procedures.isCELTclass(): " + c);
@@ -85,6 +95,37 @@ public class Procedures {
             if (debug) System.out.println("INFO in Procedures.isCELTclass(): returning false");
             return "false";
         }
+    }
+
+    /** ***************************************************************
+     * Take a ground procedure literal l2 and see if ground literal l1 can satisfy it.
+     * @param l1 is the "sentence" content that must be a sumo literal.
+     * @param l2 is the "rule" that must be a isCELTclass literal
+     */
+    public static HashMap<String,String> procUnify(Literal l1, Literal l2) {
+
+        HashMap<String,String> result = new HashMap<String,String>();
+        if (!l1.isGround() || !l2.isGround())
+            return null;
+        if (!l1.pred.equals("sumo") && !l1.pred.equals("sumoInstance"))
+            return null;
+        if (!l2.pred.equals("isCELTclass"))
+            return null;
+        if (!l1.arg2.equals(l2.arg1))
+            return null;
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        if (l2.arg2.equals("Person"))
+            if (kb.isSubclass(l1.arg1, "Human") || kb.isInstanceOf(l1.arg1, "Human") ||
+                    kb.isSubclass(l1.arg1, "SocialRole") || kb.isInstanceOf(l1.arg1, "SocialRole"))
+                return result;
+            else
+                return null;
+        else if (l2.arg2.equals("Time"))
+            if (kb.isSubclass(l1.arg1, "TimeMeasure") || kb.isSubclass(l1.arg1, "Process") || kb.isInstanceOf(l1.arg1, "Process"))
+                return result;
+            else
+                return null;
+        return null;
     }
 
     /** ***************************************************************
