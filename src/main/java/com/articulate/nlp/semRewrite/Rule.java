@@ -74,7 +74,7 @@ public class Rule {
     }
 
     /** ***************************************************************
-     * set during clausification
+     * set during clausification of an entire rule set or during parse of one rule
      */
     public void setPreds() {
 
@@ -82,7 +82,7 @@ public class Rule {
     }
 
     /** ***************************************************************
-     * set during clausification
+     * set during clausification of an entire rule set or during parse of one rule
      */
     public void setTerms() {
 
@@ -163,6 +163,9 @@ public class Rule {
             System.out.println("Error in RULE.parse(): " + message);
             ex.printStackTrace();
         }
+        r.cnf = Clausifier.clausify(r.lhs);
+        r.setPreds();
+        r.setTerms();
         if (debug) System.out.println("Info in Rule.parse(): returning: " + r);
         return r;
     }
