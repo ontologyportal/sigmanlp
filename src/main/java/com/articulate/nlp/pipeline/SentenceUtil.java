@@ -23,6 +23,7 @@ MA  02111-1307 USA
 
 import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Interpreter;
+import com.articulate.nlp.semRewrite.Literal;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import edu.stanford.nlp.dcoref.CorefChain;
@@ -30,15 +31,15 @@ import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.*;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
+import edu.stanford.nlp.trees.GrammaticalRelation;
+import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.util.CoreMap;
 import com.articulate.nlp.constants.LangLib;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -195,14 +196,15 @@ public class SentenceUtil {
      *      number(SINGULAR, Noun)
      *          //TODO: I'm a monster! Refactor me
      */
-    public static List<String> findPOSInformation(List<CoreLabel> tokens, List<String> dependenciesList) {
+    public static List<Literal> findPOSInformation(List<CoreLabel> tokens, List<Literal> dependenciesList) {
 
-        List<String> posInformation = Lists.newArrayList();
+        List<Literal> posInformation = Lists.newArrayList();
         for (CoreLabel label : tokens) {
             Pattern auxPattern = Pattern.compile("aux\\(.*, " + label.toString() + "\\)");
             boolean isAux = false;
-            for (String dep : dependenciesList) {
-                if (auxPattern.matcher(dep).find()) {
+            for (Literal l : dependenciesList) {
+                //if (auxPattern.matcher(dep).find()) {
+                if (l.pred.equals("aux") && l.arg2.equals(label.toString())) {
                     isAux = true;
                     break;
                 }
@@ -212,36 +214,37 @@ public class SentenceUtil {
                 boolean perfect = false;
                 String pos = label.get(PartOfSpeechAnnotation.class);
                 if (LangLib.POS_VBD.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label.toString()));
+                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
                 }
                 else if (LangLib.POS_VBP.equals(pos) || LangLib.POS_VBZ.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label.toString()));
+                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
                 }
                 else if (LangLib.POS_VBG.equals(pos) || LangLib.POS_VB.equals(pos) || LangLib.POS_VBN.equals(pos)) {
                     Pattern reverseAuxPattern = Pattern.compile("aux\\(" + label.toString() + ", .*-(\\d+)\\)");
-                    for (String dep : dependenciesList) {
-                        Matcher auxMatcher = reverseAuxPattern.matcher(dep);
-                        if (auxMatcher.find()) {
-                            int i = Integer.parseInt(auxMatcher.group(1));
+                    for (Literal l : dependenciesList) {
+                        //Matcher auxMatcher = reverseAuxPattern.matcher(dep);
+                        if (l.pred.equals("aux") && l.arg1.equals(label.toString())) {
+                            //int i = Integer.parseInt(auxMatcher.group(1));
+                            int i = l.clArg2.index();
                             CoreLabel t = tokens.get(i-1);
                             if (t.get(LemmaAnnotation.class).equals("be")) {
                                 if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBP) || t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBZ)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label.toString()));
+                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
                                 }
                                 else if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBD)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label.toString()));
+                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
                                 }
                                 progressive = true;
                             }
                             else if (t.get(LemmaAnnotation.class).equals("will")) {
-                                posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_FUTURE, label.toString()));
+                                posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_FUTURE, label));
                             }
                             else if (t.get(LemmaAnnotation.class).equals("have")) {
                                 if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBP) || t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBZ)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label.toString()));
+                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
                                 }
                                 else if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBD)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label.toString()));
+                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
                                 }
                                 perfect = true;
                             }
@@ -249,23 +252,23 @@ public class SentenceUtil {
                     }
                 }
                 else if (LangLib.POS_NN.equals(pos) || LangLib.POS_NNP.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_SINGULAR, label.toString()));
+                    posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_SINGULAR, label));
                 }
                 else if (LangLib.POS_NNS.equals(pos) || LangLib.POS_NNPS.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_PLURAL, label.toString()));
+                    posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_PLURAL, label));
                 }
 
                 // if false then Interpreter.lemmatizeResults() is called instead
                 if (Interpreter.lemmaLiteral && (isVerb(pos) || isNoun(pos)))
-                    posInformation.add(makeBinaryRelationship("lemma", label.lemma(), label.toString()));
+                    posInformation.add(makeBinaryRelationship("lemma", label.lemma(), label));
                 if (progressive && perfect) {
-                    posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PROGRESSIVE_PERFECT, label.toString()));
+                    posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PROGRESSIVE_PERFECT, label));
                 }
                 else if (progressive) {
-                    posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PROGRESSIVE, label.toString()));
+                    posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PROGRESSIVE, label));
                 }
                 else if (perfect) {
-                    posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PERFECT, label.toString()));
+                    posInformation.add(makeBinaryRelationship("aspect", LangLib.ASPECT_PERFECT, label));
                 }
             }
         }
@@ -275,15 +278,13 @@ public class SentenceUtil {
     //TODO: see if this exists somewhere else or move to utility class
     /** *************************************************************
      */
-    public static String makeBinaryRelationship(String relationship, String argument1, String argument2) {
+    public static Literal makeBinaryRelationship(String relationship, String argument1, CoreLabel cl) {
 
-        StringBuilder sb = new StringBuilder(relationship);
-        sb.append("(");
-        sb.append(argument1);
-        sb.append(", ");
-        sb.append(argument2);
-        sb.append(")");
-        return sb.toString();
+        Literal l = new Literal();
+        l.pred = relationship;
+        l.setarg1(argument1);
+        l.setarg2(cl);
+        return l;
     }
 
     /** *************************************************************
@@ -295,46 +296,6 @@ public class SentenceUtil {
             return Iterables.getLast(sentences);
         else
             return null;
-    }
-
-    /** ***************************************************************
-     */
-    public static ArrayList<String> toDependenciesList(Annotation document) {
-
-        return toDependenciesList(document.get(SentencesAnnotation.class));
-    }
-
-    /** ***************************************************************
-     */
-    public static ArrayList<String> toDependenciesList(CoreMap sentence) {
-
-        ArrayList<String> results = new ArrayList<>();
-        SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-        //System.out.println("SentenceUtil.toDependenciesList(): deps: " + dependencies.toList());
-        if (dependencies == null)
-            System.out.println("SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
-        else
-            results = Lists.newArrayList(dependencies.toList().split("\n"));
-        ArrayList<String> deps = new ArrayList<String>();
-        //System.out.println("SentenceUtil.toDependenciesList(): results: " + results);
-        for (String dep : results)
-            if (!dep.startsWith("punct(")) { // TODO: handle punctuations instead of just removing - AP
-                Pattern p = Pattern.compile("([^\\(]+)\\(([^,]+),([^\\(]+)\\)");
-                Matcher matcher = p.matcher(dep);
-                if (matcher.matches()) { // have to remove trailing apostrophe,
-                    // see https://nlp.stanford.edu/software/dependencies_manual.pdf section 4.6
-                    String pred = matcher.group(1);
-                    String arg1 = matcher.group(2);
-                    String arg2 = matcher.group(3);
-                    while (arg1.endsWith("'"))
-                        arg1 = arg1.substring(0,arg1.length()-1);
-                    while (arg2.endsWith("'"))
-                        arg2 = arg2.substring(0,arg2.length()-1);
-                    dep = pred + "(" + arg1 + "," + arg2 + ")";
-                }
-                deps.add(dep);
-            }
-        return deps;
     }
 
     /** ***************************************************************
@@ -358,12 +319,62 @@ public class SentenceUtil {
     }
 
     /** ***************************************************************
+     */
+    public static ArrayList<Literal> toDepList(CoreMap sentence) {
+
+        ArrayList<Literal> result = new ArrayList<>();
+        ArrayList<SemanticGraphEdge> edges = toEdgesList(sentence);
+        for (SemanticGraphEdge sge : edges) {
+            Literal l = new Literal();
+            l.pred = sge.getRelation().toString();
+            l.clArg1 = sge.getGovernor().backingLabel();
+            l.clArg2 = sge.getDependent().backingLabel();
+            l.arg1 = l.clArg1.toString();
+            l.arg2 = l.clArg2.toString();
+            result.add(l);
+        }
+        return result;
+    }
+
+    /** ***************************************************************
+     */
+    public static ArrayList<Literal> toDependenciesList(Annotation document) {
+
+        return toDependenciesList(getLastSentence(document));
+    }
+
+    /** ***************************************************************
+     */
+    public static ArrayList<Literal> toDependenciesList(CoreMap sentence) {
+
+        ArrayList<Literal> results = new ArrayList<>();
+        Collection<TypedDependency> typedDeps = null;
+        SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+        if (dependencies == null) {
+            System.out.println("Error in SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
+            return null;
+        }
+        else
+            typedDeps = dependencies.typedDependencies();
+        for (TypedDependency dep : typedDeps) {
+            Literal l = new Literal();
+            l.pred = dep.reln().toString();
+            l.clArg1 = dep.gov().backingLabel();
+            l.clArg2 = dep.dep().backingLabel();
+            l.arg1 = l.clArg1.toString();
+            l.arg2 = l.clArg2.toString();
+            results.add(l);
+        }
+        return results;
+    }
+
+    /** ***************************************************************
      * Also remove tokens with trailing apostrophe - see dependency manual sec 4.6
      */
-    public static ArrayList<String> toDependenciesList(List<CoreMap> sentences) {
+    public static ArrayList<Literal> toDependenciesList(List<CoreMap> sentences) {
 
         //System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
-        ArrayList<String> results = new ArrayList<>();
+        ArrayList<Literal> results = new ArrayList<>();
         for (CoreMap sentence : sentences) {
             results.addAll(toDependenciesList(sentence));
         }
@@ -375,12 +386,12 @@ public class SentenceUtil {
      */
     public static CNF toCNFDependenciesList(List<CoreMap> sentences) {
 
-        //System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
-        ArrayList<String> results = new ArrayList<>();
-        for (CoreMap sentence : sentences) {
-            results.addAll(toDependenciesList(sentence));
+        CNF cnf = new CNF();
+        ArrayList<Literal> lits = toDependenciesList(sentences);
+        for (Literal l : lits) {
+            cnf.append(l);
         }
-        return CNF.fromListString(results);
+        return cnf;
     }
 
     /** ***************************************************************
