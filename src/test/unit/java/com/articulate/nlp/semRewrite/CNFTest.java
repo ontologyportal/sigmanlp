@@ -1,5 +1,7 @@
 package com.articulate.nlp.semRewrite;
 
+import com.articulate.sigma.Formula;
+import com.articulate.sigma.FormulaUtil;
 import com.articulate.sigma.KBmanager;
 import org.junit.Test;
 
@@ -296,5 +298,18 @@ public class CNFTest {
                 " sumo(ChickenMeat,chicken-4).";
         System.out.println("result: " + cnf4.toSortedString());
         assertEquals(cnf4.toSortedString(),sorted);
+    }
+
+    /** ***************************************************************
+     */
+    @Test
+    public void testToProlog() {
+
+        String stmt = "(birthplace ?animal ?LOC)";
+        Formula f = new Formula(stmt);
+        String result = FormulaUtil.toProlog(f);
+        System.out.println("CNFTest.testToProlog(): "  + result);
+        CNF cnf = new CNF(result);
+        assertEquals("birthplace(?animal,?LOC)", cnf.toString());
     }
 }
