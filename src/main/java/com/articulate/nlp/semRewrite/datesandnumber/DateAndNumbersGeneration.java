@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
  */
 
+import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.sigma.WSD;
 import com.articulate.sigma.WordNet;
 import edu.stanford.nlp.ling.IndexedWord;
@@ -62,21 +63,21 @@ public class DateAndNumbersGeneration {
 			if ((times.getSecond() != null) || (times.getMinute() != null) || (times.getHour() != null)) {
 				//StringBuffer timeFn = new StringBuffer();
 				if (times.getSecond() != null) {
-					utilities.sumoTerms.add("second(" + "time-" + utilities.timeCount + "," +
-                            times.getSecond() + ")");
+					utilities.sumoTerms.add(new Literal("second(" + "time-" + utilities.timeCount + "," +
+                            times.getSecond() + ")"));
                     // times.getSecond() + "-" + times.getWordIndex() + ")");
 				}
 				if (times.getMinute() != null) {
-					utilities.sumoTerms.add("minute(" + "time-" + utilities.timeCount + "," +
-							times.getMinute() + ")");
+					utilities.sumoTerms.add(new Literal("minute(" + "time-" + utilities.timeCount + "," +
+							times.getMinute() + ")"));
 				}
 				if (times.getHour() != null) {
-					utilities.sumoTerms.add("hour(" + "time-" + utilities.timeCount + "," +
-							times.getHour() + ")");
+					utilities.sumoTerms.add(new Literal("hour(" + "time-" + utilities.timeCount + "," +
+							times.getHour() + ")"));
 				}
 				String tokenRoot = utilities.populateRootWord(times.getWordIndex());
 				if (tokenRoot != null) {
-					utilities.sumoTerms.add("time(" + tokenRoot + "," + "time-" + utilities.timeCount + ")");
+					utilities.sumoTerms.add(new Literal("time(" + tokenRoot + "," + "time-" + utilities.timeCount + ")"));
 				}
 				utilities.timeCount++;
 			}
@@ -161,11 +162,11 @@ public class DateAndNumbersGeneration {
 					if ((childrenSet.size() == 1)) {
 						measuredEntity = unitOfMeasurementNode;
 						//String lemmatizedWord = lemmatizeWord(measuredEntity);
-						utilities.sumoTerms.add("measure(" + measuredEntity.word() + "-" + measuredEntity.index() +
-                                ", measure" + count + ")");
-						utilities.sumoTerms.add("unit(measure" + count + ", "+ "memberCount" + ")");
-						utilities.sumoTerms.add("value(measure" + count + ", " + token.getWord()+ ")");
-						utilities.sumoTerms.add("valueToken(" + token.getWord() + "," + token.getWord() + "-" + token.getId() + ")");
+						utilities.sumoTerms.add(new Literal("measure(" + measuredEntity.word() + "-" + measuredEntity.index() +
+                                ", measure" + count + ")"));
+						utilities.sumoTerms.add(new Literal("unit(measure" + count + ", "+ "memberCount" + ")"));
+						utilities.sumoTerms.add(new Literal("value(measure" + count + ", " + token.getWord()+ ")"));
+						utilities.sumoTerms.add(new Literal("valueToken(" + token.getWord() + "," + token.getWord() + "-" + token.getId() + ")"));
 						flag = true;
 						return;
 					}
@@ -206,7 +207,7 @@ public class DateAndNumbersGeneration {
 		}
 		if (measuredEntity != null) {
 			String lemmatizedWord = lemmatizeWord(measuredEntity);
-			utilities.sumoTerms.add("measure(" + lemmatizedWord + "-" + measuredEntity.index() + ", measure" + count + ")");
+			utilities.sumoTerms.add(new Literal("measure(" + lemmatizedWord + "-" + measuredEntity.index() + ", measure" + count + ")"));
 		}
 		sumoUnitOfMeasure = lemmatizeWord(unitOfMeasurementNode);
 		sumoUnitOfMeasure = WSD.getBestDefaultSUMOsense(sumoUnitOfMeasure, 1);
@@ -219,9 +220,13 @@ public class DateAndNumbersGeneration {
 			}
 			sumoUnitOfMeasure = unitOfMeasurementStr;
 		}
-		utilities.sumoTerms.add("unit(measure" + count + ", "+ sumoUnitOfMeasure + ")");
-		utilities.sumoTerms.add("value(measure" + count + ", " + token.getWord() + ")");
-		utilities.sumoTerms.add("valueToken(" + token.getWord() + "," + token.getWord() + "-" + token.getId() + ")");
+		utilities.sumoTerms.add(new Literal("unit(measure" + count + ", "+ sumoUnitOfMeasure + ")"));
+		utilities.sumoTerms.add(new Literal("value(measure" + count + ", " + token.getWord() + ")"));
+		Literal l = new Literal();
+		l.pred = "valueToken";
+		l.setarg1(token.getWord());
+		l.setarg2(token.getWord() + "-" + token.getId());
+		utilities.sumoTerms.add(l);
 		WordNet.wn.initOnce();
 	}
 	
@@ -229,7 +234,7 @@ public class DateAndNumbersGeneration {
 	 * Returns the measure terms added in the sumo list
 	 * input: utility value
 	 */
-	public List<String> getMeasureTerms(Utilities utilities) {
+	public List<Literal> getMeasureTerms(Utilities utilities) {
 		
 		return utilities.sumoTerms;
 	}
@@ -368,7 +373,7 @@ public class DateAndNumbersGeneration {
 	 * Adds the necessary sumo terms from the respective functions and filter any duplicates if present.
 	 * input: List of tokens, StanfordDateTimeExtractor object and a ClauseSubstitutor.
 	 */
-	public List<String> generateSumoTerms(List<Tokens> tokensList, StanfordDateTimeExtractor stanfordParser) {
+	public List<Literal> generateSumoTerms(List<Tokens> tokensList, StanfordDateTimeExtractor stanfordParser) {
 
 		DatesAndDuration datesandDurationHandler = new DatesAndDuration();
 		Utilities utilities = new Utilities();
