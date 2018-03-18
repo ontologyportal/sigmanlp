@@ -213,7 +213,7 @@ public class CNF implements Comparable {
     /** ***************************************************************
      * append all literal to this CNF
      */
-    public void appendAll(HashSet<Literal> lits) {
+    public void appendAll(Collection<Literal> lits) {
 
         for (Literal lit : lits)
             append(lit);
