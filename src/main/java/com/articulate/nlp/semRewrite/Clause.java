@@ -220,6 +220,10 @@ public class Clause implements Comparable {
                 if (Procedures.isSubAttribute(c1).equals("true")) {
                     return new HashMap<String,String>();
                 }
+            if (c1.pred.equals("different") && c1.isGround())
+                if (Procedures.different(c1).equals("true")) {
+                    return new HashMap<String,String>();
+                }
             if (debug) System.out.println("INFO in Clause.unify(): done checking procedures");
 
             for (int j = 0; j < disjuncts.size(); j++) {
