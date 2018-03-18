@@ -197,12 +197,28 @@ public class Literal implements Comparable {
 
     /****************************************************************
      */
+    public void setarg1(CoreLabel cl) {
+
+        arg1 = cl.toString();
+        clArg1 = cl;
+    }
+
+    /****************************************************************
+     */
     public void setarg2(String s) {
 
         arg2 = s;
         clArg2 = new CoreLabel();
         clArg2.setValue(tokenOnly(s));
         clArg2.setIndex(tokenNum(s));
+    }
+
+    /****************************************************************
+     */
+    public void setarg2(CoreLabel cl) {
+
+        arg2 = cl.toString();
+        clArg2 = cl;
     }
 
     /** ***************************************************************
@@ -414,7 +430,14 @@ public class Literal implements Comparable {
 
         return sb.toString();
     }
-    
+
+    /** ***************************************************************
+     */
+    public String toKifFormat() {
+
+        return "(" + pred + " " + arg1 + " " + arg2 + ")";
+    }
+
     /** ***************************************************************
      */
     public Literal deepCopy() {
@@ -452,8 +475,10 @@ public class Literal implements Comparable {
      * @return true if the clause does not contain any variables
      */
     public boolean isGround() {
-        
-        if (!arg1.startsWith("?") && !arg2.startsWith("?"))
+
+        if (arg1 == null || arg2 == null)
+            System.out.println("Error in Literal.isGround(): null argument in : " + this);
+        if (arg1 != null && !arg1.startsWith("?") && arg2 != null && !arg2.startsWith("?"))
             return true;
         else
             return false;
@@ -586,8 +611,9 @@ public class Literal implements Comparable {
 
         if (Procedures.isProcPred(l2.pred) && l2.isGround())
             return Procedures.procUnify(this,l2);
-        if (!pred.equals(l2.pred)) 
-            return null;        
+        if (!pred.equals(l2.pred))
+            if (!pred.equals("dep") && !l2.pred.equals("dep")) // allow a "dep" to match anything
+                return null;
         for (int arg = 1; arg < 3; arg++) {           
             String t1 = arg1; // Pop the first term pair to unify off the lists            
             String t2 = l2.arg1; // (removes and returns the denoted elements).
