@@ -61,6 +61,7 @@ public class RelExtractTest extends IntegrationTestBase {
     }
 
     /****************************************************************
+     * @param input is a CNF string
      */
     private void doRuleTest(String input, String rule, String expectedOutput) {
 
@@ -89,7 +90,6 @@ public class RelExtractTest extends IntegrationTestBase {
         RHS res = r.rhs.applyBindings(bindings);
         System.out.println("result: " + res);
 
-        ArrayList<String> kifClauses = new ArrayList();
         String resultString = StringUtil.removeEnclosingCharPair(res.toString(),1,'{','}');
 
         assertEquals(expectedOutput, resultString);
@@ -103,17 +103,18 @@ public class RelExtractTest extends IntegrationTestBase {
         System.out.println();
         System.out.println("-------------------");
         System.out.println("INFO in RelExtractTest.doTest(): Input: " + input);
-        ArrayList<String> kifClauses = RelExtract.sentenceExtract(input);
+        ArrayList<RHS> kifClauses = RelExtract.sentenceExtract(input);
         System.out.println("INFO in RelExtractTest.doTest(): result: " + kifClauses);
         System.out.println("INFO in RelExtractTest.doTest(): expected: " + expectedOutput);
         //String result = StringUtil.removeEnclosingCharPair(kifClauses.toString(),0,'[',']');
         String result = "";
         if (kifClauses != null && kifClauses.size() > 0)
-            result = kifClauses.get(0);
+            result = kifClauses.get(0).toString();
         assertEquals(expectedOutput,result);
     }
 
     /****************************************************************
+     * @param input is a CNF string
      */
     private void doAllRuleTest(String input, String expectedOutput) {
 
@@ -125,13 +126,27 @@ public class RelExtractTest extends IntegrationTestBase {
         System.out.println("-------------------");
         System.out.println("INFO in RelExtractTest.doTest(): Input: " + input);
         System.out.println("INFO in RelExtractTest.doTest(): CNF input: " + inputs);
-        ArrayList<String> kifClauses = RelExtract.cnfExtract(inputs);
+        ArrayList<RHS> kifClauses = new ArrayList<>();
+        HashSet<String> preds = cnfInput.getPreds();
+        HashSet<String> terms = cnfInput.getTerms();
+        for (Rule r : RelExtract.rs.rules) {
+            if (!interpreter.termCoverage(preds, terms, r))
+                continue;
+            HashMap<String, String> bindings = r.cnf.unify(cnfInput);
+            if (bindings != null) {
+                System.out.println("bindings: " + bindings);
+                System.out.println("rule: " + r);
+                RHS res = r.rhs.applyBindings(bindings);
+                kifClauses.add(res);
+                System.out.println("result: " + res);
+            }
+        }
         System.out.println("INFO in RelExtractTest.doTest(): result: " + kifClauses);
         System.out.println("INFO in RelExtractTest.doTest(): expected: " + expectedOutput);
         //String result = StringUtil.removeEnclosingCharPair(kifClauses.toString(),0,'[',']');
         String result = "";
         if (kifClauses != null && kifClauses.size() > 0)
-            result = kifClauses.get(0);
+            result = kifClauses.get(0).toString();
         assertEquals(expectedOutput,result);
     }
 
@@ -184,6 +199,9 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testSimpleSent1() {
 
+        Interpreter.debug = true;
+        CNF.debug = true;
+        Procedures.debug = true;
         System.out.println("INFO in RelExtractTest.testSimpleSent1()");
         String input = "Robert wears a shirt";
         String expected = "(wears Robert-1 shirt-4)";
