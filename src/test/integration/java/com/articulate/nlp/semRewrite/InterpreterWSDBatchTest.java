@@ -56,7 +56,7 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
     @Parameterized.Parameter(value = 0)
     public String input;
     @Parameterized.Parameter(value = 1)
-    public String[] expected;
+    public Literal[] expected;
 
     @BeforeClass
     public static void initInterpreter() {
@@ -87,18 +87,18 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
     @Test
     public void test() {
 
-        List<String> wsds = doFullWSD(input);
+        List<Literal> wsds = doFullWSD(input);
         assertThat(wsds, hasItems(expected));
         assertEquals(expected.length, wsds.size());
     }
 
     /** ***************************************************************
      */
-    private List<String> doFullWSD(String input) {
+    private List<Literal> doFullWSD(String input) {
 
         Annotation wholeDocument = interp.userInputs.annotateDocument(input);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<String> wsds = interp.findWSD(lastSentence);
+        List<Literal> wsds = interp.findWSD(lastSentence);
 
         return wsds;
     }
