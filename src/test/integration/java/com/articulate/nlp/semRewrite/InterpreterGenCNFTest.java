@@ -1,7 +1,14 @@
 package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.IntegrationTestBase;
+import com.articulate.nlp.pipeline.SentenceUtil;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,12 +25,15 @@ import static org.junit.Assert.assertThat;
  * In: Natural language sentences.
  * Out: A CNF, aka the dependency parse.
  */
-public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
+public class InterpreterGenCNFTest extends IntegrationTestBase {
 
     private static Interpreter interpreter;
 
+    /****************************************************************
+     */
     @Before
     public void setUpInterpreter() throws IOException {
+
         interpreter = new Interpreter();
         interpreter.inference = false;
         interpreter.initialize();
@@ -31,8 +41,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         IntegrationTestBase.resetAllForInference();
     }
 
+    /****************************************************************
+     */
     @Test
     public void testAmeliaLivesInMyComputer()   {
+
         String input = "Amelia lives in my computer.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -47,8 +60,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected.length, actual.size());
     }
 
+    /****************************************************************
+     */
     @Test
     public void testWhereDoesAmeliaLive()   {
+
         String input = "Where does Amelia live?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -62,8 +78,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testAmeliaLivedInUS()   {
+
         String input = "Amelia lived in the United States.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -79,8 +98,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected.length, actual.size());
     }
 
+    /****************************************************************
+     */
     @Test
     public void testWhereDidAmeliaLive()   {
+
         String input = "Where did Amelia live?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -94,8 +116,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testDidAmeliaWalk()   {
+
         String input = "Did Amelia walk?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -107,8 +132,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testAmeliaFliesAirplanes()   {
+
         String input = "Amelia flies airplanes.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -122,8 +150,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testWhoFliesAirplanes()   {
+
         String input = "Who flies airplanes?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -136,8 +167,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryMadeAHouse()   {
+
         String input = "Mary made a house.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -151,8 +185,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryHasMadeAHouse()   {
+
         String input = "Mary has made a house.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -166,8 +203,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryMadeUpAStory()   {
+
         String input = "Mary made up a story.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -182,8 +222,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected.length, actual.size());
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryHasMadeUpAStory()   {
+
         String input = "Mary has made up a story.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -198,8 +241,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected.length, actual.size());
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWentAfterMidnight()   {
+
         String input = "Mary went after midnight.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -214,8 +260,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected.length, actual.size());
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWalksWithTheMan()   {
+
         String input = "Mary walks with the man.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -229,8 +278,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWalksForTwoHours()   {
+
         String input = "Mary walks for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -244,8 +296,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWalkedForTwoHours()   {
+
         String input = "Mary walked for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -259,8 +314,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryHasWalkedForTwoHours()   {
+
         String input = "Mary has walked for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -275,8 +333,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryHasBeenWalkingForTwoHours()   {
+
         String input = "Mary has been walking for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -291,8 +352,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWasWalkingForTwoHours()   {
+
         String input = "Mary was walking for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -307,8 +371,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryHadWalkedForTwoHours()   {
+
         String input = "Mary had walked for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -323,8 +390,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryHadBeenWalkingForTwoHours()   {
+
         String input = "Mary had been walking for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -339,8 +409,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWillWalkForTwoHours()   {
+
         String input = "Mary will walk for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -355,8 +428,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWillBeWalkingForTwoHours()   {
+
         String input = "Mary will be walking for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -371,8 +447,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWillHaveWalkedForTwoHours()   {
+
         String input = "Mary will have walked for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -387,8 +466,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testMaryWillHaveBeenWalkingForTwoHours()   {
+
         String input = "Mary will have been walking for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -403,11 +485,12 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
-    /**
+    /****************************************************************
      * TODO: not getting past tense
      */
     @Test
     public void testDidMaryMakeAHouse()   {
+
         String input = "Did Mary make a house?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -421,11 +504,12 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
-    /**
+    /****************************************************************
      * TODO: not getting past tense
      */
     @Test
     public void testWhatDidMaryKick()   {
+
         String input = "What did Mary kick?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -438,8 +522,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testWasAmeliaEarhartAFemale()   {
+
         String input = "Was Amelia Earhart a female?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -453,8 +540,11 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
     @Test
     public void testWhatWasAmeliaInterestedIn()   {
+
         String input = "What was Amelia interested in?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -468,11 +558,12 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
-    /**
+    /****************************************************************
      * TODO: bad month(time-1,May)
      */
     @Test
     public void testMayMaryWalk()   {
+
         String input = "May Mary walk?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -485,11 +576,12 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
-    /**
+    /****************************************************************
      * TODO: bad sumo(Cooking,can-1)
      */
     @Test
     public void testCanMaryWalk()   {
+
         String input = "Can Mary walk?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -502,11 +594,12 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
-    /**
+    /****************************************************************
      * TODO: getting tense(PAST), but should be tense(PRESENT) && aspect(PERFECT)
      */
     @Test
     public void testHasMaryMadeAHouse()   {
+
         String input = "Has Mary made a house?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -520,11 +613,12 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
-    /**
+    /****************************************************************
      * TODO: not getting aspect(PERFECT)
      */
     @Test
     public void testHadMaryMadeAHouse()   {
+
         String input = "Had Mary made a house?";
         CNF cnf = interpreter.interpretGenCNF(input);
 
@@ -538,4 +632,83 @@ public class InterpreterInterpretGenCNFTest extends IntegrationTestBase {
         assertEquals(expected, cnfSets);
     }
 
+    /****************************************************************
+     */
+    @Test
+    public void testJackNicklaus()   {
+
+        String input = "I also feel obliged to point out that Jack Nicklaus thinks so highly of " +
+                "Muirfield that he named a course he built in Jack Nicklaus ' native Ohio after it .";
+
+        CNF cnf = interpreter.interpretGenCNF(input);
+        Set<String> cnfSets = Sets.newHashSet(cnf.toListString());
+
+        System.out.println("InterpreterGenCNFTest.testJackNicklaus(): " + cnfSets);
+        String[] expected = {
+                "sumo(Golfer,Jack_Nicklaus-9)",
+                "sumo(Golfer,Jack_Nicklaus-24)"
+        };
+        assertThat(cnfSets, hasItems(expected));
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testCatMat()   {
+
+        String input = "Robert sits on the mat.";
+
+        CNF cnf = interpreter.interpretGenCNF(input);
+        Set<String> cnfSets = Sets.newHashSet(cnf.toListString());
+
+        System.out.println("InterpreterGenCNFTest.testCatMat(): " + cnfSets);
+        String[] expected = {
+                "nmod:on(sits-2,mat-5)"
+        };
+        assertThat(cnfSets, hasItems(expected));
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testConsolidate()   {
+
+        String input = "Dan Quayle 's first trip out of the country was a disaster.";
+        //String input = "Dan Quayle 's first trip out of the country as vice is likely to be to Caracas , Venezuela , " +
+        //        "for Carlos Andres Perez 's presidential inauguration on Feb. 2 COMMA an official in President-elect " +
+        //        "Bush 's transition said Thursday .";
+        Annotation wholeDocument = interpreter.userInputs.annotateDocument(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        List<Literal> results = Lists.newArrayList();
+        List<Literal> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+        results.addAll(dependenciesList);
+        List<Literal> wsd = Interpreter.findWSD(lastSentence);
+        results.addAll(wsd);
+        interpreter.debug = true;
+        System.out.println("Interpreter.interpretGenCNF(): before consolidate: " + results);
+        results = Interpreter.consolidateSpans(lastSentenceTokens,results);
+        System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testConsolidate2()   {
+
+        String input = "On Dec. 14 COMMA rescuers pulled a mother , Susanna Petrosyan , and her 4-year-old daughter , " +
+                "Gayaney , out of the rubble in Leninakan .";
+        Annotation wholeDocument = interpreter.userInputs.annotateDocument(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        List<Literal> results = Lists.newArrayList();
+        List<Literal> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+        results.addAll(dependenciesList);
+        List<Literal> wsd = Interpreter.findWSD(lastSentence);
+        results.addAll(wsd);
+        interpreter.debug = true;
+        System.out.println("Interpreter.interpretGenCNF(): before consolidate: " + results);
+        results = Interpreter.consolidateSpans(lastSentenceTokens,results);
+        System.out.println("Interpreter.interpretGenCNF(): after consolidate: " + results);
+    }
 }
