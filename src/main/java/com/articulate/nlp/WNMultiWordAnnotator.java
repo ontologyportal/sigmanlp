@@ -171,7 +171,7 @@ public class WNMultiWordAnnotator implements Annotator {
                     String sumo = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(synset));
                     if (!StringUtil.emptyString(sumo))
                         tok.set(WNMWSUMOAnnotation.class,sumo);
-                    if (!StringUtil.emptyString(sumo))
+                    if (!StringUtil.emptyString(multiWordToken.toString()))
                         tok.set(WNMWTokenAnnotation.class,multiWordToken.toString());
                     if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for token: " + tok);
                     if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for index: " + index);
@@ -234,7 +234,7 @@ public class WNMultiWordAnnotator implements Annotator {
 
     /****************************************************************
      */
-    public static void main(String[] args) {
+    public static void test1() {
 
         debug = true;
         KBmanager.getMgr().initializeOnce();
@@ -258,6 +258,40 @@ public class WNMultiWordAnnotator implements Annotator {
         annotateSentence(al);
 
         System.out.println("result: " + al);
+    }
+
+    /****************************************************************
+     */
+    public static void test2() {
+
+        debug = true;
+        KBmanager.getMgr().initializeOnce();
+        ArrayList<CoreLabel> al =  new ArrayList<>();
+        CoreLabel cl = null;
+        cl = setCoreLabel("Mary",1);
+        al.add(cl);
+
+        cl = setCoreLabel("is",2);
+        cl.setLemma("be");
+        al.add(cl);
+
+        cl = setCoreLabel("out",3);
+        al.add(cl);
+
+        cl = setCoreLabel("of",4);
+        al.add(cl);
+
+        cl = setCoreLabel("cash",5);
+        al.add(cl);
+        annotateSentence(al);
+
+        System.out.println("result: " + al);
+    }
+
+    /****************************************************************
+     */
+    public static void main(String[] args) {
+        test2();
     }
 }
 
