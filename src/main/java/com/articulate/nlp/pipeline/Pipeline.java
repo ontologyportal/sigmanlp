@@ -148,12 +148,12 @@ public class Pipeline {
 
     /** ***************************************************************
      */
-    public List<String> toDependencies(String input) {
+    public List<Literal> toDependencies(String input) {
 
         Annotation wholeDocument = annotate(input);
         wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, anchorDate);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+        List<Literal> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
         return dependencies;
     }
 
@@ -342,7 +342,7 @@ public class Pipeline {
             Annotation a = Pipeline.toAnnotation("John killed Mary on 31 March and also in July.");
             SentenceUtil.printSentences(a);
             CoreMap lastSentence = SentenceUtil.getLastSentence(a);
-            List<String> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+            List<Literal> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
             System.out.println("Interpreter.interpretGenCNF(): dependencies: " + dependenciesList);
         }
     }
