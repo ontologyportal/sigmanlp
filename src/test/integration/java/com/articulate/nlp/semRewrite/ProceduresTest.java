@@ -39,7 +39,6 @@ public class ProceduresTest extends IntegrationTestBase {
     }
 
     /****************************************************************
-     * Robert wears a shirt
      */
     @Test
     public void testIsChildOfClass() {
@@ -51,7 +50,17 @@ public class ProceduresTest extends IntegrationTestBase {
     }
 
     /****************************************************************
-     * Robert wears a shirt
+     */
+    @Test
+    public void testIsChildOfClass2() {
+
+        System.out.println("INFO in ProceduresTest.testIsChildOfClass2()");
+        String lit = "isChildOf(Golfer,Animal)";
+        Literal l = new Literal(lit);
+        assert(Procedures.isChildOf(l).equals("true"));
+    }
+
+    /****************************************************************
      */
     @Test
     public void testIsCELTclass1() {
@@ -64,7 +73,6 @@ public class ProceduresTest extends IntegrationTestBase {
     }
 
     /****************************************************************
-     * Robert wears a shirt
      */
     @Test
     public void testProcUnify1() {
