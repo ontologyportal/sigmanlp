@@ -22,6 +22,9 @@ MA  02111-1307 USA
 */
 
 import com.articulate.sigma.Formula;
+import com.articulate.sigma.FormulaUtil;
+import com.articulate.sigma.KB;
+import com.articulate.sigma.KBmanager;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -62,12 +65,42 @@ public class RHS {
         rhs.stop = stop;
         return rhs;
     }
-    
+
+    /** ***************************************************************
+     * If there's more than one literal, return null and print error
+     */
+    public Literal toLiteral() {
+
+        if (cnf == null) {
+            System.out.println("Error in RHS.toLiteral(): null cnf: " + this);
+            return null;
+        }
+        if (cnf.clauses == null) {
+            System.out.println("Error in RHS.toLiteral(): null clauses: " + this);
+            return null;
+        }
+        if (cnf.clauses.size() > 1) {
+            System.out.println("Error in RHS.toLiteral(): more than one clause: " + this);
+            return null;
+        }
+        Clause c =  cnf.clauses.get(0);
+        if (c.disjuncts == null) {
+            System.out.println("Error in RHS.toLiteral(): null disjuncts: " + this);
+            return null;
+        }
+        if (c.disjuncts.size() > 1) {
+            System.out.println("Error in RHS.toLiteral(): more than one disjunct: " + this);
+            return null;
+        }
+        return c.disjuncts.get(0);
+    }
+
     /** ***************************************************************
      * The predicate must already have been read
      */
     public static RHS parse(Lexer lex, int startLine) {
 
+        KB kb = KBmanager.getMgr().getKB("SUMO");
         String errStart = "Parsing error in " + RuleSet.filename;
         String errStr;
         RHS rhs = new RHS();
@@ -75,7 +108,7 @@ public class RHS {
             if (lex.testTok(Lexer.Stop)) {
                 rhs.stop = true;
                 lex.next();
-                //System.out.println("Info in RHS.parse(): 1 " + lex.look());
+                if (debug) System.out.println("Info in RHS.parse(): 1 " + lex.look());
                 if (!lex.testTok(Lexer.Stop)) {
                     errStr = (errStart + ": Invalid end token '" + lex.next() + "' near line " + startLine);
                     throw new ParseException(errStr, startLine);
@@ -93,11 +126,17 @@ public class RHS {
                         sb.append(st);
                 }
                 rhs.form = new Formula(sb.toString());
-                //System.out.println("Info in RHS.parse(): SUMO: " + sb.toString());
+                if (debug) System.out.println("Info in RHS.parse(): form: " + rhs.form);
+                if (debug) System.out.println("Info in RHS.parse(): is simple: " + rhs.form.isSimpleClause(kb));
+                if (debug) System.out.println("Info in RHS.parse(): is binary: " + rhs.form.isBinary());
+                if (rhs.form.isSimpleClause(kb) && rhs.form.isBinary())
+                    rhs.cnf = new CNF(FormulaUtil.toProlog(rhs.form));
+                if (debug) System.out.println("Info in RHS.parse(): SUMO: " + sb.toString());
             }
             else if (lex.testTok(Lexer.OpenPar)) {
                 lex.next();
                 rhs.cnf = CNF.parseSimple(lex);
+                if (debug) System.out.println("Info in RHS.parse(): cnf " + rhs.cnf);
                 //lex.next();
             }
             //System.out.println("Info in RHS.parse(): 2 " + lex.look());
