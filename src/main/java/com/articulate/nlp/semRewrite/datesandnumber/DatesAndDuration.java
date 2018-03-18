@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.semRewrite.Literal;
 import edu.stanford.nlp.ling.IndexedWord;
 
 import java.util.List;
@@ -50,10 +51,10 @@ public class DatesAndDuration {
 		else if (Utilities.DAYS.contains(presentDateToken.getWord().toLowerCase())) {
 			String tokenRoot = utilities.populateRootWord(presentDateToken.getId());
 			if (tokenRoot != null) {
-				utilities.sumoTerms.add("time("+tokenRoot+","+"time-"+utilities.timeCount+")");
+				utilities.sumoTerms.add(new Literal("time("+tokenRoot+","+"time-"+utilities.timeCount+")"));
 			}
 			addDateToList(null, null, null, presentDateToken.getWord(), presentDateToken.getId(), utilities);
-			utilities.sumoTerms.add("day(time-"+utilities.timeCount+","+presentDateToken.getWord()+")");
+			utilities.sumoTerms.add(new Literal("day(time-"+utilities.timeCount+","+presentDateToken.getWord()+")"));
 			utilities.timeCount++;
 		}
 		else if (yearPatternMatcher.find()) {
@@ -63,7 +64,7 @@ public class DatesAndDuration {
 		else if (mmddyyyyPatternMatcher.find()) {
 			String tokenRoot = utilities.populateRootWord(presentDateToken.getId());
 			if (tokenRoot != null) {
-				utilities.sumoTerms.add("time("+tokenRoot+","+"time-"+utilities.timeCount+")");
+				utilities.sumoTerms.add(new Literal("time("+tokenRoot+","+"time-"+utilities.timeCount+")"));
 			}
 			addDateToList(mmddyyyyPatternMatcher.group(3), Utilities.MONTHS.get(Integer.valueOf(mmddyyyyPatternMatcher.group(1))-1),
 					mmddyyyyPatternMatcher.group(5), null, presentDateToken.getId(), utilities);
@@ -178,18 +179,18 @@ public class DatesAndDuration {
 		 for (DateInfo date : dateList) {
 			 if ((date.getYear() != null) || (date.getMonth() != null) || (date.getDay() != null)) {
 				 if (date.getDay() != null) {
-					 utilities.sumoTerms.add("day(time-" + utilities.timeCount + "," + date.getDay() + ")");
+					 utilities.sumoTerms.add(new Literal("day(time-" + utilities.timeCount + "," + date.getDay() + ")"));
 				 }
 				 if (date.getMonth() != null) {
-					 utilities.sumoTerms.add("month(time-" + utilities.timeCount + "," + date.getMonth() + ")");
+					 utilities.sumoTerms.add(new Literal("month(time-" + utilities.timeCount + "," + date.getMonth() + ")"));
 				 }
 				 if (date.getYear() != null) {
-					 utilities.sumoTerms.add("year(time-" + utilities.timeCount + "," + date.getYear() + ")");
+					 utilities.sumoTerms.add(new Literal("year(time-" + utilities.timeCount + "," + date.getYear() + ")"));
 				 }
 				 String tokenRoot = utilities.populateRootWord(date.getWordIndex());
 				 date.setTimeCount(utilities.timeCount);
 				 if (tokenRoot != null) {
-					 utilities.sumoTerms.add("time(" + tokenRoot + "," + "time-" + utilities.timeCount + ")");
+					 utilities.sumoTerms.add(new Literal("time(" + tokenRoot + "," + "time-" + utilities.timeCount + ")"));
 				 }
 				 utilities.timeCount++;
 			 }
@@ -209,14 +210,14 @@ public class DatesAndDuration {
 			 newDateInfo.setYear(years[0]);
 			 newDateInfo.addWordIndex(token.getId());
 			 newDateInfo.setTimeCount(utilities.timeCount);
-			 utilities.sumoTerms.add("year(time-"+utilities.timeCount+","+years[0]+")");
+			 utilities.sumoTerms.add(new Literal("year(time-"+utilities.timeCount+","+years[0]+")"));
 			 utilities.timeCount++;
 
 			 DateInfo endDateInfo = new DateInfo();
 			 endDateInfo.setYear(years[1]);
 			 endDateInfo.addWordIndex(token.getId());
 			 endDateInfo.setTimeCount(utilities.timeCount);
-			 utilities.sumoTerms.add("year(time-"+utilities.timeCount+","+years[1]+")");
+			 utilities.sumoTerms.add(new Literal("year(time-"+utilities.timeCount+","+years[1]+")"));
 			 utilities.timeCount++;
 
 			 generateDurationSumoTerms(tempParent,utilities, newDateInfo, endDateInfo);
@@ -242,18 +243,18 @@ public class DatesAndDuration {
 
 	     if (tempParent != null) {
 	         if (Utilities.VerbTags.contains(tempParent.tag())) {
-	             utilities.sumoTerms.add("StartTime(" + tempParent.value()+"-"+tempParent.index() + "," + "time-" + startDateInfo.getTimeCount() + ")");
-	             utilities.sumoTerms.add("EndTime(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + endDateInfo.getTimeCount() + ")");
+	             utilities.sumoTerms.add(new Literal("StartTime(" + tempParent.value()+"-"+tempParent.index() + "," + "time-" + startDateInfo.getTimeCount() + ")"));
+	             utilities.sumoTerms.add(new Literal("EndTime(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + endDateInfo.getTimeCount() + ")"));
 
 	         }
 	         if (Utilities.nounTags.contains(tempParent.tag())) {
 	             if (tempParent.ner().equals("PERSON")) {
-	                 utilities.sumoTerms.add("BirthDate(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + startDateInfo.getTimeCount() + ")");
-	                 utilities.sumoTerms.add("DeathDate(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + endDateInfo.getTimeCount() + ")");
+	                 utilities.sumoTerms.add(new Literal("BirthDate(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + startDateInfo.getTimeCount() + ")"));
+	                 utilities.sumoTerms.add(new Literal("DeathDate(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + endDateInfo.getTimeCount() + ")"));
 	             }
 	             else {
-	                 utilities.sumoTerms.add("StartTime(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + startDateInfo.getTimeCount() + ")");
-	                 utilities.sumoTerms.add("EndTime(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + endDateInfo.getTimeCount() + ")");
+	                 utilities.sumoTerms.add(new Literal("StartTime(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + startDateInfo.getTimeCount() + ")"));
+	                 utilities.sumoTerms.add(new Literal("EndTime(" + tempParent.value() +"-"+tempParent.index()+ "," + "time-" + endDateInfo.getTimeCount() + ")"));
 	             }
 	         }
 	         startDateInfo.setDurationFlag(true);
