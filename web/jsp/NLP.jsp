@@ -40,9 +40,8 @@ Authors:
     Interpreter interp = new Interpreter();
     interp.initialize();
 
-    Interpreter interpRel = new Interpreter();
-    String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
-    interpRel.initOnce(filename);
+    //String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "Relations.txt";
+    RelExtract.initOnce();
 
     String propString =  "tokenize, ssplit, pos, lemma, parse, depparse, ner, wsd, wnmw, tsumo, sentiment";
     Pipeline p = new Pipeline(true,propString);
@@ -69,7 +68,7 @@ Authors:
     String reload = request.getParameter("reload");
     if (reload != null) {
         interp.loadRules();
-        interpRel.loadRules(filename);
+        RelExtract.initOnce();
     }
 
     String pageName = "NLP";
@@ -79,9 +78,7 @@ Authors:
     List<String> forms = interp.interpret(theText);
     ArrayList<CNF> inputs = new ArrayList<>();
     System.out.println("NLP.jsp: Running relation extraction");
-    inputs.add(interpRel.interpretGenCNF(theText));
-    System.out.println("NLP.jsp: inputs: " + inputs);
-    ArrayList<String> kifClauses = interpRel.interpretCNF(inputs);
+    ArrayList<RHS> kifClauses = RelExtract.sentenceExtract(theText);
 %>
 <%@include file="CommonHeader.jsp" %>
 
