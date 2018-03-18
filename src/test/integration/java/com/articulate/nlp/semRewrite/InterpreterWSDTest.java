@@ -68,15 +68,15 @@ public class InterpreterWSDTest extends IntegrationTestBase {
         String input = "Amelia Mary Earhart was an American aviator.";
         Annotation wholeDocument = interp.userInputs.annotateDocument(input);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<String> wsds = interp.findWSD(lastSentence);
-        String[] expected = {
+        List<Literal> wsds = interp.findWSD(lastSentence);
+        Literal[] expected = {
                 //"names(Amelia-1,\"Amelia\")", // missed without real EntityParser information
                 //"names(Mary-2,\"Mary\")",
-                "sumo(DiseaseOrSyndrome,Amelia-1)", // from WordNet: Amelia
-                "sumo(Woman,Mary-2)",
-                "sumo(Woman,Earhart-3)",
-                "sumo(UnitedStates,American-6)",
-                "sumo(Pilot,aviator-7)"
+                new Literal("sumo(DiseaseOrSyndrome,Amelia-1)"), // from WordNet: Amelia
+                new Literal("sumo(Woman,Mary-2)"),
+                new Literal("sumo(Woman,Earhart-3)"),
+                new Literal("sumo(UnitedStates,American-6)"),
+                new Literal("sumo(Pilot,aviator-7)")
         };
         assertThat(wsds, hasItems(expected));
         assertEquals(expected.length, wsds.size());
@@ -90,13 +90,31 @@ public class InterpreterWSDTest extends IntegrationTestBase {
         String input = "Amelia Mary Earhart (July 24, 1897 - July 2, 1937) was an American aviator.";
         Annotation wholeDocument = interp.userInputs.annotateDocument(input);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<String> wsds = interp.findWSD(lastSentence);
-        String[] expected = {
+        List<Literal> wsds = interp.findWSD(lastSentence);
+        Literal[] expected = {
                 //"names(AmeliaMaryEarhart-1,\"Amelia Mary Earhart\")", // missed without real EntityParser information
-                "sumo(UnitedStates,American-17)",
-                "sumo(Pilot,aviator-18)"
+                new Literal("sumo(UnitedStates,American-17)"),
+                new Literal("sumo(Pilot,aviator-18)")
         };
         assertThat(wsds, hasItems(expected));
         assertEquals(expected.length, wsds.size());
+    }
+
+    /** ***************************************************************
+     */
+    @Test
+    public void findWSDDupNames() {
+
+        String input = "I also feel obliged to point out that Jack Nicklaus thinks so highly of " +
+                "Muirfield that he named a course he built in Jack Nicklaus ' native Ohio after it .";
+        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<Literal> wsds = interp.findWSD(lastSentence);
+        System.out.println("InterpreterWSDTest.findWSDDupNames(): " + wsds);
+        Literal[] expected = {
+                new Literal("sumo(Golfer,Jack_Nicklaus-9)"),
+                new Literal("sumo(Golfer,Jack_Nicklaus-24)")
+        };
+        assertThat(wsds, hasItems(expected));
     }
 }
