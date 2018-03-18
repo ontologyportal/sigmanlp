@@ -179,13 +179,11 @@ public class BratAnnotationUtil {
 		List<BratRelation> result = new ArrayList<>();
 		// traversing the sentences of the document
 		for (CoreMap sentence : sentences) {
-			List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
+			List<Literal> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
 			BratRelation bratRelation;
 			String startTermId = null;
 			String endTermId = null;
-			for (String dep : dependencies) {
-                Lexer lex = new Lexer(dep);
-                Literal lit = Literal.parse(lex,0);
+			for (Literal lit : dependencies) {
                 startTermId = termIdMap.get(lit.arg1);
                 endTermId = termIdMap.get(lit.arg2);
 				//startTermId = termIdMap.get(dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim());
@@ -305,7 +303,7 @@ public class BratAnnotationUtil {
     /** ***************************************************************
      */
 	@SuppressWarnings("unchecked")
-	public String getBratAnnotations(List<String> dependencies) {
+	public String getBratAnnotations(List<Literal> dependencies) {
 
 		JSONObject result = new JSONObject();
 		String[] tokens = getTokensFromDependencies(dependencies);
@@ -323,15 +321,13 @@ public class BratAnnotationUtil {
 
     /** ***************************************************************
      */
-	private List<BratRelation> getBratRelationsForDependencyParse(List<String> dependencies) {
+	private List<BratRelation> getBratRelationsForDependencyParse(List<Literal> dependencies) {
 
 		List<BratRelation> result = new ArrayList<>();
 		BratRelation bratRelation;
 		String startTermId = null;
 		String endTermId = null;
-		for (String dep : dependencies) {
-            Lexer lex = new Lexer(dep);
-            Literal lit = Literal.parse(lex,0);
+		for (Literal lit : dependencies) {
 			startTermId = termIdMap.get(lit.arg1); //dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim());
 			endTermId = termIdMap.get(lit.arg2); //dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim());
 			if (startTermId == null || endTermId == null) {
@@ -392,15 +388,13 @@ public class BratAnnotationUtil {
      * are introduced by semantic rewriting preprocessing and therefore
      * lack a token number
      */
-	private String[] getTokensFromDependencies(List<String> dependencies) {
+	private String[] getTokensFromDependencies(List<Literal> dependencies) {
 
 		String first;
 		String second;
 		Set<String> tokens = new HashSet<>();
 		int max = 0;
-		for (String dep : dependencies) {
-			Lexer lex = new Lexer(dep);
-			Literal lit = Literal.parse(lex,0);
+		for (Literal lit : dependencies) {
 			//first = dep.substring(dep.indexOf('(') + 1, dep.indexOf(',')).trim();
 			//second = dep.substring(dep.indexOf(',') + 1, dep.indexOf(')')).trim();
 			tokens.add(lit.arg1); //tokens.add(first);
@@ -432,7 +426,7 @@ public class BratAnnotationUtil {
 		Pipeline pipeline = new Pipeline(true);
 		Annotation document = pipeline.annotate(sentence);
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
-		List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentences.get(0)));
+		List<Literal> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentences.get(0)));
 		System.out.println(brt.getBratAnnotations(dependencies));
 		brt.termCount = 1;
 		brt.relationCount = 1;
