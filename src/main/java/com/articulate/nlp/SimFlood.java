@@ -65,7 +65,7 @@ public class SimFlood {
             for (String l : lines) {
                 Annotation a = p.annotate(l);
                 CoreMap lastSentence = SentenceUtil.getLastSentence(a);
-                List<String> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+                List<Literal> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
                 String in = StringUtil.removeEnclosingCharPair(dependenciesList.toString(), Integer.MAX_VALUE, '[', ']');
                 Lexer lex = new Lexer(in);
                 CNF cnf = CNF.parseSimple(lex);
