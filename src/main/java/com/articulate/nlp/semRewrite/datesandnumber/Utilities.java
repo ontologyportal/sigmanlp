@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
+import com.articulate.nlp.semRewrite.Literal;
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 
@@ -48,7 +49,7 @@ public class Utilities {
 	
 	public static final List<String> stopWords = new ArrayList<String>(Arrays.asList("of",",","-"));
 	
-	List<String> sumoTerms = new LinkedList<String>();
+	List<Literal> sumoTerms = new LinkedList<>();
 	List<DateInfo> datesList = new LinkedList<DateInfo>();
 	SemanticGraph StanfordDependencies;
 	List<String> lemmatizedResults = new ArrayList<>();
@@ -103,16 +104,16 @@ public class Utilities {
      */
 	public void filterSumoTerms() {
 		
-		Set<String> hashsetList = new HashSet<String>(sumoTerms);
+		Set<Literal> hashsetList = new HashSet<>(sumoTerms);
 		sumoTerms.clear();
 		sumoTerms.addAll(hashsetList);
 		//List<String> removableList = new ArrayList<String>();
-		Set<String> removableSumoTerms = new HashSet<String>();
+		Set<Literal> removableSumoTerms = new HashSet<>();
 		for (DateInfo d : datesList) {
 			if (d.isDuration()) {
 				//removableList.add("time-"+d.getTimeCount());
-				for(String sumoTerm : sumoTerms) {
-					if (sumoTerm.matches("^time\\(.*,time-" + d.getTimeCount() + "\\)$")) {
+				for (Literal sumoTerm : sumoTerms) {
+					if (sumoTerm.pred.equals("time") && sumoTerm.arg2.equals("time-" + d.getTimeCount())) {
 						removableSumoTerms.add(sumoTerm);
 					}
 				}
