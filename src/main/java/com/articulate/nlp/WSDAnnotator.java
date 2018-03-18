@@ -82,6 +82,8 @@ public class WSDAnnotator implements Annotator {
                 String lemma = token.lemma();
                 if (lemma.length() == 1 && Pattern.matches("\\p{Punct}", lemma)) // skip punctuation
                     continue;
+                if (token.originalText().matches("-...-")) // skip parentheses and bracket codes like -LRB-
+                    continue;
                 String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class); // need to convert to Sigma's integer codes
                 char num = WordNetUtilities.posPennToNumber(pos);
                 if (token.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class) != null) // skip multiwords
