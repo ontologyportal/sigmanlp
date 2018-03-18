@@ -40,7 +40,7 @@ public class Procedures {
     public static boolean debug = false;
 
     public static final List<String> procNames = Arrays.asList("isCELTclass",
-            "isSubclass", "isInstanceOf", "isSubAttribute", "isChildOf");
+            "isSubclass", "isInstanceOf", "isSubAttribute", "isChildOf", "different");
 
     public static final List<String> procClasses = Arrays.asList("Super", "Person", "Time");
 
@@ -51,6 +51,17 @@ public class Procedures {
         if (procNames.contains(s))
             return true;
         return false;
+    }
+
+    /** ***************************************************************
+     * CELT classes which are not SUMO classes, like "person"
+     */
+    public static String different(Literal c) {
+
+        if (c.arg1.equals(c.arg2))
+            return "false";
+        else
+            return "true";
     }
 
     /** ***************************************************************
@@ -104,6 +115,8 @@ public class Procedures {
      */
     public static HashMap<String,String> procUnify(Literal l1, Literal l2) {
 
+        if (debug) System.out.println("INFO in Procedures.procUnify(): l1 (content): " + l1);
+        if (debug) System.out.println("INFO in Procedures.procUnify(): l2 (rule): " + l2);
         HashMap<String,String> result = new HashMap<String,String>();
         if (!l1.isGround() || !l2.isGround())
             return null;
