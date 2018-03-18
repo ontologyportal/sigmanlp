@@ -120,10 +120,13 @@ public class Graph {
 
         Annotation a = p.annotate(s);
         CoreMap lastSentence = SentenceUtil.getLastSentence(a);
-        List<String> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
-        String in = StringUtil.removeEnclosingCharPair(dependenciesList.toString(), Integer.MAX_VALUE, '[', ']');
-        Lexer lex = new Lexer(in);
-        CNF cnf = CNF.parseSimple(lex);
+        List<Literal> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
+
+        //String in = StringUtil.removeEnclosingCharPair(dependenciesList.toString(), Integer.MAX_VALUE, '[', ']');
+        //Lexer lex = new Lexer(in);
+        //CNF cnf = CNF.parseSimple(lex);
+        CNF cnf = new CNF();
+        cnf.appendAll(dependenciesList);
         this.label = s;
         this.fromCNF(cnf);
     }
