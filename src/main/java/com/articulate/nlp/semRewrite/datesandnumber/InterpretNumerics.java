@@ -25,6 +25,7 @@ MA  02111-1307 USA
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.Interpreter;
+import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.sigma.KBmanager;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -43,7 +44,7 @@ public class InterpretNumerics {
 	 * @param input: The natural language string.
      * @return List of SUO-KIF statements, each date/time/measures are obtained from parser.
      */
-	public static List<String> getSumoTerms(String input) {
+	public static List<Literal> getSumoTerms(String input) {
 
         if (p == null) {
             System.out.println("Error in InterpretNumerics.getSumoTerms(): null pipeline");
