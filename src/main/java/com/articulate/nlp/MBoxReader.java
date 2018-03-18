@@ -1,5 +1,6 @@
 package com.articulate.nlp;
 
+import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.sigma.StringUtil;
 import com.articulate.nlp.semRewrite.datesandnumber.InterpretNumerics;
 
@@ -213,7 +214,7 @@ public class MBoxReader {
             if (element.keySet().contains(PROP_NAME_BODY)) {
                 String body = StringUtil.removeHTML(element.get(PROP_NAME_BODY));
                 System.out.println("In MBoxReader.extractInfo() from " + body);
-                List<String> results = InterpretNumerics.getSumoTerms(body);
+                List<Literal> results = InterpretNumerics.getSumoTerms(body);
                 System.out.println("INFO in MBoxReader.extractInfo(): " + results);
             }
         }
