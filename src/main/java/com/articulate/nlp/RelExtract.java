@@ -44,9 +44,11 @@ import java.util.*;
  */
 public class RelExtract {
 
-    public static boolean debug = false;
+    public static boolean debug = true;
     private static int varnum = 0;
     private static Interpreter interp = null;
+    public static RuleSet rs = null;
+    public static String ruleBaseFilename = "Relations.txt";
 
     /** *************************************************************
      * Copy SUMO categories in the outputMap that are associated with
@@ -800,65 +802,61 @@ public class RelExtract {
     }
 
     /** *************************************************************
+     * Initialize the relation extraction system by loading Sigma KBs,
+     * WordNet and the relation extraction rules from the given
+     * filename.
      */
-    public static void initOnce(String rulebaseFilename) {
+    public static void initOnce(String filename) {
 
-        System.out.println("; RelExtract.initOnce()");
+        System.out.println("; RelExtract.initOnce(filename)");
         KBmanager.getMgr().initializeOnce();
         interp = new Interpreter();
-        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + rulebaseFilename;
-        interp.initOnce(filename);
+        rs = Interpreter.loadRules(filename);
+        Interpreter.replaceInstances = false;
+        System.out.println("; RelExtract.initOnce(filename): completed");
     }
 
     /** *************************************************************
+     * Initialize the relation extraction system by loading Sigma KBs,
+     * WordNet and the relation extraction rules from the default
+     * filename.
      */
     public static void initOnce() {
 
-        initOnce("Relations.txt");
-    }
-
-    /** *************************************************************
-     */
-    public static ArrayList<String> sentenceExtractOld(String sent) {
-
-        ArrayList<CNF> inputs = Lists.newArrayList(interp.interpretGenCNF(sent));
-        ArrayList<String> kifClauses = interp.interpretCNF(inputs);
-        return kifClauses;
+        System.out.println("; RelExtract.initOnce()");
+        KBmanager.getMgr().initializeOnce();
+        rs = Interpreter.loadRules(ruleBaseFilename);
+        interp = new Interpreter();
+        interp.initOnce();
+        Interpreter.replaceInstances = false;
+        System.out.println("; RelExtract.initOnce(): completed");
     }
 
     /** *************************************************************
      * @param sent is the input sentence
      * @return the kif clauses
      */
-    public static ArrayList<String> sentenceExtract(String sent) {
+    public static ArrayList<RHS> sentenceExtract(String sent) {
 
-        ArrayList<String> kifClauses = new ArrayList<>();
+        ArrayList<RHS> kifClauses = new ArrayList<>();
         CNF input = interp.interpretGenCNF(sent);
         CNF newInput = input.deepCopy();
         System.out.println("RelExtract.sentenceExtract(): input: " + newInput);
         HashSet<String> preds = newInput.getPreds();
         HashSet<String> terms = newInput.getTerms();
-        for (int i = 0; i < interp.rs.rules.size(); i++) {
-            if (!interp.termCoverage(preds, terms, interp.rs.rules.get(i)))
+        for (int i = 0; i < rs.rules.size(); i++) {
+            if (!interp.termCoverage(preds, terms, rs.rules.get(i)))
                 continue;
-            Rule r = interp.rs.rules.get(i).deepCopy();
+            Rule r = rs.rules.get(i).deepCopy();
             if (debug) System.out.println("RelExtract.sentenceExtract(): r: " + r);
-            if (debug) System.out.println("RelExtract.sentenceExtract(): r.cnf: " + r.cnf);
             HashMap<String,String> bindings = r.cnf.unify(newInput);
             if (bindings != null) {
-                if (debug) System.out.println("RelExtract.sentenceExtract(): bindings: " + bindings);
+                if (debug) System.out.println("RelExtract.sentenceExtract(): found bindings: " + bindings);
+                if (debug) System.out.println("RelExtract.sentenceExtract(): for rule: " + r);
                 RHS rhs = r.rhs.applyBindings(bindings);
-                kifClauses.add(rhs.form.toString());
+                kifClauses.add(rhs);
             }
         }
-        return kifClauses;
-    }
-
-    /** *************************************************************
-     */
-    public static ArrayList<String> cnfExtract(ArrayList<CNF> inputs) {
-
-        ArrayList<String> kifClauses = interp.interpretCNF(inputs);
         return kifClauses;
     }
 
@@ -867,8 +865,7 @@ public class RelExtract {
     public static void interactive() {
 
         System.out.println("; RelExtract.sentenceExtract()");
-        String filename = "Relations.txt";
-        initOnce(filename);
+        initOnce();
         String input = "";
         Scanner scanner = new Scanner(System.in);
         do {
@@ -877,19 +874,22 @@ public class RelExtract {
             if (!StringUtil.emptyString(input) && !input.equals("exit") && !input.equals("quit")) {
                 if (input.equals("reload")) {
                     System.out.println("reloading semantic rewriting rules for relation extraction");
-                    interp.loadRules(filename);
+                    rs = Interpreter.loadRules();
                 }
                 else if (input.equals("debug")) {
-                    interp.debug = true;
+                    Interpreter.debug = true;
+                    RelExtract.debug = true;
+                    RHS.debug = true;
                     System.out.println("debugging messages on");
                 }
                 else if (input.equals("nodebug")) {
-                    interp.debug = false;
+                    Interpreter.debug = false;
+                    RelExtract.debug = false;
+                    RHS.debug = false;
                     System.out.println("debugging messages off");
                 }
                 else {
-                    ArrayList<CNF> inputs = Lists.newArrayList(interp.interpretGenCNF(input));
-                    ArrayList<String> kifClauses = interp.interpretCNF(inputs);
+                    ArrayList<RHS> kifClauses = sentenceExtract(input);
                     System.out.println(kifClauses);
                 }
             }
@@ -1026,7 +1026,7 @@ public class RelExtract {
      */
     public static void testCoreLabel() {
 
-        String input = "Robert is a tall man.";
+        String input = "Robert sits on the mat.";
         System.out.println("RelExtract.testCoreLabel():");
         KBmanager.getMgr().initializeOnce();
         Interpreter interp = new Interpreter();
@@ -1096,8 +1096,10 @@ public class RelExtract {
 
         //testProcessAndSearch();
         initOnce();
-        if (args == null || args.length < 1 || args[0].equals("-h"))
+        if (args == null || args.length == 0) {
+            testCoreLabel();
             help();
+        }
         else if (args[0].equals("-p"))
             processAndSearch();
         else if (args.length > 1 && args[0].equals("-t"))
@@ -1110,7 +1112,9 @@ public class RelExtract {
             testGenerateRelationPattern();
         else if (args.length == 1 && args[0].equals("-i"))
             interactive();
-        else
+        else {
             help();
+
+        }
     }
 }
