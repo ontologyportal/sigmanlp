@@ -2,6 +2,7 @@ package com.articulate.nlp;
 
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.semRewrite.Interpreter;
+import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.nlp.semRewrite.substitutor.SubstitutorsUnion;
 import com.google.common.collect.ImmutableList;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -28,14 +29,15 @@ public class LemmatizerTest {
         Annotation document = p.annotate(input);
         List<CoreLabel> labels = document.get(CoreAnnotations.TokensAnnotation.class);
 
-        List<String> results = ImmutableList.of("test(had-2,anything-0)", "testing(PAST,had-2)", "testing2(had-2,ANYTHING)");
+        List<Literal> results = ImmutableList.of(new Literal("test(had-2,anything-0)"),
+                new Literal("testing(PAST,had-2)"), new Literal("testing2(had-2,ANYTHING)"));
 
-        List<String> actual = Interpreter.lemmatizeResults(results, labels);
+        List<Literal> actual = Interpreter.lemmatizeResults(results, labels);
 
-        String[] expected = {
-                "test(have-2,anything-0)",
-                "testing(PAST,have-2)",
-                "testing2(have-2,ANYTHING)"
+        Literal[] expected = {
+                new Literal("test(have-2,anything-0)"),
+                new Literal("testing(PAST,have-2)"),
+                new Literal("testing2(have-2,ANYTHING)")
         };
 
         assertThat(actual, hasItems(expected));
