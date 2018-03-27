@@ -445,8 +445,9 @@ public class CoNLL04 {
         int totalGroundTruth = 0;
         int totalExtracted = 0;
         for (Sent s : sentences) {
-            if (s.relations.size() > 0) {
-                System.out.println("\nextractAll(): " + s.sentString);
+            if (s.relations.size() > 0) { // test only sentences with marked relations
+                int sentNum = s.tokens.get(0).sentNum;
+                System.out.println("\nextractAll(): " + s.tokens.get(0).sentNum + " : " + s.sentString);
                 ArrayList<RHS> kifClauses = null;
                 try {
                     kifClauses = RelExtract.sentenceExtract(s.sentString);
@@ -457,6 +458,7 @@ public class CoNLL04 {
                     Set<Relation> rels = toCoNLLRels(kifClauses,s);
                     F1Matrix mat = score(rels,s.relations);
                     System.out.println("CoNLL: score: " + mat);
+
                     total = total.add(mat);
                     System.out.println("CoNLL: cumulative score: " + total);
                     System.out.println("CoNLL: generated relations: " + relsToString(rels,s));
