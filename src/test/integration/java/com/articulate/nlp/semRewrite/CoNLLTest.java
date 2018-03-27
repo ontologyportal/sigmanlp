@@ -433,6 +433,19 @@ public class CoNLLTest extends IntegrationTestBase {
     /****************************************************************
      */
     @Test
+    public void testSentRay() {
+
+        Interpreter.debug = true;
+        System.out.println("INFO in CoNLLTest.testSentRay()");
+        String input = "In 1977 , James Earl Ray , the convicted assassin of civil rights leader Dr. Martin Luther King " +
+                "Jr. , was recaptured following his escape from a Tennessee prison June 10 .";
+        String expected = "(kills James_Earl_Ray-4 Martin_Luther_King_Jr.-16)";
+        doOneResultTest(input, expected);
+    }
+
+    /****************************************************************
+     */
+    @Test
     public void testSentScoreAriz() {
 
         CoNLL04 conll = new CoNLL04();
