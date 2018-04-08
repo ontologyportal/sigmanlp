@@ -1,6 +1,9 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.*;
+import com.articulate.sigma.wordNet.WSD;
+import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WordNetUtilities;
 import com.google.common.collect.Lists;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.HasWord;
