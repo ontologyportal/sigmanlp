@@ -1,5 +1,8 @@
 package com.articulate.nlp;
 
+import com.articulate.sigma.wordNet.WSD;
+import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WordNetUtilities;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Sets;
 import com.articulate.sigma.*;
