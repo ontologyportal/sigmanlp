@@ -6,6 +6,7 @@ import com.articulate.nlp.semconcor.Searcher;
 import com.articulate.sigma.*;
 import com.articulate.sigma.nlg.LanguageFormatter;
 import com.articulate.sigma.nlg.NLGUtils;
+import com.articulate.sigma.wordNet.WordNet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import edu.stanford.nlp.ling.CoreAnnotation;
