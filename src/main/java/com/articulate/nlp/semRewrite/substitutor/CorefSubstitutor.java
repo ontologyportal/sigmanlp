@@ -29,6 +29,7 @@ public class CorefSubstitutor extends SubstitutorsUnion {
      * Combines all known coreference Substitutors together
      */
     public CorefSubstitutor(Annotation document) {
+
         super(Lists.newArrayList(
                 new StanfordCorefSubstitutor(document), new LocationSubstitutor(document))
         );
