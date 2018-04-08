@@ -162,24 +162,24 @@ public class RHS {
         RHS rhs = new RHS();
         if (cnf != null) {
             rhs.cnf = cnf.applyBindings(bindings);
-            if (debug) System.out.println("INFO in RHS.applyBindings(): cnf: " + cnf);
-            return rhs;
-        }
-        else {
-            Iterator<String> it = bindings.keySet().iterator();
-            while (it.hasNext()) {
-                String key = it.next();
-                String value = bindings.get(key);
-                if (debug) System.out.println("INFO in RHS.applyBindings(): key,bindings: " + key + ", " + bindings);
-                if (form != null && form.theFormula != null) {
-                    form.theFormula = form.theFormula.replace(key, value);
-                    if (debug) System.out.println("INFO in RHS.applyBindings(): formula: " + form.theFormula);
-                }
-            }
-            if (debug) System.out.println("INFO in RHS.applyBindings(): formula (2): " + form.theFormula);
             rhs.form = form;
-            if (debug) System.out.println("INFO in RHS.applyBindings(): formula (3): " + form.theFormula);
+            if (debug) System.out.println("INFO in RHS.applyBindings(): cnf: " + cnf);
         }
+
+        Iterator<String> it = bindings.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            String value = bindings.get(key);
+            if (debug) System.out.println("INFO in RHS.applyBindings(): key,bindings: " + key + ", " + bindings);
+            if (form != null && form.theFormula != null) {
+                form.theFormula = form.theFormula.replace(key, value);
+                if (debug) System.out.println("INFO in RHS.applyBindings(): formula: " + form.theFormula);
+            }
+        }
+        if (debug) System.out.println("INFO in RHS.applyBindings(): formula (2): " + form.theFormula);
+        rhs.form = form;
+        if (debug) System.out.println("INFO in RHS.applyBindings(): formula (3): " + form.theFormula);
+
         return rhs;
     }
     
