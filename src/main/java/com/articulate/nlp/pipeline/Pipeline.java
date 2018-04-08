@@ -54,7 +54,7 @@ public class Pipeline {
     public StanfordCoreNLP pipeline;
     public static boolean debug = false;
     public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
-        "ner, nersumo, gender, parse, depparse, wnmw, wsd, tsumo"; // regexner and entitymentions now run automatically from ner
+        "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo"; // regexner and entitymentions now run automatically from ner
 
     public static final String oldDefaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
@@ -100,6 +100,10 @@ public class Pipeline {
         if (propString.contains("nersumo")) {
             props.put("customAnnotatorClass.nersumo", "com.articulate.nlp.NERAnnotator");
         }
+        if (propString.contains("coref")) {
+            props.put("coref.algorithm","statistical");
+        }
+
         //if (propString.contains("ner"))
         //    props.put("ner.model", "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz");
         //props.put("depparse.model", "edu/stanford/com.articulate.nlp/models/parser/nndep/english_SD.gz");
