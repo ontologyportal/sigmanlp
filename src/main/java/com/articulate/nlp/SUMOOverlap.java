@@ -1,7 +1,7 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.WSD;
+import com.articulate.sigma.wordNet.WSD;
 
 import java.io.IOException;
 import java.util.*;
