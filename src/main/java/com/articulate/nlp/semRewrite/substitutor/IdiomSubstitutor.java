@@ -21,7 +21,7 @@
 
 package com.articulate.nlp.semRewrite.substitutor;
 
-import com.articulate.sigma.WordNet;
+import com.articulate.sigma.wordNet.WordNet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import edu.stanford.nlp.ling.CoreLabel;
