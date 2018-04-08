@@ -23,10 +23,10 @@ package com.articulate.nlp.constants;
 /**
  * POS Tag is derived from Penn POS
  * http://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
- * <p/>
+ *
  * Dependency Labels is from Stanford Typed Dependencies.
  * http://nlp.stanford.edu/software/dependencies_manual.pdf
- * <p/>
+ *
  * Created by Maochen on 12/8/14.
  */
 public class LangLib {
