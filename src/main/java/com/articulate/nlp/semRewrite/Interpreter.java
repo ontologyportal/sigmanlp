@@ -28,6 +28,9 @@ import com.articulate.nlp.semRewrite.datesandnumber.DateAndNumbersGeneration;
 import com.articulate.nlp.semRewrite.datesandnumber.StanfordDateTimeExtractor;
 import com.articulate.nlp.semRewrite.datesandnumber.Tokens;
 import com.articulate.sigma.*;
+import com.articulate.sigma.wordNet.WSD;
+import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WordNetUtilities;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
@@ -709,15 +712,25 @@ public class Interpreter {
     public static String corefSubst(List<String> input) {
 
         Annotation document = Pipeline.toAnnotation(String.join(" ", input));
+        return corefSubst(document);
+    }
+
+    /** *************************************************************
+     * Do coreference substitution on string input
+     */
+    public static String corefSubst(Annotation document) {
+
+        if (debug) System.out.println("Interpreter.corefSubst(): ");
         CoreMap lastSentence = SentenceUtil.getLastSentence(document);
         List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
-        ClauseSubstitutor substitutor = SubstitutorsUnion.of(
-                new CorefSubstitutor(document),
-                new NounSubstitutor(lastSentenceTokens),
-                new IdiomSubstitutor(lastSentenceTokens)
-        );
+        //ClauseSubstitutor substitutor = SubstitutorsUnion.of(
+        //        new CorefSubstitutor(document),
+        //        new NounSubstitutor(lastSentenceTokens),
+        //        new IdiomSubstitutor(lastSentenceTokens)
+        //);
         SentenceBuilder sb = new SentenceBuilder(lastSentence);
-        String actual = String.join(" ", sb.asStrings(substitutor));
+        //String actual = String.join(" ", sb.asStrings(substitutor));
+        String actual = String.join(" ", sb.asStrings(new CorefSubstitutor(document)));
         actual = actual.replaceAll("_"," ");
         return actual;
     }
@@ -845,7 +858,8 @@ public class Interpreter {
         //removeEndPunc(wholeDocument);
         //System.out.println("Interpreter.interpretGenCNF(): Interpreting " + wholeDocument.size() + " inputs.");
         //System.out.println("Interpreter.interpretGenCNF(): coref chains");
-        //SentenceUtil.printCorefChain(wholeDocument);
+        SentenceUtil.printCorefChain(wholeDocument);
+        System.out.println("Interpreter.interpretGenCNF(): substituted: " + corefSubst(wholeDocument));
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
         return interpretGenCNF(lastSentence);
     }
@@ -1248,12 +1262,15 @@ public class Interpreter {
                 HashSet<String> terms = newInput.getTerms();
                 //System.out.println("Interpreter.interpretCNF(): input preds: " + preds);
                 //System.out.println("INFO in Interpreter.interpretCNF(): new input 0: " + newInput);
-                for (int i = 0; i < rs.rules.size(); i++) {
+                for (Rule rule : rs.rules) {
+                    if (debug) System.out.println("INFO in Interpreter.interpretCNF(): checking rule: " + rule);
                     //System.out.println("Interpreter.interpretCNF(): rule preds: " + rs.rules.get(i).preds);
-                    if (!termCoverage(preds,terms,rs.rules.get(i)))
+                    if (!termCoverage(preds,terms,rule))
                         continue;
                     //System.out.println("Interpreter.interpretCNF(): predicates match");
-                    Rule r = rs.rules.get(i).deepCopy();
+                    Rule r = rule.deepCopy();
+                    if (debug && r.rhs.form == null)
+                        System.out.println("INFO in Interpreter.interpretCNF(): empty rhs: " + r);
                     //System.out.println("INFO in Interpreter.interpretCNF(): new input 0.5: " + newInput);
                     if (debug) System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                     HashMap<String,String> bindings = r.cnf.unify(newInput);
@@ -1268,13 +1285,13 @@ public class Interpreter {
                             System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                         firedRules.add(r.toString() + " : " + bindings.toString());
                         RHS rhs = r.rhs.applyBindings(bindings);
-                        if (r.operator == Rule.RuleOp.IMP) {
+                        if (r.operator == Rule.RuleOp.IMP) {  // ==>  operator
                             CNF bindingsRemoved = newInput.removeBound(); // delete the bound clauses
                             if (debug) System.out.println("INFO in Interpreter.interpretCNF(): input with bindings removed: " + bindingsRemoved);
                             if (!bindingsRemoved.empty()) {  // assert the input after removing bindings
                                 if (rhs.cnf != null) {
                                     if (showrhs)
-                                        System.out.println("INFO in Interpreter.interpretCNF(): rhs: " + rhs.cnf);
+                                        System.out.println("INFO in Interpreter.interpretCNF(): rhs1: " + rhs.cnf);
                                     bindingsRemoved.merge(rhs.cnf);
                                 }
                                 newInput = bindingsRemoved;
@@ -1282,18 +1299,20 @@ public class Interpreter {
                             else
                                 if (rhs.cnf != null) {
                                     if (showrhs)
-                                        System.out.println("INFO in Interpreter.interpretCNF(): rhs: " + rhs.cnf);
+                                        System.out.println("INFO in Interpreter.interpretCNF(): rhs2: " + rhs.cnf);
                                     newInput = rhs.cnf;
                                 }
-                            if (rhs.form != null && !kifoutput.contains(rhs.form.toString())) { // assert a KIF RHS
+                            if (r.rhs.form != null && !kifoutput.contains(rhs.form.toString())) { // assert a KIF RHS
                                 if (showrhs)
-                                    System.out.println("INFO in Interpreter.interpretCNF(): rhs: " + rhs.form);
+                                    System.out.println("INFO in Interpreter.interpretCNF(): rhs3: " + rhs.form);
                                 kifoutput.add(rhs.form.toString());
                                 if (debug) System.out.println("INFO in Interpreter.interpretCNF(): kif: " + kifoutput);
                             }
+                            if (showrhs)
+                                System.out.println("INFO in Interpreter.interpretCNF(): rhs4: " + rhs.form);
                             if (debug) System.out.println("INFO in Interpreter.interpretCNF(): new input 2: " + newInput + "\n");
                         }
-                        else if (r.operator == Rule.RuleOp.OPT) {
+                        else if (r.operator == Rule.RuleOp.OPT) {  // ?=> operator
                             CNF bindingsRemoved = newInput.removeBound(); // delete the bound clauses
                             if (!bindingsRemoved.empty() && !newinputs.contains(bindingsRemoved)) {  // assert the input after removing bindings
                                 if (rhs.cnf != null)
@@ -1317,8 +1336,8 @@ public class Interpreter {
             if (bindingFound)
                 newinputs.add(newInput);
             else
-            if (addUnprocessed)
-                addUnprocessed(kifoutput,newInput); // a hack to add unprocessed SDP clauses as if they were KIF
+                if (addUnprocessed)
+                    addUnprocessed(kifoutput,newInput); // a hack to add unprocessed SDP clauses as if they were KIF
             inputs = new ArrayList<CNF>();
             inputs.addAll(newinputs);
             //System.out.println("INFO in Interpreter.interpretCNF(): KB: " + printKB(inputs));
@@ -1515,7 +1534,7 @@ public class Interpreter {
                     System.out.println("not using Similarity Flooding");
                 }
                 else if (input.equals("debug")) {
-                    Procedures.debug = true;
+                    //Procedures.debug = true;
                     this.debug = true;
                     System.out.println("debugging messages on");
                 }
@@ -1628,10 +1647,12 @@ public class Interpreter {
        // String filename = KBmanager.getMgr().getPref("kbDir") + File.separator +
                // "WordNetMappings" + File.separator + "SemRewrite.txt";
         String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "SemRewrite.txt";
-        String pref = KBmanager.getMgr().getPref("SemRewrite");
+        String pref = KBmanager.getMgr().getPref("semRewrite");
         if (!Strings.isNullOrEmpty(pref))
             filename = pref;
-        return loadRules(filename);
+        RuleSet rs = loadRules(filename);
+        //printRules(rs);
+        return rs;
     }
 
     /** ***************************************************************
@@ -1678,9 +1699,21 @@ public class Interpreter {
 
     /** ***************************************************************
      */
+    public static void printRules(RuleSet rs) {
+
+        System.out.println("Interpreter.printRules()");
+        for (Rule r : rs.rules) {
+            System.out.println(r);
+            System.out.println(r.rhs.form);
+        }
+    }
+
+    /** ***************************************************************
+     */
     public void initialize(String rulesFile) throws IOException {
 
         rs = loadRules(rulesFile);
+        //printRules(rs);
         tfidf = new TFIDF(System.getenv("ONTOLOGYPORTAL_GIT") + File.separator +
                 "sumo" + File.separator +
                 "WordNetMappings" + File.separator + "stopwords.txt");
