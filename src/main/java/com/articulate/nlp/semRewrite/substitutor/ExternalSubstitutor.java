@@ -21,6 +21,7 @@ MA  02111-1307 USA
 package com.articulate.nlp.semRewrite.substitutor;
 
 import com.articulate.sigma.*;
+import com.articulate.sigma.wordNet.WordNet;
 import edu.stanford.nlp.ling.CoreLabel;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
