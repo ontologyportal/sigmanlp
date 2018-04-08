@@ -1,8 +1,8 @@
 package com.articulate.nlp.corpora;
 
 import com.articulate.sigma.StringUtil;
-import com.articulate.sigma.WordNet;
-import com.articulate.sigma.WordNetUtilities;
+import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WordNetUtilities;
 
 import java.io.FileReader;
 import java.io.IOException;
