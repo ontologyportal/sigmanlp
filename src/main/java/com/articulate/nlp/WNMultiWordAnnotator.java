@@ -1,6 +1,9 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.*;
+import com.articulate.sigma.wordNet.WSD;
+import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WordNetUtilities;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 
