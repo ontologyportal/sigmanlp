@@ -26,8 +26,10 @@ import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semRewrite.Literal;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import edu.stanford.nlp.dcoref.CorefChain;
-import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation;
+import edu.stanford.nlp.coref.CorefCoreAnnotations;
+import edu.stanford.nlp.coref.data.CorefChain;
+import edu.stanford.nlp.coref.data.Mention;
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.*;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -162,7 +164,8 @@ public class SentenceUtil {
      */
     public static void printCorefChain(Annotation document) {
 
-        Map<Integer, CorefChain> graph = document.get(CorefChainAnnotation.class);
+        System.out.println("SentenceUtil.printCorefChain()");
+        Map<Integer, CorefChain> graph = document.get(CorefCoreAnnotations.CorefChainAnnotation.class);
         if (graph == null)
             return;
         for (CorefChain cc : graph.values()) {
@@ -172,6 +175,18 @@ public class SentenceUtil {
                     System.out.println(ment.sentNum + " : " + ment.headIndex + " : " + ment.mentionSpan);
                 }
                 System.out.println();
+            }
+        }
+        System.out.println("---");
+        System.out.println("coref chains");
+        for (CorefChain cc : document.get(CorefCoreAnnotations.CorefChainAnnotation.class).values()) {
+            System.out.println("\t" + cc);
+        }
+        for (CoreMap sentence : document.get(CoreAnnotations.SentencesAnnotation.class)) {
+            System.out.println("---");
+            System.out.println("mentions");
+            for (Mention m : sentence.get(CorefCoreAnnotations.CorefMentionsAnnotation.class)) {
+                System.out.println("\t" + m);
             }
         }
     }
