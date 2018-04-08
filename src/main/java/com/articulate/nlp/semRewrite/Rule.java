@@ -188,18 +188,31 @@ public class Rule {
         //s = "+nsubj(?C2,?X), +amod(?C2,?C), cop(?C2,be*), det(?C2,?D), sumo(?Y,?C), sumo(Human,?X), isInstanceOf(?Y,Nation) ==> (citizen(?X,?Y)).";
         //System.out.println("INFO in Rule.testParse(): " + parseString(s));
         s = "day(?T,?D), month(?T,?M), year(?T,?Y), StartTime(?V,?T) ==> {(equal (BeginFn (WhenFn ?V)) (DayFn ?D (MonthFn ?M (YearFn ?Y))))}.";
-        System.out.println("INFO in Rule.testParse(): " + parseString(s));
+        Rule r = parseString(s);
+        System.out.println("INFO in Rule.testParse(): " + r);
+        System.out.println("INFO in Rule.testParse(): RHS: " + r.rhs.form);
         s = "day(?T,?D), month(?T,?M), year(?T,?Y), StartTime(?V,?T).";
         Lexer lex4 = new Lexer(s);
         CNF cnf5 = CNF.parseSimple(lex4);
         System.out.println("INFO in Rule.testParse(): " + cnf5);
     }
-    
+
+    /** *************************************************************
+     * A test method
+     */
+    public static void testParse2() {
+
+        String s = "agent(?X,?Y) ==> {(agent ?X ?Y)}.";
+        Rule r = parseString(s);
+        System.out.println("INFO in Rule.testParse2(): " + r);
+        System.out.println("INFO in Rule.testParse2(): RHS: " + r.rhs.form);
+    }
+
     /** *************************************************************
      * A test method
      */
     public static void main (String args[]) {
         
-        testParse();
+        testParse2();
     }
 }
