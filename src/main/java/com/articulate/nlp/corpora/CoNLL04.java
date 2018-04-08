@@ -208,7 +208,7 @@ public class CoNLL04 {
      * Note that tokParse() will remove slashes, denoting a
      * multi-word, in the token string
      * so we have to look at the part of speech element.
-     * @result is a side effect on sent, setting its tokMap
+     * @return is a side effect on sent, setting its tokMap
      */
     public void makeTokenMap(Sent sent) {
 
