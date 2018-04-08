@@ -23,8 +23,8 @@ MA  02111-1307 USA
  */
 
 import com.articulate.nlp.semRewrite.Literal;
-import com.articulate.sigma.WSD;
-import com.articulate.sigma.WordNet;
+import com.articulate.sigma.wordNet.WSD;
+import com.articulate.sigma.wordNet.WordNet;
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 
