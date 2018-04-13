@@ -39,7 +39,7 @@ import static com.articulate.nlp.semRewrite.substitutor.SubstitutionUtil.CLAUSE_
  */
 public class SimpleSubstitutorStorage implements ClauseSubstitutor {
 
-    Map<CoreLabelSequence, CoreLabelSequence> groups = Maps.newHashMap();
+    public Map<CoreLabelSequence, CoreLabelSequence> groups = Maps.newHashMap();
 
     /** ***************************************************************
      */
