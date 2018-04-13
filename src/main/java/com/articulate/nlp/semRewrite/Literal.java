@@ -247,7 +247,7 @@ public class Literal implements Comparable {
 
     /****************************************************************
      */
-    public static ArrayList<String> stringToLiteralList(String depParse) {
+    public static ArrayList<String> stringToStringLiteralList(String depParse) {
 
         ArrayList<String> result = new ArrayList<String>();
         Lexer lex = new Lexer(StringUtil.removeEnclosingCharPair(depParse, 1, '[', ']'));
@@ -256,6 +256,22 @@ public class Literal implements Comparable {
         for (Clause c : depcnf.clauses) {
             for (Literal l : c.disjuncts) {
                 result.add(l.toString());
+            }
+        }
+        return result;
+    }
+
+    /****************************************************************
+     */
+    public static ArrayList<Literal> stringToLiteralList(String depParse) {
+
+        ArrayList<Literal> result = new ArrayList<Literal>();
+        Lexer lex = new Lexer(StringUtil.removeEnclosingCharPair(depParse, 1, '[', ']'));
+        CNF depcnf = CNF.parseSimple(lex);
+
+        for (Clause c : depcnf.clauses) {
+            for (Literal l : c.disjuncts) {
+                result.add(l);
             }
         }
         return result;
