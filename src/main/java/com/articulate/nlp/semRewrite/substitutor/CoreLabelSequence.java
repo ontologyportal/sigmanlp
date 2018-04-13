@@ -79,7 +79,7 @@ public class CoreLabelSequence {
                 sb.append(" ");
             sb.append(cl.value());
         }
-        return labels.toString();
+        return sb.toString();
     }
 
     /** ***************************************************************
