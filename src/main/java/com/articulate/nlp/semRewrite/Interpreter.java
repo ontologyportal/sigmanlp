@@ -83,7 +83,7 @@ public class Interpreter {
     public RuleSet rs = null;
 
     // execution options
-    public boolean inference = false;
+    public static boolean inference = false;
     public boolean question = false;
     public boolean ner = true;
     public static boolean addUnprocessed = false;
@@ -130,6 +130,9 @@ public class Interpreter {
     public static ClauseSubstitutor substitutor = null;
     public static DateAndNumbersGeneration generator = new DateAndNumbersGeneration();
     public static StanfordDateTimeExtractor sde = new StanfordDateTimeExtractor();
+
+    // set from StanfordCorefSubstitutor.initialize() to SimpleSubstitutorStorage.groups
+    public static Map<CoreLabelSequence, CoreLabelSequence> substGroups = null;
 
     /** *************************************************************
      */
@@ -730,7 +733,8 @@ public class Interpreter {
         //);
         SentenceBuilder sb = new SentenceBuilder(lastSentence);
         //String actual = String.join(" ", sb.asStrings(substitutor));
-        String actual = String.join(" ", sb.asStrings(new CorefSubstitutor(document)));
+        CorefSubstitutor cs = new CorefSubstitutor(document);
+        String actual = String.join(" ", sb.asStrings(cs));
         actual = actual.replaceAll("_"," ");
         return actual;
     }
