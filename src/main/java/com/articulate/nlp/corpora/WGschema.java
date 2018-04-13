@@ -5,6 +5,7 @@ import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.nlp.semRewrite.RHS;
+import com.articulate.nlp.semRewrite.substitutor.CoreLabelSequence;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.SimpleDOMParser;
 import com.articulate.sigma.SimpleElement;
@@ -31,7 +32,7 @@ public class WGschema {
     public class Sent  {
 
         public String toString() {
-            return (text1 + "\t" + pronoun + "\t" + text2 + "\t" + answers + "\n");
+            return (sentence + "\t" + answers + "\n");
         }
 
         public String text1;
@@ -44,6 +45,20 @@ public class WGschema {
         public ArrayList<String> answers = new ArrayList<String>();
         public String correctAnswer;
         public String source;
+
+        public String getAnswerText(String ansLetter) {
+            if (answers == null || answers.size() < 1)
+                return null;
+            if (ansLetter.trim().startsWith("A"))
+                return answers.get(0);
+            if (ansLetter.trim().startsWith("B"))
+                return answers.get(1);
+            else {
+                System.out.println("Error in WGschema.Sent.getAnswerText():bad answer letter " +
+                        ansLetter + " in sentence " + this);
+                return "";
+            }
+        }
     }
 
     /***************************************************************
@@ -93,22 +108,22 @@ public class WGschema {
             System.out.println("Error in WGschema.parseText(): expected <txt1> ");
             return;
         }
-        s.text1 = txt1.getText();
+        s.text1 = txt1.getText().trim();
         SimpleElement pron = children.get(1);
         if (!pron.getTagName().startsWith("pron")) {
             System.out.println("Error in WGschema.parseText(): bad element " + pron);
             System.out.println("Error in WGschema.parseText(): expected <pron> ");
             return;
         }
-        s.pronoun = pron.getText();
+        s.pronoun = pron.getText().trim();
         SimpleElement txt2 = children.get(2);
         if (!txt2.getTagName().startsWith("txt2")) {
             System.out.println("Error in WGschema.parseText(): bad element " + txt2);
             System.out.println("Error in WGschema.parseText(): expected <txt2> ");
             return;
         }
-        s.text2 = txt2.getText();
-        s.sentence = txt1.getText() + pron.getText() + txt2.getText();
+        s.text2 = txt2.getText().trim().trim();
+        s.sentence = s.text1 + " " + s.pronoun + " " + s.text2;
     }
 
     /***************************************************************
@@ -117,11 +132,11 @@ public class WGschema {
 
         for (SimpleElement se : quote.getChildElements()) {
             if (se.getTagName().startsWith("quote1"))
-                s.quote1 = se.getText();
+                s.quote1 = se.getText().trim();
             if (se.getTagName().startsWith("pron"))
-                s.pronAgain = se.getText();
+                s.pronAgain = se.getText().trim();
             if (se.getTagName().startsWith("quote2"))
-                s.quote2 = se.getText();
+                s.quote2 = se.getText().trim();
         }
     }
 
@@ -131,7 +146,7 @@ public class WGschema {
 
         for (SimpleElement se : quote.getChildElements()) {
             if (se.getTagName().startsWith("answer"))
-                s.answers.add(se.getText());
+                s.answers.add(se.getText().trim());
             else {
                 System.out.println("Error in WGschema.parseAnswers(): bad element " + se);
                 System.out.println("Error in WGschema.parseAnswers(): expected <answer> ");
@@ -196,7 +211,7 @@ public class WGschema {
      */
     public void parse() {
 
-        String filename = System.getenv("CORPORA") + File.separator + "WSCollection-small.xml";
+        String filename = System.getenv("CORPORA") + File.separator + "WSCollection.xml";
         System.out.println("WGschema.parse(): reading corpus from " + filename);
         SimpleDOMParser sdp = new SimpleDOMParser();
         SimpleElement se = null;
@@ -241,11 +256,38 @@ public class WGschema {
     }
 
     /***************************************************************
+     * Score the sentence co-reference resolution result by comparing
+     * the CoreLabelSequence that was determined by the system with
+     * the answer corpus.
      */
-    public F1Matrix score() {
+    public F1Matrix score(Sent s, Map<CoreLabelSequence, CoreLabelSequence> subst) {
 
        // if (debug) System.out.println("score(): found rels   : " + rels);
         F1Matrix f1mat = new F1Matrix();
+        if (subst == null || subst.keySet().size() < 1) {
+            System.out.println("Error in WGSchema.score(): empty substitution");
+            return f1mat;
+        }
+        if (subst.keySet().size() > 1) {
+            System.out.println("Error in WGSchema.score(): more than one key");
+            return f1mat;
+        }
+        CoreLabelSequence clKey = subst.keySet().iterator().next();
+        String clKeyString = clKey.toString();
+        CoreLabelSequence clValue = subst.get(clKey);
+        String clValueString = clValue.toString();
+        String answer = null;
+        answer = s.getAnswerText(s.correctAnswer);
+        if (clKeyString.toUpperCase().equals(s.pronoun.trim().toUpperCase()) && clValueString.toUpperCase().equals(answer.toUpperCase())) {
+            f1mat.truePositives++;
+            System.out.println("WGSchema.score(): correct answer for: " + s);
+        }
+        else {
+            f1mat.falsePositives++;
+            System.out.println("WGSchema.score(): wrong answer for: " + s);
+            System.out.println("WGSchema.score(): found " + clValueString);
+            System.out.println("WGSchema.score(): correct answer: " + answer);
+        }
         return f1mat;
     }
 
@@ -258,12 +300,21 @@ public class WGschema {
         int totalGroundTruth = 0;
         int totalExtracted = 0;
         for (Sent s : sentences) {
-                try {
-                    System.out.println(interp.interpretGenCNF(s.sentence));
-                }
-                catch (Exception e) { e.printStackTrace(); }
+            try {
+                CNF cnf = interp.interpretGenCNF(s.sentence);
+                System.out.println();
+                System.out.println(cnf);
+                System.out.println();
+                ArrayList<CNF> cnfs = new ArrayList<>();
+                cnfs.add(cnf);
+                ArrayList<String> kifc = interp.interpretCNF(cnfs);
+                String kif = interp.fromKIFClauses(kifc);
+                System.out.println(kif);
+                System.out.println();
+                total = total.add(score(s,Interpreter.substGroups));
+            }
+            catch (Exception e) { e.printStackTrace(); }
         }
-        System.out.println("CoNLL04.extractAll(): expected: " + totalGroundTruth + " found: " + totalExtracted);
         double seconds = ((System.currentTimeMillis() - startTime) / 1000.0);
         System.out.println("time to process: " + seconds + " seconds (not counting init)");
         System.out.println("time to process: " + (seconds / sentences.size()) + " seconds per sentence");
@@ -280,6 +331,7 @@ public class WGschema {
         debug = false;
         Interpreter.replaceInstances = false;
         Interpreter.debug = false;
+        Interpreter.inference = false;
         Interpreter.coref = true;
         KBmanager.getMgr().initializeOnce();
         WGschema wg = new WGschema();
