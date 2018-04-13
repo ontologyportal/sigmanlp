@@ -21,6 +21,7 @@
 package com.articulate.nlp.semRewrite.substitutor;
 
 import com.articulate.nlp.RelExtract;
+import com.articulate.nlp.semRewrite.Interpreter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -45,7 +46,7 @@ import java.util.Set;
 public class StanfordCorefSubstitutor extends SimpleSubstitutorStorage {
 
     public static final Set<String> ignorablePronouns = ImmutableSet.of("himself", "herself");
-    public static boolean debug = false;
+    public static boolean debug = true;
 
     /** **************************************************************
      */
@@ -56,6 +57,7 @@ public class StanfordCorefSubstitutor extends SimpleSubstitutorStorage {
     }
 
     /** **************************************************************
+     * Create the coreference chains and store them by calling SimpleSubstitutorStorage.addGroups()
      */
     private void initialize(Annotation document) {
 
@@ -66,9 +68,9 @@ public class StanfordCorefSubstitutor extends SimpleSubstitutorStorage {
         Map<CoreLabelSequence, CoreLabelSequence> collectedGroups = Maps.newHashMap();
 
         for (CoreLabel label : labels) {
-            if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): label: " + label);
+            //if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): label: " + label);
             List<CorefChain.CorefMention> mentions = getMentions(label, corefChains);
-            if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): mentions: " + mentions);
+            //if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): mentions: " + mentions);
             if (mentions.size() > 1) {
                 if (!ignorablePronouns.contains(label.originalText())) {
                     int index = label.index();
@@ -77,18 +79,18 @@ public class StanfordCorefSubstitutor extends SimpleSubstitutorStorage {
                     CorefChain.CorefMention firstMention = findRootMention(mentions);
                     if (sentenceIdx != firstMention.sentNum || index < firstMention.startIndex || index >= firstMention.endIndex) {
                         String masterTag = label.tag();
-                        if (isSubstitutablePronoun(label)) {
+                        if (isSubstitutablePronoun(label))
                             masterTag = "";
-                        }
-                        List<CoreLabel> singleSentence =  getSentenceTokens(document, firstMention.sentNum - 1);
+                        List<CoreLabel> singleSentence = getSentenceTokens(document, firstMention.sentNum - 1);
                         CoreLabelSequence key = extractTextWithSameTag(singleSentence, firstMention, masterTag);
-                        if (!key.isEmpty()) {
+                        if (!key.isEmpty())
                             collectedGroups.put(new CoreLabelSequence(label), key);
-                        }
                     }
                 }
             }
         }
+        if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): collected groups: " + collectedGroups);
+        Interpreter.substGroups = collectedGroups; // a hack to save the substitutions
         addGroups(collectedGroups);
     }
 
@@ -107,12 +109,12 @@ public class StanfordCorefSubstitutor extends SimpleSubstitutorStorage {
      */
     private List<CorefChain.CorefMention> getMentions(final CoreLabel label, Map<Integer, CorefChain> corefs) {
 
-        if (debug) System.out.println("StanfordCorefSubstitutor.getMentions(): mentions for " +
-                label +  " in " + corefs);
+        //if (debug) System.out.println("StanfordCorefSubstitutor.getMentions(): mentions for " +
+        //        label +  " in " + corefs);
         List<CorefChain.CorefMention> mentions = new ArrayList<>();
-        if (debug) RelExtract.printCoreLabel(label);
+        //if (debug) RelExtract.printCoreLabel(label);
         Integer corefClusterId = label.get(CorefCoreAnnotations.CorefClusterIdAnnotation.class);
-        if (debug) System.out.println("StanfordCorefSubstitutor.getMentions(): cluster: " + corefClusterId);
+        //if (debug) System.out.println("StanfordCorefSubstitutor.getMentions(): cluster: " + corefClusterId);
         while (mentions.size() <= 1 && corefClusterId != null && corefClusterId.compareTo(0) > 0) {
             if (corefs.containsKey(corefClusterId)) {
                 List<CorefChain.CorefMention> candidateMentions = corefs.get(corefClusterId).getMentionsInTextualOrder();
@@ -120,9 +122,8 @@ public class StanfordCorefSubstitutor extends SimpleSubstitutorStorage {
                                 mention.sentNum == label.sentIndex() + 1
                                         && mention.startIndex == label.index()
                 );
-                if (areMentionsContainLabel) {
+                if (areMentionsContainLabel)
                     mentions = candidateMentions;
-                }
             }
             corefClusterId = corefClusterId - 1;
         }
