@@ -171,15 +171,15 @@ Authors:
         out.println("<table><tr><th>original</th><th>augmented</th><th>substitutors</th></tr><tr><td>\n");
         for (CoreMap sentence : sentences) {
             out.println("<pre>");
-            List<String> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
-            for (String s : dependencies)
-                out.println(s);
+            List<Literal> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
+            for (Literal l : dependencies)
+                out.println(l);
             out.println("</pre><P>");
         }
         out.println("</td>\n");
         out.println("<td><pre>\n");
-        for (String s : interp.augmentedClauses)
-            out.println(s);
+        for (Literal l : interp.augmentedClauses)
+            out.println(l);
         out.println("</pre>");
 
         out.println("</td>");
