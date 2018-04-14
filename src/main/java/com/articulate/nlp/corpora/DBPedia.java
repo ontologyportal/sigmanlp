@@ -38,6 +38,8 @@ public class DBPedia {
      */
     public static void main(String[] args) {
 
+        //WordNetUtilities.readWNversionMap()
+        // WordNetUtilities.mappings
         // KBmanager.getMgr().initializeOnce();
         String path = System.getenv("CORPORA") + File.separator + "DBPedia" + File.separator;
         ArrayList<String> thresh = CorpusReader.readFile(path + "thresh-reduced.out");
@@ -45,7 +47,7 @@ public class DBPedia {
             String[] pair = s.split("\t");
             pageToString.put(pair[1],pair[0]);
         }
-        File file = new File(path + "instance_types_en.ttl");
+        File file = new File(path + "instance_types_dbtax_dbo_en.ttl");
         try {
             InputStream in = new FileInputStream(file);
             Reader reader = new InputStreamReader(in);
@@ -57,7 +59,7 @@ public class DBPedia {
                     //System.out.println("Info in CorpusReader.processFileByLine(): line: " + line);
                     String page = line.substring(29,line.indexOf(">"));
                     if (pageToString.containsKey(page)) {
-                        String onto = line.substring(line.lastIndexOf("/"),line.lastIndexOf(">"));
+                        String onto = line.substring(line.lastIndexOf("/")+1,line.lastIndexOf(">"));
                         stringToOnto.put(pageToString.get(page),onto);
                     }
                 }
