@@ -196,6 +196,36 @@ public class DBPedia {
 
     /***************************************************************
      */
+    public static void printPageToSUMO() {
+
+        System.out.println("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n" +
+                "@prefix dbp:  <http://dbpedia.org/resource/> .\n" +
+                "@prefix sumo: <https://github.com/ontologyportal/sumo#> .");
+        for (String p : pageToString.keySet()) {
+            String s = pageToString.get(p);
+            String sumo = stringToOnto.get(s);
+            if (sumo != null)
+                System.out.println("dbp:" + p + "\t" + "rdf:type" + "\tsumo:" + sumo + " .");
+        }
+    }
+
+    /***************************************************************
+     */
+    public static void printPageToString() {
+
+        System.out.println("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+                "@prefix dbp:  <http://dbpedia.org/resource/> .\n" +
+                "@prefix sumo: <https://github.com/ontologyportal/sumo#> .");
+        for (String p : pageToString.keySet()) {
+            String s = pageToString.get(p);
+            String sumo = stringToOnto.get(s);
+            if (sumo != null)
+                System.out.println("dbp:" + p + "\trdfs:label\t\"" + s + "\" .");
+        }
+    }
+
+    /***************************************************************
+     */
     public static void main(String[] args) {
 
         KBmanager.getMgr().initializeOnce();
@@ -222,14 +252,8 @@ public class DBPedia {
         makeWnToOnto();
         readWordNetMapping(path);
 
-        System.out.println("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n" +
-                "@prefix dbp:  <http://dbpedia.org/resource/> .\n" +
-                "@prefix sumo: <https://github.com/ontologyportal/sumo#> .");
-        for (String p : pageToString.keySet()) {
-            String s = pageToString.get(p);
-            String sumo = stringToOnto.get(s);
-            if (sumo != null)
-                System.out.println("dbp:" + p + "\t" + "rdf:type" + "\tsumo:" + sumo + " .");
-        }
+        //printPageToSUMO();
+        printPageToString();
+
     }
 }
