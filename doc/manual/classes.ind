@@ -1,0 +1,48 @@
+\begin{theindex}
+
+  \item Clause, 16
+  \item CommonCNFUtil, 20
+  \item CoNLL04, 25
+
+  \indexspace
+
+  \item Indexer, 20
+  \item Interpreter, 19, 20
+
+  \indexspace
+
+  \item LHS, 16
+  \item Literal, 16
+
+  \indexspace
+
+  \item Pipeline, 9
+  \item Procedure, 16
+
+  \indexspace
+
+  \item RelExtract, 20
+  \item RHS, 16
+  \item Rule, 16
+  \item RuleSet, 16
+
+  \indexspace
+
+  \item Searcher, 20
+  \item StanfordCorefSubstitutor, 10
+
+  \indexspace
+
+  \item TimeAnnotations, 20
+  \item TimeBank, 20
+  \item TimeSUMOAnnotator, 10, 20
+  \item Timex, 20
+
+  \indexspace
+
+  \item WNMultiWordAnnotator, 10, 20
+  \item WordNet, 10, 16
+  \item WSD, 10, 16
+  \item WSDAnnotator, 10, 16, 20
+
+\end{theindex}

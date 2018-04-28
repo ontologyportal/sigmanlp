@@ -1,0 +1,14 @@
+\contentsline {chapter}{\numberline {1}Preface}{7}
+\contentsline {section}{\numberline {1.1}Introduction}{7}
+\contentsline {section}{\numberline {1.2}Code Overview}{7}
+\contentsline {chapter}{\numberline {2}CoreNLP}{9}
+\contentsline {section}{\numberline {2.1}Pipeline}{9}
+\contentsline {section}{\numberline {2.2}Adding an Annotator}{10}
+\contentsline {chapter}{\numberline {3}Semantic Rewriting}{15}
+\contentsline {section}{\numberline {3.1}JSP Interface}{20}
+\contentsline {chapter}{\numberline {4}Relation Extraction}{21}
+\contentsline {section}{\numberline {4.1}Introduction}{21}
+\contentsline {section}{\numberline {4.2}Pattern Generation}{22}
+\contentsline {subsection}{Relation Extraction Rules}{23}
+\contentsline {section}{\numberline {4.3}NLP Pipeline}{24}
+\contentsline {section}{\numberline {4.4}Corpus}{25}

@@ -1,0 +1,123 @@
+\begin{thebibliography}{}
+
+\bibitem[Benzm\"uller, 2015]{B14}
+Benzm\"uller, C. (2015).
+\newblock Higher-order automated theorem provers.
+\newblock In Delahaye, D. and Woltzenlogel~Paleo, B., editors, {\em All about
+  Proofs, Proof for All}, Mathematical Logic and Foundations, pages 171--214.
+  College Publications, London, UK.
+
+\bibitem[Crouch, 2005]{crouch2005packed}
+Crouch, R. (2005).
+\newblock Packed rewriting for mapping semantics to {KR}.
+\newblock In {\em Proc. 6 th Int. Workshop on Computational Semantics}, pages
+  103--114, Tilburg.
+
+\bibitem[Crouch and King, 2006]{crouch2006}
+Crouch, R. and King, T.~H. (2006).
+\newblock Semantics via f-structure rewriting.
+\newblock In {\em Proceedings of LFG06}, pages 145--165.
+
+\bibitem[Fellbaum, 1998]{Fellbaum1998wordnet}
+Fellbaum, C. (1998).
+\newblock {\em WordNet: An Electronic Lexical Database}.
+\newblock Language, Speech, and Communication. MIT Press.
+
+\bibitem[Grishman and Sterling, 1993]{Grishman:1993:NYU:1072017.1072036}
+Grishman, R. and Sterling, J. (1993).
+\newblock New york university: Description of the proteus system as used for
+  muc-5.
+\newblock In {\em Proceedings of the 5th Conference on Message Understanding},
+  MUC5 '93, pages 181--194, Stroudsburg, PA, USA. Association for Computational
+  Linguistics.
+
+\bibitem[Hearst, 1992]{Hearst:1992:AAH:992133.992154}
+Hearst, M.~A. (1992).
+\newblock Automatic acquisition of hyponyms from large text corpora.
+\newblock In {\em Proceedings of the 14th Conference on Computational
+  Linguistics - Volume 2}, COLING '92, pages 539--545, Stroudsburg, PA, USA.
+  Association for Computational Linguistics.
+
+\bibitem[Kamp and Reyle, 1993]{KampReyle93}
+Kamp, H. and Reyle, U. (1993).
+\newblock {\em From Discourse to Logic. Introduction to Modeltheoretic
+  Semantics of Natural Language, Formal Logic and Discourse Representation
+  Theory}.
+\newblock Kluwer, Dordrecht.
+
+\bibitem[Landes et~al., 1998]{LandesLeacock}
+Landes, S., Leacock, C., and Tengi, R. (1998).
+\newblock Building semantic concordances.
+\newblock In Fellbaum, C., editor, {\em WordNet: An Electronic Lexical
+  Database}, Language, Speech, and Communication. MIT Press, Cambridge (Mass.).
+
+\bibitem[Manning et~al., 2014a]{manning-etal:2014:ACLDemo}
+Manning, C., Bauer, J., Surdeanu, M., Finkel, J., Bethard, S., and McClosky, D.
+  (2014a).
+\newblock The stanford corenlp natural language processing toolkit.
+\newblock In {\em Proceedings of the 52nd Annual Meeting of the Association for
+  Computational Linguistics: System Demonstrations}.
+
+\bibitem[Manning et~al., 2014b]{manning-EtAl:2014:P14-5}
+Manning, C.~D., Surdeanu, M., Bauer, J., Finkel, J., Bethard, S.~J., and
+  McClosky, D. (2014b).
+\newblock The {Stanford} {CoreNLP} natural language processing toolkit.
+\newblock In {\em Association for Computational Linguistics (ACL) System
+  Demonstrations}, pages 55--60.
+
+\bibitem[Niles and Pease, 2001]{np01}
+Niles, I. and Pease, A. (2001).
+\newblock {Toward a Standard Upper Ontology}.
+\newblock In Welty, C. and Smith, B., editors, {\em {Proceedings of the 2nd
+  International Conference on Formal Ontology in Information Systems
+  (FOIS-2001)}}.
+
+\bibitem[Niles and Pease, 2003]{np03}
+Niles, I. and Pease, A. (2003).
+\newblock {Linking Lexicons and Ontologies: Mapping WordNet to the Suggested
+  Upper Merged Ontology}.
+\newblock In {\em {Proceedings of the IEEE International Conference on
+  Information and Knowledge Engineering}}, pages 412--416.
+
+\bibitem[Pease, 2011]{p11}
+Pease, A. (2011).
+\newblock {\em {Ontology: A Practical Guide}}.
+\newblock Articulate Software Press, Angwin, CA.
+
+\bibitem[Pease and Benzmüller, 2013]{ac13}
+Pease, A. and Benzmüller, C. (2013).
+\newblock {Sigma: An Integrated Development Environment for Logical Theories}.
+\newblock {\em AI Communications}, 26:9--97.
+
+\bibitem[Pease and Cheung, 2018]{pease2018}
+Pease, A. and Cheung, A. K.-F. (2018).
+\newblock Toward a semantic concordancer.
+\newblock In Bond, F., Fellbaum, C., and Vossen, P., editors, {\em The 9th
+  Global WordNet Conference}.
+
+\bibitem[Pease and Li, 2010]{pl10}
+Pease, A. and Li, J. (2010).
+\newblock {Controlled English to Logic Translation}.
+\newblock In Poli, R., Healy, M., and Kameas, A., editors, {\em {Theory and
+  Applications of Ontology}}. Springer.
+
+\bibitem[Pustejovsky, 1991]{Pustejovsky:1991:GL:176321.176324}
+Pustejovsky, J. (1991).
+\newblock The generative lexicon.
+\newblock {\em Comput. Linguist.}, 17(4):409--441.
+
+\bibitem[Robinson and Voronkov, 2001]{TheoremProving}
+Robinson, A. and Voronkov, A. (2001).
+\newblock {\em Handbook of Automated Reasoning}.
+\newblock MIT Press.
+
+\bibitem[Stenetorp et~al., 2012]{Stenetorp:2012:BWT:2380921.2380942}
+Stenetorp, P., Pyysalo, S., Topi\'{c}, G., Ohta, T., Ananiadou, S., and Tsujii,
+  J. (2012).
+\newblock Brat: A web-based tool for nlp-assisted text annotation.
+\newblock In {\em Proceedings of the Demonstrations at the 13th Conference of
+  the European Chapter of the Association for Computational Linguistics}, EACL
+  '12, pages 102--107, Stroudsburg, PA, USA. Association for Computational
+  Linguistics.
+
+\end{thebibliography}

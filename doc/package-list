@@ -1,0 +1,11 @@
+com.articulate.nlp
+com.articulate.nlp.brat
+com.articulate.nlp.constants
+com.articulate.nlp.corpora
+com.articulate.nlp.corpora.wikipedia
+com.articulate.nlp.lucene
+com.articulate.nlp.pipeline
+com.articulate.nlp.semRewrite
+com.articulate.nlp.semRewrite.datesandnumber
+com.articulate.nlp.semRewrite.substitutor
+com.articulate.nlp.semconcor
