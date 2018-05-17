@@ -52,9 +52,13 @@ import java.util.*;
 public class Pipeline {
 
     public StanfordCoreNLP pipeline;
-    public static boolean debug = false;
+    public static boolean debug = true;
+    
     public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
-        "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo"; // regexner and entitymentions now run automatically from ner
+            "ner, nersumo, gender, parse, coref, depparse, dbpmw, wsd, tsumo";
+    
+    //public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
+    //    "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo"; // regexner and entitymentions now run automatically from ner
 
     public static final String oldDefaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
@@ -90,6 +94,7 @@ public class Pipeline {
         if (propString.contains("wsd")) {
             props.put("customAnnotatorClass.wsd", "com.articulate.nlp.WSDAnnotator");
             props.put("customAnnotatorClass.wnmw", "com.articulate.nlp.WNMultiWordAnnotator");
+            props.put("customAnnotatorClass.dbpmw", "com.articulate.nlp.DBPMultiWordAnnotator");
         }
         if (propString.contains("tsumo")) {
             props.put("customAnnotatorClass.tsumo", "com.articulate.nlp.TimeSUMOAnnotator");

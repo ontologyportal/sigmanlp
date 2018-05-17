@@ -77,7 +77,7 @@ public class Interpreter {
 
     private static final Pattern ENDING_IN_PUNC_PATTERN = Pattern.compile(".*[.?!]$");
 
-    public static boolean debug = false;
+    public static boolean debug = true;
     public boolean initialized = false;
 
     public RuleSet rs = null;
@@ -1495,10 +1495,14 @@ public class Interpreter {
     public void interpInter() {
 
         String input = "";
-        Scanner scanner = new Scanner(System.in);
+        //Scanner scanner = new Scanner(System.in);
         do {
             System.out.print("Enter sentence: ");
-            input = scanner.nextLine().trim();
+            //input = scanner.nextLine().trim();
+            //input = "She traveled to Las Vegas and looked up the world record.";
+            //input = "Warren Webster is America's most trusted online dictionary for English word definitions, meanings, and pronunciation.";
+            input = "Abdoh Otaif is a former football player who played for Al-Shabab in Riyadh and Saudi Arabia national team.";
+
             if (!Strings.isNullOrEmpty(input) && !input.equals("exit") && !input.equals("quit")) {
                 if (input.equals("reload")) {
                     System.out.println("reloading semantic rewriting rules");
@@ -1620,6 +1624,7 @@ public class Interpreter {
                     }
                 }
             }
+            input = "exit";
         } while (!input.equals("exit") && !input.equals("quit"));
     }
 
