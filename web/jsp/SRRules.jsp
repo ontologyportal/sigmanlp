@@ -56,7 +56,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     }
     out.println("</pre>");
 %>
-
+<%@ include file="Postlude.jsp" %>
 </BODY>
 </HTML>
 
