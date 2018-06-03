@@ -1,5 +1,8 @@
 package com.articulate.nlp;
 
+import com.articulate.sigma.Formula;
+import com.articulate.sigma.KB;
+import com.articulate.sigma.KBmanager;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 
@@ -8,6 +11,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,5 +50,66 @@ public class TFIDFUtil {
             documents.add(line);
         }
         return documents;
+    }
+
+    /** ***************************************************************
+     */
+    public static TFIDF indexDocumentation() {
+
+        return indexDocumentation(false);
+    }
+
+    /** ***************************************************************
+     */
+    public static TFIDF indexDocumentation(boolean relOnly) {
+
+        List<String> documents = new ArrayList<>();
+        KBmanager.getMgr().initializeOnce();
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        ArrayList<Formula> forms = kb.ask("arg",0,"documentation");
+        for (Formula f : forms) {
+            String term = f.getArgument(1);
+            String doc = f.getArgument(3);
+            if (!relOnly || kb.isRelation(term))
+                documents.add(term + " : " + doc);
+        }
+
+        TFIDF cb = null;
+        try {
+            String dirname =  KBmanager.getMgr().getPref("kbDir") + File.separator + "WordNetMappings";
+            String fname = dirname + File.separator + "stopwords.txt";
+            cb = new TFIDF(documents, fname);
+        }
+
+        catch (IOException e) {
+            System.out.println("Error in TFIDFUtil.indexDocumentation(): " + e.getMessage());
+            e.printStackTrace();
+            return cb;
+        }
+        return cb;
+    }
+
+    /** ***************************************************************
+     */
+    public static void printHelp() {
+
+        System.out.println("Usage: ");
+        System.out.println("TFIDF -h         % show this help info");
+        System.out.println("      -f \"string\"   % find best match in SUMO documentation");
+    }
+
+    /** ***************************************************************
+     */
+    public static void main(String[] args) {
+
+        TFIDF cb = indexDocumentation();
+        if (args != null && args.length > 0 && args[0].equals("-h")) {
+            printHelp();
+        }
+        else if (args != null && args.length > 1 && args[0].equals("-f")) {
+            System.out.println(cb.matchInput(args[1],10));
+        }
+        else
+            printHelp();
     }
 }
