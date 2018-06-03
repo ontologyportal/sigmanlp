@@ -121,7 +121,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
     else
         out.println("Empty input<P>\n");
 %>
-
+<%@ include file="Postlude.jsp" %>
 </BODY>
 </HTML>
 
