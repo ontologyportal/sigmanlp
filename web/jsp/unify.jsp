@@ -89,7 +89,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         <input type ="hidden" name="dep" value="<%=cnfForm %>">
         <input type="submit" name="submit" value="Submit">
     </form><p>
-
+<%@ include file="Postlude.jsp" %>
 </BODY>
 </HTML>
 
