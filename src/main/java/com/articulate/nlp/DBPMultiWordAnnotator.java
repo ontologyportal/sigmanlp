@@ -1,6 +1,7 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.*;
+import com.articulate.sigma.dbpedia.DBPedia;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
@@ -23,8 +24,6 @@ import edu.stanford.nlp.util.IntPair;
  */
 
 public class DBPMultiWordAnnotator implements Annotator {
-
-	public static boolean firstTime = true;
 	
     // Each CoreLabel in a multi-word string gets one that provides the entire
     // multi-word in DBP format.  Individual words will still have their own
@@ -54,14 +53,7 @@ public class DBPMultiWordAnnotator implements Annotator {
         }
     }
 
-    public static boolean debug = true;
-
-    /****************************************************************
-     */
-    public DBPMultiWordAnnotator(String name, Properties props) {
-
-        //KBmanager.getMgr().initializeOnce();
-    }
+    public static boolean debug = false;
 
     /** ***************************************************************
      * Find the synset for a multi-word string, if it exists.
@@ -99,27 +91,18 @@ public class DBPMultiWordAnnotator implements Annotator {
     public static int findMultiWord(CoreLabel token, List<CoreLabel> multiWordTail, List<String> synset,
                                     StringBuffer foundMultiWord) {
 
-    	if(firstTime)
-    	{
-	    	firstTime = false;
-	    	for(String key : WordNet.wn.getMultiWords().dbPediaMultiWord.keySet()) {
-	    		if(debug) System.out.println("INFO in DBPMultiWordAnnotator.findMultiWord(): words: '" + 
-	    				key+": "+WordNet.wn.getMultiWords().dbPediaMultiWord.get(key) + "'");
-	    	}
-    	}
-
         StringBuffer currentMultiWord = new StringBuffer();
         String multiWordKey = token.lemma();
-        if (!WordNet.wn.getMultiWords().dbPediaMultiWord.containsKey(multiWordKey))
+        if (!DBPedia.dbp.getMultiWords().dbPediaMultiWord.containsKey(multiWordKey))
             multiWordKey = token.originalText();
         int wordIndex = 0;
         int endIndex = 0;
         String sense = "";
-        if (WordNet.wn.getMultiWords().dbPediaMultiWord.containsKey(multiWordKey) && !multiWordTail.isEmpty()) {
+        if (DBPedia.dbp.getMultiWords().dbPediaMultiWord.containsKey(multiWordKey) && !multiWordTail.isEmpty()) {
             int mwlen = foundMultiWord.length();
             currentMultiWord.delete(0,mwlen);
             currentMultiWord = currentMultiWord.append(multiWordKey + "_" + multiWordTail.get(wordIndex).originalText());
-            Collection<String> candidates = WordNet.wn.getMultiWords().dbPediaMultiWord.get(multiWordKey);
+            Collection<String> candidates = DBPedia.dbp.getMultiWords().dbPediaMultiWord.get(multiWordKey);
             while (candidates.size() > 0) {
                 ArrayList<String> newCandidates = new ArrayList<String>();
                 for (String candidate : candidates) {
@@ -166,10 +149,14 @@ public class DBPMultiWordAnnotator implements Annotator {
             int i = token.index() - 1 ;
             ArrayList<String> multiWordResult = new ArrayList<String>();
             StringBuffer multiWordToken = new StringBuffer();
+
+            if (debug) System.out.println("INFO in DBPediaMultiWordAnnotator.annotate(): start: " + tokens);
+            if (debug) System.out.println("Before <DBPedia findMultiWord> millis: " + System.currentTimeMillis());
             wordIndex = findMultiWord(tokens, i, multiWordResult, multiWordToken);
+            if (debug) System.out.println("Atter <DBPedia findMultiWord> millis: " + System.currentTimeMillis());
+            
             if (multiWordToken.length() > 0 && debug)
                 System.out.println("INFO in DBPediaMultiWordAnnotator.annotate(): found multi-word: " + multiWordToken);
-            //multiWordToken.insert(0,"?");
             if (multiWordToken.length() > 0)
                 multiWordToken.append("-" +  Integer.toString(token.index())); // set to token number not list index
             if (debug) System.out.println("INFO in DBPediaMultiWordAnnotator.annotate(): start: " + i + " end: " + wordIndex);
@@ -181,7 +168,6 @@ public class DBPMultiWordAnnotator implements Annotator {
                     IntPair ip = new IntPair(i+1,wordIndex); // spans are set to token numbers
                     if (debug) System.out.println("INFO in DBPediaMultiWordAnnotator.annotate(): set span to: " +
                             i + ":" + (wordIndex-1));
-                    //ip.set(i,wordIndex);
                     tok.set(DBPMWSpanAnnotation.class,ip);
                     String sumo = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(synset));
                     if (!StringUtil.emptyString(sumo))
@@ -197,7 +183,7 @@ public class DBPMultiWordAnnotator implements Annotator {
             }
         }
     }
-
+    
     /****************************************************************
      * Mark all the multiwords in the text with their synset, sumo
      * term and the span of the multiword using tokens indexes (which
@@ -232,81 +218,6 @@ public class DBPMultiWordAnnotator implements Annotator {
     public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
 
         return Collections.singleton(DBPMultiWordAnnotator.DBPMultiWordAnnotation.class);
-    }
-
-    /****************************************************************
-     */
-    public static CoreLabel setCoreLabel(String s, int i) {
-
-        CoreLabel cl = new CoreLabel();
-        cl.setLemma(s);
-        cl.setOriginalText(s);
-        cl.setValue(s);
-        cl.setWord(s);
-        cl.setIndex(i);
-        return cl;
-    }
-
-    /****************************************************************
-     */
-    public static void test1() {
-
-        debug = true;
-        KBmanager.getMgr().initializeOnce();
-        ArrayList<CoreLabel> al =  new ArrayList<>();
-        CoreLabel cl = null;
-        cl = setCoreLabel("John",1);
-        al.add(cl);
-
-        cl = setCoreLabel("is",2);
-        cl.setLemma("be");
-        al.add(cl);
-
-        cl = setCoreLabel("on",3);
-        al.add(cl);
-
-        cl = setCoreLabel("the",4);
-        al.add(cl);
-
-        cl = setCoreLabel("floor",5);
-        al.add(cl);
-        annotateSentence(al);
-
-        System.out.println("result: " + al);
-    }
-
-    /****************************************************************
-     */
-    public static void test2() {
-
-        debug = true;
-        KBmanager.getMgr().initializeOnce();
-        ArrayList<CoreLabel> al =  new ArrayList<>();
-        CoreLabel cl = null;
-        cl = setCoreLabel("Mary",1);
-        al.add(cl);
-
-        cl = setCoreLabel("is",2);
-        cl.setLemma("be");
-        al.add(cl);
-
-        cl = setCoreLabel("out",3);
-        al.add(cl);
-
-        cl = setCoreLabel("of",4);
-        al.add(cl);
-
-        cl = setCoreLabel("cash",5);
-        al.add(cl);
-        annotateSentence(al);
-
-        System.out.println("result: " + al);
-    }
-
-    /****************************************************************
-     */
-    public static void main(String[] args) {
-        test2();
     }
 }
 

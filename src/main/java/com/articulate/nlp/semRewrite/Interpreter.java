@@ -77,7 +77,7 @@ public class Interpreter {
 
     private static final Pattern ENDING_IN_PUNC_PATTERN = Pattern.compile(".*[.?!]$");
 
-    public static boolean debug = true;
+    public static boolean debug = false;
     public boolean initialized = false;
 
     public RuleSet rs = null;
@@ -1495,13 +1495,10 @@ public class Interpreter {
     public void interpInter() {
 
         String input = "";
-        //Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
         do {
             System.out.print("Enter sentence: ");
-            //input = scanner.nextLine().trim();
-            //input = "She traveled to Las Vegas and looked up the world record.";
-            //input = "Warren Webster is America's most trusted online dictionary for English word definitions, meanings, and pronunciation.";
-            input = "Abdoh Otaif is a former football player who played for Al-Shabab in Riyadh and Saudi Arabia national team.";
+            input = scanner.nextLine().trim();
 
             if (!Strings.isNullOrEmpty(input) && !input.equals("exit") && !input.equals("quit")) {
                 if (input.equals("reload")) {
@@ -1615,8 +1612,10 @@ public class Interpreter {
                     timeOut_value = Integer.valueOf(input.split(" ")[1]);
                 }
                 else {
-                    System.out.println("INFO in Interpreter.interpretIter(): " + input);
+                	if (debug) System.out.println("INFO in Interpreter.interpretIter(): " + input);
+                	if (debug) System.out.println("Before <interpret> millis: " + System.currentTimeMillis());
                     List<String> results = interpret(input);
+                    if (debug) System.out.println("After <interpret> millis: " + System.currentTimeMillis());
                     int count = 1;
                     for (String result : results) {
                         System.out.println("Result " + count + ": " + result);
@@ -1624,7 +1623,6 @@ public class Interpreter {
                     }
                 }
             }
-            input = "exit";
         } while (!input.equals("exit") && !input.equals("quit"));
     }
 
