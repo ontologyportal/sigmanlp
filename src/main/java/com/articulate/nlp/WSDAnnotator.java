@@ -88,6 +88,8 @@ public class WSDAnnotator implements Annotator {
                 if (token.originalText().matches("-...-")) // skip parentheses and bracket codes like -LRB-
                     continue;
                 String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class); // need to convert to Sigma's integer codes
+                if (pos.matches("-...-")) // skip parentheses and bracket codes like -LRB-
+                    continue;
                 char num = WordNetUtilities.posPennToNumber(pos);
                 if (token.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class) != null) // skip multiwords
                     continue;
