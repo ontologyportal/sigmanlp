@@ -14,6 +14,7 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.IntPair;
 import edu.stanford.nlp.util.TypesafeMap;
 
 import java.io.File;
@@ -1015,8 +1016,32 @@ public class RelExtract {
         sb.append("value: " + cl.value() + "\n");
         sb.append("word: " + cl.word() + "\n");
         //sb.append("keyset: " + cl.keySet() + "\n");
-        sb.append("variable: " + cl.getString(LanguageFormatter.VariableAnnotation.class) + "\n");
-        sb.append("arg: " + cl.get(LanguageFormatter.RelationArgumentAnnotation.class) + "\n");
+        String variable = cl.getString(LanguageFormatter.VariableAnnotation.class);
+        if (!StringUtil.emptyString(variable))
+            sb.append("variable: " + variable + "\n");
+
+        if (cl.containsKey(LanguageFormatter.RelationArgumentAnnotation.class)) {
+            int relArg = cl.get(LanguageFormatter.RelationArgumentAnnotation.class);
+            if (relArg > 0)
+                sb.append("arg: " + relArg + "\n");
+        }
+
+        String WSD = cl.getString(WSDAnnotator.WSDAnnotation.class);
+        if (!StringUtil.emptyString(WSD))
+            sb.append("wsd: " + WSD + "\n");
+
+        String sumo = cl.getString(WSDAnnotator.SUMOAnnotation.class);
+        if (!StringUtil.emptyString(sumo))
+            sb.append("sumo: " + sumo + "\n");
+
+        String WNMW =  cl.getString(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
+        if (!StringUtil.emptyString(WNMW))
+            sb.append("wnmw: " + WNMW + "\n");
+
+        IntPair WNMWspan = cl.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class);
+        if (WNMWspan != null)
+            sb.append("wnmwspan: " + WNMWspan + "\n");
+
         sb.append("\n");
         return sb.toString();
     }
