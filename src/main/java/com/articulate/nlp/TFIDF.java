@@ -134,7 +134,7 @@ public class TFIDF {
 
     /** ***************************************************************
      * Process a document
-     * @param documents - list of strings to be processed
+     * @param documents - list of strings to be processed, which are added to variable "lines"
      */
     private void readDocuments(List<String> documents) {
 
