@@ -1499,6 +1499,7 @@ public class Interpreter {
         do {
             System.out.print("Enter sentence: ");
             input = scanner.nextLine().trim();
+
             if (!Strings.isNullOrEmpty(input) && !input.equals("exit") && !input.equals("quit")) {
                 if (input.equals("reload")) {
                     System.out.println("reloading semantic rewriting rules");
@@ -1611,8 +1612,10 @@ public class Interpreter {
                     timeOut_value = Integer.valueOf(input.split(" ")[1]);
                 }
                 else {
-                    System.out.println("INFO in Interpreter.interpretIter(): " + input);
+                	if (debug) System.out.println("INFO in Interpreter.interpretIter(): " + input);
+                	if (debug) System.out.println("Before <interpret> millis: " + System.currentTimeMillis());
                     List<String> results = interpret(input);
+                    if (debug) System.out.println("After <interpret> millis: " + System.currentTimeMillis());
                     int count = 1;
                     for (String result : results) {
                         System.out.println("Result " + count + ": " + result);

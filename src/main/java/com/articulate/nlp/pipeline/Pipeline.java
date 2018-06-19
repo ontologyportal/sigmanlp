@@ -53,13 +53,28 @@ public class Pipeline {
 
     public StanfordCoreNLP pipeline;
     public static boolean debug = false;
-    public static final String defaultProp = "tokenize, ssplit, pos, lemma, " +
+    
+    /* default multiWord parser is WordNet - wnmw for WordNet, dbpmw for DBPedia
+     Only the multiWord parser annotator type value comes from sigmakee/config.xml
+     */ 
+    public static String defaultProp = "tokenize, ssplit, pos, lemma, " +
+            "ner, nersumo, gender, parse, coref, depparse, <annotatorType>, wsd, tsumo";
+    
+    public static final String wnmwdefaultProp = "tokenize, ssplit, pos, lemma, " +
         "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo"; // regexner and entitymentions now run automatically from ner
 
     public static final String oldDefaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
 
     public static String anchorDate = "2017-04-21";
+    
+    static {
+    	KBmanager.getMgr().initializeOnce();
+    	String annotatorType = KBmanager.getMgr().getPref("multiWordAnnotatorType");
+    	if(null == annotatorType || "".equals(annotatorType))
+    		annotatorType = "wnmw"; // default to WordNet
+    	defaultProp = defaultProp.replace("<annotatorType>", annotatorType);
+    }
 
     /** ***************************************************************
      */
@@ -90,6 +105,7 @@ public class Pipeline {
         if (propString.contains("wsd")) {
             props.put("customAnnotatorClass.wsd", "com.articulate.nlp.WSDAnnotator");
             props.put("customAnnotatorClass.wnmw", "com.articulate.nlp.WNMultiWordAnnotator");
+            props.put("customAnnotatorClass.dbpmw", "com.articulate.nlp.DBPMultiWordAnnotator");
         }
         if (propString.contains("tsumo")) {
             props.put("customAnnotatorClass.tsumo", "com.articulate.nlp.TimeSUMOAnnotator");
