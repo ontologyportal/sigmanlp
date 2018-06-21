@@ -1038,6 +1038,14 @@ public class RelExtract {
         if (!StringUtil.emptyString(WNMW))
             sb.append("wnmw: " + WNMW + "\n");
 
+        String WNMWsumo =  cl.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
+        if (!StringUtil.emptyString(WNMWsumo))
+            sb.append("WNMWsumo: " + WNMWsumo + "\n");
+
+        String WNMWtok =  cl.getString(WNMultiWordAnnotator.WNMWTokenAnnotation.class);
+        if (!StringUtil.emptyString(WNMWtok))
+            sb.append("WNMWtok: " + WNMWtok + "\n");
+
         IntPair WNMWspan = cl.get(WNMultiWordAnnotator.WNMWSpanAnnotation.class);
         if (WNMWspan != null)
             sb.append("wnmwspan: " + WNMWspan + "\n");
