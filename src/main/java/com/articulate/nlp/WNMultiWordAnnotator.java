@@ -25,7 +25,7 @@ import edu.stanford.nlp.util.IntPair;
 
 public class WNMultiWordAnnotator implements Annotator {
 	
-	public static boolean firstTime = true;
+	public static boolean firstTime = false;
 
     // Each CoreLabel in a multi-word string gets one that provides the entire
     // multi-word in WordNet format.  Individual words will still have their own
@@ -56,7 +56,7 @@ public class WNMultiWordAnnotator implements Annotator {
     }
 
     //static final Annotator.Requirement WNMW_REQUIREMENT = new Annotator.Requirement("wnmw");
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     /****************************************************************
      */
@@ -80,10 +80,10 @@ public class WNMultiWordAnnotator implements Annotator {
     public static int findMultiWord(List<CoreLabel> tokens, int startIndex, List<String> synset,
                              StringBuffer multiWordToken) {
 
-        if(debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): tokens: '" + tokens + "'");
-        if(debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): start: '" + startIndex + "'");
-        if(debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): synset: '" + synset + "'");
-        if(debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): multiWordToken: '" + multiWordToken + "'");
+        if (debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): tokens: '" + tokens + "'");
+        if (debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): start: '" + startIndex + "'");
+        if (debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): synset: '" + synset + "'");
+        if (debug) System.out.println("INFO in WNMultiWordAnnotator.findMultiWord(): multiWordToken: '" + multiWordToken + "'");
 
         if (startIndex + 1 < tokens.size())
             return startIndex + findMultiWord(tokens.get(startIndex),
@@ -101,18 +101,32 @@ public class WNMultiWordAnnotator implements Annotator {
     public static int findMultiWord(CoreLabel token, List<CoreLabel> multiWordTail, List<String> synset,
                                     StringBuffer foundMultiWord) {
 
-    	if(firstTime)
-    	{
+    	if (firstTime) {
 	    	firstTime = false;
-	    	for(String key : WordNet.wn.getMultiWords().multiWord.keySet()) {
-	    		if(debug) System.out.println(key+": "+WordNet.wn.getMultiWords().multiWord.get(key));
+	    	for (String key : WordNet.wn.getMultiWords().multiWord.keySet()) {
+	    		if (debug) System.out.println("findMultiWord(2): " + key + ": " + WordNet.wn.getMultiWords().multiWord.get(key));
 	    	}
     	}
-    	
+        if (debug) System.out.println("findMultiWord(2): " + token);
+        int endIndex = findMultiWord(token.originalText(), multiWordTail, synset, foundMultiWord);
+        if (endIndex == 0) // TODO what if there a multiword with both original and root form?
+            endIndex = findMultiWord(token.lemma(), multiWordTail, synset, foundMultiWord);
+        return endIndex;
+    }
+
+    /** ***************************************************************
+     *  We need to try both the root form and the original form,
+     *  which includes capitalized and lower case versions.
+     *  @return the count of words in the multi-word expression
+     *  put the variable token in foundMultiWord
+     */
+    private static int findMultiWord(String multiWordKey, List<CoreLabel> multiWordTail, List<String> synset,
+                                    StringBuffer foundMultiWord) {
+
+        if (debug) System.out.println("findMultiWord(3): " + multiWordKey);
         StringBuffer currentMultiWord = new StringBuffer();
-        String multiWordKey = token.lemma();
-        if (!WordNet.wn.getMultiWords().multiWord.containsKey(multiWordKey))
-            multiWordKey = token.originalText();
+        if (debug) System.out.println("findMultiWord(3): key " + multiWordKey);
+        if (debug) System.out.println("findMultiWord(3): value " + WordNet.wn.getMultiWords().multiWord.get(multiWordKey));
         int wordIndex = 0;
         int endIndex = 0;
         String sense = "";
@@ -151,7 +165,10 @@ public class WNMultiWordAnnotator implements Annotator {
                 }
             }
         }
-        synset.add(sense);
+        if (!StringUtil.emptyString(sense))
+            synset.add(sense);
+        else
+            System.out.println("Error in findMultiWord(): empty sense");
         return endIndex;
     }
 
@@ -159,7 +176,7 @@ public class WNMultiWordAnnotator implements Annotator {
      */
     public static void annotateSentence(List<CoreLabel> tokens) {
 
-        if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): start: " + tokens);
+        if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotateSentence(): start: " + tokens);
         int wordIndex = 0;
         for (CoreLabel token : tokens) {
             if (token.index() < wordIndex) // skip the found multi-word
@@ -169,11 +186,11 @@ public class WNMultiWordAnnotator implements Annotator {
             StringBuffer multiWordToken = new StringBuffer();
             wordIndex = findMultiWord(tokens, i, multiWordResult, multiWordToken);
             if (multiWordToken.length() > 0 && debug)
-                System.out.println("INFO in WNMultiWordAnnotator.annotate(): found multi-word: " + multiWordToken);
+                System.out.println("INFO in WNMultiWordAnnotator.annotateSentence(): found multi-word: " + multiWordToken);
             //multiWordToken.insert(0,"?");
             if (multiWordToken.length() > 0)
                 multiWordToken.append("-" +  Integer.toString(token.index())); // set to token number not list index
-            if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): start: " + i + " end: " + wordIndex);
+            if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotateSentence(): start: " + i + " end: " + wordIndex);
             if (wordIndex != i && multiWordToken.length() > 0) {
                 String synset = multiWordResult.get(0);
                 for (int index = i; index < wordIndex; index++) {
@@ -189,10 +206,11 @@ public class WNMultiWordAnnotator implements Annotator {
                         tok.set(WNMWSUMOAnnotation.class,sumo);
                     if (!StringUtil.emptyString(multiWordToken.toString()))
                         tok.set(WNMWTokenAnnotation.class,multiWordToken.toString());
-                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for token: " + tok);
-                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set MW synset for index: " + index);
-                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set sumo: " + sumo);
-                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotate(): set token: " +
+                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotateSentence(): set MW synset for token: " + RelExtract.toCoreLabelString(tok));
+                    if (debug) System.out.println("sumo: " + tok.getString(WNMWSUMOAnnotation.class));
+                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotateSentence(): set MW synset for index: " + index);
+                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotateSentence(): set sumo: " + sumo);
+                    if (debug) System.out.println("INFO in WNMultiWordAnnotator.annotateSentence(): set token: " +
                             multiWordToken.toString() + " sumo: " + sumo + " ip: " + ip);
                 }
             }
@@ -206,7 +224,7 @@ public class WNMultiWordAnnotator implements Annotator {
      */
     public void annotate(Annotation annotation) {
 
-        if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
+        if (!annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Unable to find sentences in " + annotation);
 
         List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
@@ -306,8 +324,36 @@ public class WNMultiWordAnnotator implements Annotator {
 
     /****************************************************************
      */
+    public static void test3() {
+
+        debug = true;
+        KBmanager.getMgr().initializeOnce();
+        ArrayList<CoreLabel> al =  new ArrayList<>();
+        CoreLabel cl = null;
+        cl = setCoreLabel("Mary",1);
+        al.add(cl);
+
+        cl = setCoreLabel("likes",2);
+        cl.setLemma("like");
+        al.add(cl);
+
+        cl = setCoreLabel("her",3);
+        al.add(cl);
+
+        cl = setCoreLabel("answering",4);
+        al.add(cl);
+
+        cl = setCoreLabel("machine",5);
+        al.add(cl);
+        annotateSentence(al);
+
+        System.out.println("result: " + al);
+    }
+
+    /****************************************************************
+     */
     public static void main(String[] args) {
-        test2();
+        test3();
     }
 }
 
