@@ -32,6 +32,10 @@ public class NPtype {
     // not sure yet if more than one could be found
     public static HashSet<CoreLabel> heads = new HashSet<>();
 
+    private static Pipeline p = new Pipeline(true);
+
+    public static boolean debug = true;
+
     /** ***************************************************************
      * from https://stackoverflow.com/questions/19431754/using-stanford-parsercorenlp-to-find-phrase-heads/22841952
      */
@@ -65,9 +69,9 @@ public class NPtype {
                 //System.out.println(lab.getString(CoreAnnotations.PartOfSpeechAnnotation.class));
                 String POS = lab.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
                 if (POS.startsWith("NN")) {
-                    System.out.println("head: " + lab);
+                    //System.out.println("head: " + lab);
                     heads.add(lab);
-                    System.out.println(RelExtract.toCoreLabelString(lab));
+                    //System.out.println("dfs(): " + RelExtract.toCoreLabelString(lab));
                 }
             }
         }
@@ -96,53 +100,62 @@ public class NPtype {
         s = StringUtil.removeEnclosingQuotes(s);
         Annotation document = null;
         try {
-            document = Pipeline.toAnnotation(s);
+            document = p.annotate(s);
         }
         catch (Exception e) {
             e.printStackTrace();
             return null;
         }
         CoreMap sentence = SentenceUtil.getLastSentence(document);
+        List<CoreLabel> labels = sentence.get(CoreAnnotations.TokensAnnotation.class);
         Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
         CollinsHeadFinder headFinder = new CollinsHeadFinder();
         Tree head = headFinder.determineHead(tree);
         head.pennPrint(System.out);
         System.out.println();
         dfs(head,tree,headFinder);
-
+        String sumo = null;
         if (heads.size() != 1) {
             String firstTerm = null;
             if (heads.size() == 0)
                 System.out.println("No heads found");
             else {
-                System.out.println("Multiple heads");
-                boolean first = true;
+                if (debug) System.out.println("Multiple heads");
+
                 for (CoreLabel cl : heads) {
-                    String sumo = cl.get(WSDAnnotator.SUMOAnnotation.class);
-                    String WNMWsumo = cl.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
-                    String NERsumo = cl.get(NERAnnotator.NERSUMOAnnotation.class);
-                    System.out.println("findType(): " + sumo + " : " + WNMWsumo + " : " + NERsumo);
+                    int toknum = cl.index();
+                    CoreLabel lab = labels.get(toknum-1);
+                    sumo = lab.get(WSDAnnotator.SUMOAnnotation.class);
+                    String WNMWsumo = lab.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
+                    String NERsumo = lab.get(NERAnnotator.NERSUMOAnnotation.class);
+                    if (debug) System.out.println("findType(): " + RelExtract.toCoreLabelString(lab));
+                    if (debug) System.out.println("findType(): " + sumo + " : " + WNMWsumo + " : " + NERsumo);
                     if (WNMWsumo != null)
                         sumo = WNMWsumo;
                     if (NERsumo != null)
                         sumo = NERsumo;
-                    if (first) {
-                        firstTerm = sumo;
-                        first = false;
-                    }
-                    System.out.println("findType (label:sumo): " + cl + " : " + sumo);
+                    if (debug) System.out.println("findType (label:sumo): " + lab + " : " + sumo);
                 }
             }
-            System.out.println("returning: " + firstTerm);
-            return firstTerm;
+            System.out.println("SUMO: " + sumo);
+            return sumo;
         }
         else {
             CoreLabel cl = heads.iterator().next();
-            String SUMO = cl.get(WSDAnnotator.SUMOAnnotation.class);
+            int toknum = cl.index();
+            CoreLabel lab = labels.get(toknum-1);
+            if (debug) System.out.println("findType(): " + RelExtract.toCoreLabelString(lab));
+            String SUMO = lab.get(WSDAnnotator.SUMOAnnotation.class);
+            String WNMWsumo = lab.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
+            String NERsumo = lab.get(NERAnnotator.NERSUMOAnnotation.class);
+            if (debug) System.out.println("findType(): " + SUMO + " : " + WNMWsumo + " : " + NERsumo);
+            if (WNMWsumo != null)
+                SUMO = WNMWsumo;
+            if (NERsumo != null)
+                SUMO = NERsumo;
             System.out.println("SUMO: " + SUMO);
             return SUMO;
         }
-
     }
 
     /** ***************************************************************
