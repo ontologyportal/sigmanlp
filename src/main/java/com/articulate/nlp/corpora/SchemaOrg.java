@@ -43,6 +43,8 @@ public class SchemaOrg {
     // A list of prices for each SUMO type, normalized to integers
     private static HashMap<String,ArrayList<Integer>> prices = new HashMap<>();
 
+    private static KB kb = null;
+
     /** ***************************************************************
      * Compute min, max and average price for each category and
      * print them.
@@ -75,12 +77,15 @@ public class SchemaOrg {
      * add the price for that type to the list of prices.  Convert a
      * few known currencies.  This assumes that a check has been performed
      * to ensure there is already price and currency data.
+     * Note that only instances or subclasses of Object will be saved
      */
     private static void addPrice(String name, HashMap<String,String> statements) {
 
         String sumo = NPtype.findProductType(name);
         NPtype.heads = new HashSet<CoreLabel>();
         if (StringUtil.emptyString(sumo))
+            return;
+        if (!kb.isInstanceOf(sumo,"Object") && !kb.isSubclass(sumo,"Object"))
             return;
         Integer price = null;
         try {
@@ -270,6 +275,8 @@ public class SchemaOrg {
      */
     public static void main(String[] args) {
 
+        KBmanager.getMgr().initializeOnce();
+        kb = KBmanager.getMgr().getKB("SUMO");
         loadContents();
     }
 }
