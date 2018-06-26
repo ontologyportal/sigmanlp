@@ -25,6 +25,8 @@ public class NPtypeTest extends IntegrationTestBase {
         Interpreter interp = new Interpreter();
         KBmanager.getMgr().initializeOnce();
         interp.initOnce();
+        NPtype.debug = true;
+        NPtype.kb = KBmanager.getMgr().getKB("SUMO");
     }
 
     /****************************************************************
@@ -49,6 +51,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentSkirt() {
 
         String type = NPtype.findProductType("ladies' green pleated skirt");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("Dress", type);
     }
 
@@ -58,6 +62,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentHeadphone() {
 
         String type = NPtype.findProductType("Merkury retro headphones - black.");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("Earphone",type);
     }
 
@@ -67,6 +73,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentJersey() {
 
         String type = NPtype.findProductType("mid weight 2-button custom baseball jerseys - closeout sale");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("Shirt",type);
     }
 
@@ -76,6 +84,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentScanner() {
 
         String type = NPtype.findProductType("USB mini business card scanner (silver)");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("ComputerInputDevice",type);
     }
 
@@ -85,6 +95,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentJacket() {
 
         String type = NPtype.findProductType("\n\t\ttri mountain bridget women's lightweight jacket\n\t");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("Coat",type);
     }
 
@@ -94,7 +106,9 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentAM() {
 
         String type = NPtype.findProductType("Idect X1i TWIN-B Digital Cordless Designer Phone Twin Pack with Answering Machine");
-        assertEquals("Telephone",type);
+        System.out.println("-----------------");
+        System.out.println(type);
+        assertEquals("AudioRecorder",type);
     }
 
     /****************************************************************
@@ -103,6 +117,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentDesktop() {
 
         String type = NPtype.findProductType("Gateway/DX4860-UR32P desktop");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("Computer",type);
     }
 
@@ -112,6 +128,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentCamera() {
 
         String type = NPtype.findProductType("Clover CW8800 2.4 GHz. Wireless Camera System - CCTV camera - color - audio");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("Camera",type);
     }
 
@@ -121,6 +139,8 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentVacuum() {
 
         String type = NPtype.findProductType("Sealey Power Tools Sealey Vacuum Cleaner Industrial 30ltr 1400W/230V Stainless Bin");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("VacuumCleaner",type);
     }
 
@@ -130,6 +150,31 @@ public class NPtypeTest extends IntegrationTestBase {
     public void testSentFence() {
 
         String type = NPtype.findProductType("picket fence");
+        System.out.println("-----------------");
+        System.out.println(type);
         assertEquals("Fence",type);
     }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentFlag() {
+
+        String type = NPtype.findProductType("Florida State Seminoles Double-Sided Suede Garden Flag");
+        System.out.println("-----------------");
+        System.out.println(type);
+        assertEquals("Flag",type);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentZipper() {
+
+        String type = NPtype.findProductType("Two-Tone Polyester Drawstring Backpack W/ Zipper");
+        System.out.println("-----------------");
+        System.out.println(type);
+        assertEquals("Bag",type);
+    }
 }
+
