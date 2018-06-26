@@ -6,7 +6,9 @@ import com.articulate.nlp.WNMultiWordAnnotator;
 import com.articulate.nlp.WSDAnnotator;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
+import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
+import com.articulate.sigma.KButilities;
 import com.articulate.sigma.StringUtil;
 import com.google.common.base.Strings;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -34,7 +36,9 @@ public class NPtype {
 
     private static Pipeline p = new Pipeline(true);
 
-    public static boolean debug = true;
+    public static boolean debug = false;
+
+    public static KB kb = null;
 
     /** ***************************************************************
      * from https://stackoverflow.com/questions/19431754/using-stanford-parsercorenlp-to-find-phrase-heads/22841952
@@ -82,19 +86,73 @@ public class NPtype {
 
     /** ***************************************************************
      * Take a phrase an turn it to lower case before adding "I want to
-     * buy the" and sending it to findType()
+     * buy the" and sending it to findType().  Restrict results to
+     * Object(s)
      */
     public static String findProductType(String s) {
 
         s = s.toLowerCase();
-        return findType("I want to buy the " + s);
+        s = StringUtil.replaceNonAsciiChars(s,' ');
+        s = StringUtil.removeEscapes(s);
+        s = s.replace("w/","with ");
+        s = StringUtil.removeDoubleSpaces(s);
+        return findType("I want to buy the " + s,"Object");
+    }
+
+    /** ***************************************************************
+     * Use the new term if it's not a non-product type like a Region or
+     * Substance - a true result means newC is a better term replacement
+     */
+    private static boolean filterTypes(String newC) {
+
+        if (kb.isChildOf(newC,"Region") || kb.isChildOf(newC,"Substance") ||
+                kb.isChildOf(newC,"SymbolicString") || // kb.isChildOf(newC,"Icon") ||
+                kb.isChildOf(newC,"Attribute") || kb.isChildOf(newC,"Region") ||
+                kb.isChildOf(newC,"Relation") || kb.isChildOf(newC,"TimePosition") ||
+                kb.isChildOf(newC,"LinguisticExpression") || kb.isChildOf(newC,"Process")) {
+            return false;
+        }
+        return true;
+    }
+
+    /** ***************************************************************
+     * Check whether the new candidate type is more specific than the
+     * old one, and whether it's a reasonable type for a product, by
+     * calling filterTypes()
+     */
+    public static boolean betterTermReplacement(String newC, String oldC, String type) {
+
+        if (debug) System.out.println("betterTermReplacement() new: " + newC + " and old: " + oldC);
+        if (StringUtil.emptyString(newC))
+            return false;
+        if (!filterTypes(newC))  // new one isn't better because it's a bad type
+            return false;
+        if (StringUtil.emptyString(oldC)) // && implied that newC != null)
+            return true;
+        if (debug) System.out.println("betterTermReplacement() compare: " + kb.compareTermDepth(newC,oldC));
+        if (debug && type != null)
+            System.out.println("betterTermReplacement() child: " + kb.isChildOf(newC,type));
+
+        boolean result = false;
+        if (type != null)
+            result = (oldC == null ||
+                (newC != null && kb.compareTermDepth(newC,oldC) > 0 && kb.isChildOf(newC,type)));
+        else
+            result = (oldC == null ||
+                    (newC != null && kb.compareTermDepth(newC,oldC) > 0));
+        if (result)
+            if (debug) System.out.println("betterTermReplacement() " + newC + " is better than " + oldC);
+        if (!result)
+            if (debug) System.out.println("betterTermReplacement() " + newC + " is not better than " + oldC);
+        return result;
     }
 
     /** ***************************************************************
      * Guess the SUMO type of a noun phrase in context by looking at
-     * the root node of the noun phrase
+     * the root node of the noun phrase.  If there are multiple
+     * roots, pick the most specific one.
      */
-    public static String findType(String s) {
+    public static String findType(String s, String typeRestrict) {
 
         System.out.println("findType: \"" + s + "\"");
         s = StringUtil.removeEnclosingQuotes(s);
@@ -121,23 +179,30 @@ public class NPtype {
                 System.out.println("No heads found");
             else {
                 if (debug) System.out.println("Multiple heads");
-
                 for (CoreLabel cl : heads) {
                     int toknum = cl.index();
                     CoreLabel lab = labels.get(toknum-1);
-                    sumo = lab.get(WSDAnnotator.SUMOAnnotation.class);
+                    String newsumo = lab.get(WSDAnnotator.SUMOAnnotation.class);
+                    if (betterTermReplacement(newsumo,sumo,typeRestrict))
+                        sumo = newsumo;
+                    if (debug && sumo != null && newsumo != null) {
+                        int eqrel = kb.compareTermDepth(newsumo,sumo);
+                        String eqText = KButilities.eqNum2Text(eqrel);
+                        System.out.println("findType(): " + newsumo + " " + eqText + " " + sumo);
+                    }
                     String WNMWsumo = lab.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
                     String NERsumo = lab.get(NERAnnotator.NERSUMOAnnotation.class);
-                    if (debug) System.out.println("findType(): " + RelExtract.toCoreLabelString(lab));
-                    if (debug) System.out.println("findType(): " + sumo + " : " + WNMWsumo + " : " + NERsumo);
-                    if (WNMWsumo != null)
+                    if (debug) System.out.println("findType(): core label ---------- \n" + RelExtract.toCoreLabelString(lab));
+                    if (debug) System.out.println("findType(): (newsumo:sumo:WNMW:NER): " + newsumo + " : " + sumo + " : " +
+                            WNMWsumo + " : " + NERsumo);
+                    if (betterTermReplacement(WNMWsumo,sumo,typeRestrict))
                         sumo = WNMWsumo;
-                    if (NERsumo != null)
+                    if (betterTermReplacement(NERsumo,sumo,typeRestrict))
                         sumo = NERsumo;
                     if (debug) System.out.println("findType (label:sumo): " + lab + " : " + sumo);
                 }
             }
-            System.out.println("SUMO: " + sumo);
+            System.out.println("findType(): returning SUMO: " + sumo);
             return sumo;
         }
         else {
@@ -145,16 +210,16 @@ public class NPtype {
             int toknum = cl.index();
             CoreLabel lab = labels.get(toknum-1);
             if (debug) System.out.println("findType(): " + RelExtract.toCoreLabelString(lab));
-            String SUMO = lab.get(WSDAnnotator.SUMOAnnotation.class);
+            sumo = lab.get(WSDAnnotator.SUMOAnnotation.class);
             String WNMWsumo = lab.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
             String NERsumo = lab.get(NERAnnotator.NERSUMOAnnotation.class);
-            if (debug) System.out.println("findType(): " + SUMO + " : " + WNMWsumo + " : " + NERsumo);
-            if (WNMWsumo != null)
-                SUMO = WNMWsumo;
-            if (NERsumo != null)
-                SUMO = NERsumo;
-            System.out.println("SUMO: " + SUMO);
-            return SUMO;
+            if (debug) System.out.println("findType(): " + sumo + " : " + WNMWsumo + " : " + NERsumo);
+            if (betterTermReplacement(WNMWsumo,sumo,typeRestrict))
+                sumo = WNMWsumo;
+            if (betterTermReplacement(NERsumo,sumo,typeRestrict))
+                sumo = NERsumo;
+            System.out.println("findType(): returning SUMO: " + sumo);
+            return sumo;
         }
     }
 
@@ -169,7 +234,7 @@ public class NPtype {
             System.out.print("Enter sentence: ");
             input = scanner.nextLine().trim();
             if (!Strings.isNullOrEmpty(input) && !input.equals("exit") && !input.equals("quit")) {
-                findType(input);
+                findType(input,null);
             }
         } while (!input.equals("exit") && !input.equals("quit"));
     }
@@ -178,23 +243,35 @@ public class NPtype {
      */
     public static void showHelp() {
 
-        System.out.println("Semantic Rewriting with SUMO, Sigma and E");
+        System.out.println("Noun phrase type finder");
         System.out.println("  options:");
         System.out.println("  -h - show this help screen");
-        System.out.println("  -t \"...\" - find the type of a noun phrase");
+        System.out.println("  -p \"...\" - find the product type of a noun phrase");
+        System.out.println("  -t \"...\" <class> - find the product type of a noun phrase with restriction to a class");
         System.out.println("  -i - interactive headword finder");
+    }
+
+    /** ***************************************************************
+     */
+    public static void init() {
+
+        Interpreter interp = new Interpreter();
+        KBmanager.getMgr().initializeOnce();
+        kb = KBmanager.getMgr().getKB("SUMO");
+        interp.initOnce();
     }
 
     /** ***************************************************************
      */
     public static void main(String[] args) throws IOException {
 
-        System.out.println("INFO in Interpreter.main()");
-        Interpreter interp = new Interpreter();
-        KBmanager.getMgr().initializeOnce();
-        interp.initOnce();
-        if (args != null && args.length > 1 && args[0].equals("-t")) {
-            findType(args[1]);
+        System.out.println("INFO in NPtype.main()");
+        init();
+        if (args != null && args.length > 1 && args[0].equals("-p")) {
+            findProductType(args[1]);
+        }
+        else if (args != null && args.length > 2 && args[0].equals("-t")) {
+            findType(args[1],args[2]);
         }
         else if (args != null && args.length > 0 && args[0].equals("-i")) {
             interpInter();
