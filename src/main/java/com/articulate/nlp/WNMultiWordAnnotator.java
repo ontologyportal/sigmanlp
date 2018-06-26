@@ -125,7 +125,6 @@ public class WNMultiWordAnnotator implements Annotator {
 
         if (debug) System.out.println("findMultiWord(3): " + multiWordKey);
         StringBuffer currentMultiWord = new StringBuffer();
-        if (debug) System.out.println("findMultiWord(3): key " + multiWordKey);
         if (debug) System.out.println("findMultiWord(3): value " + WordNet.wn.getMultiWords().multiWord.get(multiWordKey));
         int wordIndex = 0;
         int endIndex = 0;
@@ -168,7 +167,7 @@ public class WNMultiWordAnnotator implements Annotator {
         if (!StringUtil.emptyString(sense))
             synset.add(sense);
         else
-            System.out.println("Error in findMultiWord(): empty sense");
+            if (debug) System.out.println("findMultiWord(): empty sense for " + currentMultiWord.toString());
         return endIndex;
     }
 
