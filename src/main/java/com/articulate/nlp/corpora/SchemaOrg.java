@@ -8,6 +8,7 @@ import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.StringUtil;
 import edu.stanford.nlp.ling.CoreLabel;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
 import java.util.*;
@@ -85,8 +86,8 @@ public class SchemaOrg {
         NPtype.heads = new HashSet<CoreLabel>();
         if (StringUtil.emptyString(sumo))
             return;
-        if (!kb.isInstanceOf(sumo,"Object") && !kb.isSubclass(sumo,"Object"))
-            return;
+        //if (!kb.isInstanceOf(sumo,"Object") && !kb.isSubclass(sumo,"Object"))
+        //    return;
         Integer price = null;
         try {
             price = new Integer( Math.round(Float.parseFloat(statements.get("price")) * (float) 100.0) );
@@ -205,7 +206,8 @@ public class SchemaOrg {
         Interpreter interp = new Interpreter();
         KBmanager.getMgr().initializeOnce();
         interp.initOnce();
-        String filename = "ProductSchemaPart.nq";
+        String filename = System.getenv("CORPORA") + File.separator + "Schema.org" +
+                File.separator + "ProductSchemaPart.nq";
         try {
             FileReader r = new FileReader(filename);
             LineNumberReader lr = new LineNumberReader(r);
@@ -277,6 +279,7 @@ public class SchemaOrg {
 
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB("SUMO");
+        NPtype.init();
         loadContents();
     }
 }
