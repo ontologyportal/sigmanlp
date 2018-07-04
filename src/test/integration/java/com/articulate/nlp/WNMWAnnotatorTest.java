@@ -1,13 +1,20 @@
 package com.articulate.nlp;
 
+import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.Interpreter;
+import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
+import com.articulate.sigma.wordNet.WordNet;
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -16,13 +23,18 @@ import static org.junit.Assert.assertEquals;
  */
 public class WNMWAnnotatorTest extends IntegrationTestBase {
 
+    public static Interpreter interp;
+
     /****************************************************************
      */
     @Before
     public void setUpInterpreter() throws IOException {
 
         KBmanager.getMgr().initializeOnce();
+        interp = new Interpreter();
+        interp.initOnce();
         WNMultiWordAnnotator.debug = true;
+        MultiWordAnnotator.debug = true;
     }
 
     /** *************************************************************
@@ -30,27 +42,12 @@ public class WNMWAnnotatorTest extends IntegrationTestBase {
     @Test
     public void answeringMachine() {
 
-        ArrayList<CoreLabel> al =  new ArrayList<>();
-        CoreLabel cl = null;
-        cl = WNMultiWordAnnotator.setCoreLabel("Mary",1);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("likes",2);
-        cl.setLemma("like");
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("her",3);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("answering",4);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("machine",5);
-        al.add(cl);
-        WNMultiWordAnnotator.annotateSentence(al);
-
-        System.out.println("result: " + al);
-        CoreLabel clam = al.get(3);
+        String text = "Mary likes her answering machine.";
+        Annotation wholeDocument = interp.userInputs.annotateDocument(text);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        System.out.println("result: " + lastSentenceTokens);
+        CoreLabel clam = lastSentenceTokens.get(3);
         System.out.println(clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
         assertEquals("AudioRecorder",clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
     }
@@ -60,26 +57,14 @@ public class WNMWAnnotatorTest extends IntegrationTestBase {
     @Test
     public void cash() {
 
-        ArrayList<CoreLabel> al =  new ArrayList<>();
-        CoreLabel cl = null;
-        cl = WNMultiWordAnnotator.setCoreLabel("Mary",1);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("feels",2);
-        cl.setLemma("be");
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("put",3);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("out",4);
-        al.add(cl);
-
-        WNMultiWordAnnotator.annotateSentence(al);
-        System.out.println("result: " + al);
-        CoreLabel clam = al.get(3);
+        String text = "Mary feels put out.";
+        Annotation wholeDocument = interp.userInputs.annotateDocument(text);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        System.out.println("result: " + lastSentenceTokens);
+        CoreLabel clam = lastSentenceTokens.get(3);
         System.out.println(clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
-        assertEquals("IntentionalPsychologicalProcess",clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
+        assertEquals("TherapeuticProcess",clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
     }
 
     /** *************************************************************
@@ -87,28 +72,31 @@ public class WNMWAnnotatorTest extends IntegrationTestBase {
     @Test
     public void floor() {
 
-        ArrayList<CoreLabel> al =  new ArrayList<>();
-        CoreLabel cl = null;
-        cl = WNMultiWordAnnotator.setCoreLabel("John",1);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("is",2);
-        cl.setLemma("be");
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("on",3);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("the",4);
-        al.add(cl);
-
-        cl = WNMultiWordAnnotator.setCoreLabel("floor",5);
-        al.add(cl);
-        WNMultiWordAnnotator.annotateSentence(al);
-
-        System.out.println("result: " + al);
-        CoreLabel clam = al.get(1);
+        String text = "John is on the floor.";
+        Annotation wholeDocument = interp.userInputs.annotateDocument(text);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        System.out.println("result: " + lastSentenceTokens);
+        CoreLabel clam = lastSentenceTokens.get(1);
         System.out.println(clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
         assertEquals("IntentionalProcess",clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
+    }
+
+    /** *************************************************************
+     */
+    @Test
+    public void testHyundai() {
+
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        System.out.println("has Hyundai term " + kb.containsTerm("HyundaiAutomobile"));
+        System.out.println("has Hyundai word " + WordNet.wn.multiWords.multiWord.containsKey("Hyundai"));
+        String text = "I like my Hyundai Equus.";
+        Annotation wholeDocument = interp.userInputs.annotateDocument(text);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        System.out.println("result: " + lastSentenceTokens);
+        CoreLabel clam = lastSentenceTokens.get(4);
+        System.out.println(clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
+        assertEquals("HyundaiEquus",clam.getString(WNMultiWordAnnotator.WNMWSUMOAnnotation.class));
     }
 }
