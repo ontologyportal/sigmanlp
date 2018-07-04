@@ -206,6 +206,16 @@ public class SentenceUtil {
     }
 
     /** *************************************************************
+     */
+    public static ArrayList<String> toArrayStrings(List<CoreLabel> tokens) {
+
+        ArrayList<String> result = new ArrayList<>();
+        for (CoreLabel cl : tokens)
+            result.add(cl.originalText());
+        return result;
+    }
+
+    /** *************************************************************
      * returns a list of strings that add tense, number, etc. information about words in input
      * ex.  tense(PAST, Verb)
      *      number(SINGULAR, Noun)
