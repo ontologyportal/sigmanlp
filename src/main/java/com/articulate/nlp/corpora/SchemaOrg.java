@@ -42,7 +42,7 @@ public class SchemaOrg {
     private static Queue<String> stmtQ = new LinkedList<String>();
 
     // A list of prices for each SUMO type, normalized to integers
-    private static HashMap<String,ArrayList<Integer>> prices = new HashMap<>();
+    private static HashMap<String,ArrayList<Float>> prices = new HashMap<>();
 
     private static KB kb = null;
 
@@ -55,18 +55,18 @@ public class SchemaOrg {
         System.out.println();
         System.out.println("==========================");
         for (String sumo : prices.keySet()) {
-            int min = 100000;
-            int max = 0;
-            int total = 0;
-            ArrayList<Integer> theList = prices.get(sumo);
-            for (Integer i : theList) {
+            float min = 100000;
+            float max = 0;
+            float total = 0;
+            ArrayList<Float> theList = prices.get(sumo);
+            for (Float i : theList) {
                 if (i < min)
                     min = i;
                 if (i > max)
                     max = i;
                 total = total + i;
             }
-            float avg = ((float) total / ((float) theList.size() * (float) 100.0));
+            float avg = ((float) total / ((float) theList.size()));
             System.out.println("term, min, max, avg: " + sumo + "\t" + min + "\t" + max + "\t" + avg);
         }
         System.out.println("==========================");
@@ -88,15 +88,15 @@ public class SchemaOrg {
             return;
         //if (!kb.isInstanceOf(sumo,"Object") && !kb.isSubclass(sumo,"Object"))
         //    return;
-        Integer price = null;
+        Float price = null;
         try {
-            price = new Integer( Math.round(Float.parseFloat(statements.get("price")) * (float) 100.0) );
+            price = Float.parseFloat(statements.get("price"));
         }
         catch (NumberFormatException nfe) {
             System.out.println("Bad price format for " + name + " : " + statements.get("price"));
             return;
         }
-        ArrayList<Integer> priceList = null;
+        ArrayList<Float> priceList = null;
         if (!prices.keySet().contains(sumo)) {
             priceList = new ArrayList<>();
             prices.put(sumo,priceList);
@@ -189,12 +189,15 @@ public class SchemaOrg {
     /** ***************************************************************
      * Remove non numeric character from a price
      */
-    private static String removeNonNumeric(String s) {
+    public static String removeNonNumeric(String s) {
 
         Pattern p = Pattern.compile("[^\\d]*(\\d+(,\\d{3})*(\\.\\d{2})?)[^\\d]*");
         Matcher m = p.matcher(s);
-        if (m.matches())
-            return m.group(1);
+        if (m.matches()) {
+            String result = m.group(1);
+            result = result.replaceAll(",","");
+            return result;
+        }
         else
             return "";
     }
@@ -207,6 +210,7 @@ public class SchemaOrg {
         KBmanager.getMgr().initializeOnce();
         interp.initOnce();
         String filename = System.getenv("CORPORA") + File.separator + "Schema.org" +
+               // File.separator + "Product-small.nq";
                 File.separator + "ProductSchemaPart.nq";
         try {
             FileReader r = new FileReader(filename);
@@ -235,6 +239,7 @@ public class SchemaOrg {
                 else if (relation.equals("<http://schema.org/Offer/price>")) {
                     relation = "price";
                     value = removeNonNumeric(value);
+                    System.out.println("Price: " + value);
                     updateNodes(nodeId, relation, value);
                 }
                 else if (relation.equals("<http://schema.org/Offer/priceCurrency>")) {
