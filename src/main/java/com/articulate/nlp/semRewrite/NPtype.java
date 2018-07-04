@@ -85,28 +85,43 @@ public class NPtype {
     }
 
     /** ***************************************************************
-     * Take a phrase an turn it to lower case before adding "I want to
+     * Remove special characters and add "I want to
      * buy the" and sending it to findType().  Restrict results to
-     * Object(s)
+     * Object(s).  Try both original and lower case
      */
     public static String findProductType(String s) {
 
-        s = s.toLowerCase();
+        if (StringUtil.emptyString(s))
+            return s;
         s = StringUtil.replaceNonAsciiChars(s,' ');
         s = StringUtil.removeEscapes(s);
+        if (StringUtil.emptyString(s))
+            return s;
         s = s.replace("w/","with ");
         s = StringUtil.removeDoubleSpaces(s);
-        return findType("I want to buy the " + s,"Object");
+        if (StringUtil.emptyString(s))
+            return s;
+        String resultUC = findType("I want to buy the " + s,"Object");
+        s = s.toLowerCase();
+        String resultLC = findType("I want to buy the " + s,"Object");
+        if (StringUtil.emptyString(resultUC))
+            return resultLC;
+        if (StringUtil.emptyString(resultLC))
+            return resultUC;
+        if (kb.compareTermDepth(resultLC,resultUC) > 0)
+            return resultLC;
+        else
+            return resultUC;
     }
 
     /** ***************************************************************
      * Use the new term if it's not a non-product type like a Region or
      * Substance - a true result means newC is a better term replacement
      */
-    private static boolean filterTypes(String newC) {
+    private static boolean filterTypesOk(String newC) {
 
         if (kb.isChildOf(newC,"Region") || kb.isChildOf(newC,"Substance") ||
-                kb.isChildOf(newC,"SymbolicString") || // kb.isChildOf(newC,"Icon") ||
+                kb.isChildOf(newC,"SymbolicString") || kb.isChildOf(newC,"Human") ||
                 kb.isChildOf(newC,"Attribute") || kb.isChildOf(newC,"Region") ||
                 kb.isChildOf(newC,"Relation") || kb.isChildOf(newC,"TimePosition") ||
                 kb.isChildOf(newC,"LinguisticExpression") || kb.isChildOf(newC,"Process")) {
@@ -125,7 +140,7 @@ public class NPtype {
         if (debug) System.out.println("betterTermReplacement() new: " + newC + " and old: " + oldC);
         if (StringUtil.emptyString(newC))
             return false;
-        if (!filterTypes(newC))  // new one isn't better because it's a bad type
+        if (!filterTypesOk(newC))  // new one isn't better because it's a bad type
             return false;
         if (StringUtil.emptyString(oldC)) // && implied that newC != null)
             return true;
@@ -181,6 +196,12 @@ public class NPtype {
                 if (debug) System.out.println("Multiple heads");
                 for (CoreLabel cl : heads) {
                     int toknum = cl.index();
+                    if (toknum-1 >= labels.size()) {
+                        System.out.println("error in NPtype.findType(): " + heads);
+                        System.out.println("error in NPtype.findType(): " + s);
+                        Thread.currentThread().dumpStack();
+                        continue;
+                    }
                     CoreLabel lab = labels.get(toknum-1);
                     String newsumo = lab.get(WSDAnnotator.SUMOAnnotation.class);
                     if (betterTermReplacement(newsumo,sumo,typeRestrict))
@@ -233,7 +254,11 @@ public class NPtype {
         do {
             System.out.print("Enter sentence: ");
             input = scanner.nextLine().trim();
-            if (!Strings.isNullOrEmpty(input) && !input.equals("exit") && !input.equals("quit")) {
+            if (!Strings.isNullOrEmpty(input) && !input.equals("debug"))
+                debug = true;
+            else if (!Strings.isNullOrEmpty(input) && !input.equals("nodebug"))
+                debug = false;
+            else if (!Strings.isNullOrEmpty(input) && !input.equals("exit") && !input.equals("quit")) {
                 findType(input,null);
             }
         } while (!input.equals("exit") && !input.equals("quit"));
@@ -249,6 +274,8 @@ public class NPtype {
         System.out.println("  -p \"...\" - find the product type of a noun phrase");
         System.out.println("  -t \"...\" <class> - find the product type of a noun phrase with restriction to a class");
         System.out.println("  -i - interactive headword finder");
+        System.out.println("     debug - turn debugging on");
+        System.out.println("     nodebug - turn debugging off");
     }
 
     /** ***************************************************************
@@ -268,9 +295,11 @@ public class NPtype {
         System.out.println("INFO in NPtype.main()");
         init();
         if (args != null && args.length > 1 && args[0].equals("-p")) {
+            debug = true;
             findProductType(args[1]);
         }
         else if (args != null && args.length > 2 && args[0].equals("-t")) {
+            debug = true;
             findType(args[1],args[2]);
         }
         else if (args != null && args.length > 0 && args[0].equals("-i")) {
