@@ -4,6 +4,7 @@ import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semconcor.Indexer;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.wordNet.MultiWords;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
 
@@ -36,6 +37,7 @@ public class DBPedia {
     // strings to URLs from thresh.out
     public static HashMap<String, String> pageToString = new HashMap<>();
 
+    // String to DBPedia ontology types
     public static HashMap<String, String> stringToOnto = new HashMap<>();
 
     // a mapping from a DBPedia/WN 2.0 pseudo-sense-key to SUMO
@@ -45,6 +47,8 @@ public class DBPedia {
     public static HashMap<String, String> senseIndex20 = new HashMap<>();
 
     public static boolean suppressErrors = true;
+
+    public static MultiWords multiWords = new MultiWords();
 
     /***************************************************************
      * read a tab-delimited file of strings and their Wikipedia page IDs.  e.g.
@@ -56,12 +60,15 @@ public class DBPedia {
         ArrayList<String> thresh = CorpusReader.readFile(path + "surfaceForms-fromOccs-thresh3.tsv");
         for (String s : thresh) {
             String[] pair = s.split("\t");
+            String st = pair[0];
+            st = st.trim();
             pageToString.put(pair[1], pair[0]);
+            multiWords.addMultiWord(st,' ');
         }
     }
 
     /***************************************************************
-     * Create NER strings in DBPedia to ontology terms.
+     * Create NER strings in DBPedia to DBP ontology terms.
      * Input file is triples in XML format.  First element is URL of
      * the page, second is a URI of a relation, third is an URI of
      * a DBPedia ontology term
@@ -98,7 +105,7 @@ public class DBPedia {
      * Convert DBPedia WN links in the form word_POSword_sensenum to
      * the standard word_LL_sensenum where POS IDs are two letter
      * strings and not the spelled out parts of speech.  Since the
-     * keys are not WN standard form, we can use WordNetUtilities
+     * keys are not WN standard form, we can't use WordNetUtilities
      * routines for decomposing the keys
      */
     private static String wordPOSKeytoWNKey(String in) {
@@ -226,7 +233,7 @@ public class DBPedia {
 
     /***************************************************************
      */
-    public static void main(String[] args) {
+    public static void initOnce() {
 
         KBmanager.getMgr().initializeOnce();
         String sep = File.separator;
@@ -251,7 +258,13 @@ public class DBPedia {
         }
         makeWnToOnto();
         readWordNetMapping(path);
+    }
 
+    /***************************************************************
+     */
+    public static void main(String[] args) {
+
+        initOnce();
         //printPageToSUMO();
         printPageToString();
 
