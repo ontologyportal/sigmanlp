@@ -58,23 +58,9 @@ public class Pipeline {
      Only the multiWord parser annotator type value comes from sigmakee/config.xml
      */ 
     public static String defaultProp = "tokenize, ssplit, pos, lemma, " +
-            "ner, nersumo, gender, parse, coref, depparse, <annotatorType>, wsd, tsumo";
-    
-    public static final String wnmwdefaultProp = "tokenize, ssplit, pos, lemma, " +
-        "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo"; // regexner and entitymentions now run automatically from ner
-
-    public static final String oldDefaultProp = "tokenize, ssplit, pos, lemma, " +
-            "ner, nersumo, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
+            "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo";
 
     public static String anchorDate = "2017-04-21";
-    
-    static {
-    	KBmanager.getMgr().initializeOnce();
-    	String annotatorType = KBmanager.getMgr().getPref("multiWordAnnotatorType");
-    	if (null == annotatorType || "".equals(annotatorType))
-    		annotatorType = "wnmw"; // default to WordNet
-    	defaultProp = defaultProp.replace("<annotatorType>", annotatorType);
-    }
 
     /** ***************************************************************
      */
@@ -119,11 +105,6 @@ public class Pipeline {
         if (propString.contains("coref")) {
             props.put("coref.algorithm","statistical");
         }
-
-        //if (propString.contains("ner"))
-        //    props.put("ner.model", "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz");
-        //props.put("depparse.model", "edu/stanford/com.articulate.nlp/models/parser/nndep/english_SD.gz");
-
         if (propString.contains("pos,") && !useDefaultPCFGModel &&
                 !Strings.isNullOrEmpty(KBmanager.getMgr().getPref("englishPCFG"))) {
             props.put("parse.model", KBmanager.getMgr().getPref("englishPCFG"));
