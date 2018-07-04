@@ -176,5 +176,38 @@ public class NPtypeTest extends IntegrationTestBase {
         System.out.println(type);
         assertEquals("Bag",type);
     }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentHyundai() {
+
+        String type = NPtype.findProductType("2014 Hyundai Equus Sedan");
+        System.out.println("-----------------");
+        System.out.println(type);
+        assertEquals("Automobile",type);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentClock() {
+
+        String type = NPtype.findProductType("ICS Clock Widget - FREE");
+        System.out.println("-----------------");
+        System.out.println(type);
+        assertEquals("Clock",type);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testSentNokia() {
+
+        String type = NPtype.findProductType("\\nNew Nokia Lumia 735 (8GB) plus Phone case & 7 inch Tablet (16GB) by Hipstreet-- STILL AVAILABLE\\n");
+        System.out.println("-----------------");
+        System.out.println(type);
+        assertEquals("Clock",type);
+    }
 }
 
