@@ -113,18 +113,50 @@ public class CorpusReader {
     }
 
     /***************************************************************
+     */
+    public static int countLines(File file) throws IOException {
+
+        int lines = 0;
+        FileInputStream fis = new FileInputStream(file);
+        byte[] buffer = new byte[8 * 1024]; // BUFFER_SIZE = 8 * 1024
+        int read;
+        while ((read = fis.read(buffer)) != -1) {
+            for (int i = 0; i < read; i++) {
+                if (buffer[i] == '\n') lines++;
+            }
+        }
+        fis.close();
+        return lines;
+    }
+
+    /***************************************************************
      * Read a text file into lines
      */
     public static ArrayList<String> readFile(String filename) {
 
         ArrayList<String> result = new ArrayList<>();
         try {
+            File f = new File(filename);
+            long len = f.length();
+            int lines = 0;
+            if (len > 1000000) {
+                lines = countLines(f);
+            }
             FileReader r = new FileReader(filename);
             LineNumberReader lr = new LineNumberReader(r);
             String line;
+            long counter = 0;
             while ((line = lr.readLine()) != null) {
                 result.add(line);
+                counter++;
+                if (counter % 10000 == 0) {
+                    if (lines == 0)
+                        System.out.print(".");
+                    else
+                        System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+                }
             }
+            System.out.println();
         }
         catch (IOException i) {
             System.out.println("Error in CorpusReader.readFile() reading file " + filename + ": " + i.getMessage());
