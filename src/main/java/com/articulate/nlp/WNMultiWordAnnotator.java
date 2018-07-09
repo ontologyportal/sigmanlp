@@ -73,8 +73,9 @@ public class WNMultiWordAnnotator extends MultiWordAnnotator {
     }
 
     /****************************************************************
-     * abstract method to find the SUMO term for the given key
+     * Method to find the SUMO term for the given key
      */
+    @Override
     public String findSUMO(String key) {
 
         System.out.println("WNMultiWordAnnotator.findSUMO(): " + key);
@@ -86,8 +87,9 @@ public class WNMultiWordAnnotator extends MultiWordAnnotator {
     }
 
     /****************************************************************
-     * abstract method to find the synset for the given key
+     * Method to find the synset for the given key
      */
+    @Override
     public String findSynset(String key) {
 
         System.out.println("WNMultiWordAnnotator.findSynset(): " + key);
