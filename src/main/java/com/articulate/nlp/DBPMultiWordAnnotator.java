@@ -59,14 +59,40 @@ public class DBPMultiWordAnnotator extends MultiWordAnnotator {
      */
     public DBPMultiWordAnnotator() {
 
+        System.out.println("DBPMultiWordAnnotator(): ");
         multiWordAnno = DBPMultiWordAnnotation.class;
         sumoAnno = DBPMWSUMOAnnotation.class;
         spanAnno = DBPMWSpanAnnotation.class;
         tokenAnno = DBPMWTokenAnnotation.class;
-        String path = System.getenv("CORPORA") + File.separator + "DBPedia" + File.separator;
-        DBPedia.readPageToString(path);
+        DBPedia.initOnce();
+        mw = DBPedia.multiWords;
+        //String path = System.getenv("CORPORA") + File.separator + "DBPedia" + File.separator;
     }
-    
+
+    /****************************************************************
+     * abstract method to find the SUMO term for the given key
+     */
+    @Override
+    public String findSUMO(String key) {
+
+        if (debug) System.out.println("DBPMultiWordAnnotator.findSUMO(): " + key);
+        key = key.replace('_',' ');
+        String sumo = DBPedia.stringToSUMO.get(key);
+        if (sumo != null)
+            sumo = WordNetUtilities.getBareSUMOTerm(sumo);
+        return sumo;
+    }
+
+    /****************************************************************
+     * no synsets for DBPedia
+     */
+    @Override
+    public String findSynset(String key) {
+
+        if (debug) System.out.println("DBPMultiWordAnnotator.findSynset(): " + key);
+        return "";
+    }
+
     /****************************************************************
      * Mark all the multiwords in the text with their synset, sumo
      * term and the span of the multiword using tokens indexes (which
@@ -74,7 +100,7 @@ public class DBPMultiWordAnnotator extends MultiWordAnnotator {
      */
     public void annotate(Annotation annotation) {
 
-        if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
+        if (!annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Unable to find sentences in " + annotation);
 
         List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
