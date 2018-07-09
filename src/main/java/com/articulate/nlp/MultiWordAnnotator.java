@@ -41,7 +41,7 @@ public abstract class MultiWordAnnotator implements Annotator {
 
     public static Class tokenAnno;
 
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     public static MultiWords mw;
 
@@ -118,7 +118,7 @@ public abstract class MultiWordAnnotator implements Annotator {
     public static List<CoreLabel> findMultiWord(List<CoreLabel> head, List<CoreLabel> rest,
                                                 Collection<String> candidates) {
 
-        // if (debug) System.out.println("findMultiWord(1): " + head + " : " + rest + " : " + candidates);
+        //if (debug) System.out.println("findMultiWord(1): " + head + " : " + rest);
         if (rest.size() == 0)
             return null;
         List<CoreLabel> result = new ArrayList<>();
@@ -136,6 +136,7 @@ public abstract class MultiWordAnnotator implements Annotator {
         String bestMatch = "";
         for (String s : candidates) {
             String newString = headString + "_" + orig;
+            //if (debug) System.out.println("findMultiWord(1): s, newString " + s + ", " + newString);
             if (s.equals(newString)) {
                 if (newString.length() > bestMatch.length()) {
                     result = labelListCopy(head);
@@ -219,7 +220,7 @@ public abstract class MultiWordAnnotator implements Annotator {
      */
     public static List<CoreLabel> findMultiWord(CoreLabel token, List<CoreLabel> rest) {
 
-        if (debug) System.out.println("findMultiWord(2): " + token + " : " + rest);
+
         List<CoreLabel> result = new ArrayList<>();
         String orig = token.originalText();
         String lower = token.originalText().toLowerCase();
@@ -227,6 +228,8 @@ public abstract class MultiWordAnnotator implements Annotator {
         String lemmalower = null;
         if (!StringUtil.emptyString(token.lemma()))
             lemmalower = token.lemma().toLowerCase();
+        //if (debug) System.out.println("findMultiWord(2): " + orig + " : " + lemma);
+        //if (debug) System.out.println("findMultiWord(2): matches: " + mw.multiWord.get(orig).size());
         if (mw.multiWord.containsKey(orig)) {
             Collection<String> candidates = mw.multiWord.get(orig);
             List<CoreLabel> head = new ArrayList<>();
