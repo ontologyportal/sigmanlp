@@ -58,7 +58,7 @@ public class Pipeline {
      Only the multiWord parser annotator type value comes from sigmakee/config.xml
      */ 
     public static String defaultProp = "tokenize, ssplit, pos, lemma, " +
-            "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo";
+            "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, dbpmw, tsumo";
 
     public static String anchorDate = "2017-04-21";
 
