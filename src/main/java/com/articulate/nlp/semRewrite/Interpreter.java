@@ -142,6 +142,15 @@ public class Interpreter {
     }
 
     /** *************************************************************
+     * Create the interpreter with a non-default list of CoreNLP
+     * annotators and possibly other properties
+     */
+    public Interpreter (String prop) {
+
+        p = new Pipeline(true,prop);
+    }
+
+    /** *************************************************************
      */
     public Interpreter (RuleSet rsin) {
 
