@@ -32,20 +32,20 @@ public abstract class MultiWordAnnotator implements Annotator {
     // multi-word in WordNet format.  Individual words will still have their own
     // synsets, so later processing should check tokens for multi-word membership.
     // Some annotators may not have synsets
-    public static Class multiWordAnno;
+    public Class multiWordAnno;
 
-    public static Class sumoAnno;
+    public Class sumoAnno;
 
     //spans are set to token numbers not array position index
-    public static Class spanAnno;
+    public Class spanAnno;
 
-    public static Class tokenAnno;
+    public Class tokenAnno;
 
     public static boolean debug = false;
 
-    public static MultiWords mw;
+    public MultiWords mw;
 
-    public static String name = "MultiWordAnnotator";
+    public String name = "MultiWordAnnotator";
 
     public MultiWordAnnotator() {}
 
@@ -218,7 +218,7 @@ public abstract class MultiWordAnnotator implements Annotator {
     /****************************************************************
      * First part of the algorithm just to match the head of any multiword
      */
-    public static List<CoreLabel> findMultiWord(CoreLabel token, List<CoreLabel> rest) {
+    public List<CoreLabel> findMultiWord(CoreLabel token, List<CoreLabel> rest) {
 
 
         List<CoreLabel> result = new ArrayList<>();
@@ -300,6 +300,7 @@ public abstract class MultiWordAnnotator implements Annotator {
                     if (!StringUtil.emptyString(sumo)) {
                         tok.set(sumoAnno, sumo);
                         if (debug) System.out.println("annotateSentence(): sumo: " + sumo);
+                        if (debug) System.out.println("annotateSentence(): anno: " + sumoAnno);
                     }
                     if (!StringUtil.emptyString(key)) {
                         tok.set(tokenAnno, key);
