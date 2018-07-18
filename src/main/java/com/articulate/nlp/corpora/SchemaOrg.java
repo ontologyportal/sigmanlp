@@ -27,9 +27,9 @@ public class SchemaOrg {
     // weight, width, height, depth
     // a map of node IDs to the relation value pairs it has
     // Since there's a lot of data, only keep 10 nodes and the associated statements at a time
-    public static HashMap<String,HashMap<String,String>> nodes = new HashMap<>();
+    public static HashMap<String,HashMap<String,ArrayList<String>>> nodes = new HashMap<>();
 
-    private static final int maxQueue = 10;
+    private static int maxQueue = 100;
 
     // a count of how many items have been compiled so far.  Used to trigger
     // the periodic summary of price averages for SUMO types which in progress.
@@ -45,6 +45,22 @@ public class SchemaOrg {
     private static HashMap<String,ArrayList<Float>> prices = new HashMap<>();
 
     private static KB kb = null;
+
+    /** ***************************************************************
+     */
+    private static String getNodeName(String nodeId) {
+
+        HashMap<String,ArrayList<String>> rels = nodes.get(nodeId);
+        if (rels == null)
+            return "";
+        if (rels.size() == 0)
+            return "";
+        if (rels.get("name") == null)
+            return "";
+        if (rels.get("name").size() == 0)
+            return "";
+        return rels.get("name").get(0);
+    }
 
     /** ***************************************************************
      * Compute min, max and average price for each category and
@@ -67,7 +83,9 @@ public class SchemaOrg {
                 total = total + i;
             }
             float avg = ((float) total / ((float) theList.size()));
-            System.out.println("term, min, max, avg: " + sumo + "\t" + min + "\t" + max + "\t" + avg);
+            System.out.println("(defaultMinimumMeasure " + sumo + " (MeasureFn USDollar " + min + "))");
+            System.out.println("(defaultMaximumMeasure " + sumo + " (MeasureFn USDollar " + max + "))");
+            System.out.println("(defaultMeasure " + sumo + " (MeasureFn USDollar " + avg + "))");
         }
         System.out.println("==========================");
         System.out.println();
@@ -80,30 +98,36 @@ public class SchemaOrg {
      * to ensure there is already price and currency data.
      * Note that only instances or subclasses of Object will be saved
      */
-    private static void addPrice(String name, HashMap<String,String> statements) {
+    private static void addPrice(String name, HashMap<String,ArrayList<String>> statements) {
 
+        System.out.println("addPrice(): for " + name);
         String sumo = NPtype.findProductType(name);
+        System.out.println("addPrice(): SUMO: " + sumo);
         NPtype.heads = new HashSet<CoreLabel>();
         if (StringUtil.emptyString(sumo))
             return;
-        //if (!kb.isInstanceOf(sumo,"Object") && !kb.isSubclass(sumo,"Object"))
-        //    return;
+        if (!kb.isInstanceOf(sumo,"Object") && !kb.isSubclass(sumo,"Object"))
+            return;
         Float price = null;
         try {
-            price = Float.parseFloat(statements.get("price"));
+            ArrayList<String> priceList = statements.get("price");
+            for (String priceStr : priceList) {
+                price = Float.parseFloat(priceStr);
+                ArrayList<Float> pricesForItem = null;
+                if (!prices.keySet().contains(sumo)) {
+                    pricesForItem = new ArrayList<>();
+                    prices.put(sumo,pricesForItem);
+                }
+                else
+                    pricesForItem = prices.get(sumo);
+                pricesForItem.add(price);
+            }
         }
         catch (NumberFormatException nfe) {
-            System.out.println("Bad price format for " + name + " : " + statements.get("price"));
+            System.out.println("Error in addPrice(): Bad price format for " + name + " : " + statements.get("price"));
             return;
         }
-        ArrayList<Float> priceList = null;
-        if (!prices.keySet().contains(sumo)) {
-            priceList = new ArrayList<>();
-            prices.put(sumo,priceList);
-        }
-        else
-            priceList = prices.get(sumo);
-        priceList.add(price);
+
     }
 
     /** ***************************************************************
@@ -112,12 +136,12 @@ public class SchemaOrg {
      * offers, only the latest one in the file will have been recorded.
      * Find the type of the product name and add its price to the set
      * of prices for the type. Convert currency if known
-     */
+
     private static String printPrices(String id, String name, String prettyID) {
 
         StringBuffer sb = new StringBuffer();
-        HashMap<String,String> statements = nodes.get(id);
-        String offerId = statements.get("offer");
+        HashMap<String,ArrayList<String>> statements = nodes.get(id);
+        ArrayList<String> offerId = statements.get("offer");
         statements = nodes.get(offerId); // now the statements are for the offer, not the node!
         if (statements != null && statements.keySet().contains("price")) {
             sb.append(prettyID + "\tprice\t" + statements.get("price") + "\n");
@@ -129,43 +153,69 @@ public class SchemaOrg {
             addPrice(name,statements);
         return sb.toString();
     }
-
+*/
     /** ***************************************************************
      * If the queue is full, pop one node off.  Only print its facts
      * if it at least has a name and a price.  Increment the item count
      * if a node is printed.
+     * @return whether the id was the "head" of a subgraph that starts with
+     * a "name" relation
      */
-    private static void handleQueue(String id) {
+    private static boolean handleQueue(String id) {
 
+        //System.out.println("handleQueue(): " + id);
         if (!stmtQ.contains(id))
             stmtQ.add(id);
-        if (stmtQ.size() > maxQueue) {
-            numItems++;
-            if (numItems > 100) {
-                printPriceCategoryData();
-                numItems = 0;
-            }
-            String nextID = stmtQ.peek();
-            String prettyID = nextID; // but will get replaced, if possible with a pretty id below
-            HashMap<String,String> statements = nodes.get(nextID);
-            String name = nextID;
-            if (statements.keySet().contains("names")) {
-                name = statements.get("names");
+
+        String nextID = stmtQ.peek();
+        String prettyID = nextID; // but will get replaced, if possible with a pretty id below
+        HashMap<String, ArrayList<String>> statements = nodes.get(nextID);
+        ArrayList<String> names;
+        boolean priceFound = false;
+        //System.out.println("handleQueue():id:  " + nextID);
+        if (statements == null)
+            return false;
+        String name = "";
+        if (statements.keySet().contains("names")) {
+            names = statements.get("names");
+            //System.out.println("handleQueue():names:  " + names);
+            if (names != null) {
+                name = names.get(0);
                 prettyID = StringUtil.toCamelCase(name);
             }
-            if (statements.keySet().contains("names")) {
-                String prices = printPrices(id,name,prettyID);
-                if (!StringUtil.emptyString(prices) && !StringUtil.emptyString(name)) {
-                    for (String rel : statements.keySet()) {
-                        if (!rel.equals("offer"))
-                            System.out.println(prettyID + "\t" + rel + "\t" + statements.get(rel));
+            ArrayList<String> offers = statements.get("offer");
+            //System.out.println("handleQueue():offers:  " + offers);
+            if (offers != null) {
+                for (String offerID : offers) {
+                    //System.out.println("handleQueue():offerID:  " + offerID);
+                    HashMap<String, ArrayList<String>> statsOffer = nodes.get(offerID);
+                    //System.out.println("handleQueue():offer statements:  " + statsOffer);
+                    if (statsOffer != null) {
+                        if (statsOffer.keySet().contains("price"))
+                            addPrice(name,statsOffer);
+                        for (String rel : statsOffer.keySet()) {
+                            if (rel.equals("price")) {
+                                ArrayList<String> prices = statsOffer.get(rel);
+                                for (String price : prices) {
+                                    System.out.println(prettyID + "\t" + rel + "\t" + price);
+                                    priceFound = true;
+                                }
+                            }
+                        }
                     }
-                    System.out.println(prices);
+                    nodes.remove(offerID);
+                    stmtQ.remove(offerID);
                 }
             }
             stmtQ.remove(nextID);
             nodes.remove(nextID);
+            if (!priceFound)
+                System.out.println("handleQueue(): no prices found for:  " + nextID);
+            return true;
         }
+        if (!priceFound)
+            System.out.println("handleQueue(): no prices found for:  " + nextID);
+        return false;
     }
 
     /** ***************************************************************
@@ -174,16 +224,30 @@ public class SchemaOrg {
      */
     private static void updateNodes(String id, String relation, String value) {
 
+        //System.out.println("updateNodes() " + nodes);
+        if (!stmtQ.contains(id))
+            stmtQ.add(id);
         if (StringUtil.emptyString(id) || StringUtil.emptyString(relation) || StringUtil.emptyString(value))
             return;
-        HashMap<String,String> nodeVals = nodes.get(id);
+        HashMap<String,ArrayList<String>> nodeVals = nodes.get(id);
         if (nodeVals == null) {
             nodeVals = new HashMap<>();
             nodes.put(id, nodeVals);
         }
-        nodeVals.put(relation,value);
-        if (!relation.equals("offer"))
-            handleQueue(id);
+        ArrayList<String> relVals = nodeVals.get(relation);
+        if (nodeVals.get(relation) == null) {
+            relVals = new ArrayList<>();
+        }
+        nodeVals.put(relation,relVals);
+        relVals.add(value);
+        //System.out.println("updateNodes(): " + id + "\t" + relation + "\t" + value);
+        //if (!relation.equals("offer"))
+        if (stmtQ.size() > 100) {
+            boolean itsAName = handleQueue(stmtQ.peek());
+            if (!itsAName)
+                stmtQ.remove();
+        }
+        //handleQueue(id);
     }
 
     /** ***************************************************************
@@ -210,15 +274,16 @@ public class SchemaOrg {
         KBmanager.getMgr().initializeOnce();
         interp.initOnce();
         String filename = System.getenv("CORPORA") + File.separator + "Schema.org" +
-               // File.separator + "Product-small.nq";
+              //  File.separator + "Product-small.nq";
                 File.separator + "ProductSchemaPart.nq";
         try {
             FileReader r = new FileReader(filename);
             LineNumberReader lr = new LineNumberReader(r);
             String line;
-            int column = 0;
-            boolean inColmap = true;
             while ((line = lr.readLine()) != null) {
+                System.out.println(lr.getLineNumber());
+                if (lr.getLineNumber() % 99 == 0 && prices.keySet().size() > 0)
+                    printPriceCategoryData();
                 int firstSpace = line.indexOf(" ");
                 int secondSpace = line.indexOf(" ",firstSpace + 1);
                 int thirdSpace = line.indexOf(" ",secondSpace + 1);
@@ -232,6 +297,7 @@ public class SchemaOrg {
                     value = line.substring(secondSpace + 2, endQuote);
                 else
                     value = line.substring(secondSpace + 1, thirdSpace);
+                //System.out.println("loadContents(): " + nodeId + "\t" + relation + "\t" + value);
                 if (relation.equals("<http://schema.org/Product/name>")) {
                     relation = "names";
                     updateNodes(nodeId, relation, value);
@@ -239,7 +305,8 @@ public class SchemaOrg {
                 else if (relation.equals("<http://schema.org/Offer/price>")) {
                     relation = "price";
                     value = removeNonNumeric(value);
-                    System.out.println("Price: " + value);
+                    String name = getNodeName(nodeId);
+                    //System.out.println("Price: " + value + "\t" + name);
                     updateNodes(nodeId, relation, value);
                 }
                 else if (relation.equals("<http://schema.org/Offer/priceCurrency>")) {
@@ -248,7 +315,7 @@ public class SchemaOrg {
                 }
                 else if (relation.equals("<http://schema.org/Product/offers>")) {
                     relation = "offer";
-                    updateNodes(nodeId, relation, value);
+                    updateNodes(nodeId, relation,value );
                 }
                 else if (relation.equals("<http://schema.org/Offer/category>")) {
                     relation = "type";
@@ -276,6 +343,13 @@ public class SchemaOrg {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+        maxQueue = 0;
+        while (stmtQ.size() > 0) {
+            boolean itsAName = handleQueue(stmtQ.peek());
+            if (!itsAName)
+                stmtQ.remove();
+        }
+        printPriceCategoryData();
     }
 
     /***************************************************************
