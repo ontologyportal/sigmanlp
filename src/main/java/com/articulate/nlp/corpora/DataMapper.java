@@ -43,17 +43,17 @@ public class DataMapper {
     // map from column name to column number in matches
     public static HashMap<String,Integer> headerIndexMap = new HashMap<>();
 
-    // list elements for each column are a list of the top N matches
-    public static ArrayList<ArrayList<String>> relMatches = new ArrayList<>();
+    // a map from column names to a list of the top N matches. List values are SUMO terms
+    public static HashMap<String,ArrayList<String>> relMatches = new HashMap<>();
 
     // map from column name key to symbol name key to SUMO term
     public static HashMap<String,HashMap<String,String>> symbolMatches = new HashMap<>();
 
     public static String corpusDir = System.getenv("CORPORA");
 
-    public static String inputFilename = corpusDir + File.separator + "adult.data-AP.txt.csv";
+    public static String inputFilename = corpusDir + File.separator + "UICincome" + File.separator + "adult.data-AP.txt.csv";
 
-    public static String matchFilename = corpusDir + File.separator + inputFilename + ".mch";
+    public static String matchFilename = inputFilename + ".mch";
 
     /** ***************************************************************
      */
@@ -65,19 +65,24 @@ public class DataMapper {
     }
 
     /** ***************************************************************
-     * Save the mappings from the data file
+     * Save the mappings from the data file. The format is
+     * headerName \t sumoTerm
+     * ...
+     * ==Symbols==
+     * headerName \t symbol \t sumoTerm
+     * ...
      */
     public static void saveMappings() {
 
-        System.out.println("DataMapper.save(): writing " + matchFilename);
+        System.out.println("DataMapper.saveMappings(): writing " + matchFilename);
         FileWriter fr = null;
         PrintWriter pr = null;
         try {
             fr = new FileWriter(matchFilename);
             pr = new PrintWriter(fr);
-            for (String header : headerIndexMap.keySet()) {
-                int colnum = headerIndexMap.get(header);
-                String match = relMatches.get(colnum).get(0);
+            for (String header : relMatches.keySet()) {
+                //int colnum = headerIndexMap.get(header);
+                String match = relMatches.get(header).get(0);
                 pr.println(header + "\t" + match);
             }
             pr.println();
@@ -146,6 +151,12 @@ public class DataMapper {
     }
 
     /** ***************************************************************
+     * Load the file of mappings.  The format is
+     * headerName \t sumoTerm
+     * ...
+     * ==Symbols==
+     * headerName \t symbol \t sumoTerm
+     * ...
      */
     public static void loadMappings() {
 
@@ -155,7 +166,6 @@ public class DataMapper {
             FileReader r = new FileReader(filename);
             LineNumberReader lr = new LineNumberReader(r);
             String line;
-            int column = 0;
             boolean inColmap = true;
             while ((line = lr.readLine()) != null) {
                 if (line.equals("")) {
@@ -168,22 +178,24 @@ public class DataMapper {
                 }
                 if (inColmap) {
                     String[] pair = line.split("\t");
-                    String doc = KButilities.getDocumentation(kb, pair[1]);
+                    String sumo = pair[1];
+                    String colname = pair[0];
+                    String doc = KButilities.getDocumentation(kb, sumo);
                     if (doc == null)
                         doc = " : ";
                     else
                         doc = " : " + doc;
-                    DB2KIF.column2Rel.put(pair[0], pair[1] + doc);
-                    if (pair[0].equals(cells.get(column))) {
-                        ArrayList<String> match = new ArrayList<>();
-                        match.add(pair[1]);
-                        relMatches.add(match);
-                    }
-                    column++;
+                    DB2KIF.column2Rel.put(colname, sumo + doc);
+                    ArrayList<String> match = new ArrayList<>();
+                    match.add(sumo);
+                    relMatches.put(colname,match);
                 }
                 else {
-                    String[] triple = line.split("\t");
-                    updateSymbolMap(triple[0],triple[1],triple[2]);  // col, val, ont
+                    if (!StringUtil.emptyString(line)) {
+                        String[] triple = line.split("\t");
+                        if (triple != null && triple.length == 3)
+                            updateSymbolMap(triple[0], triple[1], triple[2]);  // col, val, ont
+                    }
                 }
             }
         }
@@ -194,9 +206,10 @@ public class DataMapper {
     }
 
     /** ***************************************************************
-     * Strip off the documentation strings and add to relMatches
+     * Strip off the documentation strings from each match string, leaving
+     * just the SUMO term, and add to relMatches.
      */
-    private void addMatches(ArrayList<String> match) {
+    private void addMatches(String colname, ArrayList<String> match) {
 
         ArrayList<String> newMatch = new ArrayList<>();
         for (int i = 0; i < match.size(); i++) {
@@ -208,7 +221,7 @@ public class DataMapper {
             else
                 newMatch.add(m);
         }
-        relMatches.add(newMatch);
+        relMatches.put(colname,newMatch);
     }
 
     /** ***************************************************************
@@ -217,18 +230,18 @@ public class DataMapper {
      */
     public void match() {
 
-        if (cells == null)
+        if (cells == null || cells.size() < 2)
             return;
         if (cells.get(1) == null)
             return;
         int size = cells.get(1).size();
         System.out.println("Info in DataMapper.match(): matching " + size + " columns ");
         ArrayList<String> row = cells.get(1);
-        relMatches = new ArrayList<>();  // clear relMatches to prepare for adding new matches
+        relMatches = new HashMap<>();  // clear relMatches to prepare for adding new matches
         for (int i = 0; i < size; i++) {
             String s = row.get(i);
             //System.out.println("Info in DataMapper.match(): column: " + i);
-            //System.out.println("Info in DataMapper.match(): comment: " + s);
+            System.out.println("Info in DataMapper.match(): comment: " + s);
             if (!StringUtil.emptyString(s)) {
                 ArrayList<String> match = (ArrayList) cb.matchInput(s, 10);
                 String colname = cells.get(0).get(i);
@@ -236,15 +249,15 @@ public class DataMapper {
                 if (kb.terms.contains(colname)) { // If there's an exact match from a column label to SUMO relation name, make it the top guess
                     match.add(0, colname);
                 }
-                //System.out.println("Info in DataMapper.match(): match size " + match.size());
+                System.out.println("Info in DataMapper.match(): match size " + match.size());
                 if (match != null && match.size() > 0) {
-                    addMatches(match);
-                    //System.out.println("Info in DataMapper.match(): result: " + match.get(0));
+                    addMatches(colname,match);
+                    System.out.println("Info in DataMapper.match(): result: " + match.get(0));
                 }
                 else {
                     ArrayList<String> blank = new ArrayList<>();
                     blank.add("");
-                    relMatches.add(blank);
+                    relMatches.put(colname,blank);
                 }
             }
         }
@@ -266,14 +279,14 @@ public class DataMapper {
         String kbHref = "";
         for (int i = 0; i < header.size(); i++) {
             String name = header.get(i);
+            if (StringUtil.emptyString(name))
+                continue;
             String doc = docs.get(i);
             System.out.println(name + "<P>\n");
             System.out.println(doc + "<P>\n");
             if (dm.relMatches.size() > i) {
-                String sumo = dm.relMatches.get(i).get(0);
-                int colon = sumo.indexOf(":");
-                String sumoterm = sumo.substring(0,colon-1);
-                String SUMOlink = "<a href=\"" + kbHref + "&term=" + sumoterm + "\">" + sumoterm + "</a>";
+                String sumo = dm.relMatches.get(name).get(0);
+                String SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
                 System.out.println(SUMOlink + "<P>\n");
             }
             System.out.println("<P>");
@@ -331,28 +344,28 @@ public class DataMapper {
             if (input.equals("save"))
                 saveMappings();
             if (input.equals("clean"))
-                clean();
+                System.out.println(clean());
             if (input.equals("match")) {
                 if (cells.size() == 0)
                     loadCells();
                 runMatch();
             }
-            if (args.length == 3 && args[0].equals("map")) {
+            if (args != null && args.length == 3 && args[0].equals("map")) {
                 String col = args[1];
                 String ont = args[2];
                 updateRelMap(col,ont);
             }
-            if (args.length == 4 && args[0].equals("mval")) {
+            if (args != null && args.length == 4 && args[0].equals("mval")) {
                 String col = args[1];
                 String val = args[2];
                 String ont = args[3];
                 updateSymbolMap(col,val,ont);
             }
-            if (args.length == 2 && args[0].equals("cd"))
+            if (args != null && args.length == 2 && args[0].equals("cd"))
                 corpusDir = System.getenv("CORPORA") + File.separator + args[1];
-            if (args.length == 2 && args[0].equals("in"))
+            if (args != null && args.length == 2 && args[0].equals("in"))
                 inputFilename = corpusDir + File.separator + args[1];
-            if (args.length == 2 && args[0].equals("mn"))
+            if (args != null && args.length == 2 && args[0].equals("mn"))
                 matchFilename = corpusDir + File.separator + inputFilename + ".mch";
 
         } while (!input.equals("exit") && !input.equals("quit"));
@@ -372,7 +385,8 @@ public class DataMapper {
         System.out.println("        read                  % read data file");
         System.out.println("        load                  % load match file");
         System.out.println("        save                  % save match file");
-        System.out.println("        clean                 % run data cleaning");
+        System.out.println("        test                  % find questionable values");
+        System.out.println("        clean                 % find and fix bad values");
         System.out.println("        match                 % run and print match");
         System.out.println("        map col ont           % change the mapping of colum name 'col' to relation 'ont' in SUMO");
         System.out.println("        mval col val ont    % change the mapping of value 'val' in column 'col' to term 'ont' in SUMO");
@@ -392,10 +406,13 @@ public class DataMapper {
             interactive();
         }
         else if (args != null && args.length > 1 && args[0].equals("-f")) {
-            ArrayList<ArrayList<String>> cells = DB.readSpreadsheet(args[1],null,false,',');
+            cells = DB.readSpreadsheet(args[1],null,false,',');
             dm.match();
         }
-        else
+        else {
+            cells = DB.readSpreadsheet(inputFilename,null,false,',');
             runMatch();
+            saveMappings();
+        }
     }
 }
