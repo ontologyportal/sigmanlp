@@ -62,7 +62,7 @@ public class TFIDFUtil {
     /** ***************************************************************
      * Perform TFIDF indexing of SUMO relations and their documentation.
      * Each relation with its documentation string appended is considered
-     * at "document"
+     * a "document"
      */
     public static TFIDF indexDocumentation(boolean relOnly) {
 
