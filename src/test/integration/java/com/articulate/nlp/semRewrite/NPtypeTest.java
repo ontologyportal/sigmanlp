@@ -207,7 +207,7 @@ public class NPtypeTest extends IntegrationTestBase {
         String type = NPtype.findProductType("\\nNew Nokia Lumia 735 (8GB) plus Phone case & 7 inch Tablet (16GB) by Hipstreet-- STILL AVAILABLE\\n");
         System.out.println("-----------------");
         System.out.println(type);
-        assertEquals("Clock",type);
+        assertEquals("Container",type);
     }
 }
 
