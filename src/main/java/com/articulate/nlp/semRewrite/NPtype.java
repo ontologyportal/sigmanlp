@@ -98,6 +98,7 @@ public class NPtype {
         if (StringUtil.emptyString(s))
             return s;
         s = s.replace("w/","with ");
+        s = s.replace("W/","with ");
         s = StringUtil.removeDoubleSpaces(s);
         if (StringUtil.emptyString(s))
             return s;
@@ -116,18 +117,18 @@ public class NPtype {
 
     /** ***************************************************************
      * Use the new term if it's not a non-product type like a Region or
-     * Substance - a true result means newC is a better term replacement
+     * Substance
      */
-    private static boolean filterTypesOk(String newC) {
+    private static boolean filterTypes(String newC) {
 
         if (kb.isChildOf(newC,"Region") || kb.isChildOf(newC,"Substance") ||
                 kb.isChildOf(newC,"SymbolicString") || kb.isChildOf(newC,"Human") ||
                 kb.isChildOf(newC,"Attribute") || kb.isChildOf(newC,"Region") ||
                 kb.isChildOf(newC,"Relation") || kb.isChildOf(newC,"TimePosition") ||
                 kb.isChildOf(newC,"LinguisticExpression") || kb.isChildOf(newC,"Process")) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     /** ***************************************************************
@@ -140,7 +141,7 @@ public class NPtype {
         if (debug) System.out.println("betterTermReplacement() new: " + newC + " and old: " + oldC);
         if (StringUtil.emptyString(newC))
             return false;
-        if (!filterTypesOk(newC))  // new one isn't better because it's a bad type
+        if (filterTypes(newC))  // new one isn't better because it's a bad type
             return false;
         if (StringUtil.emptyString(oldC)) // && implied that newC != null)
             return true;
@@ -179,6 +180,7 @@ public class NPtype {
             e.printStackTrace();
             return null;
         }
+        heads = new HashSet<>(); // reset the set of NP heads
         CoreMap sentence = SentenceUtil.getLastSentence(document);
         List<CoreLabel> labels = sentence.get(CoreAnnotations.TokensAnnotation.class);
         Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
@@ -196,9 +198,11 @@ public class NPtype {
                 if (debug) System.out.println("Multiple heads");
                 for (CoreLabel cl : heads) {
                     int toknum = cl.index();
-                    if (toknum-1 >= labels.size()) {
-                        System.out.println("error in NPtype.findType(): " + heads);
-                        System.out.println("error in NPtype.findType(): " + s);
+                    if (toknum-1 > labels.size()) {
+                        System.out.println("error in NPtype.findType(): heads: " + heads);
+                        System.out.println("error in NPtype.findType(): s: " + s);
+                        System.out.println("error in NPtype.findType(): toknum: " + toknum);
+                        System.out.println("error in NPtype.findType(): labels: " + labels);
                         Thread.currentThread().dumpStack();
                         continue;
                     }
