@@ -22,6 +22,9 @@ In your .bashrc you'll need to have a greater heap space allocation than for sig
 
 export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx5000M"
 
+Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
+  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-full-2018-01-31" />
+
 If you want to run sigmanlp's web interface then
 
 ant dist
@@ -35,6 +38,12 @@ If you want to make a link to the NLP tools available from Sigma's various jsp p
 the following in your config.xml
 
   <preference name="nlpTools" value="yes" />
+
+To run on the command line, try (changing to your paths)
+
+java -Xmx7g -classpath /home/user/workspace/sigmanlp/build/classes:
+/home/user/workspace/sigmanlp/build/lib/* com.articulate.nlp.semRewrite.Interpreter -i
+
 
 Account Management
 ==================
