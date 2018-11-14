@@ -2,6 +2,7 @@ First follow the instructions to install sigmakee at https://github.com/ontology
 
 cd ~
 echo "export SIGMA_SRC=~/workspace/sigmakee" >> .bashrc
+echo "export CORPORA=~/workspace/sigmanlp/corpora" >> .bashrc
 source .bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
@@ -20,7 +21,7 @@ Then follow the steps in "Account Management" below before proceeding
 
 In your .bashrc you'll need to have a greater heap space allocation than for sigmakee alone
 
-export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx5000M"
+export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx7g"
 
 Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
   <preference name="englishPCFG" value="~/Programs/stanford-corenlp-full-2018-01-31" />
