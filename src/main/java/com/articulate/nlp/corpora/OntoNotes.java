@@ -1,9 +1,11 @@
 package com.articulate.nlp.corpora;
 
+import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.sigma.*;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
+import edu.stanford.nlp.pipeline.Annotation;
 
 import java.io.File;
 import java.io.FileReader;
@@ -51,8 +53,14 @@ public class OntoNotes {
 
     public static int errorCount = 0;
 
+    // time to process
+    public static double sentsProcessed = 0;
+    public static double millis = 0;
+
     // a map index by WordNet sense keys where values are counts of co-occurring words
     public HashMap<String, HashMap<String,Integer>> senses = new HashMap<>();
+
+    public static Pipeline p = new Pipeline(true,"tokenize, ssplit, pos, lemma");
 
     // a list of sentences containing a list of tokens in the sentence
     //public ArrayList<ArrayList<Token>> sentences = new ArrayList<>();
@@ -242,6 +250,10 @@ public class OntoNotes {
     }
 
     /***************************************************************
+     * Process a list of word tokens from a sentence, using the
+     * given part of speech in the token, guessing its word sense
+     * and scoring whether that sense matches the gold-standard
+     * sense from the corpus
      */
     private void processOnfFile(ArrayList<Token> tokens) {
 
@@ -249,13 +261,24 @@ public class OntoNotes {
         sentence = WordNet.wn.removeStopWords(sentence);
         HashMap<String,Integer> words = new HashMap<>();
         HashSet<String> tempSenses = new HashSet<>();
+        double time = System.currentTimeMillis();
+        if (p != null) { // just a dummy test for timing
+            Annotation wholeDocument = p.annotate(String.join(" ", sentence));
+            millis = millis + (System.currentTimeMillis() - time);
+            System.out.println("processOnfFile(): sentence: " + wholeDocument);
+        }
         for (Token tok : tokens) {
             if (!WordNet.wn.isStopWord(tok.origToken)) {
                 if (!StringUtil.emptyString(tok.senseKey)) {
                     tempSenses.add(tok.senseKey);
-
+                    time = System.currentTimeMillis();
                     String candidateSynset = WSD.findWordSenseInContextWithPos(tok.origToken, sentence, tok.posNum, false);
-
+                    millis = millis + (System.currentTimeMillis() - time);
+                    sentsProcessed++;
+                    System.out.println("processOnfFile(): avg time: " + millis/sentsProcessed);
+                    System.out.println("processOnfFile(): total time: " + millis);
+                    System.out.println("processOnfFile(): sentences: " + sentsProcessed);
+                    System.out.println();
                     if (StringUtil.emptyString(candidateSynset)) {
                         incorrectSense++;
                         incorrectSumo++;
