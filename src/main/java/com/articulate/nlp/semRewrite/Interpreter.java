@@ -1662,7 +1662,8 @@ public class Interpreter {
 
        // String filename = KBmanager.getMgr().getPref("kbDir") + File.separator +
                // "WordNetMappings" + File.separator + "SemRewrite.txt";
-        String filename = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + "SemRewrite.txt";
+        String filename = System.getenv("ONTOLOGYPORTAL_GIT") + File.separator +
+                "sumo" + File.separator + "WordNetMappings" + File.separator + "SemRewrite.txt";
         String pref = KBmanager.getMgr().getPref("semRewrite");
         if (!Strings.isNullOrEmpty(pref))
             filename = pref;
