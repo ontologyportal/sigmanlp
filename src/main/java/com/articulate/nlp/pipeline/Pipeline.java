@@ -112,6 +112,7 @@ public class Pipeline {
             props.put("parser.model", KBmanager.getMgr().getPref("englishPCFG"));
             props.put("parse.flags", "");
         }
+        System.out.println("Pipeline(): using PCFG model: " + KBmanager.getMgr().getPref("englishPCFG"));
         // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
         pipeline = new StanfordCoreNLP(props);
         if (propString.contains("tsumo")) {
