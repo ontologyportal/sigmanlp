@@ -138,7 +138,7 @@ public class Interpreter {
      */
     public Interpreter () {
 
-        p = new Pipeline(true,Pipeline.defaultProp);
+        p = new Pipeline(false,Pipeline.defaultProp);
     }
 
     /** *************************************************************
@@ -147,7 +147,7 @@ public class Interpreter {
      */
     public Interpreter (String prop) {
 
-        p = new Pipeline(true,prop);
+        p = new Pipeline(false,prop);
     }
 
     /** *************************************************************
@@ -156,7 +156,7 @@ public class Interpreter {
 
         canon(rsin);
         rs = rsin;
-        p = new Pipeline(true,Pipeline.defaultProp);
+        p = new Pipeline(false,Pipeline.defaultProp);
     }
 
     /** *************************************************************
