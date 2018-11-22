@@ -82,6 +82,7 @@ public class Pipeline {
     public Pipeline(boolean useDefaultPCFGModel, String propString) {
 
         System.out.println("Pipeline(): initializing with " + propString);
+        System.out.println("Pipeline(): using default model:  " + useDefaultPCFGModel);
         Properties props = new Properties();
         // props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, depparse, dcoref, entitymentions");
         props.put("annotators", propString);
