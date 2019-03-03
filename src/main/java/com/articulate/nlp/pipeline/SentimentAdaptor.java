@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
 
-import com.articulate.sigma.AVPair;
+import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.StringUtil;
 import edu.stanford.nlp.ling.CoreAnnotations;
