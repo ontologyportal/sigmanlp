@@ -23,6 +23,8 @@ In your .bashrc you'll need to have a greater heap space allocation than for sig
 
 export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx7g"
 
+export ONTOLOGYPORTAL_GIT="/home/user/workspace"
+
 Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
   <preference name="englishPCFG" value="~/Programs/stanford-corenlp-full-2018-01-31" />
 
