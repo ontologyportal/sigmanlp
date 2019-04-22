@@ -185,7 +185,7 @@ public class SemRewriteRuleCheck {
      */
     private static boolean isCNFSubsumedNaive(CNF subsumer, CNF subsumed) {
 
-        HashMap<String, String> binding = subsumer.unify(subsumed);
+        Subst binding = subsumer.unify(subsumed);
         if (binding != null) {
             subsumed = subsumer.applyBindings(binding);
         }
