@@ -26,7 +26,6 @@ MA  02111-1307 USA
 import com.articulate.nlp.RelExtract;
 import com.articulate.sigma.StringUtil;
 import com.articulate.sigma.nlg.LanguageFormatter;
-import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.trees.Dependency;
 
@@ -520,7 +519,7 @@ public class Literal implements Comparable {
     /** ***************************************************************
      * Apply variable substitutions to a literal  
      */
-    public void applyBindingSelf(HashMap<String,String> bindings) {
+    public void applyBindingSelf(Subst bindings) {
         
         if (arg1.startsWith("?")) {
             if (bindings.containsKey(arg1))
@@ -535,16 +534,16 @@ public class Literal implements Comparable {
     /** ***************************************************************
      * @return a literal after applying variable substitutions to a literal  
      */
-    public Literal applyBindings(HashMap<String,String> bindings) {
+    public Literal applySubst(Subst bindings) {
         
-        //System.out.println("INFO in Literal.applyBindings(): this: " + this);
-        //System.out.println("INFO in Literal.applyBindings(): bindings: " + bindings);
+        //System.out.println("INFO in Literal.applySubst(): this: " + this);
+        //System.out.println("INFO in Literal.applySubst(): bindings: " + bindings);
         Literal c = new Literal();
         c.pred = pred;
         c.negated = negated;
         c.preserve = preserve;
         if (StringUtil.emptyString(arg1) || StringUtil.emptyString(arg2)) {
-            System.out.println("Error in Literal.applyBindings(): Empty argument(s): " + this);
+            System.out.println("Error in Literal.applySubst(): Empty argument(s): " + this);
             c.arg1 = arg1;
             c.arg2 = arg2;
             return c;
@@ -565,7 +564,7 @@ public class Literal implements Comparable {
         }
         else
             c.arg2 = arg2;
-        //System.out.println("INFO in Literal.applyBindings(): returning this: " + c);
+        //System.out.println("INFO in Literal.applySubst(): returning this: " + c);
         return c;
     }
     
@@ -613,17 +612,17 @@ public class Literal implements Comparable {
     }
         
     /** ***************************************************************
-     * Unify all terms in term1 with the corresponding terms in term2 with a
+     * Unify all terms in this with the corresponding terms in l2 with a
      * common substitution. Note that unlike general unification, we have
      * a fixed argument list of 2.
      * If the argument is a ground procedure, handle the matching in Procedures.
      * @return the set of substitutions with the variable as the key and
      * the binding as the value in the HashMap.
      */
-    public HashMap<String,String> mguTermList(Literal l2) {
+    public Subst mguTermList(Literal l2) {
 
         if (debug) System.out.println("INFO in Literal.mguTermList(): attempting to unify " + this + " and " + l2);
-        HashMap<String,String> subst = new HashMap<String,String>();
+        Subst subst = new Subst();
 
         if (Procedures.isProcPred(l2.pred) && l2.isGround())
             return Procedures.procUnify(this,l2);
@@ -653,12 +652,12 @@ public class Literal implements Comparable {
                 // that every variable will only ever be bound once, because
                 // we eliminate all occurrences of it in this step - remember
                 // that by the failed occurs-check, t2 cannot contain t1.
-                HashMap<String,String> newBinding = new HashMap<String,String>();
+                Subst newBinding = new Subst();
                 if (!wildcardMatch(t1,t2)) 
                     return null;
                 newBinding.put(t1,t2);                
                 applyBindingSelf(newBinding);
-                l2 = l2.applyBindings(newBinding);
+                l2 = l2.applySubst(newBinding);
                 subst.put(t1, t2);
             }
             else if (t2.startsWith("?")) {
@@ -666,12 +665,12 @@ public class Literal implements Comparable {
                 // Symmetric case - We know that t1!=t2, so we can drop this check
                 if (occursCheck(t2, this))
                     return null;
-                HashMap<String,String> newBinding = new HashMap<String,String>();
+                Subst newBinding = new Subst();
                 if (!wildcardMatch(t1,t2)) 
                     return null;
                 newBinding.put(t2, t1);          
                 applyBindingSelf(newBinding);
-                l2 = l2.applyBindings(newBinding);
+                l2 = l2.applySubst(newBinding);
                 subst.put(t2, t1);
             }
             else {
@@ -934,10 +933,10 @@ public class Literal implements Comparable {
      */
     public static void main (String args[]) {
 
-        //testGetArg();
+        testGetArg();
         testParse();
-        //testRemoveNumberWithComma();
-        //testUnify();
-        //testRegexUnify();
+        testRemoveNumberWithComma();
+        testUnify();
+        testRegexUnify();
     }
 }
