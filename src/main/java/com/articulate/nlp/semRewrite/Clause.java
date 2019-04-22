@@ -33,6 +33,8 @@ public class Clause implements Comparable {
 
     public ArrayList<Literal> disjuncts = new ArrayList<Literal>();
     public static boolean debug = false;
+    public static boolean bindSource = true; // whether to mark the bound flag on this (true)
+       // or on the argument (false) during unification
 
     /** ***************************************************************
      * fewer clauses are smaller, more general sumo terms are smaller
@@ -129,7 +131,21 @@ public class Clause implements Comparable {
                 l.bound = false;
         }
     }
-    
+
+
+    /** ***************************************************************
+     * Set the bound flags on each Literal
+     */
+    public void bind() {
+
+        if (disjuncts.size() > 1)
+            System.out.println("Error in Clause.bind(): more than one disjunct for " + this);
+        for (int i = 0; i < disjuncts.size(); i++) {
+            Literal l = disjuncts.get(i);
+            l.bound = true;
+        }
+    }
+
     /** ***************************************************************
      * Clear the preserve flags on each Literal
      */
@@ -148,8 +164,9 @@ public class Clause implements Comparable {
      * on inputs, not rules.
      */
     public void removeBound() {
-        
-        //System.out.println("INFO in Disjunct.removeBound(): before " + this);
+
+        boolean boundFound = false;
+        if (debug) System.out.println("INFO in Clause.removeBound(): before " + this);
         ArrayList<Literal> newdis = new ArrayList<Literal>();
         for (int i = 0; i < disjuncts.size(); i++) {
             Literal l = disjuncts.get(i);
@@ -157,14 +174,18 @@ public class Clause implements Comparable {
                 l.bound = false;
                 l.preserve = false;
                 newdis.add(l);
+                boundFound = true;
             }
         }
+        if (!boundFound)
+            System.out.println("Error in Clause.removeBound(): no bound clause found for " + this);
         disjuncts = newdis;
-        //System.out.println("INFO in Disjunct.removeBound(): after " + this);
+        if (debug) System.out.println("INFO in Clause.removeBound(): after " + this);
     }
     
     /** ***************************************************************
-     * Copy bound flags to this set of clauses  
+     * Copy bound flags to this set of clauses  , merging with
+     * existing bindings
      */
     public void copyBoundFlags(Clause d) {
      
@@ -180,12 +201,12 @@ public class Clause implements Comparable {
      * @return a clause that results from applying a binding list
      * to this clause.
      */
-    public Clause applyBindings(HashMap<String,String> bindings) {
+    public Clause applyBindings(Subst bindings) {
         
         Clause c = new Clause();
         for (int i = 0; i < disjuncts.size(); i++) {
             Literal l = disjuncts.get(i);
-            c.disjuncts.add(l.applyBindings(bindings));
+            c.disjuncts.add(l.applySubst(bindings));
         }            
         return c;
     }
@@ -199,42 +220,53 @@ public class Clause implements Comparable {
      * but also to match sumo terms that might satisfy the procedure.  The
      * latter is done in Literal.mguTermList()
      */
-    public HashMap<String,String> unify(Clause d) {
-        
+    public Subst unify(Clause d) {
+
+        if (debug) System.out.println("INFO in Clause.unify(): checking this (source/rule): " + this);
+        if (debug) System.out.println("INFO in Clause.unify(): against argument: " + d);
         for (int i = 0; i < d.disjuncts.size(); i++) {
             Literal c1 = d.disjuncts.get(i);  // rule
             if (debug) System.out.println("INFO in Clause.unify(): checking " + c1);
             if (c1.pred.equals("isCELTclass") && c1.isGround())
                 if (Procedures.isCELTclass(c1).equals("true"))
-                    return new HashMap<String,String>();
+                    return new Subst();
             if (c1.pred.equals("isSubclass") && c1.isGround())
                 if (Procedures.isSubclass(c1).equals("true"))
-                    return new HashMap<String,String>();
+                    return new Subst();
             if (c1.pred.equals("isInstanceOf") && c1.isGround())
                 if (Procedures.isInstanceOf(c1).equals("true"))
-                    return new HashMap<String,String>();
+                    return new Subst();
             if (c1.pred.equals("isChildOf") && c1.isGround())
                 if (Procedures.isChildOf(c1).equals("true"))
-                    return new HashMap<String,String>();
+                    return new Subst();
             if (c1.pred.equals("isSubAttribute") && c1.isGround())
                 if (Procedures.isSubAttribute(c1).equals("true")) {
-                    return new HashMap<String,String>();
+                    return new Subst();
                 }
             if (c1.pred.equals("different") && c1.isGround())
                 if (Procedures.different(c1).equals("true")) {
-                    return new HashMap<String,String>();
+                    return new Subst();
                 }
             if (debug) System.out.println("INFO in Clause.unify(): done checking procedures");
 
             for (int j = 0; j < disjuncts.size(); j++) {
                 Literal c2 = disjuncts.get(j);
-                HashMap<String,String> bindings = c2.mguTermList(c1);
+                Subst bindings = c2.mguTermList(c1);
                 if (debug) System.out.println("INFO in Clause.unify(): checking " + c1 + " against " + c2);
                 if (bindings != null) {
                     if (c1.preserve)
                         c2.preserve = true;
-                    c2.bound = true; // mark as bound in case the rule consumes the clauses ( a ==> rule not a ?=>)
-                    if (debug) System.out.println("INFO in Clause.unify(): bound: " + c2);
+                    if (debug) System.out.println("Clause.unify(): bindSource: " + bindSource);
+                    if (bindSource) {
+                        if (debug) System.out.println("Clause.unify(): binding: " + c2);
+                        c2.bound = true; // mark as bound in case the rule consumes the clauses ( a ==> rule not a ?=>)
+                    }
+                    else {
+                        c1.bound = true;
+                        if (debug) System.out.println("Clause.unify(): binding argument: " + c1);
+                    }
+                    if (debug) System.out.println("INFO in Clause.unify(): source: " + c2);
+                    if (debug) System.out.println("INFO in Clause.unify(): argument: " + c1);
                     if (debug) System.out.println("INFO in Clause.unify(): bindings: " + bindings);
                     return bindings;
                 }
@@ -259,13 +291,45 @@ public class Clause implements Comparable {
         }
         catch (Exception ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.parse() " + message);
+            System.out.println("Error in Clause.testUnify() " + message);
             ex.printStackTrace();
         }
         Clause d = new Clause();
         d.disjuncts.add(l);
         Clause c = new Clause();
+        System.out.println("Clause.testUnify(): " + c.unify(d));
+    }
+
+    /** *************************************************************
+     * A test method for parsing a Literal
+     */
+    public static void testUnify2() {
+
+        bindSource = false;
+        Literal l = null;
+        Literal l2 = null;
+        try {
+            String input1 = "foo(Bar,Baz).";
+            Lexer lex = new Lexer(input1);
+            lex.look();
+            l = Literal.parse(lex, 0);
+            String input2 = "foo(?X,?Y).";
+            Lexer lex2 = new Lexer(input2);
+            lex2.look();
+            l2 = Literal.parse(lex2, 0);
+        }
+        catch (Exception ex) {
+            String message = ex.getMessage();
+            System.out.println("Error in Clause.testUnify2() " + message);
+            ex.printStackTrace();
+        }
+        Clause d = new Clause();
+        d.disjuncts.add(l);
+        Clause c = new Clause();
+        c.disjuncts.add(l2);
         System.out.println("Clause.testParse(): " + c.unify(d));
+        System.out.println("Clause.testParse(): c: " + c);
+        System.out.println("Clause.testParse(): d: " + d);
     }
 
     /** *************************************************************
@@ -274,5 +338,6 @@ public class Clause implements Comparable {
     public static void main (String args[]) {
 
         testUnify();
+        testUnify2();
     }
 }
