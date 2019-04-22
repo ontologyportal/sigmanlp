@@ -85,7 +85,7 @@ public class RelExtractTest extends IntegrationTestBase {
 
         if (!interpreter.termCoverage(preds,terms,r))
             System.out.println("RelExtractTest.doRuleTest(): no coverage for rule ");
-        HashMap<String, String> bindings = r.cnf.unify(cnfInput);
+        Subst bindings = r.cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         RHS res = r.rhs.applyBindings(bindings);
         System.out.println("result: " + res);
@@ -132,7 +132,7 @@ public class RelExtractTest extends IntegrationTestBase {
         for (Rule r : RelExtract.rs.rules) {
             if (!interpreter.termCoverage(preds, terms, r))
                 continue;
-            HashMap<String, String> bindings = r.cnf.unify(cnfInput);
+            Subst bindings = r.cnf.unify(cnfInput);
             if (bindings != null) {
                 System.out.println("bindings: " + bindings);
                 System.out.println("rule: " + r);
