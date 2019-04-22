@@ -337,7 +337,7 @@ public class RelExtract {
     /** *************************************************************
      * Add class membership to the instances in the generated formula.
      */
-    public static Formula addFormulaTypes(Formula f, CNF pattern, HashMap<String,String> bindings) {
+    public static Formula addFormulaTypes(Formula f, CNF pattern, Subst bindings) {
 
         Formula fnew = new Formula();
         StringBuffer sb = new StringBuffer();
@@ -357,7 +357,7 @@ public class RelExtract {
      * Generate a formula, which is a single relation rel with parameters
      * filled in from the set of bindings and the pattern.
      */
-    public static Formula generateFormula(CNF pattern, CNF dep, HashMap<String,String> bindings, String rel) {
+    public static Formula generateFormula(CNF pattern, CNF dep, Subst bindings, String rel) {
 
         Formula f = new Formula();
         ArrayList<String> args = new ArrayList();
@@ -405,7 +405,7 @@ public class RelExtract {
                         System.out.println("sentence: " + sentences.get(i));
                         System.out.println("dep: " + dependencies.get(i));
                         System.out.println("pattern: " + noTypes);
-                        HashMap<String,String> bindings = Searcher.matchDepBind(noTypes,dependencies.get(i));
+                        Subst bindings = Searcher.matchDepBind(noTypes,dependencies.get(i));
                         System.out.println("bindings: " + bindings);
                         CNF depcnf = new CNF(StringUtil.removeEnclosingCharPair(dependencies.get(i).toString(),1,'[',']'));
                         System.out.println(generateFormula(noTypes,depcnf,bindings,rel));
@@ -425,7 +425,7 @@ public class RelExtract {
                         System.out.println("sentence: " + sentences.get(i));
                         System.out.println("dep: " + dependencies.get(i));
                         System.out.println("pattern: " + pattern);
-                        HashMap<String,String> bindings = Searcher.matchDepBind(pattern,dependencies.get(i));
+                        Subst bindings = Searcher.matchDepBind(pattern,dependencies.get(i));
                         System.out.println("bindings: " + bindings);
                         CNF depcnf = new CNF(StringUtil.removeEnclosingCharPair(dependencies.get(i).toString(),1,'[',']'));
                         System.out.println(generateFormula(pattern,depcnf,bindings,rel));
@@ -851,7 +851,7 @@ public class RelExtract {
                 continue;
             Rule r = rs.rules.get(i).deepCopy();
             if (debug) System.out.println("RelExtract.sentenceExtract(): r: " + r);
-            HashMap<String,String> bindings = r.cnf.unify(newInput);
+            Subst bindings = r.cnf.unify(newInput);
             if (bindings != null) {
                 if (debug) System.out.println("RelExtract.sentenceExtract(): found bindings: " + bindings);
                 if (debug) System.out.println("RelExtract.sentenceExtract(): for rule: " + r);
