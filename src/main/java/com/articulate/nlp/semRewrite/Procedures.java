@@ -113,11 +113,11 @@ public class Procedures {
      * @param l1 is the "sentence" content that must be a sumo literal.
      * @param l2 is the "rule" that must be a isCELTclass literal
      */
-    public static HashMap<String,String> procUnify(Literal l1, Literal l2) {
+    public static Subst procUnify(Literal l1, Literal l2) {
 
         if (debug) System.out.println("INFO in Procedures.procUnify(): l1 (content): " + l1);
         if (debug) System.out.println("INFO in Procedures.procUnify(): l2 (rule): " + l2);
-        HashMap<String,String> result = new HashMap<String,String>();
+        Subst result = new Subst();
         if (!l1.isGround() || !l2.isGround())
             return null;
         if (!l1.pred.equals("sumo") && !l1.pred.equals("sumoInstance"))
