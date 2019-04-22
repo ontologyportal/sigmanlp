@@ -58,7 +58,7 @@ public class LiteralTest {
 
         Literal l = new Literal(lstr1);
         Literal l2 = new Literal(lstr2);
-        HashMap<String,String> bindings = l.mguTermList(l2);
+        Subst bindings = l.mguTermList(l2);
         System.out.println("LiteralTest.testUnify(): " + lstr1);
         System.out.println("LiteralTest.testUnify(): " + lstr2);
         System.out.println("LiteralTest.testUnify(): result: " + bindings);
