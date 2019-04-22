@@ -77,7 +77,6 @@ public class Interpreter {
 
     private static final Pattern ENDING_IN_PUNC_PATTERN = Pattern.compile(".*[.?!]$");
 
-    public static boolean debug = false;
     public boolean initialized = false;
 
     public RuleSet rs = null;
@@ -106,8 +105,10 @@ public class Interpreter {
     public static int timeOut_value = 30;
 
     // debug options
+    public static boolean debug = false;
     public static boolean showrhs = false;
     public static boolean showr = true;
+    public static boolean bind = false;
     public static boolean coref = true;
     public static boolean lemmaLiteral = true; // set to true and a lemma() literal will be produced
                                                 // set to false and the token-num constant will be set to the lemma
@@ -1286,15 +1287,17 @@ public class Interpreter {
                         System.out.println("INFO in Interpreter.interpretCNF(): empty rhs: " + r);
                     //System.out.println("INFO in Interpreter.interpretCNF(): new input 0.5: " + newInput);
                     if (debug) System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
-                    HashMap<String,String> bindings = r.cnf.unify(newInput);
+                    if (debug || bind) System.out.println("\nINFO in Interpreter.interpretCNF(): inputs to rule: " + newInput);
+                    Clause.bindSource = false; // put binding flag on target - the newInput
+                    Subst bindings = r.cnf.unify(newInput);
                     if (bindings == null) {
                         newInput.clearBound();
                     }
                     else {
                         bindingFound = true;
-                        if (debug) System.out.println("INFO in Interpreter.interpretCNF(): new input 1: " + newInput);
-                        if (debug) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
-                        if (showr && debug)
+                        if (debug || bind) System.out.println("\nINFO in Interpreter.interpretCNF(): bound results: " + newInput);
+                        if (debug || bind) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
+                        if (showr || debug)
                             System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                         firedRules.add(r.toString() + " : " + bindings.toString());
                         RHS rhs = r.rhs.applyBindings(bindings);
@@ -1489,7 +1492,7 @@ public class Interpreter {
                     System.out.println();
                     System.out.println("INFO in Interpreter.testUnifyInter(): Input: " + cnfInput);
                     System.out.println("INFO in Interpreter.testUnifyInter(): CNF rule antecedent: " + cnf);
-                    HashMap<String, String> bindings = cnf.unify(cnfInput);
+                    Subst bindings = cnf.unify(cnfInput);
                     System.out.println("bindings: " + bindings);
                     System.out.println("result: " + r.rhs.applyBindings(bindings));
                 }
@@ -1564,6 +1567,14 @@ public class Interpreter {
                 else if (input.equals("showrhs")) {
                     showrhs = true;
                     System.out.println("showing right hand sides that are asserted");
+                }
+                else if (input.equals("nobind")) {
+                    bind = false;
+                    System.out.println("not showing unbound inputs");
+                }
+                else if (input.equals("bind")) {
+                    bind = true;
+                    System.out.println("showing unbound inputs");
                 }
                 else if (input.equals("ir")) {
                     ir = true;
@@ -1758,7 +1769,7 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         System.out.println("result: " + r.rhs.applyBindings(bindings));
     }
@@ -1780,7 +1791,7 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify2(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify2(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
             System.out.println("result: " + r.rhs.applyBindings(bindings));
@@ -1799,7 +1810,7 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify3(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify3(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
             System.out.println("result: " + r.rhs.applyBindings(bindings));
@@ -1818,7 +1829,7 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify4(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify4(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
             System.out.println("result: " + r.rhs.applyBindings(bindings));
@@ -1842,7 +1853,7 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify5(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify5(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
             System.out.println("result: " + r.rhs.applyBindings(bindings));
@@ -1867,7 +1878,7 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify5(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify5(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
             System.out.println("result: " + r.rhs.applyBindings(bindings));
@@ -1888,7 +1899,7 @@ public class Interpreter {
         CNF cnf = Clausifier.clausify(r.lhs);
         System.out.println("INFO in Interpreter.testUnify7(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify7(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
             System.out.println("result: " + r.rhs.applyBindings(bindings));
@@ -1910,7 +1921,7 @@ public class Interpreter {
         cnf.debug = true;
         System.out.println("INFO in Interpreter.testUnify8(): Input: " + cnfInput);
         System.out.println("INFO in Interpreter.testUnify8(): CNF rule antecedent: " + cnf);
-        HashMap<String,String> bindings = cnf.unify(cnfInput);
+        Subst bindings = cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         if (bindings != null)
             System.out.println("result: " + r.rhs.applyBindings(bindings));
@@ -2269,6 +2280,7 @@ public class Interpreter {
         System.out.println("       'addUnprocessed/noUnprocessed' will add/not add unprocessed clauses.");
         System.out.println("       'showr/noshowr' will show/not show what rules get matched.");
         System.out.println("       'showrhs/noshowrhs' will show/not show what right hand sides get asserted.");
+        System.out.println("       'bind/nobind' will show/not show the unprocessed inputs for each rule fired.");
         System.out.println("       'lemma/nolemma' will add an explicit lemma() literal, or replace token ids with lemmas.");
         System.out.println("       'quit' to quit");
         System.out.println("       Ending a sentence with a question mark will trigger a query,");
