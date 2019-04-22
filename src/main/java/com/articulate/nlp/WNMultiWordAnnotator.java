@@ -84,7 +84,7 @@ public class WNMultiWordAnnotator extends MultiWordAnnotator {
         System.out.println("WNMultiWordAnnotator.findSUMO():sense keys: " + WordNet.wn.wordsToSenseKeys.get(key));
         System.out.println("WNMultiWordAnnotator.findSUMO():synsets: " + synsets);
         if (synsets != null)
-            System.out.println("WNMultiWordAnnotator.findSUMO():synset: " + synsets.iterator().next());
+            System.out.println("WNMultiWordAnnotator.findSUMO():synset: " + synsets);
         if (synsets == null || synsets.size() == 0)
             return null;
         String sumo = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(synsets.iterator().next()));
