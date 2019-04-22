@@ -77,8 +77,8 @@ public final class RewriteRuleUtil extends RuleSet {
                 CNF unified = rs.rules.get(j).cnf;
 
                 System.out.println("unified = " + unified + "   " + unifier);
-                HashMap<String, String> map = unifier.unify(unified);
-                if (map == null || map.size() < 1) {
+                Subst map = unifier.unify(unified);
+                if (map == null || map.keySet().size() < 1) {
                     continue;
                 }
                 System.out.printf("Unification found between index %d and %d map = %s \n", i, j, map);
