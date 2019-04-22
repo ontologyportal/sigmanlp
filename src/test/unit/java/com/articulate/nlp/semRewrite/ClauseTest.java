@@ -103,7 +103,7 @@ public class ClauseTest extends UnitTestBase {
         Clause d = new Clause();
         d.disjuncts.add(l);
         Clause c = new Clause();
-        HashMap<String,String> result = c.unify(d);
+        Subst result = c.unify(d);
         System.out.println("Clause.testUnifyProc5(): " + result);
         String resStr = null;
         if (result != null)
