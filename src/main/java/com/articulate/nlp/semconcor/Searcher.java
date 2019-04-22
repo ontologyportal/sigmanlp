@@ -65,7 +65,7 @@ public class Searcher {
 
         lex = new Lexer(StringUtil.removeEnclosingCharPair(depParse,1,'[',']'));
         CNF depcnf = CNF.parseSimple(lex);
-        HashMap<String,String> bindings = patcnf.unify(depcnf);
+        Subst bindings = patcnf.unify(depcnf);
 
         if (debug) System.out.println("Searcher.highlightDep(): bindings: " + bindings);
         if (debug) System.out.println("Searcher.highlightDep(): cnf: " + depcnf);
@@ -322,14 +322,14 @@ public class Searcher {
      * @param smallcnf the dependency pattern to search for.
      * @param onedep the dependency match candidate
      */
-    public static HashMap<String,String> matchDepBind(CNF smallcnf, String onedep) {
+    public static Subst matchDepBind(CNF smallcnf, String onedep) {
 
         onedep = StringUtil.removeEnclosingCharPair(onedep,2,'[',']'); // two layers of brackets
         if (StringUtil.emptyString(onedep))
             return null;
         Lexer lex = new Lexer(onedep);
         CNF depcnf = CNF.parseSimple(lex);
-        HashMap<String,String> bindings = smallcnf.unify(depcnf);
+        Subst bindings = smallcnf.unify(depcnf);
         return bindings;
     }
 
@@ -341,7 +341,7 @@ public class Searcher {
      */
     public static boolean matchDep(CNF smallcnf, String onedep) {
 
-        HashMap<String,String> bindings = matchDepBind(smallcnf,onedep);
+        Subst bindings = matchDepBind(smallcnf,onedep);
         if (bindings == null)  // remove all that don't unify
             return false;
         else {
