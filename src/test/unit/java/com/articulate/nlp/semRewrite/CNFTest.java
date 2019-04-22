@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -40,6 +41,7 @@ public class CNFTest {
         CNF cnf1 = new CNF("sumo(BodyMotion,Bob-2), sumo(Human,John-1).");
         CNF cnf2 = new CNF("foo(BodyMotion,Bob-2), bar(Human,John-1).");
         cnf1.merge(cnf2);
+        System.out.println("testMerge() result: " + cnf1);
         assertEquals(cnf1.toString(),"sumo(BodyMotion,Bob-2), sumo(Human,John-1), foo(BodyMotion,Bob-2), bar(Human,John-1)");
     }
 
@@ -86,21 +88,31 @@ public class CNFTest {
     public void testUnify() {
 
         System.out.println("INFO in CNFTest.testUnify(): -------------------------------------");
-        String rule = "nmod:to(be_born*,?H2), sumo(Human,?H), sumo(Human,?H2), nsubjpass(be_born*,?H) ==> (parent(?H,?H2)).";
+        String rule = "nmod:to(be_born*,?H2), sumo(Human,?H1), sumo(Human,?H2), nsubjpass(be_born*,?H1) ==> (parent(?H1,?H2)).";
         Rule r = new Rule();
         r = Rule.parseString(rule);
         System.out.println(r.toString());
         CNF cnf1 = Clausifier.clausify(r.lhs);
         Lexer lex = new Lexer("nsubjpass(be_born-2,John-1), attribute(John-1,Male),   " +
-                "sumo(Human,John-1), sumo(Human,Mary-5), nmod:to(be_born-2,Mary-5), case(Mary-5,to-4), root(ROOT-0,be_born-2), sumo(Birth,be_born-2).");
+                "sumo(Human,John-1), sumo(Human,Mary-5), nmod:to(be_born-2,Mary-5), " +
+                "case(Mary-5,to-4), root(ROOT-0,be_born-2), sumo(Birth,be_born-2).");
         CNF cnf = CNF.parseSimple(lex);
         System.out.println("INFO in CNFTest.testUnify(): cnf " + cnf);
         System.out.println("INFO in CNFTest.testUnify(): cnf1 " + cnf1);
-        HashMap<String,String> bindings = cnf1.unify(cnf);
+        Subst bindings = cnf1.unify(cnf);
         System.out.println("INFO in CNFTest.testUnify(): bindings: " + bindings);
         System.out.println("INFO in CNFTest.testUnify(): cnf " + cnf);
-        System.out.println("INFO in CNFTest.testUnify(): expecting: parent(John-1,Mary-5).");
-        assertEquals("(parent(John-1,Mary-5))",r.rhs.applyBindings(bindings).toString());
+
+        String result = r.rhs.applyBindings(bindings).toString();
+        String expected = "(parent(John-1,Mary-5))";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify(): success");
+
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -108,6 +120,7 @@ public class CNFTest {
     @Test
     public void testUnify2() {
 
+        Clause.bindSource = false;
         System.out.println("INFO in CNFTest.testUnify2(): -------------------------------------");
         String rule = "sense(212345678,?E) ==> " +
                 "(sumo(Foo,?E)).";
@@ -121,7 +134,15 @@ public class CNFTest {
         System.out.println("INFO in CNFTest.testUnify2(): cnf1 " + cnf1);
         System.out.println("INFO in CNFTest.testUnify2(): bindings: " + cnf1.unify(cnf));
         System.out.println("INFO in CNFTest.testUnify2(): cnf " + cnf);
-        assertEquals("sense(212345678,Foo)",cnf.toString());
+        String result = cnf.toString();
+        String expected = "Xsense(212345678,Foo)";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify2(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify2(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -140,7 +161,15 @@ public class CNFTest {
         CNF cnf = CNF.parseSimple(lex);
         System.out.println("INFO in CNFTest.testUnify3(): cnf " + cnf);
         System.out.println("INFO in CNFTest.testUnify3(): cnf1 " + cnf1);
-        assertEquals(null,cnf1.unify(cnf));
+        Subst result = cnf1.unify(cnf);
+        String expected = null;
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (result != null)
+            System.out.println("INFO in CNFTest.testUnify3(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify3(): success");
+        assertEquals(null,result);
     }
 
     /****************************************************************
@@ -157,7 +186,15 @@ public class CNFTest {
         CNF cnf = CNF.parseSimple(lex);
         System.out.println("INFO in CNFTest.testUnify4(): cnf " + cnf);
         System.out.println("INFO in CNFTest.testUnify4(): cnf1 " + cnf1);
-        assertEquals(null,cnf1.unify(cnf));
+        Subst result = cnf1.unify(cnf);
+        String expected = null;
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (result != null)
+            System.out.println("INFO in CNFTest.testUnify4(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify4(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -165,6 +202,7 @@ public class CNFTest {
     @Test
     public void testUnify5() {
 
+        Clause.bindSource = false;
         System.out.println("INFO in CNFTest.testUnify5(): -------------------------------------");
         String rule2 = "nsubj(?X,?Y), sumo(?O,?X).";
         Lexer lex = new Lexer(rule2);
@@ -175,7 +213,15 @@ public class CNFTest {
         System.out.println("INFO in CNFTest.testUnify5(): cnf " + cnf);
         System.out.println("INFO in CNFTest.testUnify5(): cnf1 " + cnf1);
         System.out.println("INFO in CNFTest.testUnify5(): bindings: " + cnf1.unify(cnf));
-        assertEquals("nsubj(drives-2,John-1), root(ROOT-0,drives-2), sumo(Transportation,drives-2), sumo(Human,John-1)",cnf.toString());
+        String result = cnf.toString();
+        String expected = "Xnsubj(drives-2,John-1), root(ROOT-0,drives-2), Xsumo(Transportation,drives-2), sumo(Human,John-1)";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify5(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify5(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -192,7 +238,15 @@ public class CNFTest {
         CNF cnf = CNF.parseSimple(lex);
         System.out.println("INFO in CNFTest.testUnify6(): cnf " + cnf);
         System.out.println("INFO in CNFTest.testUnify6(): cnf1 " + cnf1);
-        assertEquals(null,cnf1.unify(cnf));
+        Subst result = cnf1.unify(cnf);
+        String expected = null;
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (result != null)
+            System.out.println("INFO in CNFTest.testUnify6(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify6(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -209,7 +263,15 @@ public class CNFTest {
         CNF cnf2 = CNF.parseSimple(lex2);
         System.out.println("INFO in CNFTest.testUnify7(): cnf " + cnf2);
         System.out.println("INFO in CNFTest.testUnify7(): cnf1 " + cnf12);
-        assertEquals("{?V=moves-2}",cnf12.unify(cnf2).toString());
+        String result = cnf12.unify(cnf2).toString();
+        String expected = "{?V=moves-2}";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify7(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify7(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -228,7 +290,15 @@ public class CNFTest {
         CNF cnf5 = CNF.parseSimple(lex5);
         System.out.println("INFO in CNFTest.testUnify8smallest(): cnf " + cnf4);
         System.out.println("INFO in CNFTest.testUnify8smallest(): cnf1 " + cnf5);
-        assertEquals("{?T=time-1, ?D=5, ?V=was-3}",cnf4.unify(cnf5).toString());
+        String result = cnf4.unify(cnf5).toString();
+        String expected = "{?T=time-1, ?D=5, ?V=was-3}";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify8smallest(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify8smallest(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -247,7 +317,15 @@ public class CNFTest {
         CNF cnf5 = CNF.parseSimple(lex5);
         System.out.println("INFO in CNFTest.testUnify8small(): cnf " + cnf4);
         System.out.println("INFO in CNFTest.testUnify8small(): cnf1 " + cnf5);
-        assertEquals("{?T=time-1, ?D=5, ?V=was-3, ?M=July}",cnf4.unify(cnf5).toString());
+        String result = cnf4.unify(cnf5).toString();
+        String expected = "{?T=time-1, ?D=5, ?M=July, ?V=was-3}";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify8small(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify8small(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -267,7 +345,15 @@ public class CNFTest {
         CNF cnf5 = CNF.parseSimple(lex5);
         System.out.println("INFO in CNFTest.testUnify8(): cnf " + cnf4);
         System.out.println("INFO in CNFTest.testUnify8(): cnf1 " + cnf5);
-        assertEquals("{?T=time-1, ?D=5, ?V=was-3, ?Y=1980, ?M=July}",cnf4.unify(cnf5).toString());
+        String result = cnf4.unify(cnf5).toString();
+        String expected = "{?Y=1980, ?T=time-1, ?D=5, ?M=July, ?V=was-3}";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify8(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify8(): success");
+        assertEquals(expected,result);
     }
 
     /****************************************************************
@@ -282,8 +368,43 @@ public class CNFTest {
         CNF cnf5 = new CNF(cnfstr5);
         System.out.println("INFO in CNFTest.testUnify9(): cnf " + cnf4);
         System.out.println("INFO in CNFTest.testUnify9(): cnf1 " + cnf5);
-        System.out.println("result: " + cnf4.unify(cnf5).toString());
-        assertEquals("{?X=nnn, ?Y=dontcare}",cnf4.unify(cnf5).toString());
+        String result = cnf4.unify(cnf5).toString();
+        String expected = "{?X=nnn, ?Y=dontcare}";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testUnify9(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify9(): success");
+        assertEquals(expected,result);
+    }
+
+    /****************************************************************
+     */
+    @Test
+    public void testUnify10() {
+
+        System.out.println("INFO in CNFTest.testUnify10(): -------------------------------------");
+        String rule4 = "sumo(?T,?X).";
+        CNF cnf4 = new CNF(rule4);
+        String cnfstr5 = "nsubj(kicks-2,John-1), det(cart-4,the-3), sumo(Human,John-1), " +
+            "sumo(Kicking,kicks-2), sumo(Wagon,cart-4), number(SINGULAR,John-1), lemma(John,John-1), " +
+            "tense(PRESENT,kicks-2), lemma(kick,kicks-2), number(SINGULAR,cart-4), lemma(cart,cart-4), " +
+            "patient(kicks-2,cart-4), attribute(John-1,Male), names(John-1,\"John\")";
+        CNF cnf5 = new CNF(cnfstr5);
+        System.out.println("INFO in CNFTest.testUnify10(): cnf " + cnf4);
+        System.out.println("INFO in CNFTest.testUnify10(): cnf1 " + cnf5);
+        HashSet<Unification> res = cnf4.unifyNew(cnf5);
+        String result = res.toString();
+        String expected = "{?T=Human, ?X=John-1}";
+        System.out.println("result: " + res);
+        System.out.println("expected: " + expected);
+        System.out.println("bound content: " + cnf5);
+        if (result.indexOf(expected) == -1)
+            System.out.println("INFO in CNFTest.testUnify10(): fail");
+        else
+            System.out.println("INFO in CNFTest.testUnify10(): success");
+        assertTrue(result.indexOf(expected) != -1);
     }
 
     /** ***************************************************************
@@ -293,11 +414,17 @@ public class CNFTest {
         String input = "dobj(ate-3, chicken-4), sumo(Eating,ate-3), sumo(Man,George-1), nmod:in(ate-3, December-6), " +
                 "compound(Washington-2, George-1), root(ROOT-0, ate-3), sumo(ChickenMeat,chicken-4).";
         CNF cnf4 = new CNF(input);
-        String sorted = "compound(Washington-2, George-1), dobj(ate-3, chicken-4), " +
+        String result = cnf4.toSortedString();
+        String expected = "compound(Washington-2, George-1), dobj(ate-3, chicken-4), " +
                 "nmod:in(ate-3, December-6), root(ROOT-0, ate-3), sumo(Eating,ate-3), sumo(Man,George-1), " +
                 " sumo(ChickenMeat,chicken-4).";
-        System.out.println("result: " + cnf4.toSortedString());
-        assertEquals(cnf4.toSortedString(),sorted);
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testSort(): fail");
+        else
+            System.out.println("INFO in CNFTest.testSort(): success");
+        assertEquals(expected,result);
     }
 
     /** ***************************************************************
@@ -307,9 +434,16 @@ public class CNFTest {
 
         String stmt = "(birthplace ?animal ?LOC)";
         Formula f = new Formula(stmt);
-        String result = FormulaUtil.toProlog(f);
-        System.out.println("CNFTest.testToProlog(): "  + result);
-        CNF cnf = new CNF(result);
-        assertEquals("birthplace(?animal,?LOC)", cnf.toString());
+        String p = FormulaUtil.toProlog(f);
+        CNF cnf = new CNF(p);
+        String result = cnf.toString();
+        String expected = "birthplace(?animal,?LOC)";
+        System.out.println("result: " + result);
+        System.out.println("expected: " + expected);
+        if (!result.equals(expected))
+            System.out.println("INFO in CNFTest.testToProlog(): fail");
+        else
+            System.out.println("INFO in CNFTest.testToProlog(): success");
+        assertEquals(expected, result);
     }
 }
