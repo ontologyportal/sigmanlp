@@ -42,7 +42,7 @@ public class CNFNewTest {
         CNF cnf5 = new CNF(cnfstr5);
         System.out.println("INFO in CNF.testUnify(): cnf " + cnf4);
         System.out.println("INFO in CNF.testUnify(): cnf1 " + cnf5);
-        HashMap<String,String> bindings = cnf4.unify(cnf5);
+        Subst bindings = cnf4.unify(cnf5);
         String bindStr = "null";
         if (bindings != null)
             bindStr = bindings.toString();
@@ -62,7 +62,7 @@ public class CNFNewTest {
         CNF cnf5 = new CNF(cnfstr5);
         System.out.println("INFO in CNF.testUnify(): cnf " + cnf4);
         System.out.println("INFO in CNF.testUnify(): cnf1 " + cnf5);
-        HashMap<String,String> bindings = cnf4.unify(cnf5);
+        Subst bindings = cnf4.unify(cnf5);
         String bindStr = "null";
         if (bindings != null)
             bindStr = bindings.toString();
@@ -82,7 +82,7 @@ public class CNFNewTest {
         CNF cnf5 = new CNF(cnfstr5);
         System.out.println("INFO in CNF.testUnify(): cnf " + cnf4);
         System.out.println("INFO in CNF.testUnify(): cnf1 " + cnf5);
-        HashMap<String,String> bindings = cnf4.unify(cnf5);
+        Subst bindings = cnf4.unify(cnf5);
         String bindStr = "null";
         if (bindings != null)
             bindStr = bindings.toString();
@@ -102,7 +102,7 @@ public class CNFNewTest {
         CNF cnf5 = new CNF(cnfstr5);
         System.out.println("INFO in CNF.testUnify4(): cnf " + cnf4);
         System.out.println("INFO in CNF.testUnify4(): cnf1 " + cnf5);
-        HashMap<String,String> bindings = cnf4.unify(cnf5);
+        Subst bindings = cnf4.unify(cnf5);
         String bindStr = "null";
         if (bindings != null)
             bindStr = bindings.toString();
