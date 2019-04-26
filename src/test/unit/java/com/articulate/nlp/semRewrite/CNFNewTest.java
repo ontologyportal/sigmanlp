@@ -108,4 +108,24 @@ public class CNFNewTest {
             bindStr = bindings.toString();
         assertEquals("{?X=nnn, ?Y=dontcare}",bindStr);
     }
+
+    /****************************************************************
+     */
+    @Test
+    public void testUnify5() { // test Procedures
+
+        CNF.debug = true;
+        System.out.println("INFO in CNF.testUnify5(): -------------------------------------");
+        String rule4 = "b(?X,foo), isCELTclass(?X,Super).";
+        CNF cnf4 = new CNF(rule4);
+        String cnfstr5 = "b(Sub,foo)";
+        CNF cnf5 = new CNF(cnfstr5);
+        System.out.println("INFO in CNF.testUnify5(): cnf " + cnf4);
+        System.out.println("INFO in CNF.testUnify5(): cnf1 " + cnf5);
+        Subst bindings = cnf4.unify(cnf5);
+        String bindStr = "null";
+        if (bindings != null)
+            bindStr = bindings.toString();
+        assertEquals("{?X=Sub}",bindStr);
+    }
 }
