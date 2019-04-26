@@ -87,23 +87,30 @@ public class Procedures {
             //    return "true";
             return "false";
         }
-        if (debug) System.out.println("INFO in Procedures.isCELTclass(): KB.isSubclass(): " +
-                kb.isSubclass(c.arg1, c.arg2));
+        if (debug) System.out.println("INFO in Procedures.isCELTclass(): kb.kbCache.subclassOf(\"TimeMeasure\"): " +
+                kb.kbCache.subclassOf(c.arg1, "TimeMeasure"));
+        if (debug) System.out.println("INFO in Procedures.isCELTclass(): kb.kbCache.isInstanceOf(\"TimeMeasure\"): " +
+                kb.kbCache.isInstanceOf(c.arg1, "TimeMeasure"));
+        if (debug) System.out.println("INFO in Procedures.isCELTclass(): kb.kbCache.transInstOf(\"TimeMeasure\"): " +
+                kb.kbCache.transInstOf(c.arg1, "TimeMeasure"));
 
         if (c.arg2.equals("Person"))
-            if (kb.isSubclass(c.arg1, "Human") || kb.isInstanceOf(c.arg1, "Human") || kb.isSubclass(c.arg1, "SocialRole") || kb.isInstanceOf(c.arg1, "SocialRole"))
+            if (kb.kbCache.subclassOf(c.arg1, "Human") || kb.kbCache.isInstanceOf(c.arg1, "Human") ||
+                    kb.kbCache.subclassOf(c.arg1, "SocialRole") || kb.kbCache.isInstanceOf(c.arg1, "SocialRole"))
                 return "true";
             else
                 return "false";
         else if (c.arg2.equals("Time"))
-            if (kb.isSubclass(c.arg1, "TimeMeasure") || kb.isSubclass(c.arg1, "Process") || kb.isInstanceOf(c.arg1, "Process"))
+            if (kb.kbCache.subclassOf(c.arg1, "TimeMeasure") || kb.kbCache.isInstanceOf(c.arg1, "TimeMeasure") |
+                    kb.kbCache.subclassOf(c.arg1, "Process") || kb.kbCache.isInstanceOf(c.arg1, "Process"))
                 return "true";
             else
                 return "false";
-        else if (kb.isSubclass(c.arg1, c.arg2) || kb.isInstanceOf(c.arg1,c.arg2))
+        else if (kb.kbCache.subclassOf(c.arg1, c.arg2) || kb.kbCache.isInstanceOf(c.arg1,c.arg2))
             return "true";
         else {
-            if (debug) System.out.println("INFO in Procedures.isCELTclass(): returning false");
+            if (debug) System.out.println("INFO in Procedures.isCELTclass(): not a valid CELT class " +
+                    "or no super/sub relationship: returning false");
             return "false";
         }
     }
