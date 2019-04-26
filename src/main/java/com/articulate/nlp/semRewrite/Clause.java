@@ -210,13 +210,13 @@ public class Clause implements Comparable {
         }            
         return c;
     }
-        
+
     /** *************************************************************
-     * The argument to this method is the rule and this is the sentence
+     * The argument to this method is the sentence and this is the rule
      * @return the set of variable bindings.  The key is the variable
      * and the value is the binding.  Note that the list of procedures
      * and their string identifiers must match those in Procedures.java .
-     * If the argument is a procedure we try not only to run the procedure
+     * If this is a procedure we try not only to run the procedure
      * but also to match sumo terms that might satisfy the procedure.  The
      * latter is done in Literal.mguTermList()
      */
@@ -224,8 +224,8 @@ public class Clause implements Comparable {
 
         if (debug) System.out.println("INFO in Clause.unify(): checking this (source/rule): " + this);
         if (debug) System.out.println("INFO in Clause.unify(): against argument: " + d);
-        for (int i = 0; i < d.disjuncts.size(); i++) {
-            Literal c1 = d.disjuncts.get(i);  // rule
+        for (int i = 0; i < disjuncts.size(); i++) {
+            Literal c1 = disjuncts.get(i);  // rule
             if (debug) System.out.println("INFO in Clause.unify(): checking " + c1);
             if (c1.pred.equals("isCELTclass") && c1.isGround())
                 if (Procedures.isCELTclass(c1).equals("true"))
@@ -249,8 +249,8 @@ public class Clause implements Comparable {
                 }
             if (debug) System.out.println("INFO in Clause.unify(): done checking procedures");
 
-            for (int j = 0; j < disjuncts.size(); j++) {
-                Literal c2 = disjuncts.get(j);
+            for (int j = 0; j < d.disjuncts.size(); j++) {
+                Literal c2 = d.disjuncts.get(j);
                 Subst bindings = c2.mguTermList(c1);
                 if (debug) System.out.println("INFO in Clause.unify(): checking " + c1 + " against " + c2);
                 if (bindings != null) {
