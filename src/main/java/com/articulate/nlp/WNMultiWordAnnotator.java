@@ -57,7 +57,7 @@ public class WNMultiWordAnnotator extends MultiWordAnnotator {
     }
 
     //static final Annotator.Requirement WNMW_REQUIREMENT = new Annotator.Requirement("wnmw");
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     /****************************************************************
      */
