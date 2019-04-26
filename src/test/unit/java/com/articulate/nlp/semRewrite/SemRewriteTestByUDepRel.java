@@ -101,7 +101,10 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
     @Test
     public void testAcomp2() {
 
-        String input = "det(meat-2,the-1), det(meat-2,The-1), sumo(Meat,meat-2), number(SINGULAR,meat-2), root(ROOT-0,smell-3), nsubj(smell-3,meat-2), acomp(smell-3,sweet-4), sumo(Smelling,smell-3), tense(PRESENT,smell-3), acomp(smells-3,sweet-4), sumo(Sweetness,sweet-4)";
+        String input = "det(meat-2,the-1), det(meat-2,The-1), sumo(Meat,meat-2), " +
+                "number(SINGULAR,meat-2), root(ROOT-0,smell-3), nsubj(smell-3,meat-2), " +
+                "acomp(smell-3,sweet-4), sumo(Smelling,smell-3), tense(PRESENT,smell-3), " +
+                "acomp(smells-3,sweet-4), sumo(Sweetness,sweet-4)";
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
