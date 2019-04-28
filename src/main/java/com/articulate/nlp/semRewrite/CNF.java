@@ -622,7 +622,7 @@ public class CNF implements Comparable {
      * Test a disjunct from a rule against a sentence.  It must succeed
      * for the rule to be bound.  If a binding is found, it can exit
      * without trying all the options.
-     */
+
     private Subst unifyDisjunct(Clause d1, CNF cnf2, CNF cnf1, HashMap<String,String> bindings) {
 
         if (debug) System.out.println("INFO in CNF.unifyDisjunct(): checking " + d1 + " against " + cnf2);
@@ -639,7 +639,7 @@ public class CNF implements Comparable {
         }
         return null;
     }
-
+*/
     /** *************************************************************
      */
     public Subst composeBindings(Subst bindold, Subst bindnew) {
@@ -685,7 +685,7 @@ public class CNF implements Comparable {
     /** *************************************************************
      * Look for a clause in cnf to unify with c.  Return all possibilities.
      * If no unifications are found, return null.
-     */
+
     public HashSet<Subst> unifyRecurse(Clause c, CNF cnf) {
 
         CNF cnfCopy = cnf.deepCopy();
@@ -724,14 +724,14 @@ public class CNF implements Comparable {
         if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): cnf content (argument): " + cnf);
         return result;
     }
-
+     */
     /** *************************************************************
      * Iterate through all possibilities of applying a given clause
      * from the "rule" to the "content", then recurse on applying the
      * remaining clauses.  Note that every clause in this must unify
      * consistently with some clause in cnf or the routine will return
      * null. This is the rule and argument is the sentence to match
-     */
+
     public HashSet<Subst> unifyRecurse(CNF cnf) {
 
         if (debug) System.out.println("");
@@ -798,11 +798,11 @@ public class CNF implements Comparable {
         if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): cnf content (argument): " + cnf);
         return result;
     }
-
+     */
     /** *************************************************************
      * Look for a clause in cnf to unify with c.  Return all possibilities.
      * If no unifications are found, return null.
-     */
+
     public HashSet<Subst> unifyRecurseNew(Clause c, CNF cnf) {
 
         CNF cnfCopy = cnf.deepCopy();
@@ -842,7 +842,7 @@ public class CNF implements Comparable {
         if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): cnf content (argument): " + cnf);
         return result;
     }
-
+     */
     /** *************************************************************
      * add the "local" unifications to each of the global ones
      */
@@ -1085,8 +1085,8 @@ public class CNF implements Comparable {
     public static void testUnify1() {
 
         System.out.println();
-        Clause.bindSource = false; // bind the target/argument to unify
-        System.out.println("INFO in CNF.testUnify(): bindSource: " + Clause.bindSource);
+        //Clause.bindSource = false; // bind the target/argument to unify
+        //System.out.println("INFO in CNF.testUnify(): bindSource: " + Clause.bindSource);
         System.out.println("INFO in CNF.testUnify(1): -------------------------------------");
         String rule = "sense(212345678,?E) ==> " +
                 "(sumo(Foo,?E)).";
@@ -1246,7 +1246,7 @@ public class CNF implements Comparable {
      */
     public static void main (String args[]) {
 
-        Clause.bindSource = false;
+        //Clause.bindSource = false;
         //testEquality();
         //testContains();
         //testMerge();
