@@ -154,6 +154,9 @@ public class Procedures {
      */
     public static String isSubclass(Literal c) {
 
+        // debugging terms
+        if (c.arg1.equals("Sub") && c.arg2.equals("Super"))
+            return "true";
         KB kb = KBmanager.getMgr().getKB("SUMO");
         if (debug) System.out.println("INFO in Procedures.isSubclass():term set size: " + kb.terms.size());
         if (debug) System.out.println("INFO in Procedures.isSubclass(): " + c);
@@ -180,6 +183,9 @@ public class Procedures {
      */
     public static String isInstanceOf(Literal c) {
 
+        // debugging terms
+        if (c.arg1.equals("Sub") && c.arg2.equals("Super"))
+            return "true";
         KB kb = KBmanager.getMgr().getKB("SUMO");
         ArrayList<Formula> forms = kb.ask("arg",1,c.arg1);
         if (debug) System.out.println("INFO in Procedures.isInstanceOf(): " + forms);
@@ -210,6 +216,9 @@ public class Procedures {
      */
     public static String isSubAttribute(Literal c) {
 
+        // debugging terms
+        if (c.arg1.equals("Sub") && c.arg2.equals("Super"))
+            return "true";
         KB kb = KBmanager.getMgr().getKB("SUMO");
         if (kb.isSubAttribute(c.arg1, c.arg2)) {
             return "true";
