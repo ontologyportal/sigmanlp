@@ -33,7 +33,7 @@ public class Clause implements Comparable {
 
     public ArrayList<Literal> disjuncts = new ArrayList<Literal>();
     public static boolean debug = false;
-    public static boolean bindSource = true; // whether to mark the bound flag on this (true)
+    //public static boolean bindSource = true; // whether to mark the bound flag on this (true)
        // or on the argument (false) during unification
 
     /** ***************************************************************
@@ -160,8 +160,9 @@ public class Clause implements Comparable {
     
     /** ***************************************************************
      * If literal is not marked "preserve" then remove it if bound and
-     * then reset the preserve flag.  Note this should only be called
-     * on inputs, not rules.
+     * then reset the preserve flag.  The preserve flag is set when
+     * a rule literal with a '+' matches this literal.
+     * Note this should only be called on inputs, not rules.
      */
     public void removeBound() {
 
@@ -169,16 +170,19 @@ public class Clause implements Comparable {
         if (debug) System.out.println("INFO in Clause.removeBound(): before " + this);
         ArrayList<Literal> newdis = new ArrayList<Literal>();
         for (int i = 0; i < disjuncts.size(); i++) {
-            Literal l = disjuncts.get(i);
-            if (!l.bound || l.preserve) {
-                l.bound = false;
-                l.preserve = false;
-                newdis.add(l);
+            Literal l = disjuncts.get(i).deepCopy();
+            if (l.bound) {
                 boundFound = true;
+                if (l.preserve) {
+                    l.preserve = false; // reset the preserve flag
+                }
+                else
+                    l.bound = false;
             }
+            newdis.add(l);
         }
-        if (!boundFound)
-            System.out.println("Error in Clause.removeBound(): no bound clause found for " + this);
+        //if (!boundFound)
+        //    System.out.println("Error in Clause.removeBound(): no bound clause found for " + this);
         disjuncts = newdis;
         if (debug) System.out.println("INFO in Clause.removeBound(): after " + this);
     }
@@ -256,15 +260,15 @@ public class Clause implements Comparable {
                 if (bindings != null) {
                     if (c1.preserve)
                         c2.preserve = true;
-                    if (debug) System.out.println("Clause.unify(): bindSource: " + bindSource);
-                    if (bindSource) {
+                    //if (debug) System.out.println("Clause.unify(): bindSource: " + bindSource);
+                    //if (bindSource) {
                         if (debug) System.out.println("Clause.unify(): binding: " + c2);
                         c2.bound = true; // mark as bound in case the rule consumes the clauses ( a ==> rule not a ?=>)
-                    }
-                    else {
-                        c1.bound = true;
-                        if (debug) System.out.println("Clause.unify(): binding argument: " + c1);
-                    }
+                    //}
+                    //else {
+                    //    c1.bound = true;
+                    //    if (debug) System.out.println("Clause.unify(): binding argument: " + c1);
+                    //}
                     if (debug) System.out.println("INFO in Clause.unify(): source: " + c2);
                     if (debug) System.out.println("INFO in Clause.unify(): argument: " + c1);
                     if (debug) System.out.println("INFO in Clause.unify(): bindings: " + bindings);
@@ -305,7 +309,7 @@ public class Clause implements Comparable {
      */
     public static void testUnify2() {
 
-        bindSource = false;
+        //bindSource = false;
         Literal l = null;
         Literal l2 = null;
         try {
