@@ -120,7 +120,7 @@ public class CNFTest {
     @Test
     public void testUnify2() {
 
-        Clause.bindSource = false;
+        //Clause.bindSource = false;
         System.out.println("INFO in CNFTest.testUnify2(): -------------------------------------");
         String rule = "sense(212345678,?E) ==> " +
                 "(sumo(Foo,?E)).";
@@ -202,7 +202,7 @@ public class CNFTest {
     @Test
     public void testUnify5() {
 
-        Clause.bindSource = false;
+        //Clause.bindSource = false;
         System.out.println("INFO in CNFTest.testUnify5(): -------------------------------------");
         String rule2 = "nsubj(?X,?Y), sumo(?O,?X).";
         Lexer lex = new Lexer(rule2);
