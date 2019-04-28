@@ -128,4 +128,27 @@ public class CNFNewTest {
             bindStr = bindings.toString();
         assertEquals("{?X=Sub}",bindStr);
     }
+
+    /****************************************************************
+     */
+    @Test
+    public void testUnify6() { // test Procedures
+
+        CNF.debug = true;
+        System.out.println("INFO in CNF.testUnify6(): -------------------------------------");
+        String rule4 = "prep_from(?X,?Y), +sumo(?C,?Y), isChildOf(?C,Super).";
+        CNF cnf4 = new CNF(rule4);
+        String cnfstr5 = "attribute(Mary-1,Female), aux(walk-3,will-2), det(house-6,the-5), " +
+                "names(Mary-1,\"Mary\"), nsubj(walk-3,Mary-1), number(SINGULAR,Mary-1), " +
+                "number(SINGULAR,house-6), prep_from(walk-3,house-6), root(ROOT-0,walk-3), " +
+                "sumo(Sub,house-6), sumo(Human,Mary-1), sumo(Walking,walk-3), tense(FUTURE,walk-3)\n";
+        CNF cnf5 = new CNF(cnfstr5);
+        System.out.println("INFO in CNF.testUnify6(): cnf " + cnf4);
+        System.out.println("INFO in CNF.testUnify6(): cnf1 " + cnf5);
+        Subst bindings = cnf4.unify(cnf5);
+        String bindStr = "null";
+        if (bindings != null)
+            bindStr = bindings.toString();
+        assertEquals("{?X=walk-3, ?Y=house-6, ?C=Sub}",bindStr);
+    }
 }
