@@ -1272,43 +1272,49 @@ public class Interpreter {
             CNF newInput = null;
             for (int j = 0; j < inputs.size(); j++) {
                 newInput = inputs.get(j).deepCopy();
+
                 HashSet<String> preds = newInput.getPreds();
                 HashSet<String> terms = newInput.getTerms();
                 //System.out.println("Interpreter.interpretCNF(): input preds: " + preds);
-                //System.out.println("INFO in Interpreter.interpretCNF(): new input 0: " + newInput);
+                if (debug) System.out.println("INFO in Interpreter.interpretCNF(): new input 0: " + newInput);
                 for (Rule rule : rs.rules) {
-                    if (debug) System.out.println("INFO in Interpreter.interpretCNF(): checking rule: " + rule);
+                    //if (debug) System.out.println("INFO in Interpreter.interpretCNF(): checking rule: " + rule);
                     //System.out.println("Interpreter.interpretCNF(): rule preds: " + rs.rules.get(i).preds);
                     if (!termCoverage(preds,terms,rule))
                         continue;
                     //System.out.println("Interpreter.interpretCNF(): predicates match");
                     Rule r = rule.deepCopy();
                     if (debug && r.rhs.form == null)
-                        System.out.println("INFO in Interpreter.interpretCNF(): empty rhs: " + r);
+                        System.out.println("INFO in Interpreter.interpretCNF(): no SUO-KIF formula for: " + r);
                     //System.out.println("INFO in Interpreter.interpretCNF(): new input 0.5: " + newInput);
                     if (debug) System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
                     if (debug || bind) System.out.println("\nINFO in Interpreter.interpretCNF(): inputs to rule: " + newInput);
-                    Clause.bindSource = false; // put binding flag on target - the newInput
-                    Subst bindings = r.cnf.unify(newInput);
+                    //Clause.bindSource = false; // put binding flag on target - the newInput
+                    newInput.clearBound();
+                    Subst bindings = r.cnf.unify(newInput);  // <---- unification -------
                     if (bindings == null) {
                         newInput.clearBound();
                     }
                     else {
                         bindingFound = true;
-                        if (debug || bind) System.out.println("\nINFO in Interpreter.interpretCNF(): bound results: " + newInput);
-                        if (debug || bind) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
                         if (showr || debug)
-                            System.out.println("INFO in Interpreter.interpretCNF(): r: " + r);
+                            System.out.println("INFO in Interpreter.interpretCNF(): successful rule: " + r);
+                        if (showrhs || debug || bind) System.out.println("\nINFO in Interpreter.interpretCNF(): bound results: " + newInput);
+                        if (debug || bind) System.out.println("INFO in Interpreter.interpretCNF(): bindings: " + bindings);
                         firedRules.add(r.toString() + " : " + bindings.toString());
                         RHS rhs = r.rhs.applyBindings(bindings);
+                        if (showrhs || debug)
+                            System.out.println("INFO in Interpreter.interpretCNF(): form after apply bindings: " + rhs);
                         if (r.operator == Rule.RuleOp.IMP) {  // ==>  operator
                             CNF bindingsRemoved = newInput.removeBound(); // delete the bound clauses
-                            if (debug) System.out.println("INFO in Interpreter.interpretCNF(): input with bindings removed: " + bindingsRemoved);
+                            if (debug | showrhs) System.out.println("INFO in Interpreter.interpretCNF(): input with bindings removed: " + bindingsRemoved);
                             if (!bindingsRemoved.empty()) {  // assert the input after removing bindings
                                 if (rhs.cnf != null) {
                                     if (showrhs)
                                         System.out.println("INFO in Interpreter.interpretCNF(): rhs1: " + rhs.cnf);
                                     bindingsRemoved.merge(rhs.cnf);
+                                    if (showrhs)
+                                        System.out.println("INFO in Interpreter.interpretCNF(): merged: " + bindingsRemoved);
                                 }
                                 newInput = bindingsRemoved;
                             }
@@ -1347,6 +1353,8 @@ public class Interpreter {
                     }
                     newInput.clearBound();
                     newInput.clearPreserve();
+                    if (showrhs) System.out.println("\nINFO in Interpreter.interpretCNF(): new inputs: " + newInput);
+                    if (showrhs) System.out.println("INFO in Interpreter.interpretCNF(): kif1: " + kifoutput);
                 }
             }
             if (bindingFound)
@@ -1362,7 +1370,7 @@ public class Interpreter {
             //System.out.println("INFO in Interpreter.interpretCNF(): counter: " + counter);
             //System.out.println("INFO in Interpreter.interpretCNF(): newinputs: " + newinputs);
             //System.out.println("INFO in Interpreter.interpretCNF(): inputs: " + inputs);
-            if (debug) System.out.println("INFO in Interpreter.interpretCNF(): kif: " + kifoutput);
+            if (showrhs) System.out.println("INFO in Interpreter.interpretCNF(): kif2: " + kifoutput);
         }
         return kifoutput;
     }
