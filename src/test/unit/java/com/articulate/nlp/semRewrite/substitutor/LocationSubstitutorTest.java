@@ -29,7 +29,15 @@ public class LocationSubstitutorTest extends TestCase {
 
     @Test
     public void testLocationSubstitution() {
-        String input = "David J. Bronczek, vice president and general manager of Federal Express Canada Ltd., was named senior vice president, Europe, Africa and Mediterranean, at this air-express concern. Mr. Bronczek, who is 39 years old and started at the company as a courier in 1976, succeeds Kenneth Newell, 55, who was named to the new post of senior vice president, retail service operations. Jon W. Slangerup, who is 43 and has been director of customer service in Canada, succeeds Mr. Bronczek as vice president and general manager there.";
+        String input = "David J. Bronczek, vice president and general manager of " +
+                "Federal Express Canada Ltd., was named senior vice president, " +
+                "Europe, Africa and Mediterranean, at this air-express concern. " +
+                "Mr. Bronczek, who is 39 years old and started at the company as a " +
+                "courier in 1976, succeeds Kenneth Newell, 55, who was named to the " +
+                "new post of senior vice president, retail service operations. " +
+                "Jon W. Slangerup, who is 43 and has been director of customer " +
+                "service in Canada, succeeds Mr. Bronczek as vice president and " +
+                "general manager there.";
         Annotation document = Pipeline.toAnnotation(input);
         LocationSubstitutor ls = new LocationSubstitutor(document);
 
