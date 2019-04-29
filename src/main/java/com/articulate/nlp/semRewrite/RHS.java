@@ -155,24 +155,24 @@ public class RHS {
     public RHS applyBindings(Subst bindings) {
 
         if (bindings == null) {
-            System.out.println("Error in RHS.applySubst(): null bindings");
+            System.out.println("Error in RHS.applyBindings(): null bindings");
             return this;
         }
         RHS rhs = new RHS();
         if (cnf != null) {
             rhs.cnf = cnf.applyBindings(bindings);
             rhs.form = form;
-            if (debug) System.out.println("INFO in RHS.applySubst(): cnf: " + cnf);
+            if (debug) System.out.println("INFO in RHS.applyBindings(): cnf: " + cnf);
         }
 
         Iterator<String> it = bindings.keySet().iterator();
         while (it.hasNext()) {
             String key = it.next();
             String value = bindings.get(key);
-            if (debug) System.out.println("INFO in RHS.applySubst(): key,bindings: " + key + ", " + bindings);
+            if (debug) System.out.println("INFO in RHS.applyBindings(): key,bindings: " + key + ", " + bindings);
             if (form != null && form.theFormula != null) {
                 form = form.replaceVar(key, value);
-                if (debug) System.out.println("INFO in RHS.applySubst(): formula: " + form.theFormula);
+                if (debug) System.out.println("INFO in RHS.applyBindings(): formula: " + form.theFormula);
             }
         }
         if (form != null) {
