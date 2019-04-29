@@ -34,7 +34,7 @@ public class CNFNewTest {
     @Test
     public void testUnify1() {
 
-        CNF.debug = true;
+        //CNF.debug = true;
         System.out.println("INFO in CNF.testUnify1(): -------------------------------------");
         String rule4 = "a(?X,?Y), b(?X,foo).";
         CNF cnf4 = new CNF(rule4);
@@ -54,7 +54,7 @@ public class CNFNewTest {
     @Test
     public void testUnify2() {
 
-        CNF.debug = true;
+        //CNF.debug = true;
         System.out.println("INFO in CNF.testUnify2(): -------------------------------------");
         String rule4 = "b(?X,foo), a(?X,?Y).";
         CNF cnf4 = new CNF(rule4);
@@ -74,7 +74,7 @@ public class CNFNewTest {
     @Test
     public void testUnify3() {
 
-        CNF.debug = true;
+        //CNF.debug = true;
         System.out.println("INFO in CNF.testUnify3(): -------------------------------------");
         String rule4 = "a(?X,?Y), b(?X,foo).";
         CNF cnf4 = new CNF(rule4);
@@ -94,7 +94,7 @@ public class CNFNewTest {
     @Test
     public void testUnify4() {
 
-        CNF.debug = true;
+        //CNF.debug = true;
         System.out.println("INFO in CNF.testUnify4(): -------------------------------------");
         String rule4 = "b(?X,foo), a(?X,?Y).";
         CNF cnf4 = new CNF(rule4);
@@ -114,7 +114,7 @@ public class CNFNewTest {
     @Test
     public void testUnify5() { // test Procedures
 
-        CNF.debug = true;
+        //CNF.debug = true;
         System.out.println("INFO in CNF.testUnify5(): -------------------------------------");
         String rule4 = "b(?X,foo), isCELTclass(?X,Super).";
         CNF cnf4 = new CNF(rule4);
@@ -134,7 +134,7 @@ public class CNFNewTest {
     @Test
     public void testUnify6() { // test Procedures
 
-        CNF.debug = true;
+        //CNF.debug = true;
         System.out.println("INFO in CNF.testUnify6(): -------------------------------------");
         String rule4 = "prep_from(?X,?Y), +sumo(?C,?Y), isChildOf(?C,Super).";
         CNF cnf4 = new CNF(rule4);
