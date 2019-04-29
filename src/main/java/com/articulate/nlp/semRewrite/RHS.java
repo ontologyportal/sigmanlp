@@ -32,7 +32,7 @@ import java.util.Iterator;
 
 public class RHS {
 
-    public Formula form = null;
+    public Formula form = null; // a SUO-KIF formula - can be empty
     public CNF cnf = null;
     boolean stop;
     public static boolean debug = false;
@@ -175,10 +175,11 @@ public class RHS {
                 if (debug) System.out.println("INFO in RHS.applySubst(): formula: " + form.theFormula);
             }
         }
-        if (debug) System.out.println("INFO in RHS.applySubst(): formula (2): " + form.theFormula);
-        rhs.form = form;
-        if (debug) System.out.println("INFO in RHS.applySubst(): formula (3): " + form.theFormula);
-
+        if (form != null) {
+            if (debug) System.out.println("INFO in RHS.applySubst(): formula (2): " + form.theFormula);
+            rhs.form = form;
+            if (debug) System.out.println("INFO in RHS.applySubst(): formula (3): " + form.theFormula);
+        }
         return rhs;
     }
     
