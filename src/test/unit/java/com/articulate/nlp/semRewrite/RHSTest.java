@@ -37,7 +37,7 @@ public class RHSTest extends IntegrationTestBase {
     @Test
     public void testRHSCNF() {
 
-        RHS.debug = true;
+        //RHS.debug = true;
         String input = "nsubj(grasps*,?animal), dobj(grasps*,?object), sumo(?TYPEVAR1,?object), " +
                 "isCELTclass(?animal,Person), isChildOf(?TYPEVAR1,Object) ==> {(grasps ?animal ?object)}.";
         Lexer lex = new Lexer(input);
