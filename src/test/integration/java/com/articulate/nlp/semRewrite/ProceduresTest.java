@@ -4,6 +4,7 @@ import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -63,6 +64,17 @@ public class ProceduresTest extends IntegrationTestBase {
     /****************************************************************
      */
     @Test
+    public void testIsChildOfClass3() {
+
+        System.out.println("INFO in ProceduresTest.testIsChildOfClass3()");
+        String lit = "isChildOf(House,Object)";
+        Literal l = new Literal(lit);
+        assert(Procedures.isChildOf(l).equals("true"));
+    }
+
+    /****************************************************************
+     */
+    @Test
     public void testIsCELTclass1() {
 
         System.out.println("INFO in ProceduresTest.testIsCELTclass1()");
@@ -74,6 +86,7 @@ public class ProceduresTest extends IntegrationTestBase {
 
     /****************************************************************
      */
+    @Ignore
     @Test
     public void testProcUnify1() {
 
