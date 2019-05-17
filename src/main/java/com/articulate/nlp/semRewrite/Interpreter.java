@@ -931,7 +931,7 @@ public class Interpreter {
     }
 
     /** *************************************************************
-     * Take in a single sentence and output an English answer.
+     * Take in a single sentence and output an English or KIF answer.
      * Sets question instance field based on input.
      * Updates tfidf static field with input if input is not question.
      * If first attempt using CNF clauses fails, tries tfidf for questions.
