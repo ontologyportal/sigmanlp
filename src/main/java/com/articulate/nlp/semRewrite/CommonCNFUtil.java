@@ -32,7 +32,8 @@ import java.io.*;
 import java.util.*;
 
 /***********************************************************
- * A set of static functions that heal dealing with CNF
+ * A set of static functions that deal with finding common CNF content
+ * between sentences
  *
  * findPath     will find all paths between two literals in the CNF string
  * findOneCommonCNF    will try to find the intersection CNF among a list of CNFs
@@ -157,13 +158,22 @@ public class CommonCNFUtil {
             return "?X";
         }
         else {
-            if (kb.containsTerm(s1) && kb.containsTerm(s1)) {
+            if (kb == null) {
+                System.out.println("error in findCommonAncestor(): null kb");
+                return null;
+            }
+            if (kb.containsTerm(s1) && kb.containsTerm(s2)) {
                 String parent = kb.kbCache.getCommonParent(s1,s2);
                 System.out.println("findCommonAncestor(): result: " + parent);
                 return parent;
             }
-            else
+            else {
+                if (!kb.containsTerm(s1))
+                    System.out.println("findCommonAncestor(): KB missing term: " + s1);
+                if (!kb.containsTerm(s2))
+                    System.out.println("findCommonAncestor(): KB missing term: " + s2);
                 return null;
+            }
         }
     }
 
@@ -291,6 +301,7 @@ public class CommonCNFUtil {
     }
 
     /***********************************************************
+     * Find the "bigger" CNF using CNF.compareTo()
      */
     public CNF mostSpecificForm(Collection<CNF> cnfs) {
 
@@ -428,8 +439,8 @@ public class CommonCNFUtil {
                         }
                     }
                 }
-                System.out.println("mostSpecificUnifier(): subst for Literal: " + d1 + " is " + newSubstList);
-                System.out.println("mostSpecificUnifier(): old subst: " + substList);
+                //System.out.println("mostSpecificUnifier(): subst for Literal: " + d1 + " is " + newSubstList);
+                //System.out.println("mostSpecificUnifier(): old subst: " + substList);
                 if (substList.size() == 0) // if no unification was found previously, just add the new one
                     substList.addAll(newSubstList);
                 else { // if there was a previous unification for these forms, compose the cross product of new and existing substitutions
@@ -447,7 +458,7 @@ public class CommonCNFUtil {
                     }
                     substList = tempSubstList;
                 }
-                System.out.println("mostSpecificUnifier(): new subst: " + substList);
+                //System.out.println("mostSpecificUnifier(): new subst: " + substList);
             }
         }
         System.out.println("mostSpecificUnifier(): final: " + substList);
@@ -511,7 +522,8 @@ public class CommonCNFUtil {
         ccu.kb = KBmanager.getMgr().getKB("SUMO");
         System.out.println("CommonCNFUtil.testCommonForms(): s1: " + s1);
         System.out.println("CommonCNFUtil.testCommonForms(): s2: " + s2);
-        System.out.println("CommonCNFUtil.testCommonForms(): result: " + ccu.findOneCommonCNF(cnfs));
+        System.out.println("CommonCNFUtil.testCommonForms(): result: " +
+                ccu.findOneCommonCNF(cnfs));
     }
 
     /***********************************************************
@@ -532,44 +544,8 @@ public class CommonCNFUtil {
         ccu.kb = KBmanager.getMgr().getKB("SUMO");
         System.out.println("CommonCNFUtil.testMostSpecificForms(): s1: " + s1);
         System.out.println("CommonCNFUtil.testMostSpecificForms(): s2: " + s2);
-        System.out.println("CommonCNFUtil.testMostSpecificForms(): result: " + ccu.mostSpecificForm(cnfs));
-    }
-
-    /***********************************************************
-     */
-    public static void testMostSpecificForm1() {
-
-        String s1 = "names(Susan-1,\"John\"), nsubj(pushes-2,Susan-1), sumo(Physical,Susan-1), " +
-                "sumo(UnpoweredVehicle,wagon-4), root(ROOT-0,pushes-2), attribute(Susan-1,Male), " +
-                "dobj(pushes-2,wagon-4), det(wagon-4,the-3), sumo(Physical,pushes-2)";
-        String s2 = "sumo(Physical,pushes-2), det(wagon-4,the-3), sumo(Physical,Susan-1), " +
-                "nsubj(pushes-2,Susan-1), sumo(Physical,wagon-4), root(ROOT-0,pushes-2), " +
-                "names(Susan-1,\"John\"), attribute(Susan-1,Male), dobj(pushes-2,wagon-4)";
-        System.out.println("CommonCNFUtil.testMostSpecificForm1(): ");
-        testMostSpecificForms(s1,s2);
-
-        String s3 = "root(ROOT-0,pushes-2), det(wagon-4,the-3), dobj(pushes-2,wagon-4), " +
-                "sumo(Physical,Susan-1), sumo(Motion,pushes-2), nsubj(pushes-2,Susan-1), " +
-                "sumo(Physical,wagon-4), attribute(Susan-1,Male), names(Susan - 1,\"John\")";
-        System.out.println("CommonCNFUtil.testMostSpecificForm1(): ");
-        testMostSpecificForms(s1,s3);
-
-        System.out.println("CommonCNFUtil.testMostSpecificForm1(): ");
-        testMostSpecificForms(s2,s3);
-    }
-
-    /***********************************************************
-     */
-    public static void testMostSpecificForm2() {
-
-        String s1 = "dobj(pushes-2,wagon-4), sumo(UnpoweredVehicle,wagon-4), names(Susan-1,\"John\"), " +
-                "attribute(Susan-1,Male), root(ROOT-0,pushes-2), sumo(Physical,pushes-2), " +
-                "sumo(Physical,Susan-1), nsubj(pushes-2,Susan-1), det(wagon-4,the-3)";
-        String s2 = "root(ROOT-0,pushes-2), sumo(Object,wagon-4), det(wagon-4,the-3), " +
-                "names(Susan-1,\"John\"), attribute(Susan-1,Male), sumo(Motion,pushes-2), " +
-                "nsubj(pushes-2,Susan-1), dobj(pushes-2,wagon-4), sumo(Object,Susan-1)";
-        System.out.println("CommonCNFUtil.testMostSpecificForm2(): ");
-        testMostSpecificForms(s1,s2);
+        System.out.println("CommonCNFUtil.testMostSpecificForms(): result: " +
+                ccu.mostSpecificForm(cnfs));
     }
 
     /***********************************************************
@@ -581,7 +557,8 @@ public class CommonCNFUtil {
         KBmanager.getMgr().initializeOnce();
         CommonCNFUtil ccu = new CommonCNFUtil();
         ccu.kb = KBmanager.getMgr().getKB("SUMO");
-        System.out.println("CommonCNFUtil.test(): " + ccu.findCommonCNF("John kicks the cart.\nSusan pushes the wagon."));
+        System.out.println("CommonCNFUtil.test(): " +
+                ccu.findCommonCNF("John kicks the cart.\nSusan pushes the wagon."));
     }
 
     /***********************************************************
@@ -593,7 +570,15 @@ public class CommonCNFUtil {
         KBmanager.getMgr().initializeOnce();
         CommonCNFUtil ccu = new CommonCNFUtil();
         ccu.kb = KBmanager.getMgr().getKB("SUMO");
-        System.out.println("CommonCNFUtil.test(): " + ccu.findCommonCNF("John gets in the car.\nSusan rides in the tank"));
+        CNF result = ccu.findCommonCNF("John gets in the car.\nSusan rides in the tank");
+        CNF expected = new CNF("sumo(Physical,?VAR7), case(?VAR9,get_in), " +
+                "root(?VAR6,get_in), det(?VAR9,?VAR11), nmod:in(get_in,?VAR9)");
+        System.out.println("CommonCNFUtil.test(): result: " + result);
+        System.out.println("CommonCNFUtil.test(): expected: " + expected);
+        if (result.equals(expected))
+            System.out.println("CommonCNFUtil.test(): pass");
+        else
+            System.out.println("CommonCNFUtil.test(): fail");
     }
 
     /***********************************************************
@@ -633,7 +618,8 @@ public class CommonCNFUtil {
 
         ccu = new CommonCNFUtil();
         ccu.kb = KBmanager.getMgr().getKB("SUMO");
-        System.out.println("CommonCNFUtil.test(): " + ccu.findCommonCNF("John kicks the cart.\nSusan pushes the wagon."));
+        System.out.println("CommonCNFUtil.test(): " +
+            ccu.findCommonCNF("John kicks the cart.\nSusan pushes the wagon."));
 */
     }
 
