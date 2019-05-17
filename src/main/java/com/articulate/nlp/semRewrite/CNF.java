@@ -275,6 +275,20 @@ public class CNF implements Comparable {
         return thisSet.toString().compareTo(cnfSet.toString());
     }
 
+
+    /** ***************************************************************
+     * sort clauses alphabetically then compare as strings
+     */
+    public TreeSet<String> toSortedLiterals() {
+
+        TreeSet<String> thisSet = new TreeSet<>();
+        for (Clause clause1 : this.clauses) {
+            for (Literal d1 : clause1.disjuncts)
+                thisSet.add(d1.toString());
+        }
+        return thisSet;
+    }
+
     /** ***************************************************************
      * fewer clauses are smaller, more general sumo terms are smaller
      * and if those conditions aren't different, just choose lexical
@@ -394,10 +408,14 @@ public class CNF implements Comparable {
         //System.out.println("INFO in CNF.equals(): Checking " + cnf + " against " + this);
         if (clauses.size() != cnf.clauses.size())
             return false;
-        for (int i = 0; i < clauses.size(); i++) {
+        CNF cnfCopy = cnf.deepCopy();
+        Collections.sort(cnfCopy.clauses);
+        CNF thisCopy = this.deepCopy();
+        Collections.sort(thisCopy.clauses);
+        for (int i = 0; i < thisCopy.clauses.size(); i++) {
             //System.out.println("INFO in CNF.equals(): checking disjunct " + clauses.get(i) +
             //        " " + cnf.clauses.get(i));
-            if (!clauses.get(i).equals(cnf.clauses.get(i)))
+            if (!clauses.get(i).equals(cnfCopy.clauses.get(i)))
                 return false;
         }
         //System.out.println("INFO in CNF.equals(): true!");
