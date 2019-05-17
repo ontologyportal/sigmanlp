@@ -57,7 +57,11 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
     @Test
     public void testAMod() {
 
-        String input = "root(ROOT-0,have-2), nsubj(have-2,John-1), det(car-5,a-3), amod(car-5,red-4), dobj(have-2,car-5), names(John-1,\"John\"), sumo(Automobile,car-5), attribute(John-1,Male), sumo(Human,John-1), sumo(Red,red-4), number(SINGULAR,John-1), tense(PRESENT,have-2), number(SINGULAR,car-5)";
+        String input = "root(ROOT-0,have-2), nsubj(have-2,John-1), det(car-5,a-3), " +
+                "amod(car-5,red-4), dobj(have-2,car-5), names(John-1,\"John\"), " +
+                "sumo(Automobile,car-5), attribute(John-1,Male), sumo(Human,John-1), " +
+                "sumo(Red,red-4), number(SINGULAR,John-1), tense(PRESENT,have-2), " +
+                "number(SINGULAR,car-5)";
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
@@ -80,7 +84,9 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
     @Test
     public void testAcomp1() {
 
-        String input = "sumo(LondonUnitedKingdom,London-1), number(SINGULAR,London-1), root(ROOT-0,smell-2), nsubj(smell-2,London-1), sumo(Smelling,smell-2), tense(PRESENT,smell-2), acomp(smells-2,sweet-3), sumo(Sweetness,sweet-3)";
+        String input = "sumo(LondonUnitedKingdom,London-1), number(SINGULAR,London-1), " +
+                "root(ROOT-0,smell-2), nsubj(smell-2,London-1), sumo(Smelling,smell-2), " +
+                "tense(PRESENT,smell-2), acomp(smells-2,sweet-3), sumo(Sweetness,sweet-3)";
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
@@ -125,7 +131,14 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
     @Test
     public void testAppos() {
 
-        String input = "sumo(Woman,Mary-1), number(SINGULAR,London-1), tense(PRESENT,smells-2), number(SINGULAR,Sam-1), number(SINGULAR,brother-3), tense(PAST,arrived-4), number(SINGULAR,Mary-1), appos(Mary-1,sister-4), poss(sister-4,my-2), sumo(sister,sister-4), number(SINGULAR,sister-4), root(ROOT-0,arrive-6), nsubj(arrive-6,Mary-1), sumo(Arriving,arrive-6), tense(PAST,arrive-6)";
+        String input = "sumo(Woman,Mary-1), number(SINGULAR,London-1), " +
+                "tense(PRESENT,smells-2), number(SINGULAR,Sam-1), " +
+                "number(SINGULAR,brother-3), tense(PAST,arrived-4), " +
+                "number(SINGULAR,Mary-1), appos(Mary-1,sister-4), " +
+                "poss(sister-4,my-2), sumo(sister,sister-4), " +
+                "number(SINGULAR,sister-4), root(ROOT-0,arrive-6), " +
+                "nsubj(arrive-6,Mary-1), sumo(Arriving,arrive-6), " +
+                "tense(PAST,arrive-6)";
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
@@ -148,7 +161,11 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
     @Test
     public void testTmod() {
 
-        String input = "names(Mary-3,\"Mary\"), attribute(Mary-3,Female), sumo(Human,Mary-3), number(SINGULAR,Mary-3), tmod(ran-4,yesterday-1), sumo(Day,yesterday-1), number(SINGULAR,yesterday-1), root(ROOT-0,run-4), tmod(run-4,Yesterday-1), nsubj(run-4,Mary-3), sumo(Running,run-4), tense(PAST,run-4)";
+        String input = "names(Mary-3,\"Mary\"), attribute(Mary-3,Female), " +
+                "sumo(Human,Mary-3), number(SINGULAR,Mary-3), tmod(ran-4,yesterday-1), " +
+                "sumo(Day,yesterday-1), number(SINGULAR,yesterday-1), " +
+                "root(ROOT-0,run-4), tmod(run-4,Yesterday-1), nsubj(run-4,Mary-3), " +
+                "sumo(Running,run-4), tense(PAST,run-4)";
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
