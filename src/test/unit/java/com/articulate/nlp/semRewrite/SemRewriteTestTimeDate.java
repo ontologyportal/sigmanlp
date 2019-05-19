@@ -168,7 +168,16 @@ public class SemRewriteTestTimeDate extends UnitTestBase {
     @Test
     public void testMaryJuly51980on() {
 
-        String input = "root(ROOT-0,pilot-15), nsubj(pilot-15,Mary-1), dep(Mary-1,July-3), num(July-3,5-4), num(July-3,1980-6), dep(July-3,April-8), num(April-8,4-9), num(April-8,2010-11), cop(pilot-15,be-13), det(pilot-15,a-14), names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), sumo(Pilot,pilot-15), number(SINGULAR,Mary-1), number(SINGULAR,July-3), number(SINGULAR,April-8), tense(PAST,be-13), number(SINGULAR,pilot-15), day(time-2,4), month(time-2,April), BirthDate(Mary-1,time-1), month(time-1,July), year(time-1,1980), day(time-1,5), year(time-2,2010), DeathDate(Mary-1,time-2)";
+        String input = "root(ROOT-0,pilot-15), nsubj(pilot-15,Mary-1), " +
+                "dep(Mary-1,July-3), num(July-3,5-4), num(July-3,1980-6), " +
+                "dep(July-3,April-8), num(April-8,4-9), num(April-8,2010-11), " +
+                "cop(pilot-15,be-13), det(pilot-15,a-14), names(Mary-1,\"Mary\"), " +
+                "attribute(Mary-1,Female), sumo(Human,Mary-1), sumo(Pilot,pilot-15), " +
+                "number(SINGULAR,Mary-1), number(SINGULAR,July-3), " +
+                "number(SINGULAR,April-8), tense(PAST,be-13), " +
+                "number(SINGULAR,pilot-15), day(time-2,4), month(time-2,April), " +
+                "BirthDate(Mary-1,time-1), month(time-1,July), year(time-1,1980), " +
+                "day(time-1,5), year(time-2,2010), DeathDate(Mary-1,time-2)";
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
         String[] expected = {
                 "(birthdate Mary-1 (DayFn 5 (MonthFn July (YearFn 1980))))"
@@ -178,6 +187,7 @@ public class SemRewriteTestTimeDate extends UnitTestBase {
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
 
+        System.out.println("testMaryJuly51980on(): actual: \n" + actual + "\n expected: \n" + expected);
         assertThat(cleanedActual, hasItems(expected));
     }
 
