@@ -55,3 +55,9 @@ Add the following to your $CATALINA_HOME/conf/context.xml
 
 <Context crossContext="true">
 
+
+jUnit=============
+
+java -Xmx10g -classpath /home/user/workspace/sigmanlp/build/classes:
+/home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
+org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllUnitSemRewrite
