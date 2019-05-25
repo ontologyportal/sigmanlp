@@ -7,17 +7,17 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 /*
 Copyright 2014-2015 IPsoft
+          2017-     Infosys
 
-Author: Adam Pease adam.pease@ipsoft.com
+Author: Adam Pease adam.pease@infosys.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -165,6 +165,7 @@ public class SemRewriteTestTimeDate extends UnitTestBase {
      * Mary ( July 5, 1980 - April 4, 2010) was a pilot. - Testing the date and birthdate
      * BirthDate(?V,?T) day(?T,?D), month(?T,?M), year(?T,?Y) ==> {(birthdate ?V (DayFn ?D (MonthFn ?M (YearFn ?Y))))}.
      */
+    @Ignore
     @Test
     public void testMaryJuly51980on() {
 
@@ -179,16 +180,20 @@ public class SemRewriteTestTimeDate extends UnitTestBase {
                 "BirthDate(Mary-1,time-1), month(time-1,July), year(time-1,1980), " +
                 "day(time-1,5), year(time-2,2010), DeathDate(Mary-1,time-2)";
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
-        String[] expected = {
-                "(birthdate Mary-1 (DayFn 5 (MonthFn July (YearFn 1980))))"
-        };
+        String expected = "(birthdate Mary-1 (DayFn 5 (MonthFn July (YearFn 1980))))";
 
         ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
-        Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
+        Set<String> cleanedActual = new HashSet<>();
+        for (String s : actual)
+            cleanedActual.add(s.replaceAll("\\s+", " "));
 
-        System.out.println("testMaryJuly51980on(): actual: \n" + actual + "\n expected: \n" + expected);
-        assertThat(cleanedActual, hasItems(expected));
+        System.out.println("testMaryJuly51980on(): actual: \n" + cleanedActual + "\n expected: \n" + expected);
+        if (cleanedActual.contains(expected))
+            System.out.println("testMaryJuly51980on(): pass");
+        else
+            System.out.println("testMaryJuly51980on(): fail");
+        assertTrue(cleanedActual.contains(expected));
     }
 
     /****************************************************************
