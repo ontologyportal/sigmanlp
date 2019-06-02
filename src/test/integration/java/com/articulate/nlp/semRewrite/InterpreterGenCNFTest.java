@@ -1,5 +1,6 @@
 package com.articulate.nlp.semRewrite;
 
+import com.articulate.nlp.semRewrite.datesandnumber.DateAndNumbersGeneration;
 import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.google.common.collect.ImmutableList;
@@ -11,6 +12,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.List;
@@ -194,9 +196,24 @@ public class InterpreterGenCNFTest extends IntegrationTestBase {
         CNF cnf = interpreter.interpretGenCNF(input);
 
         Set<String> expected = Sets.newHashSet(
-                "names(Mary-1,\"Mary\")", "attribute(Mary-1,Female)", "sumo(Human,Mary-1)", "number(SINGULAR,Mary-1)",
-                "root(ROOT-0,make-3)", "nsubj(make-3,Mary-1)", "tense(PRESENT,make-3)", "aspect(PERFECT,make-3)",
-                "aux(make-3,have-2)", "sumo(House,house-5)", "number(SINGULAR,house-5)", "dobj(make-3,house-5)", "det(house-5,a-4)"
+                "aspect(PERFECT,made-3)",
+                "attribute(Mary-1,Female)",
+                "aux(made-3,has-2)",
+                "det(house-5,a-4)",
+                "dobj(made-3,house-5)",
+                "lemma(house,house-5)",
+                "lemma(make,made-3)",
+                "lemma(Mary,Mary-1)",
+                "names(Mary-1,\"Mary\")",
+                "nsubj(made-3,Mary-1)",
+                "number(SINGULAR,house-5)",
+                "number(SINGULAR,Mary-1)",
+                "punct(made-3,.-6)",
+                "root(ROOT-0,made-3)",
+                "sumo(House,house-5)",
+                "sumo(Human,Mary-1)",
+                "sumo(Process,made-3)",
+                "tense(PRESENT,made-3)"
         );
 
         Set<String> cnfSets = Sets.newHashSet(cnf.toListString());
@@ -376,9 +393,10 @@ public class InterpreterGenCNFTest extends IntegrationTestBase {
     @Test
     public void testMaryHadWalkedForTwoHours()   {
 
+        DateAndNumbersGeneration.debug = true;
         String input = "Mary had walked for two hours.";
         CNF cnf = interpreter.interpretGenCNF(input);
-
+        System.out.println("InterpreterGenCNFTest.testMaryHadWalkedForTwoHours(): actual:\n " + cnf);
         Set<String> expected = Sets.newHashSet(
                 "nsubj(walk-3,Mary-1)", "names(Mary-1,\"Mary\")", "sumo(Hour,hour-6)", "root(ROOT-0,walk-3)",
                 "aspect(PERFECT,walk-3)", "attribute(Mary-1,Female)", "sumo(Human,Mary-1)", "sumo(Walking,walk-3)",
@@ -386,6 +404,7 @@ public class InterpreterGenCNFTest extends IntegrationTestBase {
                 "number(SINGULAR,Mary-1)", "number(PLURAL,hour-6)"
         );
 
+        System.out.println("\nInterpreterGenCNFTest.testMaryHadWalkedForTwoHours(): expected:\n " + expected);
         Set<String> cnfSets = Sets.newHashSet(cnf.toListString());
         assertEquals(expected, cnfSets);
     }
