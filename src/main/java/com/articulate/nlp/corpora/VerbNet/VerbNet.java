@@ -15,6 +15,7 @@ public class VerbNet {
     public static KB kb;
 
     private static boolean debug = true;
+    private static boolean echo = false;
     private static HashMap<String,SimpleElement> verbFiles = new HashMap<>();
     private static HashMap<String,String> roles = new HashMap<>(); // VN to SUMO role mappings
     private static boolean initialized = false;
@@ -90,8 +91,8 @@ public class VerbNet {
     public static void processVerbs() {
 
         for (String fname : verbFiles.keySet()) {
-            System.out.println("\n==================");
-            System.out.println("VerbNet.processVerbs(): " + fname);
+            if (echo) System.out.println("\n==================");
+            if (echo) System.out.println("VerbNet.processVerbs(): " + fname);
             SimpleElement verb = verbFiles.get(fname);
             String name = (String) verb.getAttribute("ID");
             verbcount++;
