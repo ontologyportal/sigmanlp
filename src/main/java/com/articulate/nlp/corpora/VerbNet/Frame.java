@@ -18,6 +18,7 @@ public class Frame {
     String xtag;
     String example;
 
+    private boolean echo = false;
     public ArrayList<Tuple> syntax = new ArrayList<>();
     public ArrayList<Tuple> semantics = new ArrayList<>();
 
@@ -30,28 +31,28 @@ public class Frame {
      */
     public void readDesc(SimpleElement desc) {
 
-        System.out.println("Frame.readDesc()");
+        if (echo) System.out.println("Frame.readDesc()");
         descriptionNum = (String) desc.getAttribute("descriptionNumber");
-        System.out.println("Desc number: " + descriptionNum);
+        if (echo) System.out.println("Desc number: " + descriptionNum);
         primary = (String) desc.getAttribute("primary");
-        System.out.println("primary: " + primary);
+        if (echo) System.out.println("primary: " + primary);
         secondary = (String) desc.getAttribute("secondary");
-        System.out.println("secondary: " + secondary);
+        if (echo) System.out.println("secondary: " + secondary);
         xtag = (String) desc.getAttribute("xtag");
-        System.out.println("xtag: " + xtag);
+        if (echo) System.out.println("xtag: " + xtag);
     }
 
     /** *************************************************************
      */
     public void readEx(SimpleElement ex) {
 
-        System.out.println("Frame.readEx()");
+        if (echo) System.out.println("Frame.readEx()");
         for (int i = 0; i < ex.getChildElements().size(); i++) {
             SimpleElement element = (SimpleElement) ex.getChildElements().get(i);
             if (element.getTagName().equals("EXAMPLE")) {
-                System.out.println("Example");
+                if (echo) System.out.println("Example");
                 String text = element.getText();
-                System.out.println("Text: " + text);
+                if (echo) System.out.println("Text: " + text);
                 example = text;
             }
             else {
@@ -65,16 +66,16 @@ public class Frame {
     public HashSet<AVPair> readSynrestrs(SimpleElement syn) {
 
         HashSet<AVPair> restr = new HashSet<>();
-        System.out.println("Frame.readSynrestrs()");
+        if (echo) System.out.println("Frame.readSynrestrs()");
         for (int i = 0; i < syn.getChildElements().size(); i++) {
             SimpleElement element = (SimpleElement) syn.getChildElements().get(i);
             if (element.getTagName().equals("SYNRESTR")) {
                 AVPair avp = new AVPair();
                 avp.attribute = (String) element.getAttribute("value");
-                System.out.println("value: " + avp.attribute);
+                if (echo) System.out.println("value: " + avp.attribute);
                 avp.value = (String) element.getAttribute("type");
                 restr.add(avp);
-                System.out.println("type: " + avp.value);
+                if (echo) System.out.println("type: " + avp.value);
             }
             else {
                 System.out.println("Error in Frame.readSynrestrs(): unknown tag: " + element);
@@ -88,14 +89,14 @@ public class Frame {
     public void readSyn(SimpleElement syn) {
 
         HashMap<String,String> parts = new HashMap<>();
-        System.out.println("Frame.readSyn()");
+        if (echo) System.out.println("Frame.readSyn()");
         for (int i = 0; i < syn.getChildElements().size(); i++) {
             Tuple t = new Tuple();
             SimpleElement element = (SimpleElement) syn.getChildElements().get(i);
             if (element.getTagName().equals("NP")) {
                 String val = (String) element.getAttribute("value");
                 t.value = val;
-                System.out.println("NP value: " + val);
+                if (echo) System.out.println("NP value: " + val);
                 if (!parts.keySet().contains("nsubj"))
                     parts.put("nsubj", val);
                 else if (!parts.keySet().contains("dobj"))
@@ -113,7 +114,7 @@ public class Frame {
             else if (element.getTagName().equals("PREP")) {
                 String val = (String) element.getAttribute("value");
                 t.value = val;
-                System.out.println("PREP value: " + val);
+                if (echo) System.out.println("PREP value: " + val);
                 for (int j = 0; j < element.getChildElements().size(); j++) {
                     SimpleElement element2 = (SimpleElement) element.getChildElements().get(j);
                     if (element2.getTagName().equals("SELRESTRS")) {
@@ -127,7 +128,7 @@ public class Frame {
             else if (element.getTagName().equals("ADV")) {
                 String val = (String) element.getAttribute("value");
                 t.value = val;
-                System.out.println("ADV value: " + val);
+                if (echo) System.out.println("ADV value: " + val);
                 for (int j = 0; j < element.getChildElements().size(); j++) {
                     SimpleElement element2 = (SimpleElement) element.getChildElements().get(j);
                     if (element2.getTagName().equals("SELRESTRS")) {
@@ -141,7 +142,7 @@ public class Frame {
             else if (element.getTagName().equals("ADJ")) {
                 String val = (String) element.getAttribute("value");
                 t.value = val;
-                System.out.println("ADJ value: " + val);
+                if (echo) System.out.println("ADJ value: " + val);
                 for (int j = 0; j < element.getChildElements().size(); j++) {
                     SimpleElement element2 = (SimpleElement) element.getChildElements().get(j);
                     if (element2.getTagName().equals("SELRESTRS")) {
@@ -155,12 +156,12 @@ public class Frame {
             else if (element.getTagName().equals("LEX")) {
                 String val = (String) element.getAttribute("value");
                 t.value = val;
-                System.out.println("LEX value: " + val);
+                if (echo) System.out.println("LEX value: " + val);
             }
             else if (element.getTagName().equals("VERB")) {
                 String val = (String) element.getAttribute("value");
                 t.value = val;
-                System.out.println("VERB value: " + val);
+                if (echo) System.out.println("VERB value: " + val);
                 for (int j = 0; j < element.getChildElements().size(); j++) {
                     SimpleElement element2 = (SimpleElement) element.getChildElements().get(j);
                     if (element2.getTagName().equals("SYNRESTRS")) {
@@ -183,18 +184,18 @@ public class Frame {
     public HashSet<AVPair> readArgs(SimpleElement pred) {
 
         HashSet<AVPair> result = new HashSet<>();
-        System.out.println("Frame.readArgs()");
+        if (echo) System.out.println("Frame.readArgs()");
         for (int i = 0; i < pred.getChildElements().size(); i++) {
             SimpleElement element = (SimpleElement) pred.getChildElements().get(i);
             if (element.getTagName().equals("ARG")) {
                 AVPair avp = new AVPair();
                 String val = (String) element.getAttribute("value");
                 avp.attribute = val;
-                System.out.println("value: " + val);
+                if (echo) System.out.println("value: " + val);
                 String type = (String) element.getAttribute("type");
                 avp.value = type;
                 result.add(avp);
-                System.out.println("type: " + type);
+                if (echo) System.out.println("type: " + type);
             }
             else {
                 System.out.println("Error in Frame.readPred(): unknown tag: " + element);
@@ -208,10 +209,10 @@ public class Frame {
     public Tuple readPred(SimpleElement pred) {
 
         Tuple t = new Tuple();
-        System.out.println("Frame.readPred()");
+        if (echo) System.out.println("Frame.readPred()");
         String val = (String) pred.getAttribute("value");
         t.value = val;
-        System.out.println("value: " + val);
+        if (echo) System.out.println("value: " + val);
         for (int i = 0; i < pred.getChildElements().size(); i++) {
             SimpleElement element = (SimpleElement) pred.getChildElements().get(i);
             if (element.getTagName().equals("ARGS")) {
@@ -228,7 +229,7 @@ public class Frame {
      */
     public void readSem(SimpleElement sem) {
 
-        System.out.println("Frame.readSem()");
+        if (echo) System.out.println("Frame.readSem()");
         for (int i = 0; i < sem.getChildElements().size(); i++) {
             SimpleElement element = (SimpleElement) sem.getChildElements().get(i);
             if (element.getTagName().equals("PRED")) {
