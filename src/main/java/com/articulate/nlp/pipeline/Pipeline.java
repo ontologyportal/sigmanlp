@@ -106,6 +106,8 @@ public class Pipeline {
         }
         if (propString.contains("coref")) {
             props.put("coref.algorithm","statistical");
+            props.put("coref.maxMentionDistance","100");
+            System.out.println("Pipeline(): limit coreference lookback to 100 tokens");
         }
         if (propString.contains("pos,") && !useDefaultPCFGModel &&
                 !Strings.isNullOrEmpty(KBmanager.getMgr().getPref("englishPCFG"))) {
