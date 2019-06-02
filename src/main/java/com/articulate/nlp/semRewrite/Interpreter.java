@@ -915,6 +915,7 @@ public class Interpreter {
         sde.populateParserInfo(lastSentence,tokenList);
 
         List<Literal> timeResults = generator.generateSumoTerms(tokenList, sde);
+        System.out.println("Interpreter.interpretGenCNF(): timeResult: " + timeResults);
         if (debug) System.out.println("Interpreter.interpretGenCNF(): before scrub measures: " + results);
         results = scrubMeasures(results,lastSentence); // remove original date/time/measure literals
         results.addAll(timeResults);
