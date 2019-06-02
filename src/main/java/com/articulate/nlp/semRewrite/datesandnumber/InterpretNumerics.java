@@ -37,6 +37,7 @@ import java.util.List;
 public class InterpretNumerics {
 
     private static Pipeline p = null; //new Pipeline(false);
+    public static boolean debug = true;
 
     /** ***************************************************************
 	 * Returns a list of SUO-KIF statements, each corresponding to a date/time/measure found in the input
