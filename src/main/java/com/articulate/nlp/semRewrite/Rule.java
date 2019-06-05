@@ -48,6 +48,28 @@ public class Rule {
 
     /** ***************************************************************
      */
+    public Rule() {
+
+    }
+
+    /** ***************************************************************
+     */
+    public Rule(String r) {
+
+        Lexer lex = new Lexer(r);
+        Rule theRule = parse(lex);
+        cnf = theRule.cnf;
+        lhs = theRule.lhs;
+        operator = theRule.operator;
+        rhs = theRule.rhs;
+        clause = theRule.clause;
+        startLine = theRule.startLine;
+        preds = theRule.preds;
+        terms = theRule.terms;
+    }
+
+    /** ***************************************************************
+     */
     public String toString() {
 
         StringBuffer sb = new StringBuffer();
