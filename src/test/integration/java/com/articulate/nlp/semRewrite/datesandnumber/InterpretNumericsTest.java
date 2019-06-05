@@ -132,7 +132,7 @@ public class InterpretNumericsTest extends IntegrationTestBase {
         Set<String> expected = Sets.newHashSet("case(Ferrari-9,of-8)", "lemma(%,%-7)",
             "lemma(Ferrari,Ferrari-9)", "lemma(Fiat,Fiat-4)", "measure(Fiat-4,measure1)",
             "number(SINGULAR,%-7)", "number(SINGULAR,Ferrari-9)", "number(SINGULAR,Fiat-4)",
-            "sumo(Law,Fiat-4)", "time(owned-5,time-1)", "unit(measure1,%)",
+            "sumo(FiatAutomobile,Fiat-4)", "sumo(FerrariAutomobile,Ferrari-9)", "time(owned-5,time-1)", "unit(measure1,%)",
             "value(measure1,90)", "valueToken(90,90-6)", "year(time-1,2014)");
         doTest(input, expected);
     }
