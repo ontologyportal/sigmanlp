@@ -61,3 +61,7 @@ jUnit=============
 java -Xmx10g -classpath /home/user/workspace/sigmanlp/build/classes:
 /home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllUnitSemRewrite
+
+java -Xmx10g -classpath /home/user/workspace/sigmanlp/build/classes:
+/home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
+org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllSemRewriteIntegTest
