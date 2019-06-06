@@ -48,7 +48,7 @@ public class RelExtractTest extends IntegrationTestBase {
 
         interpreter = new Interpreter();
         interpreter.inference = false;
-        Interpreter.debug = true;
+        //Interpreter.debug = true;
         Interpreter.replaceInstances = false;
         //CNF.debug = true;
         //Procedures.debug = true;
@@ -63,8 +63,10 @@ public class RelExtractTest extends IntegrationTestBase {
     /****************************************************************
      * @param input is a CNF string
      */
-    private void doRuleTest(String input, String rule, String expectedOutput) {
+    private void doRuleTest(String title, String input, String rule, String expectedOutput) {
 
+        System.out.println();
+        System.out.println("-------------------" + title + "-------------------");
         Lexer lex = new Lexer(input);
         CNF cnfInput = CNF.parseSimple(lex);
 
@@ -72,7 +74,8 @@ public class RelExtractTest extends IntegrationTestBase {
         r = Rule.parseString(rule);
         r.cnf = Clausifier.clausify(r.lhs);
         System.out.println();
-        System.out.println("INFO in RelExtractTest.doRuleTest(): Input: " + cnfInput);
+        System.out.println("INFO in RelExtractTest.doRuleTest(): CNF Input: " + cnfInput);
+        System.out.println("INFO in RelExtractTest.doRuleTest(): rule: " + rule);
         System.out.println("INFO in RelExtractTest.doRuleTest(): CNF rule antecedent: " + r.cnf);
 
         HashSet<String> preds = cnfInput.getPreds();
@@ -88,44 +91,56 @@ public class RelExtractTest extends IntegrationTestBase {
         Subst bindings = r.cnf.unify(cnfInput);
         System.out.println("bindings: " + bindings);
         RHS res = r.rhs.applyBindings(bindings);
-        System.out.println("result: " + res);
+
 
         String resultString = StringUtil.removeEnclosingCharPair(res.toString(),1,'{','}');
 
+        System.out.println("result: " + resultString);
+        System.out.println("expected: " + expectedOutput);
+        if (resultString.equals(expectedOutput))
+            System.out.println("RelExtractTest.doRuleTest(): pass");
+        else
+            System.out.println("RelExtractTest.doRuleTest(): fail");
         assertEquals(expectedOutput, resultString);
+        System.out.println("-------------------");
     }
 
     /****************************************************************
      * @param input is a sentence
      */
-    private void doOneResultTest(String input, String expectedOutput) {
+    private void doOneResultTest(String title, String input, String expectedOutput) {
 
         System.out.println();
-        System.out.println("-------------------");
-        System.out.println("INFO in RelExtractTest.doTest(): Input: " + input);
+        System.out.println("-------------------" + title + "-------------------");
+        System.out.println("INFO in RelExtractTest.doOneResultTest(): Input: " + input);
         ArrayList<RHS> kifClauses = RelExtract.sentenceExtract(input);
-        System.out.println("INFO in RelExtractTest.doTest(): result: " + kifClauses);
-        System.out.println("INFO in RelExtractTest.doTest(): expected: " + expectedOutput);
         //String result = StringUtil.removeEnclosingCharPair(kifClauses.toString(),0,'[',']');
         String result = "";
         if (kifClauses != null && kifClauses.size() > 0)
             result = kifClauses.get(0).toString();
+        System.out.println("INFO in RelExtractTest.doOneResultTest(): result: " + result);
+        System.out.println("INFO in RelExtractTest.doOneResultTest(): expected: " + expectedOutput);
+        if (result.equals(expectedOutput))
+            System.out.println("RelExtractTest.doOneResultTest(): pass");
+        else
+            System.out.println("RelExtractTest.doOneResultTest(): fail");
         assertEquals(expectedOutput,result);
+        System.out.println("-------------------");
     }
 
     /****************************************************************
      * @param input is a CNF string
      */
-    private void doAllRuleTest(String input, String expectedOutput) {
+    private void doAllRuleTest(String title, String input, String expectedOutput) {
 
         Lexer lex = new Lexer(input);
         CNF cnfInput = CNF.parseSimple(lex);
         ArrayList<CNF> inputs = new ArrayList<>();
         inputs.add(cnfInput);
         System.out.println();
-        System.out.println("-------------------");
-        System.out.println("INFO in RelExtractTest.doTest(): Input: " + input);
-        System.out.println("INFO in RelExtractTest.doTest(): CNF input: " + inputs);
+        System.out.println("-------------------" + title + "-------------------");
+        System.out.println("INFO in RelExtractTest.doAllRuleTest(): Input: " + input);
+        System.out.println("INFO in RelExtractTest.doAllRuleTest(): CNF input: " + inputs);
         ArrayList<RHS> kifClauses = new ArrayList<>();
         HashSet<String> preds = cnfInput.getPreds();
         HashSet<String> terms = cnfInput.getTerms();
@@ -141,13 +156,18 @@ public class RelExtractTest extends IntegrationTestBase {
                 System.out.println("result: " + res);
             }
         }
-        System.out.println("INFO in RelExtractTest.doTest(): result: " + kifClauses);
-        System.out.println("INFO in RelExtractTest.doTest(): expected: " + expectedOutput);
+        System.out.println("INFO in RelExtractTest.doAllRuleTest(): result: " + kifClauses);
+        System.out.println("INFO in RelExtractTest.doAllRuleTest(): expected: " + expectedOutput);
         //String result = StringUtil.removeEnclosingCharPair(kifClauses.toString(),0,'[',']');
         String result = "";
         if (kifClauses != null && kifClauses.size() > 0)
             result = kifClauses.get(0).toString();
+        if (result.equals(expectedOutput))
+            System.out.println("RelExtractTest.doAllRuleTest(): pass");
+        else
+            System.out.println("RelExtractTest.doAllRuleTest(): fail");
         assertEquals(expectedOutput,result);
+        System.out.println("-------------------");
     }
 
     /****************************************************************
@@ -156,7 +176,7 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testRobertWearsAShirt() {
 
-        System.out.println("INFO in RelExtractTest.testRobertWearsAShirt()");
+        String title = "RelExtractTest.testRobertWearsAShirt()";
         String input = "sumo(Putting,wears-2), \n" +
                 "root(ROOT-0,wears-2), \n" +
                 "nsubj(wears-2,Robert-1), \n" +
@@ -174,9 +194,9 @@ public class RelExtractTest extends IntegrationTestBase {
                 "lemma(shirt, shirt-4)";
         String rule = "dobj(?wear,?item-6), lemma(wear, ?wear), nsubj(?wear,?animal-2), sumo(?TYPEVAR1,?animal-2), " +
                 "isSubclass(?TYPEVAR1,Animal), sumo(?TYPEVAR0,?item-6), isSubclass(?TYPEVAR0,WearableItem) ==> {(wears ?animal-2 ?item-6)}.";
-        String expected = "(wears Robert-1 shirt-4)";
+        String expected = "(wears(Robert-1,shirt-4))";
 
-        doRuleTest(input, rule, expected);
+        doRuleTest(title,input, rule, expected);
     }
 
     /****************************************************************
@@ -185,12 +205,12 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testSimple() {
 
-        System.out.println("INFO in RelExtractTest.testSimple()");
+        String title = "RelExtractTest.testSimple()";
         String input = "dobj(wears-2,shirt-4), lemma(wear, wears-2)";
         String rule = "dobj(?wear,?item-6), lemma(wear, ?wear) ==> {(wears ?animal-2 ?item-6)}.";
-        String expected = "(wears ?animal-2 shirt-4)";
+        String expected = "(wears(?animal-2,shirt-4))";
 
-        doRuleTest(input, rule, expected);
+        doRuleTest(title,input, rule, expected);
     }
 
     /****************************************************************
@@ -199,41 +219,43 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testSimpleSent1() {
 
-        Interpreter.debug = true;
-        CNF.debug = true;
-        Procedures.debug = true;
-        System.out.println("INFO in RelExtractTest.testSimpleSent1()");
+        //Interpreter.debug = true;
+        //CNF.debug = true;
+        //Procedures.debug = true;
+        String title = "RelExtractTest.testSimpleSent1()";
         String input = "Robert wears a shirt";
-        String expected = "(wears Robert-1 shirt-4)";
+        String expected = "(wears(Robert-1,shirt-4))";
 
-        doOneResultTest(input, expected);
+        doOneResultTest(title,input, expected);
     }
 
     /****************************************************************
      * An art exhibit at the Hakawati Theatre in Arab east Jerusalem
      * was a series of portraits of Palestinians killed in the rebellion
      */
+    @Ignore
     @Test
     public void testSimpleHakawatiTheatre() {
 
-        System.out.println("INFO in RelExtractTest.testSimpleHakawatiTheatre()");
+        String title = "RelExtractTest.testSimpleHakawatiTheatre()";
         String input = "nmod:in(Hakawati_Theatre-6,JerusalemIsrael), sumo(Auditorium,Hakawati_Theatre-6), sumo(JerusalemIsrael,JerusalemIsrael)";
         String rule = "nmod:in(?object-7,?physical-2),  sumo(?TYPEVAR1,?object-7), " +
                 "sumo(?TYPEVAR0,?physical-2), isChildOf(?TYPEVAR0,Physical), isChildOf(?TYPEVAR1,Object) ==> " +
                 "{(located ?object-7 ?physical-2)}.";
         String expected = "(located Hakawati_Theatre-6 JerusalemIsrael)";
 
-        doRuleTest(input, rule, expected);
+        doRuleTest(title,input, rule, expected);
     }
 
     /****************************************************************
      * An art exhibit at the Hakawati Theatre in Arab east Jerusalem
      * was a series of portraits of Palestinians killed in the rebellion
      */
+    @Ignore
     @Test
     public void testDepHakawatiTheatre() {
 
-        System.out.println("INFO in RelExtractTest.testDepHakawatiTheatre()");
+        String title = "RelExtractTest.testDepHakawatiTheatre()";
         String input = "acl(series-14,killed-19),\n" +
                 "amod(JerusalemIsrael,East),\n" +
                 "case(Hakawati_Theatre-6,at-4),\n" +
@@ -296,17 +318,18 @@ public class RelExtractTest extends IntegrationTestBase {
                 "{(located ?object-7 ?physical-2)}.";
         String expected = "(located Hakawati_Theatre-6 JerusalemIsrael)";
 
-        doRuleTest(input, rule, expected);
+        doRuleTest(title,input, rule, expected);
     }
 
     /****************************************************************
      * An art exhibit at the Hakawati Theatre in Arab east Jerusalem
      * was a series of portraits of Palestinians killed in the rebellion
      */
+    @Ignore
     @Test
     public void testDepAllRulesHakawatiTheatre() {
 
-        System.out.println("INFO in RelExtractTest.testDepAllRulesHakawatiTheatre()");
+        String title = "RelExtractTest.testDepAllRulesHakawatiTheatre()";
         String input = "acl(series-14,killed-19),\n" +
                 "amod(JerusalemIsrael,East),\n" +
                 "case(Hakawati_Theatre-6,at-4),\n" +
@@ -365,20 +388,21 @@ public class RelExtractTest extends IntegrationTestBase {
 
         String expected = "(located Hakawati_Theatre-6 JerusalemIsrael)";
 
-        doAllRuleTest(input, expected);
+        doAllRuleTest(title,input, expected);
     }
 
     /****************************************************************
      */
+    @Ignore
     @Test
     public void testSentHakawatiTheatre() {
 
-        System.out.println("INFO in RelExtractTest.testSentHakawatiTheatre()");
+        String title = "RelExtractTest.testSentHakawatiTheatre()";
         String input = " An art exhibit at the Hakawati Theatre in Arab east Jerusalem " +
                 "was a series of portraits of Palestinians killed in the rebellion .";
         String expected = "(located Hakawati_Theatre-6 Jerusalem-11)";
 
-        doOneResultTest(input, expected);
+        doOneResultTest(title,input, expected);
     }
 
     /****************************************************************
@@ -386,15 +410,23 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testUnify10() {
 
-        System.out.println("INFO in RelExtractTest.testUnify10(): -------------------------------------");
+        System.out.println();
+        System.out.println("-------------------- RelExtractTest.testUnify10(): -------------------------------------");
         String rule4 = "isChildOf(Human,Object).";
         CNF cnf4 = new CNF(rule4);
         String cnfstr5 = "a(bar,baz)";
         CNF cnf5 = new CNF(cnfstr5);
         System.out.println("INFO in RelExtractTest.testUnify10(): cnf " + cnf4);
         System.out.println("INFO in RelExtractTest.testUnify10(): cnf1 " + cnf5);
-        System.out.println("result: " + cnf4.unify(cnf5).toString());
-        assertEquals("{}",cnf4.unify(cnf5).toString());
+        String result = cnf4.unify(cnf5).toString();
+        String expected = "{}";
+        System.out.println("result: " + result);
+        if (result.equals(expected))
+            System.out.println("RelExtractTest.testUnify10(): pass");
+        else
+            System.out.println("RelExtractTest.testUnify10(): fail");
+        assertEquals(expected,result);
+        System.out.println("-------------------");
     }
 
     /****************************************************************
@@ -402,15 +434,26 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testUnify11() {
 
-        System.out.println("INFO in RelExtractTest.testUnify11(): -------------------------------------");
+        //CNF.debug = true;
+        System.out.println();
+        System.out.println("-------------------- RelExtractTest.testUnify11(): -------------------------------------");
         String rule4 = "isChildOf(?X,Object), a(?X,?Y).";
         CNF cnf4 = new CNF(rule4);
         String cnfstr5 = "a(Human,baz)";
         CNF cnf5 = new CNF(cnfstr5);
-        System.out.println("INFO in RelExtractTest.testUnify11(): cnf " + cnf4);
-        System.out.println("INFO in RelExtractTest.testUnify11(): cnf1 " + cnf5);
-        System.out.println("result: " + cnf4.unify(cnf5).toString());
-        assertEquals("{?X=Human, ?Y=baz}",cnf4.unify(cnf5).toString());
+        System.out.println("INFO in RelExtractTest.testUnify11(): cnf: " + cnf4);
+        System.out.println("INFO in RelExtractTest.testUnify11(): cnf1: " + cnf5);
+        Subst sub = cnf4.unify(cnf5);
+        System.out.println("INFO in RelExtractTest.testUnify11(): sub: " + sub);
+        String result = sub.toString();
+        String expected = "{?X=Human, ?Y=baz}";
+        System.out.println("result: " + result);
+        if (result.equals(expected))
+            System.out.println("RelExtractTest.testUnify11(): pass");
+        else
+            System.out.println("RelExtractTest.testUnify11(): fail");
+        assertEquals(expected,result);
+        System.out.println("-------------------");
     }
 
     /****************************************************************
@@ -418,7 +461,7 @@ public class RelExtractTest extends IntegrationTestBase {
     @Test
     public void testDepMadonna() {
 
-        System.out.println("INFO in RelExtractTest.testDepMadonna()");
+        String title = "RelExtractTest.testDepMadonna()";
         String input = "amod(Detroiter-5,True), amod(Detroiter-5,native-4), amod(peninsula-32,lower-31), amod(place-23,nice-22), " +
                 "appos(Bay_City-16,Mich.-19), appos(Bay_City-16,place-23), case(Bay_City-16,from-15), case(Detroiter-5,As-1), " +
                 "case(peninsula-32,of-27), case(state-29,'s-30), case(thumb-26,in-24), ccomp(everyone-11,Bay_City-16), " +
@@ -440,17 +483,18 @@ public class RelExtractTest extends IntegrationTestBase {
 
         String rule = "nsubj(?LOC, ?animal-8), cop(?LOC, ?COP), case(?LOC, from*), isSubclass(?TYPEVAR0,Animal), " +
                 "sumo(?TYPEVAR0,?animal-8), isSubclass(?TYPEVAR1,Object), sumo(?TYPEVAR1,?LOC) ==> {(birthplace ?animal-8 ?LOC)}..";
-        String expected = "(birthplace Madonna-13 Bay_City-16)";
+        String expected = "(birthplace(Madonna-13,Bay_City-16))";
 
-        doRuleTest(input, rule, expected);
+        doRuleTest(title,input, rule, expected);
     }
 
     /****************************************************************
      */
+    @Ignore
     @Test
     public void testDepWilson() {
 
-        System.out.println("INFO in RelExtractTest.testDepWilson()");
+        String title = "RelExtractTest.testDepWilson()";
         String input = "advcl(be_born-5,counted-25), advmod(be_born-5,True), advmod(counted-25,hardly-24), advmod(counted-25,manner), " +
                 "amod(fame-15,political-14), amod(terms-31,political-30), case(Governor,as-16), case(NewJersey,of-18), " +
                 "case(Southerner-28,as-26), case(Virginia,in-7), case(terms-31,in-29), cc(be_born-5,but-10), conj:but(be_born-5,Won), " +
@@ -473,46 +517,48 @@ public class RelExtractTest extends IntegrationTestBase {
         // nmod:in(be_born-5,Virginia), nsubjpass(be_born-5,PresidentOfTheUnitedStates), sumo(AmericanState,Virginia)
         String rule = "nmod:in(be_born*,?LOC), nsubjpass(be_born*,?animal-8), isCELTclass(?animal-8,Person), isSubclass(?TYPEVAR1,Object), " +
                 "sumo(?TYPEVAR1,?LOC) ==> {(birthplace ?animal-8 ?LOC)}.";
-        String expected = "(birthplace PresidentOfTheUnitedStates Virginia)";
+        String expected = "(birthplace(PresidentOfTheUnitedStates,Virginia))";
 
-        doRuleTest(input, rule, expected);
+        doRuleTest(title,input, rule, expected);
     }
 
     /****************************************************************
      */
+    @Ignore
     @Test
     public void testDepWilson2() {
 
         //Interpreter.debug = true;
         //CNF.debug = true;
         //Procedures.debug = true;
-        System.out.println("INFO in RelExtractTest.testDepWilson2()");
+        String title = "RelExtractTest.testDepWilson2()";
         String input = "nmod:in(be_born-5,Virginia), nsubjpass(be_born-5,PresidentOfTheUnitedStates), " +
                 "sumo(President,PresidentOfTheUnitedStates), sumo(AmericanState,Virginia).";
 
         // nmod:in(be_born-5,Virginia), nsubjpass(be_born-5,PresidentOfTheUnitedStates), sumo(AmericanState,Virginia)
         String rule = "nmod:in(be_born*,?LOC), nsubjpass(be_born*,?animal-8), isCELTclass(?animal-8,Person), isSubclass(?TYPEVAR1,Object), " +
                 "sumo(?TYPEVAR1,?LOC) ==> {(birthplace ?animal-8 ?LOC)}.";
-        String expected = "(birthplace PresidentOfTheUnitedStates Virginia)";
+        String expected = "(birthplace(PresidentOfTheUnitedStates,Virginia))";
 
-        doRuleTest(input, rule, expected);
+        doRuleTest(title,input, rule, expected);
     }
 
     /****************************************************************
      */
+    @Ignore
     @Test
     public void testSentWilson() {
 
         //RelExtract.debug = true;
         //CNF.debug = true;
         //Procedures.debug = true;
-        System.out.println("INFO in RelExtractTest.testDepWilson2()");
+        String title = "RelExtractTest.testSentWilson()";
         String input = "True , Woodrow Wilson was born in Virginia , but he won his political " +
                 "fame as governor of New Jersey , so he hardly counted as a Southerner in political terms .";
 
         // nmod:in(be_born-5,Virginia), nsubjpass(be_born-5,PresidentOfTheUnitedStates), sumo(AmericanState,Virginia)
         String expected = "(birthplace Woodrow_Wilson-3 Virginia-8)";
 
-        doOneResultTest(input, expected);
+        doOneResultTest(title,input, expected);
     }
 }
