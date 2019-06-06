@@ -36,7 +36,7 @@ public class ProceduresTest extends IntegrationTestBase {
     public void setUpInterpreter() {
 
         KBmanager.getMgr().initializeOnce();
-        Procedures.debug = true;
+        //Procedures.debug = true;
     }
 
     /****************************************************************
