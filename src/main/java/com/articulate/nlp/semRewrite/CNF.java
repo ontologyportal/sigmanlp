@@ -355,6 +355,23 @@ public class CNF implements Comparable {
     }
 
     /** ***************************************************************
+     */
+    public CNF sortProceduresLast() {
+
+        CNF result = new CNF();
+        Set<Clause> procClauses = new HashSet<>();
+        for (Clause c : clauses) {
+            if (c.isUnitaryProcedure())
+                procClauses.add(c.deepCopy());
+            else
+                result.clauses.add(c.deepCopy());
+        }
+        for (Clause c : procClauses)
+            result.clauses.add(c);
+        return result;
+    }
+
+    /** ***************************************************************
      * When a CNF is a simple list of literals, return them as such.
      * Otherwise return null;
      */
@@ -636,28 +653,6 @@ public class CNF implements Comparable {
         }
     }
 
-    /** ***************************************************************
-     * Test a disjunct from a rule against a sentence.  It must succeed
-     * for the rule to be bound.  If a binding is found, it can exit
-     * without trying all the options.
-
-    private Subst unifyDisjunct(Clause d1, CNF cnf2, CNF cnf1, HashMap<String,String> bindings) {
-
-        if (debug) System.out.println("INFO in CNF.unifyDisjunct(): checking " + d1 + " against " + cnf2);
-        HashMap<String,String> result = new HashMap<String,String>();
-        for (Clause d2 : cnf2.clauses) {  // sentence
-            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): checking " + d1 + " against " + d2);
-            Subst bindings2 = d2.unify(d1);
-            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): d1 " + d1 + " d2 " + d2);
-            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): checked " + d1 + " against " + d2);
-            if (debug) System.out.println("INFO in CNF.unifyDisjunct(): bindings " + bindings2);
-            if (bindings2 != null) {
-                return bindings2;
-            }
-        }
-        return null;
-    }
-*/
     /** *************************************************************
      */
     public Subst composeBindings(Subst bindold, Subst bindnew) {
@@ -700,167 +695,6 @@ public class CNF implements Comparable {
         return result;
     }
 
-    /** *************************************************************
-     * Look for a clause in cnf to unify with c.  Return all possibilities.
-     * If no unifications are found, return null.
-
-    public HashSet<Subst> unifyRecurse(Clause c, CNF cnf) {
-
-        CNF cnfCopy = cnf.deepCopy();
-        if (debug) System.out.println("");
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): rule/source: " + c);
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): argument: " + cnf);
-        HashSet<Subst> result = new HashSet<Subst>();
-        boolean modelFound = false;
-        for (Clause c2 : cnfCopy.clauses) {
-            Clause cCopy = c.deepCopy();
-            //Clause c2Copy = c2.deepCopy();
-            Subst bind = cCopy.unify(c2);
-            // HashMap<String,String> bind = cCopy.unify(c2);
-            if (bind != null) {
-                modelFound = true;
-                if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): found binding: " + bind);
-                if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): source: " + cCopy);
-                if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): argument: " + c2);
-                Subst s = bind;
-                result.add(s);
-                if (Clause.bindSource)
-                    c.copyBoundFlags(cCopy);
-                else
-                    c2.copyBoundFlags(c2);
-            }
-        }
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): result (clause): " + result);
-        if (!modelFound) {
-            c.clearBound();
-            cnf.clearBound();
-            return null;
-        }
-        if (!Clause.bindSource)
-            cnf.copyBoundFlags(cnfCopy);
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): cnf source: " + c);
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): cnf content (argument): " + cnf);
-        return result;
-    }
-     */
-    /** *************************************************************
-     * Iterate through all possibilities of applying a given clause
-     * from the "rule" to the "content", then recurse on applying the
-     * remaining clauses.  Note that every clause in this must unify
-     * consistently with some clause in cnf or the routine will return
-     * null. This is the rule and argument is the sentence to match
-
-    public HashSet<Subst> unifyRecurse(CNF cnf) {
-
-        if (debug) System.out.println("");
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): cnf rule/source: " + this);
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): argument: " + cnf);
-        HashSet<Subst> result = new HashSet<Subst>();
-        if (this.clauses.size() == 0)
-            return result;
-        boolean modelFound = false;
-        for (Clause c : this.clauses) {
-            Clause cCopy = c.deepCopy();
-            CNF cnfCopy = cnf.deepCopy();
-            HashSet<Subst> bindList = unifyRecurse(cCopy,cnfCopy);
-            if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): returning from clause recurse with(1): " + bindList);
-            if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): current result(1): " + result);
-            if (debug && bindList != null) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): " + bindList.size());
-            if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): cnf rule/source: " + cCopy);
-            if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): argument: " + cnfCopy);
-            CNF thiscopy = this.deepCopy();
-            thiscopy.clauses.remove(c);
-            if (bindList != null) {
-                if (thiscopy.clauses.size() == 0) {
-                    result.addAll(bindList);
-                    modelFound = true;
-                }
-                else {
-                    for (Subst s : bindList) {
-                        CNF another = thiscopy.deepCopy();
-                        another = applyBindings(s, another);
-                        CNF anotherCnfCopy = cnfCopy.deepCopy();
-                        HashSet<Subst> subst2 = another.unifyRecurse(anotherCnfCopy);
-                        if (debug)
-                            System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): returning from recurse with(2): " + subst2);
-                        if (subst2 != null) {
-                            modelFound = true;
-                            if (subst2.size() == 0)
-                                result.add(s);
-                            else {
-                                for (Subst s2 : subst2) {
-                                    Subst substnew = new Subst();
-                                    substnew = composeBindings(s,s2);
-                                    result.add(substnew);
-                                }
-                            }
-                        }
-                    }
-                }
-                if (Clause.bindSource)
-                    this.copyBoundFlags(thiscopy);
-                else
-                    cnf.copyBoundFlags(cnfCopy);
-            }
-            if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): current result(2): " + result);
-        }
-        if (!modelFound) {
-            if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): no models found to complete: " + result);
-            this.clearBound();
-            cnf.clearBound();
-            return null;
-        }
-        else
-            if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): result: " + result);
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): cnf source 'rule': " + this);
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(CNF,CNF): cnf content (argument): " + cnf);
-        return result;
-    }
-     */
-    /** *************************************************************
-     * Look for a clause in cnf to unify with c.  Return all possibilities.
-     * If no unifications are found, return null.
-
-    public HashSet<Subst> unifyRecurseNew(Clause c, CNF cnf) {
-
-        CNF cnfCopy = cnf.deepCopy();
-        if (debug) System.out.println("");
-        if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): rule/source: " + c);
-        if (debug) System.out.println("INFO in CNF.unifyRecurse(Clause,CNF): argument: " + cnf);
-        HashSet<Subst> result = new HashSet<Subst>();
-        boolean modelFound = false;
-        for (Clause c2 : cnfCopy.clauses) {
-            Clause cCopy = c.deepCopy();
-            //Clause c2Copy = c2.deepCopy();
-            Subst bind = cCopy.unify(c2);
-            // HashMap<String,String> bind = cCopy.unify(c2);
-            if (bind != null) {
-                modelFound = true;
-                if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): found binding: " + bind);
-                if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): source: " + cCopy);
-                if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): argument: " + c2);
-                Subst s = new Subst();
-                s = bind;
-                result.add(s);
-                if (Clause.bindSource)
-                    c.copyBoundFlags(cCopy);
-                else
-                    c2.copyBoundFlags(c2);
-            }
-        }
-        if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): result (clause): " + result);
-        if (!modelFound) {
-            c.clearBound();
-            cnf.clearBound();
-            return null;
-        }
-        if (!Clause.bindSource)
-            cnf.copyBoundFlags(cnfCopy);
-        if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): cnf source: " + c);
-        if (debug) System.out.println("INFO in CNF.unifyRecurseNew(Clause,CNF): cnf content (argument): " + cnf);
-        return result;
-    }
-     */
     /** *************************************************************
      * add the "local" unifications to each of the global ones
      */
@@ -991,6 +825,9 @@ public class CNF implements Comparable {
     public Subst unify(CNF cnf) {
 
         if (debug) System.out.println("INFO in CNF.unify(): cnf source 'rule': " + this);
+        CNF sorted = sortProceduresLast();
+        this.clauses = sorted.clauses;
+        if (debug) System.out.println("INFO in CNF.unify(): cnf source sorted 'rule': " + this);
         if (debug) System.out.println("INFO in CNF.unify(): cnf content (argument): " + cnf);
         // HashSet<Subst> substList = this.unifyRecurse(cnf);
         HashSet<Unification> substList = this.unifyNew(cnf);
