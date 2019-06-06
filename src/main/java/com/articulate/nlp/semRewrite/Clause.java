@@ -111,7 +111,22 @@ public class Clause implements Comparable {
         else
             return false;
     }
-  
+
+    /** ***************************************************************
+     * is the Clause a single literal that is a procedure
+     */
+    public boolean isUnitaryProcedure() {
+
+        if (disjuncts.size() != 1)
+            return false;
+        else {
+            Literal l = disjuncts.get(0);
+            if (Procedures.isProcPred(l.pred))
+                return true;
+        }
+        return false;
+    }
+
     /** *************************************************************
      */
     public void preProcessQuestionWords(List<String> qwords) {
@@ -131,7 +146,6 @@ public class Clause implements Comparable {
                 l.bound = false;
         }
     }
-
 
     /** ***************************************************************
      * Set the bound flags on each Literal
