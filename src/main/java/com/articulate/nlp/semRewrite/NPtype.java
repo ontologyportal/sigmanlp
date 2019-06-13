@@ -10,6 +10,7 @@ import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.KButilities;
 import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.wordNet.WordNet;
 import com.google.common.base.Strings;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -26,7 +27,19 @@ import edu.stanford.nlp.ie.machinereading.structure.Span;
 import java.io.IOException;
 import java.util.*;
 
-/**
+import com.articulate.nlp.corpora.CorpusReader;
+
+/** This code is copyright Infosys (c) 2018-present.
+ *
+ *  This software is released under the GNU Public License
+ *  <http://www.gnu.org/copyleft/gpl.html>.
+ *
+ *  Please cite the following article in any publication with references:
+ *
+ *  Pease A., and Benzmüller C. (2013). Sigma: An Integrated Development Environment
+ *  for Logical Theories. AI Communications 26, pp79-97.  See also
+ *  http://github.com/ontologyportal
+ *
  * Created by apease on 6/14/18.
  */
 public class NPtype {
@@ -36,7 +49,7 @@ public class NPtype {
 
     private static Pipeline p = new Pipeline(true);
 
-    public static boolean debug = false;
+    public static boolean debug = true;
 
     public static KB kb = null;
 
@@ -249,6 +262,108 @@ public class NPtype {
     }
 
     /** ***************************************************************
+     * add an NP to the result list if it's new and not already in the
+     * WordNet- and SUMO-based lexicon
+     */
+    public static void evaluateNP(StringBuffer NP, HashSet<String> result,
+                                  String lemma, int tokCount) {
+
+        System.out.println("evaluateNP(): " + NP);
+        if (WordNet.wn.isStopWord(lemma)) {
+            System.out.println("evaluateNP(): stopword: " + NP);
+            return;
+        }
+        if (NP.length() != 0) {
+            if (tokCount == 1) { // don't add nouns already in the dictionary
+                System.out.println("evaluateNP(): check lemma: " + lemma);
+                if (!WordNet.wn.containsWord(lemma))
+                    result.add(NP.toString());
+            }
+            else {  // don't add noun phrases already in the dictionary
+                String withSpaces = NP.toString().replaceAll("_"," ");
+                System.out.println("evaluateNP(): check with spaces: " + withSpaces);
+                if (!WordNet.wn.containsWord(NP.toString()) &&
+                        !WordNet.wn.containsWord(withSpaces))
+                    result.add(NP.toString());
+            }
+        }
+    }
+
+    /** ***************************************************************
+     * collect noun phrases from a string
+     */
+    public static HashSet<String> findNPs(String s) {
+
+        HashSet<String> result = new HashSet<>();
+        Annotation wholeDocument = null;
+        try {
+            wholeDocument = new Annotation(s);
+            p.pipeline.annotate(wholeDocument);
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
+        String lastPOS = "";
+        String lastLemma = "";
+        StringBuffer NP = new StringBuffer();
+        int tokCount = 0;
+        for (CoreMap sentence : sentences) {
+            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            for (CoreLabel token : tokens) {
+                if (debug) System.out.println("findNP(): result so far: " + result);
+                String orig = token.originalText();
+                String lemma = token.lemma();
+                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                if (debug) System.out.println("findNP(): orig, pos, lemma " + orig + " , " + pos + " , " + lemma);
+                if (pos.equals("NN") || pos.equals("NNS") || pos.equals("NNP") || pos.equals("NNPS")) {
+                    if (pos.equals(lastPOS)) {
+                        if (NP.length() != 0)
+                            NP.append("_");
+                        NP.append(orig);
+                        tokCount++;  // increment counter of words in NP
+                        lastPOS = pos;
+                    }
+                    else {
+                        if (debug) System.out.println("findNP(): result so far 2 : " + result);
+                        evaluateNP(NP,result,lastLemma,tokCount);
+                        if (debug) System.out.println("findNP(): result so far 3 : " + result);
+                        NP = new StringBuffer();
+                        tokCount = 1;  // reset counter of words in NP
+                        NP.append(orig);
+                        lastPOS = pos;
+                    }
+                }
+                else {
+                    if (debug) System.out.println("findNP(): result so far 4 : " + result);
+                    evaluateNP(NP,result,lastLemma,tokCount);
+                    if (debug) System.out.println("findNP(): result so far 5 : " + result);
+                    NP = new StringBuffer();
+                    tokCount = 0;  // reset counter of words in NP
+                    lastPOS = pos;
+                }
+                lastLemma = lemma;
+            }
+        }
+        return result;
+    }
+
+    /** ***************************************************************
+     * collect noun phrases from a file
+     */
+    public static HashSet<String> collectNPs(String fname) {
+
+        HashSet<String> result = new HashSet<>();
+        ArrayList<String> lines = CorpusReader.readFile(fname);
+        for (String l : lines) {
+            HashSet<String> nps = findNPs(l);
+            if (nps.size() > 0)
+                result.addAll(nps);
+        }
+        return result;
+    }
+
+    /** ***************************************************************
      * allows interactive testing of entering noun phrase
      */
     public static void interpInter() {
@@ -275,8 +390,10 @@ public class NPtype {
         System.out.println("Noun phrase type finder");
         System.out.println("  options:");
         System.out.println("  -h - show this help screen");
-        System.out.println("  -p \"...\" - find the product type of a noun phrase");
-        System.out.println("  -t \"...\" <class> - find the product type of a noun phrase with restriction to a class");
+        System.out.println("  -n \"...\" - find noun phrases in a string");
+        System.out.println("  -p \"...\" - find the product type of a noun phrase string");
+        System.out.println("  -f \"...\" - find all noun phrases in a file");
+        System.out.println("  -t \"...\" <class> - find the product type of a noun phrase string with restriction to a class");
         System.out.println("  -i - interactive headword finder");
         System.out.println("     debug - turn debugging on");
         System.out.println("     nodebug - turn debugging off");
@@ -297,16 +414,37 @@ public class NPtype {
     public static void main(String[] args) throws IOException {
 
         System.out.println("INFO in NPtype.main()");
-        init();
+        for (String s : args)
+            System.out.println("NPtype.main(): arg: " + s);
+        if (args.length == 0)
+            System.out.println("NPtype.main(): no arguments");
         if (args != null && args.length > 1 && args[0].equals("-p")) {
+            System.out.println("find the product type of a noun phrase string");
+            init();
             debug = true;
             findProductType(args[1]);
         }
         else if (args != null && args.length > 2 && args[0].equals("-t")) {
+            System.out.println("find the product type of a noun phrase string with restriction to a class");
+            init();
             debug = true;
             findType(args[1],args[2]);
         }
+        else if (args != null && args.length > 1 && args[0].equals("-f")) {
+            System.out.println("INFO in NPtype.main() find NPs in a file");
+            init();
+            debug = true;
+            System.out.println(collectNPs(args[1]));
+        }
+        else if (args != null && args.length > 1 && args[0].equals("-n")) {
+            System.out.println("INFO in NPtype.main() find NPs in a string");
+            init();
+            debug = true;
+            System.out.println(findNPs(args[1]));
+        }
         else if (args != null && args.length > 0 && args[0].equals("-i")) {
+            System.out.println("INFO in NPtype.main() Interactive mode");
+            init();
             interpInter();
         }
         else
