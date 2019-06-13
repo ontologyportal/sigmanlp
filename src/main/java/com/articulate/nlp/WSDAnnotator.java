@@ -69,7 +69,7 @@ public class WSDAnnotator implements Annotator {
      */
     public void annotate(Annotation annotation) {
 
-        if (debug) System.out.println("WSDAnnotator.annotate():");
+        System.out.println("WSDAnnotator.annotate():");
         if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Error in WSDAnnotator.annotate(): Unable to find sentences in " + annotation);
 
