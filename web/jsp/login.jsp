@@ -47,8 +47,15 @@ if (ps.userExists(userName)) {
     }
 }
 else {
-    System.out.println("Bad login attempt in login.jsp - no such user: " + userName);
-    response.sendRedirect("login.html");
+    String role = Login.validateUser(userName,password);
+    session.setAttribute("user",userName);
+    session.setAttribute("role",role);
+    ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
+    siblingContext.setAttribute("user",userName);
+    siblingContext.setAttribute("role",role);
+    System.out.println("login.jsp: Set sibling context");
+    System.out.println("login.jsp: Successful login for " + userName + " with role " + role);
+    response.sendRedirect("NLP.jsp");
 }
 %>
 
