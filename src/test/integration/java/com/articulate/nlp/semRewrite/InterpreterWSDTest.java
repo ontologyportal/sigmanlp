@@ -1,7 +1,10 @@
 /*
 Copyright 2014-2015 IPsoft
+          2019 - Infosys
 
 Author: Andrei Holub andrei.holub@ipsoft.com
+        Adam Pease adam.pease@infosys.com
+                   apease@articulatesoftware.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,12 +38,10 @@ import edu.stanford.nlp.util.CoreMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 public class InterpreterWSDTest extends IntegrationTestBase {
 
@@ -60,15 +61,37 @@ public class InterpreterWSDTest extends IntegrationTestBase {
         }
     }
 
+    /****************************************************************
+     */
+    private void doTest(String sent, Literal[] expected) {
+
+        System.out.println("\n\nInterpreterWSDTest: sentence: " + sent);
+
+        Annotation wholeDocument = interp.userInputs.annotateDocument(sent);
+        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
+        List<Literal> wsds = interp.findWSD(lastSentence);
+        List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
+        List<Literal> results = interp.consolidateSpans(lastSentenceTokens,wsds);
+
+        System.out.println("InterpreterWSDTest: actual: " + results);
+        System.out.println("InterpreterWSDTest: expected: " + Arrays.toString(expected));
+        Set<Literal> actualSet = new HashSet<>();
+        Set<Literal> expectedSet = new HashSet<>();
+        expectedSet.addAll(Arrays.asList(expected));
+        actualSet.addAll(results);
+        if (actualSet.containsAll(expectedSet))
+            System.out.println("InterpreterWSDTest: pass");
+        else
+            System.out.println("InterpreterWSDTest: fail");
+        assertTrue(actualSet.containsAll(expectedSet));
+    }
+
     /** ***************************************************************
      */
     @Test
     public void findWSD_NoGroups() {
 
         String input = "Amelia Mary Earhart was an American aviator.";
-        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
-        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<Literal> wsds = interp.findWSD(lastSentence);
         Literal[] expected = {
                 //"names(Amelia-1,\"Amelia\")", // missed without real EntityParser information
                 //"names(Mary-2,\"Mary\")",
@@ -78,8 +101,7 @@ public class InterpreterWSDTest extends IntegrationTestBase {
                 new Literal("sumo(UnitedStates,American-6)"),
                 new Literal("sumo(Pilot,aviator-7)")
         };
-        assertThat(wsds, hasItems(expected));
-        assertEquals(expected.length, wsds.size());
+        doTest(input,expected);
     }
 
     /** ***************************************************************
@@ -88,16 +110,12 @@ public class InterpreterWSDTest extends IntegrationTestBase {
     public void findWSD_WithGroups() {
 
         String input = "Amelia Mary Earhart (July 24, 1897 - July 2, 1937) was an American aviator.";
-        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
-        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<Literal> wsds = interp.findWSD(lastSentence);
         Literal[] expected = {
                 //"names(AmeliaMaryEarhart-1,\"Amelia Mary Earhart\")", // missed without real EntityParser information
                 new Literal("sumo(UnitedStates,American-17)"),
                 new Literal("sumo(Pilot,aviator-18)")
         };
-        assertThat(wsds, hasItems(expected));
-        assertEquals(expected.length, wsds.size());
+        doTest(input,expected);
     }
 
     /** ***************************************************************
@@ -105,16 +123,13 @@ public class InterpreterWSDTest extends IntegrationTestBase {
     @Test
     public void findWSDDupNames() {
 
+        Interpreter.debug = true;
         String input = "I also feel obliged to point out that Jack Nicklaus thinks so highly of " +
                 "Muirfield that he named a course he built in Jack Nicklaus ' native Ohio after it .";
-        Annotation wholeDocument = interp.userInputs.annotateDocument(input);
-        CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<Literal> wsds = interp.findWSD(lastSentence);
-        System.out.println("InterpreterWSDTest.findWSDDupNames(): " + wsds);
         Literal[] expected = {
                 new Literal("sumo(Golfer,Jack_Nicklaus-9)"),
                 new Literal("sumo(Golfer,Jack_Nicklaus-24)")
         };
-        assertThat(wsds, hasItems(expected));
+        doTest(input,expected);
     }
 }
