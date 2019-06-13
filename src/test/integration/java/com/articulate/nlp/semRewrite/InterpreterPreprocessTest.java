@@ -58,7 +58,7 @@ public class InterpreterPreprocessTest extends IntegrationTestBase {
         i.interpret("I have another car.");
         i.interpret("What is the color of the car?");
 
-        assertEquals(3, i.getUserInputs().size());
+        assertEquals(5, i.getUserInputs().size());
 
         assertThat(i.getUserInputs(), hasItem("I have a car."));
         assertThat(i.getUserInputs(), hasItem("It is green."));
