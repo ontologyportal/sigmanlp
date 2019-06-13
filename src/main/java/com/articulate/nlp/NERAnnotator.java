@@ -135,10 +135,10 @@ public class NERAnnotator implements Annotator {
         CoreLabel lastToken = null;
         for (CoreLabel token : tokens) {
             lastToken = token;
-            //System.out.println("NERAnnotator.annotate() token: " + token);
+            if (debug) System.out.println("NERAnnotator.annotate() token: " + token);
             //System.out.println("NERAnnotator.annotate() index: " + token.index());
             NERtag = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
-            //System.out.println("NERAnnotator.annotate() ner: " + NERtag);
+            if (debug) System.out.println("NERAnnotator.annotate() ner: " + NERtag);
             //System.out.println("NERAnnotator.annotate() firstAnnotation: " + firstAnnotation);
             //System.out.println("NERAnnotator.annotate() firstToken: " + firstToken);
             // String NERtag = token.ner();
@@ -149,12 +149,12 @@ public class NERAnnotator implements Annotator {
             }
             else {
                 if (!NERtag.equals(firstAnnotation) && !NERtag.equals("O")) { // start of an NER
-                    //System.out.println("NERAnnotator.annotate() start of NER");
+                    if (debug) System.out.println("NERAnnotator.annotate() start of NER");
                     firstAnnotation = NERtag;
                     firstToken = token.index();
                 }
                 else if (!NERtag.equals(firstAnnotation)) {  // end of an NER tag
-                    //System.out.println("NERAnnotator.annotate() end of NER");
+                    if (debug) System.out.println("NERAnnotator.annotate() end of NER");
                     setSpan(token.index(),tokens,firstToken);
                     firstAnnotation = NERtag;
                     firstToken = token.index();
@@ -174,7 +174,7 @@ public class NERAnnotator implements Annotator {
      */
     public void annotate(Annotation annotation) {
 
-        //System.out.println("NERAnnotator.annotate() ");
+        System.out.println("NERAnnotator.annotate() ");
         if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Unable to find sentences in " + annotation);
         List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
