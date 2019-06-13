@@ -84,7 +84,6 @@ public class Interpreter {
     // execution options
     public static boolean inference = false;
     public boolean question = false;
-    public boolean ner = true;
     public static boolean addUnprocessed = false;
     //if true, show POS tags during parse
     public static boolean verboseParse = true;
@@ -126,7 +125,7 @@ public class Interpreter {
     public Pipeline p = null;
     //private String propString =  "tokenize, ssplit, pos, lemma, ner, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
 
-    public static ArrayList<String> firedRules = new ArrayList<String>();
+    public static HashSet<String> firedRules = new HashSet<String>();
     public static ArrayList<Literal> augmentedClauses = new ArrayList<>();
     public static ClauseSubstitutor substitutor = null;
     public static DateAndNumbersGeneration generator = new DateAndNumbersGeneration();
@@ -681,7 +680,7 @@ public class Interpreter {
 
         if (StringUtil.emptyString(input))
             return null;
-        firedRules = new ArrayList<String>();
+        firedRules = new HashSet<String>();
         input = input.replaceAll("[^#\\.\\,a-zA-Z0-9\\?\\'_\\-\\–\\(\\)\\: ]","");
         List<String> results = Lists.newArrayList();
         if (!ENDING_IN_PUNC_PATTERN.matcher(input).find()) {
