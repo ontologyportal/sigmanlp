@@ -1,0 +1,16 @@
+# Build related files
+/build
+/EBatchConfig.txt
+/lib/sigmakee.jar
+/lib/stanford-corenlp-*.jar
+
+# Emacs backup and temporary files
+*~
+.#*
+
+# macOS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
