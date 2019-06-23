@@ -46,12 +46,9 @@ public class DataMapper {
     // a map from column names to a list of the top N matches. List values are SUMO terms
     public static HashMap<String,ArrayList<String>> relMatches = new HashMap<>();
 
-    // map from column name key to symbol name key to SUMO term
-    public static HashMap<String,HashMap<String,String>> symbolMatches = new HashMap<>();
-
     public static String corpusDir = System.getenv("CORPORA");
 
-    public static String inputFilename = corpusDir + File.separator + "UICincome" + File.separator + "adult.data-AP.txt.csv";
+    public static String inputFilename = corpusDir + File.separator + "UICincome" + File.separator + "adult.data-AP-small.txt.csv";
 
     public static String matchFilename = inputFilename + ".mch";
 
@@ -87,8 +84,8 @@ public class DataMapper {
             }
             pr.println();
             pr.println("==Symbols==");
-            for (String colName : symbolMatches.keySet()) {
-                HashMap<String,String> symbol2sumo = symbolMatches.get(colName);
+            for (String colName : DB2KIF.symbolMatches.keySet()) {
+                HashMap<String,String> symbol2sumo = DB2KIF.symbolMatches.get(colName);
                 for (String symbol : symbol2sumo.keySet())
                     pr.println(colName + "\t" + symbol + "\t" + symbol2sumo.get(symbol));
             }
@@ -166,17 +163,31 @@ public class DataMapper {
             FileReader r = new FileReader(filename);
             LineNumberReader lr = new LineNumberReader(r);
             String line;
-            boolean inColmap = true;
+            String section = "columns";
             while ((line = lr.readLine()) != null) {
+                //System.out.println("; loadMappings(): line: " + line);
                 if (line.equals("")) {
                     line = lr.readLine();
-                    if (line.equals("==Symbols=="))
-                        inColmap = false;
+                    if (line != null && line.equals("==Symbols=="))
+                        section = "symbols";
+                    else if (line != null && line.equals("==Units=="))
+                        section = "units";
                     else
-                        throw new ParseException("bad string following required blank: '" +
-                                line + "' in file " + filename,lr.getLineNumber());
+                        line = null;
                 }
-                if (inColmap) {
+                else if (section.equals("units")) {
+                    if (!StringUtil.emptyString(line)) {
+                        String[] tuple = line.split("\t");
+
+                        if (tuple != null && tuple.length == 2) {
+                            //System.out.println("; loadMappings(): tuple: " + tuple[0] + " " + tuple[1]);
+                            DB2KIF.units.put(tuple[0], tuple[1]);
+                        }
+                        else
+                            System.out.println("; loadMappings(): bad line: " + line);
+                    }
+                }
+                else if (section.equals("columns")) {
                     String[] pair = line.split("\t");
                     String sumo = pair[1];
                     String colname = pair[0];
@@ -190,19 +201,22 @@ public class DataMapper {
                     match.add(sumo);
                     relMatches.put(colname,match);
                 }
-                else {
+                else if (section.equals("symbols")) {
                     if (!StringUtil.emptyString(line)) {
                         String[] triple = line.split("\t");
                         if (triple != null && triple.length == 3)
                             updateSymbolMap(triple[0], triple[1], triple[2]);  // col, val, ont
                     }
                 }
+                else
+                    System.out.println("; loadMappings(): bad section: " + section);
             }
         }
         catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+        //System.out.println("; loadMappings(): units: " + DB2KIF.units);
     }
 
     /** ***************************************************************
@@ -315,12 +329,27 @@ public class DataMapper {
 
         // map from column name key to symbol name key to SUMO term
         // public static HashMap<String,HashMap<String,String>> symbolMatches = new HashMap<>();
-        HashMap<String,String> columnVals = symbolMatches.get(col);
+        HashMap<String,String> columnVals = DB2KIF.symbolMatches.get(col);
         if (columnVals == null) {
             columnVals = new HashMap<>();
-            symbolMatches.put(col, columnVals);
+            DB2KIF.symbolMatches.put(col, columnVals);
         }
         columnVals.put(val,ont);
+    }
+
+    /** ***************************************************************
+     */
+    public static void infMatch() {
+
+        if (cells.size() == 0)
+            loadCells();
+        if (cells.size() < 3) {
+            System.out.println("infMatch(): file too small for header, def'n and content");
+            return;
+        }
+        loadMappings();
+        DB2KIF dbkif = new DB2KIF();
+        dbkif.toKIF(cells);
     }
 
     /** ***************************************************************
@@ -378,6 +407,7 @@ public class DataMapper {
         System.out.println("Usage: ");
         System.out.println("TFIDF -h         % show this help info");
         System.out.println("      -f name    % read data file and match to SUMO");
+        System.out.println("      -inf       % find questionable values via theorem proving");
         System.out.println("      -i         % interactive commands");
         System.out.println("        cd name               % change corpus directory below system CORPORA dir");
         System.out.println("        in name               % change input file name");
@@ -386,6 +416,7 @@ public class DataMapper {
         System.out.println("        load                  % load match file");
         System.out.println("        save                  % save match file");
         System.out.println("        test                  % find questionable values");
+
         System.out.println("        clean                 % find and fix bad values");
         System.out.println("        match                 % run and print match");
         System.out.println("        map col ont           % change the mapping of colum name 'col' to relation 'ont' in SUMO");
@@ -404,6 +435,9 @@ public class DataMapper {
         }
         else if (args != null && args.length > 0 && args[0].equals("-i")) {
             interactive();
+        }
+        else if (args != null && args.length > 0 && args[0].equals("-inf")) {
+            infMatch();
         }
         else if (args != null && args.length > 1 && args[0].equals("-f")) {
             cells = DB.readSpreadsheet(args[1],null,false,',');
