@@ -349,7 +349,7 @@ public class DataMapper {
         }
         loadMappings();
         DB2KIF dbkif = new DB2KIF();
-        dbkif.toKIF(cells);
+        dbkif.toKIF(cells, true);
     }
 
     /** ***************************************************************
