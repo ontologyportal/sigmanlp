@@ -77,8 +77,8 @@ Authors:
     System.out.println("NLP.jsp: Running language to logic");
     List<String> forms = interp.interpret(theText);
     ArrayList<CNF> inputs = new ArrayList<>();
-    System.out.println("NLP.jsp: Running relation extraction");
-    ArrayList<RHS> kifClauses = RelExtract.sentenceExtract(theText);
+    //System.out.println("NLP.jsp: Running relation extraction");
+    //ArrayList<RHS> kifClauses = RelExtract.sentenceExtract(theText);
 %>
 <%@include file="CommonHeader.jsp" %>
 
@@ -190,11 +190,11 @@ Authors:
         out.println("</tr></table>\n");
         out.println("<P>");
 
-        out.println("<h2>Relations</h2>\n"); // ----------------------------------------------------------
-        out.println("<pre>");
-        out.println(kifClauses);
-        out.println("</pre>");
-        out.println("<P>");
+        //out.println("<h2>Relations</h2>\n"); // ----------------------------------------------------------
+        //out.println("<pre>");
+        //out.println(kifClauses);
+        //out.println("</pre>");
+        //out.println("<P>");
 
         out.println("<h2>Interpretation</h2>\n"); // -----------------------------------------------------
         %>
