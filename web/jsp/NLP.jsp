@@ -16,7 +16,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
 
 <%
-/** This code is copyright Articulate Software (c) 2017.
+/** This code is copyright Articulate Software (c) 2017. Infosys 2017-
 This software is released under the GNU Public License <http://www.gnu.org/copyleft/gpl.html>.
 Users of this code also consent, by use of this code, to credit Articulate Software
 in any writings, briefings, publications, presentations, or
@@ -227,14 +227,10 @@ Authors:
         out.println("</table><P>\n");
 
         out.println("<b>Sigma sentiment score:</b> " + DB.computeSentiment(theText) + "</P>\n");
-        // Edited by Infosys LTD.
-        //Get data in brat format
         BratAnnotationUtil bratAnnotationUtil = new BratAnnotationUtil();
         out.println("<script type=\"text/javascript\">");
         out.println("var docData=" + bratAnnotationUtil.getBratAnnotations(theText,wholeDocument) + ";</script>");
-        //Brat integration script
         out.println("<script type=\"text/javascript\" src=\"js/sigmanlpViz.js\"></script>");
-        // Edit END
     }
     else
         out.println("Empty input<P>\n");

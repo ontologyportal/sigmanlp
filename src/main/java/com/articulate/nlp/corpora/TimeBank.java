@@ -610,7 +610,7 @@ public class TimeBank {
         if (suMarkup.size() > 0)
             System.out.println("score(): SU: " + suMarkup);
         System.out.println("score(): anchor: " + anchorDate);
-        if (f != null && !StringUtil.emptyString(f.theFormula))
+        if (f != null && !StringUtil.emptyString(f.getFormula()))
             sumoCount++;
         else
             System.out.println("no sumo");
@@ -745,7 +745,7 @@ public class TimeBank {
                     System.out.println("TimeBank.processFile(): " + clean);
                     ArrayList<String> tags = getTimexTagsFromString(sentStr);
                     Formula f = process(clean);
-                    if (f != null && !StringUtil.emptyString(f.theFormula))
+                    if (f != null && !StringUtil.emptyString(f.getFormula()))
                         System.out.println("processFile(): SUMO: " + f.toString());
                     score(tags,suMarkup,f);
                     System.out.println("------------------");

@@ -132,7 +132,7 @@ public class InterpTest {
         List<String> expLiterals = null;
         if (!exp.car().equals("and")) {
             expLiterals = new ArrayList<>();
-            expLiterals.add(exp.theFormula);
+            expLiterals.add(exp.getFormula());
         }
         else {
             act = act.cdrAsFormula();

@@ -170,15 +170,15 @@ public class RHS {
             String key = it.next();
             String value = bindings.get(key);
             if (debug) System.out.println("INFO in RHS.applyBindings(): key,bindings: " + key + ", " + bindings);
-            if (form != null && form.theFormula != null) {
+            if (form != null && form.getFormula() != null) {
                 form = form.replaceVar(key, value);
-                if (debug) System.out.println("INFO in RHS.applyBindings(): formula: " + form.theFormula);
+                if (debug) System.out.println("INFO in RHS.applyBindings(): formula: " + form.getFormula());
             }
         }
         if (form != null) {
-            if (debug) System.out.println("INFO in RHS.applySubst(): formula (2): " + form.theFormula);
+            if (debug) System.out.println("INFO in RHS.applySubst(): formula (2): " + form.getFormula());
             rhs.form = form;
-            if (debug) System.out.println("INFO in RHS.applySubst(): formula (3): " + form.theFormula);
+            if (debug) System.out.println("INFO in RHS.applySubst(): formula (3): " + form.getFormula());
         }
         return rhs;
     }
