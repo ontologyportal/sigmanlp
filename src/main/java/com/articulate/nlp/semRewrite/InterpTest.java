@@ -143,9 +143,9 @@ public class InterpTest {
                 return false;
             if (exp == null)
                 return false;
-            expLiterals = exp.complexArgumentsToArrayList(0);
+            expLiterals = exp.complexArgumentsToArrayListString(0);
         }
-        List<String> actLiterals = act.complexArgumentsToArrayList(0);
+        List<String> actLiterals = act.complexArgumentsToArrayListString(0);
         for (String explit : expLiterals) {
             Formula exForm = new Formula(explit);
             //if (!exForm.isSimpleClause(kb)) {

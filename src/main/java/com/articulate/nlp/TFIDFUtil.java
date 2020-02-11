@@ -71,8 +71,8 @@ public class TFIDFUtil {
         KB kb = KBmanager.getMgr().getKB("SUMO");
         ArrayList<Formula> forms = kb.ask("arg",0,"documentation");
         for (Formula f : forms) {
-            String term = f.getArgument(1);
-            String doc = f.getArgument(3);
+            String term = f.getStringArgument(1);
+            String doc = f.getStringArgument(3);
             if (!relOnly || kb.isRelation(term))
                 documents.add(term + " : " + doc);
         }

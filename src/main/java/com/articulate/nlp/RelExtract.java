@@ -563,10 +563,10 @@ public class RelExtract {
                   KB kb, Interpreter interp) {
 
         HashMap<String,CNF> resultSet = new HashMap<String,CNF>();
-        String rel = form.getArgument(2);
+        String rel = form.getStringArgument(2);
         if (rel.endsWith("Fn"))
             return null;
-        String formatString = form.getArgument(3);
+        String formatString = form.getStringArgument(3);
         String oldFormatString = new String(formatString);
         formatString = removePosNeg(formatString);
         if (debug) System.out.println("no pos/neg format String: " + formatString);
@@ -668,7 +668,7 @@ public class RelExtract {
         HashMap<String,CNF> temp = processOneRelation(f,kb,interp);
         if (temp == null)
             return;
-        String rel = f.getArgument(2);
+        String rel = f.getStringArgument(2);
         if (temp.get(rel) == null)
             return;
         CNF lhs = temp.get(rel);
@@ -737,7 +737,7 @@ public class RelExtract {
             HashMap<String,CNF> temp = processOneRelation(f,kb,interp);
             if (temp == null)
                 continue;
-            String rel = f.getArgument(2);
+            String rel = f.getStringArgument(2);
             if (temp.get(rel) == null)
                 continue;
             searchForOnePattern(rel,temp.get(rel));

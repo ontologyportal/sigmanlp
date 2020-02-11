@@ -113,9 +113,9 @@ public class SUMOtoCoSense {
         for (Formula f : docs) {
             HashSet<String> snss = new HashSet<>(); // must be sense keys
             ArrayList<String> words = new ArrayList<>();
-            String term = f.getArgument(1);
-            String lang = f.getArgument(2);
-            String doc = f.getArgument(3);
+            String term = f.getStringArgument(1);
+            String lang = f.getStringArgument(2);
+            String doc = f.getStringArgument(3);
             if (lang.equals("EnglishLanguage")) {
                 Annotation wholeDocument = p.annotate(doc);
                 List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
