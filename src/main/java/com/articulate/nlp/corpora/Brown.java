@@ -104,6 +104,15 @@ public class Brown {
             }
         }
 
+        for (CoreLabel cl : tokens) {
+            if (otherModal.contains(cl.lemma())) {
+                System.out.println("quant: " + quant);
+                quantCount++;
+                simple = false;
+                break; // only count a sentence once
+            }
+        }
+
         if (simple)
             simpleCount++;
     }
