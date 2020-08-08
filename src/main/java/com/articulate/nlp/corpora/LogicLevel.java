@@ -4,7 +4,6 @@ import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.sigma.StringUtil;
-import com.sun.org.apache.bcel.internal.classfile.LineNumber;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -15,8 +14,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.util.*;
-
-import static com.articulate.nlp.pipeline.SentenceUtil.toDependenciesList;
 
 public class LogicLevel {
 
@@ -32,11 +29,13 @@ public class LogicLevel {
             "remember", "forget", "imagine", "believe");
 
     public static final List<String> modal = Arrays.asList("can", "could",
-            "may", "might", "must", "shall", "should", "will", "would");
+            "may", "might", "must", "shall", "should", "would");
 
     public static final List<String> otherModal = Arrays.asList("ought", "dare", "need");
 
     public static final List<String> quant = Arrays.asList("some", "many", "few", "all");
+
+    public static final List<String> author = Arrays.asList("say", "write");
 
     public enum READ_MODE {PARA, LINE,  WORD; }
     public READ_MODE modifier = READ_MODE.PARA;
@@ -46,6 +45,7 @@ public class LogicLevel {
     public int modalCount = 0;
     public int otherModalCount = 0;
     public int quantCount = 0;
+    public int authorCount = 0;
     public int simpleCount = 0;
 
     public boolean showneg = false;
@@ -53,7 +53,8 @@ public class LogicLevel {
     public boolean showmodal = false;
     public boolean showothermodal = false;
     public boolean showquant = false;
-    public boolean showall = false;
+    public boolean showauthor = false;
+    public boolean showall = true;
 
     /** ***************************************************************
      */
@@ -75,50 +76,69 @@ public class LogicLevel {
 
         boolean simple = true;
         ArrayList<Literal> deps = SentenceUtil.toDependenciesList(sent);
-        System.out.println("process(): deps: " + deps);
+        //System.out.println("process(): deps: " + deps);
         for (Literal lit : deps) {
             if (lit.pred.equals("neg")) {
                 if (showall || showneg) System.out.println("neg: " + sent);
                 negCount++;
                 simple = false;
-                break; // only count a sentence once
+                break;
             }
         }
 
         List<CoreLabel> tokens = sent.get(CoreAnnotations.TokensAnnotation.class);
-        for (CoreLabel cl : tokens) {
-            if (epis.contains(cl.lemma())) {
-                if (showall || showepi) System.out.println("epistemic: " + sent);
-                epiCount++;
-                simple = false;
-                break; // only count a sentence once
+        if (simple) { // only count a sentence once
+            for (CoreLabel cl : tokens) {
+                if (epis.contains(cl.lemma())) {
+                    if (showall || showepi) System.out.println("epistemic: " + sent);
+                    epiCount++;
+                    simple = false;
+                    break;
+                }
             }
         }
 
-        for (CoreLabel cl : tokens) {
-            if (modal.contains(cl.lemma())) {
-                if (showall || showmodal) System.out.println("modal: " + sent);
-                modalCount++;
-                simple = false;
-                break; // only count a sentence once
+        if (simple) { // only count a sentence once
+            for (CoreLabel cl : tokens) {
+                if (modal.contains(cl.lemma())) {
+                    if (showall || showmodal) System.out.println("modal: " + sent);
+                    modalCount++;
+                    simple = false;
+                    break;
+                }
             }
         }
 
-        for (CoreLabel cl : tokens) {
-            if (otherModal.contains(cl.lemma())) {
-                if (showall || showothermodal) System.out.println("other modal: " + sent);
-                otherModalCount++;
-                simple = false;
-                break; // only count a sentence once
+        if (simple) { // only count a sentence once
+            for (CoreLabel cl : tokens) {
+                if (otherModal.contains(cl.lemma())) {
+                    if (showall || showothermodal) System.out.println("other modal: " + sent);
+                    otherModalCount++;
+                    simple = false;
+                    break;
+                }
             }
         }
 
-        for (CoreLabel cl : tokens) {
-            if (quant.contains(cl.lemma())) {
-                if (showall || showquant) System.out.println("quant: " + quant);
-                quantCount++;
-                simple = false;
-                break; // only count a sentence once
+        if (simple) { // only count a sentence once
+            for (CoreLabel cl : tokens) {
+                if (quant.contains(cl.lemma())) {
+                    if (showall || showquant) System.out.println("quant: " + sent);
+                    quantCount++;
+                    simple = false;
+                    break;
+                }
+            }
+        }
+
+        if (simple) { // only count a sentence once
+            for (CoreLabel cl : tokens) {
+                if (author.contains(cl.lemma())) {
+                    if (showall || showauthor) System.out.println("author: " + sent);
+                    authorCount++;
+                    simple = false;
+                    break;
+                }
             }
         }
 
@@ -224,13 +244,28 @@ public class LogicLevel {
         }
         for (CoreMap s : sentences)
             process(s);
-        System.out.println("negations: " + negCount);
-        System.out.println("epistemics: " + epiCount);
-        System.out.println("modalCount: " + modalCount);
-        System.out.println("otherModalCount: " + otherModalCount);
-        System.out.println("quantified: " + quantCount);
-        System.out.println("simple: " + simpleCount);
+        float size = sentences.size();
+
+        System.out.println("negations: " + negCount + " : " + (negCount/size) + "%");
+        System.out.println("epistemics: " + epiCount + " : " + (epiCount/size) + "%");
+        System.out.println("modalCount: " + modalCount + " : " + (modalCount/size) + "%");
+        System.out.println("otherModalCount: " + otherModalCount + " : " + (otherModalCount/size) + "%");
+        System.out.println("quantified: " + quantCount + " : " + (quantCount/size) + "%");
+        System.out.println("authored: " + authorCount + " : " + (authorCount/size) + "%");
+        System.out.println("simple: " + simpleCount + " : " + (simpleCount/size) + "%");
         System.out.println("total: " + sentences.size());
+        int crossCheck = negCount + epiCount + modalCount + otherModalCount + quantCount + authorCount + simpleCount;
+        System.out.println("cross check: " + crossCheck);
+    }
+
+    /** ***************************************************************
+     */
+    public void genRand(int count, int limit) {
+
+        Random rand = new Random(); //instance of random class
+        for (int i = 0; i <= count; i++) {
+            System.out.println(91670 + rand.nextInt(limit));
+        }
     }
 
     /** ***************************************************************
@@ -254,6 +289,7 @@ public class LogicLevel {
         System.out.println("  -h - show this help screen");
         System.out.println("  -f fname - run on file");
         System.out.println("  -r - run on default LogicLevel corpus file");
+        System.out.println("  -n num limit - generate num random integers from 0 to limit-1");
         System.out.println("  -d dir - run on all files in directory");
         System.out.println("  ");
         System.out.println("  add a letter directly to the option (no spaces)");
@@ -271,25 +307,32 @@ public class LogicLevel {
             showHelp();
         }
         else {
-            init();
             LogicLevel logicLevel = new LogicLevel();
-            if (args != null && args.length > 0) {
-                if (args[0].endsWith("p"))
-                    logicLevel.modifier = READ_MODE.PARA;
-                if (args[0].endsWith("l"))
-                    logicLevel.modifier = READ_MODE.LINE;
-                if (args[0].endsWith("w"))
-                    logicLevel.modifier = READ_MODE.WORD;
+            long millis = System.currentTimeMillis();
+            if (args != null && args.length > 2 && args[0].startsWith("-n")) {
+                logicLevel.genRand(Integer.parseInt(args[1]), Integer.parseInt(args[2]));
             }
-            if (args != null && args.length > 0 && args[0].startsWith("-r")) {
-                String filename = System.getenv("CORPORA") + File.separator + "logicLevel.txt";
-                logicLevel.run(filename);
-            }
-            else if (args != null && args.length > 1 && args[0].startsWith("-f")) {
-                logicLevel.run(args[1]);
-            }
-            else if (args != null && args.length > 1 && args[0].startsWith("-d")) {
-                logicLevel.runDir(args[1]);
+            else {
+                init();
+                if (args != null && args.length > 0) {
+                    if (args[0].endsWith("p"))
+                        logicLevel.modifier = READ_MODE.PARA;
+                    if (args[0].endsWith("l"))
+                        logicLevel.modifier = READ_MODE.LINE;
+                    if (args[0].endsWith("w"))
+                        logicLevel.modifier = READ_MODE.WORD;
+                }
+                if (args != null && args.length > 0 && args[0].startsWith("-r")) {
+                    String filename = System.getenv("CORPORA") + File.separator + "logicLevel.txt";
+                    logicLevel.run(filename);
+                }
+                else if (args != null && args.length > 1 && args[0].startsWith("-f")) {
+                    logicLevel.run(args[1]);
+                }
+                else if (args != null && args.length > 1 && args[0].startsWith("-d")) {
+                    logicLevel.runDir(args[1]);
+                }
+                System.out.println("INFO in LogicLevel.main(): seconds to run: " + (System.currentTimeMillis() - millis) / 1000);
             }
         }
     }
