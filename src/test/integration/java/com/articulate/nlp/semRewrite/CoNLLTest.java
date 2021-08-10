@@ -4,7 +4,7 @@ import com.articulate.nlp.RelExtract;
 import com.articulate.nlp.corpora.CoNLL04;
 import com.articulate.sigma.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;

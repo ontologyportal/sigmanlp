@@ -23,7 +23,7 @@ MA  02111-1307 USA
 
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;

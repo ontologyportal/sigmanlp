@@ -19,7 +19,7 @@ import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.*;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;

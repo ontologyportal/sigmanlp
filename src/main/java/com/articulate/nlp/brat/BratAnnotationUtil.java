@@ -10,7 +10,7 @@ import java.util.Set;
 import com.articulate.nlp.WSDAnnotator;
 import com.articulate.nlp.semRewrite.Lexer;
 import com.articulate.nlp.semRewrite.Literal;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 

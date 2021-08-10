@@ -28,6 +28,8 @@ import com.articulate.nlp.semRewrite.datesandnumber.DateAndNumbersGeneration;
 import com.articulate.nlp.semRewrite.datesandnumber.StanfordDateTimeExtractor;
 import com.articulate.nlp.semRewrite.datesandnumber.Tokens;
 import com.articulate.sigma.*;
+import com.articulate.sigma.tp.Vampire;
+import com.articulate.sigma.utils.*;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
@@ -1394,7 +1396,8 @@ public class Interpreter {
                 Formula query = new Formula(s3);
                 ArrayList<String> inferenceAnswers = Lists.newArrayList();
                 if (verboseProof) {
-                    inferenceAnswers = kb.ask(s3, timeOut_value, 1);
+                    Vampire vamp = kb.askVampire(s3, timeOut_value, 1);
+                    inferenceAnswers = vamp.output;
                 }
                 else {
                     inferenceAnswers = kb.askNoProof(s3, timeOut_value, 1);

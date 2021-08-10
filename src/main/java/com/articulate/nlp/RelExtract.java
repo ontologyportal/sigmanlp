@@ -4,6 +4,7 @@ import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.*;
 import com.articulate.nlp.semconcor.Searcher;
 import com.articulate.sigma.*;
+import com.articulate.sigma.utils.*;
 import com.articulate.sigma.nlg.LanguageFormatter;
 import com.articulate.sigma.nlg.NLGUtils;
 import com.articulate.sigma.wordNet.WordNet;

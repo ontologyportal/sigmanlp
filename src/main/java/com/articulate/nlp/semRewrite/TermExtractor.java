@@ -8,7 +8,7 @@ import com.articulate.nlp.corpora.CorpusReader;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WordNet;
 import com.google.common.base.Strings;
 import edu.stanford.nlp.ling.CoreAnnotations;

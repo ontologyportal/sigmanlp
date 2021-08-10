@@ -1,7 +1,7 @@
 package com.articulate.nlp;
 
 import com.articulate.nlp.semRewrite.Literal;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.nlp.semRewrite.datesandnumber.InterpretNumerics;
 
 import java.io.BufferedReader;

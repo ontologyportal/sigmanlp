@@ -24,7 +24,7 @@ MA  02111-1307 USA
 
 import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Literal;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.KBmanager;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;

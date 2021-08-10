@@ -6,7 +6,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.nlp.semRewrite.*;
 
 import java.io.IOException;

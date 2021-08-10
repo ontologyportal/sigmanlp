@@ -1,7 +1,7 @@
 package com.articulate.nlp.corpora;
 
 import com.articulate.sigma.Formula;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.*;
 import edu.stanford.nlp.util.CoreMap;

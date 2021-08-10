@@ -2,7 +2,7 @@ package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.RelExtract;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.IntegrationTestBase;
 import com.google.common.collect.Lists;
 

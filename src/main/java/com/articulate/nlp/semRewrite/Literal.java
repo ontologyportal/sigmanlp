@@ -24,7 +24,7 @@ MA  02111-1307 USA
 */
 
 import com.articulate.nlp.RelExtract;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.nlg.LanguageFormatter;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.trees.Dependency;

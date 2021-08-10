@@ -5,7 +5,7 @@ import com.articulate.nlp.semRewrite.NPtype;
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import edu.stanford.nlp.ling.CoreLabel;
 
 import java.io.File;

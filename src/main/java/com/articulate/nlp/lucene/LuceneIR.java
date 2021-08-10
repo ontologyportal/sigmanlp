@@ -32,7 +32,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
 
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 public class LuceneIR {
 

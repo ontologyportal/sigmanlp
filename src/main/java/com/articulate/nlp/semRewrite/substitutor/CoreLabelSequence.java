@@ -21,7 +21,7 @@
 
 package com.articulate.nlp.semRewrite.substitutor;
 
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import edu.stanford.nlp.ling.CoreLabel;

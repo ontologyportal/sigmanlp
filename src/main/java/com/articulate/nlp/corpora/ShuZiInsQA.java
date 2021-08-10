@@ -1,7 +1,7 @@
 package com.articulate.nlp.corpora;
 
 import com.google.common.collect.Lists;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.utils.ProgressPrinter;
 import com.articulate.nlp.*;
 

@@ -1,6 +1,7 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.*;
+import com.articulate.sigma.utils.*;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;

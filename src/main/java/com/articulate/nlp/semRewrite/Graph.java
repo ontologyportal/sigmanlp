@@ -1,6 +1,6 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.google.common.collect.ImmutableList;

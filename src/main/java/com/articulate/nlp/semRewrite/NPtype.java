@@ -9,7 +9,7 @@ import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.KButilities;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WordNet;
 import com.google.common.base.Strings;
 import edu.stanford.nlp.ling.CoreAnnotations;

@@ -5,7 +5,7 @@ import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.nlp.semRewrite.RHS;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.io.File;
 import java.util.*;

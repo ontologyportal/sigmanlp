@@ -26,7 +26,7 @@ MA  02111-1307 USA
 
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.io.*;
 import java.util.*;

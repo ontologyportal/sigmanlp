@@ -1,6 +1,6 @@
 package com.articulate.nlp.corpora;
 
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.io.File;
 import java.io.IOException;

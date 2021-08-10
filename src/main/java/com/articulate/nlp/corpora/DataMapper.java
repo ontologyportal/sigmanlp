@@ -3,6 +3,7 @@ package com.articulate.nlp.corpora;
 import com.articulate.nlp.TFIDF;
 import com.articulate.nlp.TFIDFUtil;
 import com.articulate.sigma.*;
+import com.articulate.sigma.utils.*;
 import com.articulate.sigma.trans.DB2KIF;
 import com.google.common.io.Resources;
 

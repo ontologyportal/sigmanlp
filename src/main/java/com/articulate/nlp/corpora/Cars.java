@@ -3,7 +3,7 @@ package com.articulate.nlp.corpora;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.io.File;
 import java.io.FileReader;
@@ -46,10 +46,10 @@ public class Cars {
                 if (m1.matches()) {
                     String make = m1.group(2);
                     make = make.replaceAll(" ","");
-                    make = StringUtil.StringToKIFid(make);
+                    make = StringUtil.stringToKIFid(make);
                     String model = m1.group(3);
                     model = model.replaceAll(" ","");
-                    model = StringUtil.StringToKIFid(model);
+                    model = StringUtil.stringToKIFid(model);
                     String name = make + model;
                     if (!startDateProduced.contains(name)) {
                         System.out.println("(firstInstanceCreated " + name + " (BeginFn (YearFn " + m1.group(1) + ")))");

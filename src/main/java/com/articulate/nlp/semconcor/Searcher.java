@@ -4,7 +4,7 @@ import com.articulate.nlp.semRewrite.*;
 import com.articulate.nlp.semconcor.Indexer;
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.google.common.base.Strings;
 
 import java.sql.*;

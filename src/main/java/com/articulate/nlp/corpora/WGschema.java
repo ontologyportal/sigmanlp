@@ -9,7 +9,7 @@ import com.articulate.nlp.semRewrite.substitutor.CoreLabelSequence;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.SimpleDOMParser;
 import com.articulate.sigma.SimpleElement;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.io.BufferedReader;
 import java.io.File;

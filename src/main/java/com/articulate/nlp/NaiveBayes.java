@@ -27,7 +27,7 @@ http://guidetodatamining.com/guide/ch6/DataMining-ch6.pdf
 
 import com.google.common.collect.Lists;
 import com.articulate.sigma.DocGen;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;

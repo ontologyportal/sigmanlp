@@ -2,7 +2,7 @@ package com.articulate.nlp;
 
 import com.articulate.nlp.corpora.CorpusReader;
 import com.articulate.nlp.semRewrite.NPtype;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.util.*;
 

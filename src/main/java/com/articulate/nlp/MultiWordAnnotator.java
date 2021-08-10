@@ -1,7 +1,7 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.StringUtil;
+import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.MultiWords;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
