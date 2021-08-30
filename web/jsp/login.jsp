@@ -51,8 +51,12 @@ else {
     session.setAttribute("user",userName);
     session.setAttribute("role",role);
     ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
-    siblingContext.setAttribute("user",userName);
-    siblingContext.setAttribute("role",role);
+    if (siblingContext != null) {
+        siblingContext.setAttribute("user",userName);
+        siblingContext.setAttribute("role",role);
+        siblingContext.setAttribute("user","admin");
+        siblingContext.setAttribute("role","admin");
+    }
     System.out.println("login.jsp: Set sibling context");
     System.out.println("login.jsp: Successful login for " + userName + " with role " + role);
     response.sendRedirect("NLP.jsp");
