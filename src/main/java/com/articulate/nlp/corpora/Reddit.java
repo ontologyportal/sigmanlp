@@ -1,10 +1,6 @@
 package com.articulate.nlp.corpora;
 
 import com.articulate.sigma.utils.FileUtil;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import java.io.File;
 import java.io.IOException;
