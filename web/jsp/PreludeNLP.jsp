@@ -1,6 +1,6 @@
 <%@ page
    language="java"
-   import="com.articulate.sigma.*,com.articulate.sigma.wordNet.*,com.articulate.sigma.trans.*,java.text.ParseException,java.net.URLConnection,javax.servlet.ServletContext,javax.servlet.http.HttpServletRequest, java.net.URL,com.oreilly.servlet.multipart.MultipartParser,com.oreilly.servlet.multipart.Part,com.oreilly.servlet.multipart.ParamPart,com.oreilly.servlet.multipart.FilePart,java.util.*,java.io.*"
+   import="com.articulate.sigma.*,com.articulate.sigma.utils.*,com.articulate.sigma.wordNet.*,com.articulate.sigma.trans.*,java.text.ParseException,java.net.URLConnection,javax.servlet.ServletContext,javax.servlet.http.HttpServletRequest, java.net.URL,com.oreilly.servlet.multipart.MultipartParser,com.oreilly.servlet.multipart.Part,com.oreilly.servlet.multipart.ParamPart,com.oreilly.servlet.multipart.FilePart,java.util.*,java.io.*"
    pageEncoding="UTF-8"
    contentType="text/html;charset=UTF-8"
 %>
@@ -12,7 +12,7 @@
 <%
 
 /** This code is copyright Teknowledge (c) 2003, Articulate Software (c) 2003-2017,
-    Infosys (c) 2017-present.
+    Infosys (c) 2017-2019.
 
     This software is released under the GNU Public License
     <http://www.gnu.org/copyleft/gpl.html>.
@@ -23,6 +23,7 @@
     for Logical Theories. AI Communications 26, pp79-97.  See also
     http://github.com/ontologyportal
 */
+/*
 ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
 if (siblingContext == null)
     System.out.println("PreludeNLP.jsp: Empty sibling context");
@@ -39,8 +40,26 @@ if (siblingContext != null && siblingContext.getAttribute("role") != null)
 session.setAttribute("user",username);
 session.setAttribute("role",role);
 System.out.println("PreludeNLP.jsp: username:role  " + username + " : " + role);
+*/
 
+String username = (String) session.getAttribute("user");
+String role = (String) session.getAttribute("role");
+if (username != null && role != null)
+    System.out.println("Prelude.jsp: username:role  " + username + " : " + role);
+else
+    System.out.println("Prelude.jsp: null username or role");
 String welcomeString = " : Welcome guest : <a href=\"login.html\">log in</a>";
+if (!StringUtil.emptyString(username))
+    welcomeString = " : Welcome " + username;
+System.out.println("Prelude.jsp: KBmanager initialized  " + KBmanager.initialized);
+System.out.println("Prelude.jsp: KBmanager initializing  " + KBmanager.initializing);
+KBmanager mgr = KBmanager.getMgr();
+
+if (StringUtil.emptyString(role)) { // role is [guest | user | admin]
+    role = "guest";
+}
+
+welcomeString = " : Welcome guest : <a href=\"login.html\">log in</a>";
 if (!StringUtil.emptyString(username))
     welcomeString = " : Welcome " + username;
 String corpus = "";
@@ -50,7 +69,7 @@ String URLString = request.getRequestURL().toString();
 String pageString = URLString.substring(URLString.lastIndexOf("/") + 1);
 System.out.println("PreludeNLP.jsp: KBmanager initialized  " + KBmanager.initialized);
 System.out.println("PreludeNLP.jsp: KBmanager initializing  " + KBmanager.initializing);
-KBmanager mgr = KBmanager.getMgr();
+mgr = KBmanager.getMgr();
 
 String hostname = KBmanager.getMgr().getPref("hostname");
 if (hostname == null)
