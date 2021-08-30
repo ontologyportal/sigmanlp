@@ -49,7 +49,7 @@ public class NPtype {
 
     private static Pipeline p = new Pipeline(true);
 
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     public static KB kb = null;
 
@@ -268,20 +268,20 @@ public class NPtype {
     public static void evaluateNP(StringBuffer NP, HashSet<String> result,
                                   String lemma, int tokCount) {
 
-        System.out.println("evaluateNP(): " + NP);
-        if (WordNet.wn.isStopWord(lemma)) {
-            System.out.println("evaluateNP(): stopword: " + NP);
-            return;
-        }
         if (NP.length() != 0) {
+            if (debug) System.out.println("evaluateNP(): " + NP);
+            if (WordNet.wn.isStopWord(lemma)) {
+                if (debug) System.out.println("NPtype.evaluateNP(): stopword: " + NP);
+                return;
+            }
             if (tokCount == 1) { // don't add nouns already in the dictionary
-                System.out.println("evaluateNP(): check lemma: " + lemma);
+                if (debug) System.out.println("NPtype.evaluateNP(): check lemma: " + lemma);
                 if (!WordNet.wn.containsWord(lemma))
                     result.add(NP.toString());
             }
             else {  // don't add noun phrases already in the dictionary
                 String withSpaces = NP.toString().replaceAll("_"," ");
-                System.out.println("evaluateNP(): check with spaces: " + withSpaces);
+                if (debug) System.out.println("NPtype.evaluateNP(): check with spaces: " + withSpaces);
                 if (!WordNet.wn.containsWord(NP.toString()) &&
                         !WordNet.wn.containsWord(withSpaces))
                     result.add(NP.toString());
@@ -311,11 +311,11 @@ public class NPtype {
         for (CoreMap sentence : sentences) {
             List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             for (CoreLabel token : tokens) {
-                if (debug) System.out.println("findNP(): result so far: " + result);
+                if (debug) System.out.println("NPtype.findNP(): result so far: " + result);
                 String orig = token.originalText();
                 String lemma = token.lemma();
                 String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
-                if (debug) System.out.println("findNP(): orig, pos, lemma " + orig + " , " + pos + " , " + lemma);
+                if (debug) System.out.println("NPtype.findNPs(): orig, pos, lemma " + orig + " , " + pos + " , " + lemma);
                 if (pos.equals("NN") || pos.equals("NNS") || pos.equals("NNP") || pos.equals("NNPS")) {
                     if (pos.equals(lastPOS)) {
                         if (NP.length() != 0)
@@ -325,9 +325,9 @@ public class NPtype {
                         lastPOS = pos;
                     }
                     else {
-                        if (debug) System.out.println("findNP(): result so far 2 : " + result);
+                        if (debug) System.out.println("NPtype.findNPs(): result so far 2 : " + result);
                         evaluateNP(NP,result,lastLemma,tokCount);
-                        if (debug) System.out.println("findNP(): result so far 3 : " + result);
+                        if (debug) System.out.println("NPtype.findNPs(): result so far 3 : " + result);
                         NP = new StringBuffer();
                         tokCount = 1;  // reset counter of words in NP
                         NP.append(orig);
@@ -335,9 +335,9 @@ public class NPtype {
                     }
                 }
                 else {
-                    if (debug) System.out.println("findNP(): result so far 4 : " + result);
+                    if (debug) System.out.println("NPtype.findNPs(): result so far 4 : " + result);
                     evaluateNP(NP,result,lastLemma,tokCount);
-                    if (debug) System.out.println("findNP(): result so far 5 : " + result);
+                    if (debug) System.out.println("NPtype.findNPs(): result so far 5 : " + result);
                     NP = new StringBuffer();
                     tokCount = 0;  // reset counter of words in NP
                     lastPOS = pos;
@@ -345,6 +345,7 @@ public class NPtype {
                 lastLemma = lemma;
             }
         }
+        if (debug) System.out.println("NPtype.findNPs(): return result: " + result);
         return result;
     }
 
@@ -421,25 +422,21 @@ public class NPtype {
         if (args != null && args.length > 1 && args[0].equals("-p")) {
             System.out.println("find the product type of a noun phrase string");
             init();
-            debug = true;
             findProductType(args[1]);
         }
         else if (args != null && args.length > 2 && args[0].equals("-t")) {
             System.out.println("find the product type of a noun phrase string with restriction to a class");
             init();
-            debug = true;
             findType(args[1],args[2]);
         }
         else if (args != null && args.length > 1 && args[0].equals("-f")) {
             System.out.println("INFO in NPtype.main() find NPs in a file");
             init();
-            debug = true;
             System.out.println(collectNPs(args[1]));
         }
         else if (args != null && args.length > 1 && args[0].equals("-n")) {
             System.out.println("INFO in NPtype.main() find NPs in a string");
             init();
-            debug = true;
             System.out.println(findNPs(args[1]));
         }
         else if (args != null && args.length > 0 && args[0].equals("-i")) {
