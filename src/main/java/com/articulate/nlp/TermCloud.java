@@ -6,7 +6,7 @@ import com.articulate.sigma.utils.StringUtil;
 
 import java.util.*;
 
-/** This code is copyright Infosys (c) 2019-present.
+/** This code is copyright Infosys (c) 2019-2020, Articulate Software 2020-.
 
  This software is released under the GNU Public License
  <http://www.gnu.org/copyleft/gpl.html>.
