@@ -57,7 +57,10 @@ public class TermCloud {
      */
     public String makeCooc(String t1, String t2) {
 
-        return t1 + "\t" + t2;
+        if (t1.compareTo(t2) > 0)
+            return t1 + "\t" + t2;
+        else
+            return t2 + "\t" + t1;
     }
 
     /** ***************************************************************
@@ -90,12 +93,6 @@ public class TermCloud {
             freq++;
             freqTerm.put(s,freq);
 
-            HashSet<String> tset = termFreq.get(freq);
-            if (tset == null)
-                tset = new HashSet<>();
-            tset.add(s);
-            termFreq.put(freq,tset);
-
             HashSet<String> coocs = terms.get(s);
             if (coocs == null)
                 coocs = new HashSet<>();
@@ -124,6 +121,15 @@ public class TermCloud {
             if (nps.size() > 0)
                 processLine(nps);
         }
+        for (String s : freqTerm.keySet()) {
+            int freq = freqTerm.get(s);
+            HashSet<String> tset = termFreq.get(freq);
+            if (tset == null)
+                tset = new HashSet<>();
+            tset.add(s);
+            termFreq.put(freq, tset);
+        }
+        printAll();
     }
 
     /** ***************************************************************
@@ -131,10 +137,10 @@ public class TermCloud {
     public void printAll() {
 
         System.out.println("TermCloud.printAll(): terms: " + terms);
-        System.out.println("TermCloud.printAll(): freqCooc: " + freqCooc);
-        System.out.println("TermCloud.printAll(): coocFreq: " + coocFreq);
         System.out.println("TermCloud.printAll(): freqTerm: " + freqTerm);
         System.out.println("TermCloud.printAll(): termFreq: " + termFreq);
+        System.out.println("TermCloud.printAll(): freqCooc: " + freqCooc);
+        System.out.println("TermCloud.printAll(): coocFreq: " + coocFreq);
     }
 
     /** ***************************************************************
@@ -147,7 +153,7 @@ public class TermCloud {
             HashSet<String> termSet = freqMap.get(it.next());
             count = count + termSet.size();
             for (String s : termSet) {
-                System.out.println("printTopNFreqMap(): " + s);
+                System.out.println(s);
             }
         }
     }
@@ -195,11 +201,16 @@ public class TermCloud {
         Iterator<Integer> it = termFreq.descendingKeySet().iterator();
         int count = 0;
         while (it.hasNext() && count < countMax) {
-            HashSet<String> termSet = termFreq.get(it.next());
-            count = count + termSet.size();
+            int freq = it.next();
+            System.out.println("freq: " + freq);
+            System.out.println("count: " + count);
+            HashSet<String> termSet = termFreq.get(freq);
             for (String s : termSet) {
                 System.out.println("\n========= " + s + " =========");
                 showTopCooc(s);
+                count++;
+                if (count > countMax)
+                    break;
             }
         }
     }
