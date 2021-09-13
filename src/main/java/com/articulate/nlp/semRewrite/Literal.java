@@ -104,6 +104,7 @@ public class Literal implements Comparable {
             s = s.replace(",,",",COMMA");
         s = removeNumberWithComma(s);
         s = removeApostrophe(s);
+        s = removeSpecialChar(s);
         //System.out.println("Literal() before parse " + s);
         try {
             Lexer lex = new Lexer(s + ".");
@@ -312,6 +313,18 @@ public class Literal implements Comparable {
         }
         if (debug) System.out.println("removeApostrophe() after processing " + s);
         return s;
+    }
+
+    /****************************************************************
+     * @return the input string if no apostrophe found
+     */
+    public static String removeSpecialChar(String s) {
+
+        if (debug) System.out.println("removeSpecialChar() before processing " + s);
+        String newstr = s.replace("-lrb-","LFBRACKET");
+        newstr = newstr.replace("-rrb-","RTBRACKET");
+        if (debug) System.out.println("removeSpecialChar() after processing " + newstr);
+        return newstr;
     }
 
     /** ***************************************************************
