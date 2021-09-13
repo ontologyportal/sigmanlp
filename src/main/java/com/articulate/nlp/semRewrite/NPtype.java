@@ -29,7 +29,7 @@ import java.util.*;
 
 import com.articulate.nlp.corpora.CorpusReader;
 
-/** This code is copyright Infosys (c) 2018-present.
+/** This code is copyright Infosys (c) 2018-2020, Articulate Software 2020-.
  *
  *  This software is released under the GNU Public License
  *  <http://www.gnu.org/copyleft/gpl.html>.
@@ -52,6 +52,8 @@ public class NPtype {
     public static boolean debug = false;
 
     public static KB kb = null;
+
+    public static List<CoreMap> sentences = null;
 
     /** ***************************************************************
      * from https://stackoverflow.com/questions/19431754/using-stanford-parsercorenlp-to-find-phrase-heads/22841952
@@ -262,39 +264,43 @@ public class NPtype {
     }
 
     /** ***************************************************************
-     * add an NP to the result list if it's new and not already in the
-     * WordNet- and SUMO-based lexicon
+     * @return true if it's new and not already in the
+     * WordNet- and SUMO-based lexicon, false otherwise
      */
-    public static void evaluateNP(StringBuffer NP, HashSet<String> result,
-                                  String lemma, int tokCount) {
+    public static boolean evaluateNP(String NP, String lemma) {
 
+        //System.out.println("NPtype.evaluateNP(): " + WordNet.wn.containsWordIgnoreCase("covid"));
+        //System.out.println("NPtype.evaluateNP(): " + WordNet.wn.containsWord("covid"));
         if (NP.length() != 0) {
             if (debug) System.out.println("evaluateNP(): " + NP);
             if (WordNet.wn.isStopWord(lemma)) {
                 if (debug) System.out.println("NPtype.evaluateNP(): stopword: " + NP);
-                return;
+                return false;
             }
-            if (tokCount == 1) { // don't add nouns already in the dictionary
+            if (NP.contains("_")) { // don't add nouns already in the dictionary
                 if (debug) System.out.println("NPtype.evaluateNP(): check lemma: " + lemma);
-                if (!WordNet.wn.containsWord(lemma))
-                    result.add(NP.toString());
+                if (!WordNet.wn.containsWord(lemma) && !WordNet.wn.containsWordIgnoreCase(lemma))
+                    return true;
             }
             else {  // don't add noun phrases already in the dictionary
-                String withSpaces = NP.toString().replaceAll("_"," ");
+                String withSpaces = NP.replaceAll("_"," ");
                 if (debug) System.out.println("NPtype.evaluateNP(): check with spaces: " + withSpaces);
-                if (!WordNet.wn.containsWord(NP.toString()) &&
-                        !WordNet.wn.containsWord(withSpaces))
-                    result.add(NP.toString());
+                if (!WordNet.wn.containsWord(NP) &&
+                        !WordNet.wn.containsWordIgnoreCase(withSpaces))
+                    return true;
             }
         }
+        return false;
     }
 
     /** ***************************************************************
-     * collect noun phrases from a string
+     * collect noun phrases from a string.
+     * @param eval if true, don't include results that are already in WordNet or SUMO
+     * @return a map of NPs and their lemma values, if any
      */
-    public static HashSet<String> findNPs(String s) {
+    public static HashMap<String,String> findNPs(String s, boolean eval) {
 
-        HashSet<String> result = new HashSet<>();
+        HashMap<String,String> result = new HashMap<>();
         Annotation wholeDocument = null;
         try {
             wholeDocument = new Annotation(s);
@@ -303,7 +309,7 @@ public class NPtype {
         catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
+        sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
         String lastPOS = "";
         String lastLemma = "";
         StringBuffer NP = new StringBuffer();
@@ -326,7 +332,10 @@ public class NPtype {
                     }
                     else {
                         if (debug) System.out.println("NPtype.findNPs(): result so far 2 : " + result);
-                        evaluateNP(NP,result,lastLemma,tokCount);
+                        if (!eval)
+                            result.put(NP.toString(),lastLemma);
+                        if (eval && evaluateNP(NP.toString(),lastLemma))
+                            result.put(NP.toString(),lastLemma);
                         if (debug) System.out.println("NPtype.findNPs(): result so far 3 : " + result);
                         NP = new StringBuffer();
                         tokCount = 1;  // reset counter of words in NP
@@ -336,7 +345,10 @@ public class NPtype {
                 }
                 else {
                     if (debug) System.out.println("NPtype.findNPs(): result so far 4 : " + result);
-                    evaluateNP(NP,result,lastLemma,tokCount);
+                    if (!eval)
+                        result.put(NP.toString(),lastLemma);
+                    if (eval && evaluateNP(NP.toString(),lastLemma))
+                        result.put(NP.toString(),lastLemma);
                     if (debug) System.out.println("NPtype.findNPs(): result so far 5 : " + result);
                     NP = new StringBuffer();
                     tokCount = 0;  // reset counter of words in NP
@@ -357,9 +369,9 @@ public class NPtype {
         HashSet<String> result = new HashSet<>();
         ArrayList<String> lines = CorpusReader.readFile(fname);
         for (String l : lines) {
-            HashSet<String> nps = findNPs(l);
+            HashMap<String,String> nps = findNPs(l,false);
             if (nps.size() > 0)
-                result.addAll(nps);
+                result.addAll(nps.keySet());
         }
         return result;
     }
@@ -435,9 +447,9 @@ public class NPtype {
             System.out.println(collectNPs(args[1]));
         }
         else if (args != null && args.length > 1 && args[0].equals("-n")) {
-            System.out.println("INFO in NPtype.main() find NPs in a string");
+            System.out.println("INFO in NPtype.main() find novel NPs in a string");
             init();
-            System.out.println(findNPs(args[1]));
+            System.out.println(findNPs(args[1],true));
         }
         else if (args != null && args.length > 0 && args[0].equals("-i")) {
             System.out.println("INFO in NPtype.main() Interactive mode");

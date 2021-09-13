@@ -225,7 +225,7 @@ public class SentenceUtil {
 
         List<Literal> posInformation = Lists.newArrayList();
         for (CoreLabel label : tokens) {
-            Pattern auxPattern = Pattern.compile("aux\\(.*, " + label.toString() + "\\)");
+            //Pattern auxPattern = Pattern.compile("aux\\(.*, " + label.toString() + "\\)");
             boolean isAux = false;
             for (Literal l : dependenciesList) {
                 //if (auxPattern.matcher(dep).find()) {

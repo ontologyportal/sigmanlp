@@ -116,10 +116,10 @@ public class TermCloud {
             if (StringUtil.emptyString(l))
                 continue;
             System.out.println("\ncollectNPcoocs(): line: " + l);
-            HashSet<String> nps = NPtype.findNPs(l);
+            HashMap<String,String> nps = NPtype.findNPs(l,true);
             System.out.println("collectNPcoocs(): NPs: " + nps);
             if (nps.size() > 0)
-                processLine(nps);
+                processLine((HashSet<String>) nps.keySet());
         }
         for (String s : freqTerm.keySet()) {
             int freq = freqTerm.get(s);
