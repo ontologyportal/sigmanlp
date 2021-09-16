@@ -65,10 +65,9 @@ public class Analyze {
                 continue;
             System.out.println("\n------------------------------\nprocessFile(): line: " + l + "\n");
             nps.putAll(NPtype.findNPs(l,false));
-            newNps.addAll(elimKnownNPs(nps));
-            System.out.println("processFile(): nps: " + nps);
-            System.out.println("processFile(): new nps: " + newNps);
-            System.out.println("processFile(): sumo: " + sumo);
+            //System.out.println("processFile(1): nps: " + nps);
+            //System.out.println("processFile(1): new nps: " + newNps);
+            //System.out.println("processFile(1): sumo: " + sumo);
             sumo = MapUtils.mergeToFreqMap(sumo,WSD.collectSUMOFromString(l));
             for (CoreMap cm : NPtype.sentences) {
                 System.out.println(interp.interpretGenCNF(cm));
@@ -79,9 +78,10 @@ public class Analyze {
                 }
             }
         }
-        System.out.println("processFile(): nps: " + nps.keySet());
-        System.out.println("processFile(): new nps: " + newNps);
-        System.out.println("processFile(): sumo: " + MapUtils.sortedFreqMapToString(MapUtils.toSortedFreqMap(sumo)));
+        System.out.println("processFile(2): nps: " + nps.keySet());
+        newNps.addAll(elimKnownNPs(nps));
+        System.out.println("processFile(2): new nps: " + newNps);
+        System.out.println("processFile(2): sumo: " + MapUtils.sortedFreqMapToString(MapUtils.toSortedFreqMap(sumo)));
     }
 
     /** ***************************************************************
