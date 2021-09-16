@@ -401,7 +401,9 @@ public class SentenceUtil {
         //System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
         ArrayList<Literal> results = new ArrayList<>();
         for (CoreMap sentence : sentences) {
-            results.addAll(toDependenciesList(sentence));
+            List al = toDependenciesList(sentence);
+            if (al != null)
+                results.addAll(al);
         }
         return results;
     }
