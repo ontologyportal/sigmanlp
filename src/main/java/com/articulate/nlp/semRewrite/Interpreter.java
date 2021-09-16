@@ -326,6 +326,8 @@ public class Interpreter {
 
         //System.out.println("isAuxilliary(): token: " + token);
         List<Literal> deps = SentenceUtil.toDependenciesList(cm);
+        if (deps == null)
+            return false;
         String tokenStr = token.toString();
         for (Literal l : deps) {
             if (tokenStr.equals(l.arg2) && l.pred.startsWith("aux")) {
@@ -885,8 +887,11 @@ public class Interpreter {
     public CNF interpretGenCNF(CoreMap lastSentence) {
 
         if (debug) System.out.println("Interpreter.interpretGenCNF(): input: " + lastSentence);
+        if (!lastSentence.toString().contains("root(ROOT-0"))
+            return null;
         List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
         if (verboseParse && debug) {
+            System.out.println("Interpreter.interpretGenCNF():");
             for (CoreLabel cl : lastSentenceTokens)
                 System.out.println(cl.originalText() + ": " + cl.ner());
         }
