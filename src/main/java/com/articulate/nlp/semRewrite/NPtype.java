@@ -11,6 +11,7 @@ import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.KButilities;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WordNetUtilities;
 import com.google.common.base.Strings;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -286,7 +287,8 @@ public class NPtype {
                 String withSpaces = NP.replaceAll("_"," ");
                 if (debug) System.out.println("NPtype.evaluateNP(): check with spaces: " + withSpaces);
                 if (!WordNet.wn.containsWord(NP) &&
-                        !WordNet.wn.containsWordIgnoreCase(withSpaces))
+                    !WordNet.wn.containsWordIgnoreCase(withSpaces) &&
+                    !WordNet.wn.containsWordIgnoreCase(lemma))
                     return true;
             }
         }
