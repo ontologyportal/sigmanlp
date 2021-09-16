@@ -80,6 +80,8 @@ public class StanfordDateTimeExtractor {
      */
     public void populateParserInfo(CoreMap sentence, List<Tokens> tokenList) {
 
+    	//System.out.println("StanfordDateTimeExtractor.populateParserInfo() " + sentence);
+		//System.out.println("StanfordDateTimeExtractor.populateParserInfo() " + tokenList);
         tokenCount = 1;
         for (CoreLabel token: sentence.get(TokensAnnotation.class)) {
             String namedEntity = token.get(NamedEntityTagAnnotation.class);
@@ -100,7 +102,8 @@ public class StanfordDateTimeExtractor {
             tokenCount++;
         }
         dependencies = (sentence.get(CollapsedDependenciesAnnotation.class));
-        dependencyList = (StringUtils.split(dependencies.toList(), "\n"));
+        if (dependencies != null)
+        	dependencyList = (StringUtils.split(dependencies.toList(), "\n"));
     }
 
 	 /** ***************************************************************
