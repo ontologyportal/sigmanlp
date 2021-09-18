@@ -350,7 +350,8 @@ public class CNF implements Comparable {
         Collections.sort(newcnfs);
         StringBuffer sb = new StringBuffer();
         for (CNF c : newcnfs)
-            sb.append(c.toSortedString());
+            if (c != null)
+                sb.append(c.toSortedString());
         return sb.toString();
     }
 
