@@ -887,8 +887,6 @@ public class Interpreter {
     public CNF interpretGenCNF(CoreMap lastSentence) {
 
         if (debug) System.out.println("Interpreter.interpretGenCNF(): input: " + lastSentence);
-        if (!lastSentence.toString().contains("root(ROOT-0"))
-            return null;
         List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
         if (verboseParse && debug) {
             System.out.println("Interpreter.interpretGenCNF():");
@@ -898,6 +896,10 @@ public class Interpreter {
         List<Literal> results = Lists.newArrayList();
         List<Literal> dependenciesList = SentenceUtil.toDependenciesList(ImmutableList.of(lastSentence));
         if (debug) System.out.println("Interpreter.interpretGenCNF(): dependencies: " + dependenciesList);
+        if (!dependenciesList.toString().contains("root(ROOT-0")) {
+            System.out.println("Interpreter.interpretGenCNF(): no root, aborting: " + dependenciesList.toString());
+            return null;
+        }
         results.addAll(dependenciesList);
         //System.out.println("Interpreter.interpretGenCNF(): before numerics: " + results);
 
@@ -945,6 +947,9 @@ public class Interpreter {
      */
     public String interpretSingle(String input) {
 
+        System.out.println("INFO in Interpreter.interpretSingle(): input: '" + input);
+        if (StringUtil.emptyString(input))
+            return null;
         if (input.trim().endsWith("?") && inference)
             question = true;
         else
@@ -1264,12 +1269,15 @@ public class Interpreter {
      */
     public ArrayList<String> interpretCNF(ArrayList<CNF> inputs) {
 
+        if (inputs == null || inputs.size() == 0 || inputs.contains(null))
+            return null;
         if (inputs.size() > 1) {
             System.out.println("Error in Interpreter.interpretCNF(): multiple clauses");
             return null;
         }
         ArrayList<String> kifoutput = new ArrayList<String>();
-        System.out.println("INFO in Interpreter.interpretCNF(): inputs: " + CNF.toSortedString(inputs));
+        System.out.println("INFO in Interpreter.interpretCNF(): inputs: " + inputs);
+        System.out.println("INFO in Interpreter.interpretCNF(): sorted inputs: " + CNF.toSortedString(inputs));
         boolean bindingFound = true;
         int counter = 0;
         while (bindingFound && counter < 10 && inputs != null && inputs.size() > 0) {
