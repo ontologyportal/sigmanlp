@@ -4,6 +4,7 @@ import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semRewrite.Literal;
 import com.articulate.nlp.semRewrite.NPtype;
+import com.articulate.sigma.Formula;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.utils.MapUtils;
@@ -22,6 +23,10 @@ public class Analyze {
 
     public static KB kb = null;
 
+    public static HashMap<String,String> nps = new HashMap<>();
+    public static HashSet<String> newNps = new HashSet<>();
+    public static Map<String,Integer> sumo = new HashMap<>();
+    public static Map<Integer,HashSet<String>> freqMapSUMO = new HashMap<>();
 
     /** ***************************************************************
      */
@@ -48,6 +53,37 @@ public class Analyze {
     }
 
     /** ***************************************************************
+     */
+    public static void reportRelations(String rel, HashSet<String> cats) {
+
+        ArrayList<Formula> rels = kb.ask("arg",0,rel);
+        System.out.println("reportRelations(): rel : " + rel);
+
+        HashMap<String,HashSet<String>> relMap = new HashMap<>();
+        for (Formula f : rels) {
+            String arg1 = f.getStringArgument(1);
+            String arg2 = f.getStringArgument(2);
+            //System.out.println("reportRelations(): rel, arg1, arg2 : " + rel + "," + arg1 + "," + arg2);
+            if (StringUtil.emptyString(arg1) || StringUtil.emptyString(arg2) || arg1.contains("(") || arg2.contains("("))
+                continue;
+            MapUtils.addToMap(relMap,arg2,arg1);
+        }
+        for (int i : freqMapSUMO.keySet()) {
+            //System.out.println("reportRelations(): freq : " + i);
+            HashSet<String> sumoTerms =  freqMapSUMO.get(i);
+            //System.out.println("reportRelations(): sumo terms : " + sumoTerms);
+            for (String kbVal : relMap.keySet()) {
+                //System.out.println("reportRelations(): kbVal : " + kbVal);
+                for (String textVal : sumoTerms) {
+                    //System.out.println("reportRelations(): textVal : " + textVal);
+                    if (textVal.equals(kbVal) || kb.isChildOf(textVal,kbVal))
+                        System.out.println(textVal + " is a " + kbVal + " in " + rel + " for " + relMap.get(kbVal));
+                }
+            }
+        }
+    }
+
+    /** ***************************************************************
      * collect concepts from a file
      * @param categories reports on concepts that are subclasses or instances
      *                   of any of the provided terms, if present
@@ -55,9 +91,7 @@ public class Analyze {
     public static void processFile(String fname, HashSet<String> categories) {
 
         Interpreter interp = new Interpreter();
-        HashMap<String,String> nps = new HashMap<>();
-        HashSet<String> newNps = new HashSet<>();
-        Map<String,Integer> sumo = new HashMap<>();
+
         HashSet<String> sumoCat = new HashSet<>();
         ArrayList<String> lines = CorpusReader.readFile(fname);
         for (String l : lines) {
@@ -81,7 +115,8 @@ public class Analyze {
         System.out.println("processFile(2): nps: " + nps.keySet());
         newNps.addAll(elimKnownNPs(nps));
         System.out.println("processFile(2): new nps: " + newNps);
-        System.out.println("processFile(2): sumo: " + MapUtils.sortedFreqMapToString(MapUtils.toSortedFreqMap(sumo)));
+        freqMapSUMO = MapUtils.toSortedFreqMap(sumo);
+        System.out.println("processFile(2): sumo: " + MapUtils.sortedFreqMapToString(freqMapSUMO));
     }
 
     /** ***************************************************************
@@ -105,13 +140,15 @@ public class Analyze {
             System.out.println("NPtype.main(): no arguments");
         if (args != null && args.length > 1 && args[0].equals("-f")) {
             init();
+            String rel = args[2];
             HashSet<String> cats = new HashSet<>();
-            if (args.length > 2) {
-                for (int i = 2; i <= args.length; i++) {
-
+            if (args.length > 3) {
+                for (int i = 3; i <= args.length; i++) {
+                    cats.add(args[i]);
                 }
             }
             processFile(args[1],cats);
+            reportRelations(rel,cats);
         }
     }
 }
