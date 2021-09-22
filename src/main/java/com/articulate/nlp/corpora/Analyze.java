@@ -84,6 +84,26 @@ public class Analyze {
     }
 
     /** ***************************************************************
+     */
+    public static void genFreqMaps(Interpreter interp, Map<String,Integer> sumo,
+                                   HashMap<String,String> nps, String l) {
+
+        nps.putAll(NPtype.findNPs(l,false));
+        //System.out.println("processFile(1): nps: " + nps);
+        //System.out.println("processFile(1): new nps: " + newNps);
+        //System.out.println("processFile(1): sumo: " + sumo);
+        sumo = MapUtils.mergeToFreqMap(sumo,WSD.collectSUMOFromString(l));
+        for (CoreMap cm : NPtype.sentences) {
+            System.out.println(interp.interpretGenCNF(cm));
+            List<Literal> lits = Interpreter.findWSD(cm);
+            for (Literal lit : lits) {
+                String arg1 = lit.arg1;
+                MapUtils.addToFreqMap(sumo,arg1,1);
+            }
+        }
+    }
+
+    /** ***************************************************************
      * collect concepts from a file
      * @param categories reports on concepts that are subclasses or instances
      *                   of any of the provided terms, if present
@@ -98,19 +118,7 @@ public class Analyze {
             if (StringUtil.emptyString(l))
                 continue;
             System.out.println("\n------------------------------\nprocessFile(): line: " + l + "\n");
-            nps.putAll(NPtype.findNPs(l,false));
-            //System.out.println("processFile(1): nps: " + nps);
-            //System.out.println("processFile(1): new nps: " + newNps);
-            //System.out.println("processFile(1): sumo: " + sumo);
-            sumo = MapUtils.mergeToFreqMap(sumo,WSD.collectSUMOFromString(l));
-            for (CoreMap cm : NPtype.sentences) {
-                System.out.println(interp.interpretGenCNF(cm));
-                List<Literal> lits = Interpreter.findWSD(cm);
-                for (Literal lit : lits) {
-                    String arg1 = lit.arg1;
-                    MapUtils.addToFreqMap(sumo,arg1,1);
-                }
-            }
+            genFreqMaps(interp,sumo,nps,l);
         }
         System.out.println("processFile(2): nps: " + nps.keySet());
         newNps.addAll(elimKnownNPs(nps));
