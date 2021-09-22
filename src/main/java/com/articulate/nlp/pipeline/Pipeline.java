@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -61,7 +62,9 @@ public class Pipeline {
     public static String defaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, dbpmw, tsumo";
 
-    public static String anchorDate = "2017-04-21";
+    private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private static Date date = new Date();
+    public static String anchorDate = dateFormat.format(date);
 
     /** ***************************************************************
      */
