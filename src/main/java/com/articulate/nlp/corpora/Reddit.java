@@ -15,9 +15,10 @@ public class Reddit {
      */
     public static void extract(String input) {
 
+        System.out.println("Reddit.extract(): directory: " + input);
         StringBuilder contentBuilder = new StringBuilder();
         Collection<String> files = FileUtil.walk(input);
-        //System.out.println("Reddit.extract(): # files: " + files.size());
+        System.out.println("Reddit.extract(): # files: " + files.size());
         for (String s : files)
             contentBuilder.append(FileUtil.readLines(s,false).toString()).append("\n");
         Pattern p = Pattern.compile("1qeIAgB0cPwnLhDF9XSiJM\">([^<]*)</p>");
