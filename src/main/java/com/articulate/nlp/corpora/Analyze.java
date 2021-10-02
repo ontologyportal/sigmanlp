@@ -19,13 +19,13 @@ public class Analyze {
 
     private static Pipeline p = new Pipeline(true);
 
-    public static boolean debug = false;
+    public static boolean debug = true;
 
     public static KB kb = null;
 
     public static HashMap<String,String> nps = new HashMap<>();
     public static HashSet<String> newNps = new HashSet<>();
-    public static Map<String,Integer> sumo = new HashMap<>();
+    //public static Map<String,Integer> sumo = new HashMap<>();
     public static Map<Integer,HashSet<String>> freqMapSUMO = new HashMap<>();
 
     /** ***************************************************************
@@ -63,13 +63,13 @@ public class Analyze {
         for (Formula f : rels) {
             String arg1 = f.getStringArgument(1);
             String arg2 = f.getStringArgument(2);
-            //System.out.println("reportRelations(): rel, arg1, arg2 : " + rel + "," + arg1 + "," + arg2);
+            if (debug) System.out.println("reportRelations(): rel, arg1, arg2 : " + rel + "," + arg1 + "," + arg2);
             if (StringUtil.emptyString(arg1) || StringUtil.emptyString(arg2) || arg1.contains("(") || arg2.contains("("))
                 continue;
             MapUtils.addToMap(relMap,arg2,arg1);
         }
         for (int i : freqMapSUMO.keySet()) {
-            //System.out.println("reportRelations(): freq : " + i);
+            if (debug) System.out.println("reportRelations(): freq : " + i);
             HashSet<String> sumoTerms =  freqMapSUMO.get(i);
             //System.out.println("reportRelations(): sumo terms : " + sumoTerms);
             for (String kbVal : relMap.keySet()) {
@@ -85,22 +85,25 @@ public class Analyze {
 
     /** ***************************************************************
      */
-    public static void genFreqMaps(Interpreter interp, Map<String,Integer> sumo,
+    public static Map<String,Integer> genFreqMaps(Interpreter interp, Map<String,Integer> sumo,
                                    HashMap<String,String> nps, String l) {
 
         nps.putAll(NPtype.findNPs(l,false));
-        //System.out.println("processFile(1): nps: " + nps);
-        //System.out.println("processFile(1): new nps: " + newNps);
-        //System.out.println("processFile(1): sumo: " + sumo);
+        //System.out.println("genFreqMaps(): nps: " + nps);
+        //System.out.println("genFreqMaps(): new nps: " + newNps);
         sumo = MapUtils.mergeToFreqMap(sumo,WSD.collectSUMOFromString(l));
+        if (debug) System.out.println("genFreqMaps(): sumo: " + sumo);
         for (CoreMap cm : NPtype.sentences) {
             System.out.println(interp.interpretGenCNF(cm));
             List<Literal> lits = Interpreter.findWSD(cm);
+            if (debug) System.out.println("genFreqMaps(): lits: " + lits);
             for (Literal lit : lits) {
                 String arg1 = lit.arg1;
                 MapUtils.addToFreqMap(sumo,arg1,1);
             }
         }
+        if (debug) System.out.println("genFreqMaps(2): sumo: " + sumo);
+        return sumo;
     }
 
     /** ***************************************************************
@@ -112,19 +115,24 @@ public class Analyze {
 
         Interpreter interp = new Interpreter();
 
+        Map<String,Integer> sumo = new HashMap<>();
         HashSet<String> sumoCat = new HashSet<>();
         ArrayList<String> lines = CorpusReader.readFile(fname);
         for (String l : lines) {
+            System.out.println("\n------------------------------\nprocessFile(): line: " + l + "\n");
             if (StringUtil.emptyString(l))
                 continue;
-            System.out.println("\n------------------------------\nprocessFile(): line: " + l + "\n");
-            genFreqMaps(interp,sumo,nps,l);
+
+            sumo = genFreqMaps(interp,sumo,nps,l);
+            System.out.println("processFile(1): sumo: " + sumo);
         }
+        System.out.println("processFile(2): sumo: " + sumo);
         System.out.println("processFile(2): nps: " + nps.keySet());
         newNps.addAll(elimKnownNPs(nps));
         System.out.println("processFile(2): new nps: " + newNps);
         freqMapSUMO = MapUtils.toSortedFreqMap(sumo);
-        System.out.println("processFile(2): sumo: " + MapUtils.sortedFreqMapToString(freqMapSUMO));
+        System.out.println("processFile(3): sumo: " + sumo);
+        System.out.println("processFile(2): sumo freq: " + MapUtils.sortedFreqMapToString(freqMapSUMO));
     }
 
     /** ***************************************************************
@@ -148,7 +156,9 @@ public class Analyze {
             System.out.println("NPtype.main(): no arguments");
         if (args != null && args.length > 1 && args[0].equals("-f")) {
             init();
-            String rel = args[2];
+            String rel = null;
+            if (args.length> 2)
+                rel = args[2];
             HashSet<String> cats = new HashSet<>();
             if (args.length > 3) {
                 for (int i = 3; i <= args.length; i++) {
@@ -156,7 +166,8 @@ public class Analyze {
                 }
             }
             processFile(args[1],cats);
-            reportRelations(rel,cats);
+            if (rel != null)
+                reportRelations(rel,cats);
         }
     }
 }
