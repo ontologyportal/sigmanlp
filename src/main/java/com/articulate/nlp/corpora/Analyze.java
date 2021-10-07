@@ -19,7 +19,7 @@ public class Analyze {
 
     private static Pipeline p = new Pipeline(true);
 
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     public static KB kb = null;
 
@@ -119,20 +119,17 @@ public class Analyze {
         HashSet<String> sumoCat = new HashSet<>();
         ArrayList<String> lines = CorpusReader.readFile(fname);
         for (String l : lines) {
-            System.out.println("\n------------------------------\nprocessFile(): line: " + l + "\n");
+            //System.out.println("\n------------------------------\nprocessFile(): line: " + l + "\n");
             if (StringUtil.emptyString(l))
                 continue;
-
             sumo = genFreqMaps(interp,sumo,nps,l);
-            System.out.println("processFile(1): sumo: " + sumo);
         }
-        System.out.println("processFile(2): sumo: " + sumo);
-        System.out.println("processFile(2): nps: " + nps.keySet());
         newNps.addAll(elimKnownNPs(nps));
-        System.out.println("processFile(2): new nps: " + newNps);
         freqMapSUMO = MapUtils.toSortedFreqMap(sumo);
-        System.out.println("processFile(3): sumo: " + sumo);
-        System.out.println("processFile(2): sumo freq: " + MapUtils.sortedFreqMapToString(freqMapSUMO));
+        System.out.println("processFile(): nps: " + nps.keySet());
+        System.out.println("processFile(): new nps: " + newNps);
+        System.out.println("processFile(): sumo: " + sumo);
+        System.out.println("processFile(): sumo freq: " + MapUtils.sortedFreqMapToString(freqMapSUMO));
     }
 
     /** ***************************************************************
