@@ -118,6 +118,7 @@ public class Pipeline {
             props.put("parser.model", KBmanager.getMgr().getPref("englishPCFG"));
             props.put("parse.flags", "");
         }
+        props.setProperty("tokenize.options", "splitForwardSlash=true");
         System.out.println("Pipeline(): using PCFG model: " + KBmanager.getMgr().getPref("englishPCFG"));
         // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
         pipeline = new StanfordCoreNLP(props);
@@ -290,7 +291,7 @@ public class Pipeline {
         KBmanager.getMgr().initializeOnce();
         Pipeline p = new Pipeline(true);
         Annotation wholeDocument = p.annotate(sent);
-        showResults(wholeDocument);
+        System.out.println(showResults(wholeDocument));
     }
 
     /** ***************************************************************
