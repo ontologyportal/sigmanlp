@@ -103,8 +103,13 @@ public class RxNorm {
                     rel = StringUtil.stringToKIFid(rel);
                 else
                     rel = StringUtil.stringToKIFid(abbrevrel);
-                if (rel.equals("SY"))  rel = "synonym";
-                if (rel.equals("SIB")) rel = "sibling";
+                if (rel.equals("SY"))  {
+                    rel = "synonym";
+                    target = "\"" + target + "\"";
+                }
+                if (rel.equals("SIB"))
+                    rel = "sibling";
+
                 if (rel.equals("RN")) rel = "subclass";
                 if (rel.equals("RO")) rel = "relatedInternalConcept";
                 if (rel.equals("CHD")) rel = "subclass";
@@ -116,23 +121,27 @@ public class RxNorm {
                     target = tmp;
                 }
                 if (!StringUtil.emptyString(rel) && Character.isUpperCase(rel.charAt(0)))
-                    System.out.println("processRxnrel(): unknown relation : " + rel + " in line " + line);
-                if (source != null & target != null && !StringUtil.emptyString(rel))
+                    System.out.println("; processRxnrel(): unknown relation : " + rel + " in line " + line);
+                if (!StringUtil.emptyString(source) && !StringUtil.emptyString(target) && !StringUtil.emptyString(rel)) {
+                    source = source.substring(0, 1).toUpperCase() + source.substring(1);
+                    if (Character.isLetter(target.charAt(0)))
+                        target = target.substring(0, 1).toUpperCase() + target.substring(1);
                     System.out.println("(" + rel + " " + source + " " + target + ")");
+                }
                 else {
                     if (source == null)
-                        System.out.println("processRxnrel(): source id not found : " + source + " in line " + line);
+                        System.out.println("; processRxnrel(): source id not found : " + source + " in line " + line);
                     if (target == null)
-                        System.out.println("processRxnrel(): target id not found : " + target + " in line " + line);
+                        System.out.println("; processRxnrel(): target id not found : " + target + " in line " + line);
                     if (StringUtil.emptyString(rel))
-                        System.out.println("processRxnrel(): rel not found : " + rel + " in line " + line);
+                        System.out.println("; processRxnrel(): rel not found : " + rel + " in line " + line);
                 }
 
             }
         }
         catch (Exception e) {
             e.printStackTrace();
-            System.out.println("processRxnrel(): " +
+            System.out.println("; processRxnrel(): " +
                     "Unable to read line in file. Last line successfully read was: " + line);
         }
     }
@@ -162,7 +171,7 @@ public class RxNorm {
                 String rel = StringUtil.stringToKIFid(attr);
                 String value = null;
                 if (!StringUtil.emptyString(rel) && Character.isUpperCase(rel.charAt(0)))
-                    System.out.println("processRxnsat(): unknown relation : " + rel + " in line " + line);
+                    System.out.println("; processRxnsat(): unknown attribute : " + rel + " in line " + line);
                 if (rel != null && rel.equals("MESH_DEFINITION")) {
                     value = val;
                     rel = "documentation";
@@ -176,7 +185,7 @@ public class RxNorm {
         }
         catch (Exception e) {
             e.printStackTrace();
-            System.out.println("processRxnsat(): " +
+            System.out.println("; processRxnsat(): " +
                     "Unable to read line in file. Last line successfully read was: " + line);
         }
     }
@@ -199,16 +208,16 @@ public class RxNorm {
                 String id = fields[0];
                 String parent = fields[3];
                 String source = null;
-                String target = null;
                 source = StringUtil.stringToKIFid(drugConceptID.get(id).iterator().next());
-
-                String rel = StringUtil.stringToKIFid(parent);
-                System.out.println("(attribute " + source + " " + rel + ")");
+                String superclass = StringUtil.stringToKIFid(parent);
+                if (parent.equals("Clinical Drug"))
+                    superclass = "Medicine";
+                System.out.println("(subclass " + source + " " + superclass + ")");
             }
         }
         catch (Exception e) {
             e.printStackTrace();
-            System.out.println("processRxnsat(): " +
+            System.out.println("; processRxnsty(): " +
                     "Unable to read line in file. Last line successfully read was: " + line);
         }
     }
@@ -282,6 +291,6 @@ public class RxNorm {
         KBmanager.getMgr().initializeOnce();
         RxNorm.kb = KBmanager.getMgr().getKB("SUMO");
         readFiles();
-        generateSUMO();
+        //generateSUMO();
     }
 }
