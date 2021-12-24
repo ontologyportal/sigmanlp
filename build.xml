@@ -42,6 +42,8 @@
     <echo>sigmakee home: ${sigmakee.home}</echo>
     <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
     <copy todir="${basedir}/lib" file="${sigmakee.home}/build/sigmakee.jar" />
+    <ant antfile="../SigmaUtils/build.xml" inheritAll="false" target="all" />
+    <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
   </target>
   
   <target name="compile" depends="init" description="Compile sigmanlp">
