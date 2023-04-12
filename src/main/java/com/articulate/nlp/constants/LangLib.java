@@ -20,6 +20,9 @@ MA  02111-1307 USA
  */
 package com.articulate.nlp.constants;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * POS Tag is derived from Penn POS
  * http://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
@@ -153,4 +156,10 @@ public class LangLib {
     public static final String ASPECT_PERFECT = "PERFECT";
     public static final String ASPECT_PROGRESSIVE_PERFECT = "PROGRESSIVEPERFECT";
 
+    public static final ArrayList<String> prepositions = new ArrayList<>(Arrays.asList("about", "above", "across",
+            "after", "against", "along", "amid", "among", "around", "at", "before", "behind", "below", "beneath",
+            "beside", "between", "beyond", "but", "by", "concerning", "considering", "despite", "down", "during",
+            "except", "for", "from", "in", "inside", "into", "like", "near", "of", "off", "on", "onto", "out",
+            "outside", "over", "past", "regarding", "round", "since", "through", "throughout", "to", "toward", "under",
+            "underneath", "until", "unto", "up", "upon", "with", "within", "without"));
 }
