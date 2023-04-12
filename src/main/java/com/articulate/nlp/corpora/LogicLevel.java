@@ -194,6 +194,14 @@ public class LogicLevel {
     }
 
     /** ***************************************************************
+     * Parse lines that have words from a sentence in three columns.
+     * The first column is the word as it appears, the second is in
+     * all lowercase root form and the third is the part of speech.  Just grab
+     * the actual word, concat them all into sentences and run
+     * CoreNLP on the resulting sentence.  Example:
+     * may	may	vm
+     * not	not	xx
+     * be	be	vbi
      */
     public void readWordFile(LineNumberReader lnr) throws IOException {
 
