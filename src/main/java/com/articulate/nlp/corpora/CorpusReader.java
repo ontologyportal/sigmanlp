@@ -3,7 +3,7 @@ package com.articulate.nlp.corpora;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semconcor.Indexer;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.utils.StringUtil;
+import com.articulate.sigma.utils.*;
 
 import java.io.*;
 import java.nio.file.Files;
