@@ -174,7 +174,7 @@ public class NERAnnotator implements Annotator {
      */
     public void annotate(Annotation annotation) {
 
-        System.out.println("NERAnnotator.annotate() ");
+        if (debug) System.out.println("NERAnnotator.annotate() ");
         if (! annotation.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Unable to find sentences in " + annotation);
         List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
