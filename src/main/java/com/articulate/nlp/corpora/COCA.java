@@ -16,6 +16,8 @@ import com.articulate.sigma.utils.MapUtils;
 import com.articulate.sigma.utils.Pair;
 import com.articulate.sigma.utils.PairMap;
 import com.articulate.sigma.utils.StringUtil;
+import com.articulate.sigma.wordNet.WSD;
+import com.articulate.sigma.wordNet.WordNet;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -27,6 +29,9 @@ public class COCA {
 
     public HashMap<String, HashMap<String,Integer>> verbs = new HashMap<>();
     public HashMap<String, HashMap<String,Integer>> nouns = new HashMap<>();
+
+    public HashMap<String, TreeMap<Integer,HashSet<String>>> freqVerbs = new HashMap<>();
+    public HashMap<String, TreeMap<Integer,HashSet<String>>> freqNouns = new HashMap<>();
 
     public HashMap<String, Integer> verbPhrase = new HashMap<>();
 
@@ -74,15 +79,63 @@ public class COCA {
     }
 
     /** ***************************************************************
+     * allow only modifiers that have a mapping to SUMO
+     */
+    public void filterModifiers() {
+
+        for (String key : freqNouns.keySet()) {
+            TreeMap<Integer,HashSet<String>> map = freqNouns.get(key);
+            HashSet<Integer> keyRemove = new HashSet<>();
+            for (Integer i : map.keySet()) {
+                HashSet<String> theSet = map.get(i);
+                HashSet<String> toRemove = new HashSet<>();
+                for (String s : theSet) {
+                    String sense = WSD.getBestDefaultSUMOsense(s,3);
+                    if (StringUtil.emptyString(sense))
+                        toRemove.add(s);
+                }
+                theSet.removeAll(toRemove);
+                if (theSet.isEmpty())
+                    keyRemove.add(i);
+            }
+            for (Integer rem : keyRemove)
+                map.remove(rem);
+        }
+
+        for (String key : freqVerbs.keySet()) {
+            TreeMap<Integer,HashSet<String>> map = freqVerbs.get(key);
+            HashSet<Integer> keyRemove = new HashSet<>();
+            for (Integer i : map.keySet()) {
+                HashSet<String> theSet = map.get(i);
+                HashSet<String> toRemove = new HashSet<>();
+                for (String s : theSet) {
+                    String sense = WSD.getBestDefaultSUMOsense(s,4);
+                    if (StringUtil.emptyString(sense))
+                        toRemove.add(s);
+                }
+                theSet.removeAll(toRemove);
+                if (theSet.isEmpty())
+                    keyRemove.add(i);
+            }
+            for (Integer rem : keyRemove)
+                map.remove(rem);
+        }
+    }
+
+    /** ***************************************************************
      * read adj/noun, adv/verb stats from nouns.txt and verbs.txt"
      */
     public void readPairs() {
 
         System.out.println("read pairs");
-        nouns = PairMap.readMap("nouns.txt");
-        verbs = PairMap.readMap("verbs.txt");
-        System.out.println("Nouns: " + nouns);
-        System.out.println("Verbs: " + verbs);
+        freqNouns = PairMap.readMap("nouns.txt");
+        freqVerbs = PairMap.readMap("verbs.txt");
+        System.out.println("Nouns: " + freqNouns);
+        System.out.println("Verbs: " + freqVerbs);
+        filterModifiers();
+        System.out.println("=================================");
+        System.out.println("Nouns: " + freqNouns);
+        System.out.println("Verbs: " + freqVerbs);
     }
 
     /** ***************************************************************
