@@ -1,5 +1,30 @@
 package com.articulate.nlp.corpora;
 
+// Code to read and manipulate the billion-word contents of the Corpus of Contemporary
+// American English - https://corpus.byu.edu/coca/?c=coca&q=67259739
+// COCA part of speech tags are lowercase versions of https://ucrel.lancs.ac.uk/claws7tags.html
+// Although this code is open source, COCA is not, and running this code requires
+// access to COCA itself.
+
+/*
+Author: Adam Pease
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program ; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+MA  02111-1307 USA
+*/
+
 import com.articulate.nlp.constants.LangLib;
 
 import java.io.File;
@@ -12,12 +37,16 @@ import java.util.*;
 
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.semRewrite.Interpreter;
+import com.articulate.sigma.KB;
+import com.articulate.sigma.KBmanager;
+import com.articulate.sigma.KButilities;
 import com.articulate.sigma.utils.MapUtils;
 import com.articulate.sigma.utils.Pair;
 import com.articulate.sigma.utils.PairMap;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WordNetUtilities;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -43,6 +72,9 @@ public class COCA {
      * may	may	vm
      * not	not	xx
      * be	be	vbi
+     * @return a triple of word,wor,pos as the inner ArrayList. The
+     * outer ArrayList is a list of those triples, where a '#' token
+     * delineates sentences.
      */
     public ArrayList<ArrayList<String>> readWordFile(String filename) {
 
@@ -79,20 +111,54 @@ public class COCA {
     }
 
     /** ***************************************************************
+     */
+    public static boolean excluded(String p) {
+
+        KB kb = KBmanager.getMgr().getKB("SUMO");
+        if (p.equals("True") || p.equals("False") ||
+                kb.isInstanceOf(p,"NormativeAttribute") || kb.isSubclass(p,"NormativeAttribute"))
+            return true;
+        //System.out.println("excluded(): p: " + p + " kb.isInstanceOf(p,\"Attribute\"): " + kb.isInstanceOf(p,"Attribute"));
+        //System.out.println("excluded(): p: " + p + " kb.isSubclass(p,\"Attribute\"): " + kb.isSubclass(p,"Attribute"));
+        //System.out.println("excluded(): p: " + p + " (kb.isInstanceOf(p,\"Attribute\") || kb.isSubclass(p,\"Attribute\"): " +
+        //        (kb.isInstanceOf(p,"Attribute") || kb.isSubclass(p,"Attribute")));
+        if (kb.isInstanceOf(p,"Attribute") || kb.isSubclass(p,"Attribute") ) {
+            //System.out.println("excluded(): " + p + " is not excluded");
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    /** ***************************************************************
      * allow only modifiers that have a mapping to SUMO
      */
-    public void filterModifiers() {
+    public static void filterModifiers(HashMap<String, TreeMap<Integer,HashSet<String>>> fVerbs,
+        HashMap<String, TreeMap<Integer,HashSet<String>>> fNouns ) {
 
-        for (String key : freqNouns.keySet()) {
-            TreeMap<Integer,HashSet<String>> map = freqNouns.get(key);
+        HashSet<String> nounRemove = new HashSet<>();
+        for (String key : fNouns.keySet()) {
+            TreeMap<Integer,HashSet<String>> map = fNouns.get(key);
             HashSet<Integer> keyRemove = new HashSet<>();
             for (Integer i : map.keySet()) {
                 HashSet<String> theSet = map.get(i);
                 HashSet<String> toRemove = new HashSet<>();
                 for (String s : theSet) {
-                    String sense = WSD.getBestDefaultSUMOsense(s,3);
-                    if (StringUtil.emptyString(sense))
+                    String SUMO = WSD.getBestDefaultSUMOsense(s,3);
+                    SUMO = WordNetUtilities.getBareSUMOTerm(SUMO);
+                    if (StringUtil.emptyString(SUMO)) {
                         toRemove.add(s);
+                        System.out.println("no SUMO mapping for " + s);
+                    }
+                    else {
+                        if (excluded(SUMO)) {
+                            toRemove.add(s);
+                            System.out.println("excluded mapping of " + s + " to " + SUMO);
+                        }
+                        else
+                            System.out.println("found SUMO " + SUMO + " for " + s);
+                    }
                 }
                 theSet.removeAll(toRemove);
                 if (theSet.isEmpty())
@@ -100,18 +166,34 @@ public class COCA {
             }
             for (Integer rem : keyRemove)
                 map.remove(rem);
+            if (map.isEmpty())
+                nounRemove.add(key);
         }
+        for (String k : nounRemove)
+            fNouns.remove(k);
 
-        for (String key : freqVerbs.keySet()) {
-            TreeMap<Integer,HashSet<String>> map = freqVerbs.get(key);
+        HashSet<String> verbRemove = new HashSet<>();
+        for (String key : fVerbs.keySet()) {
+            TreeMap<Integer,HashSet<String>> map = fVerbs.get(key);
             HashSet<Integer> keyRemove = new HashSet<>();
             for (Integer i : map.keySet()) {
                 HashSet<String> theSet = map.get(i);
                 HashSet<String> toRemove = new HashSet<>();
                 for (String s : theSet) {
-                    String sense = WSD.getBestDefaultSUMOsense(s,4);
-                    if (StringUtil.emptyString(sense))
+                    String SUMO = WSD.getBestDefaultSUMOsense(s,4);
+                    SUMO = WordNetUtilities.getBareSUMOTerm(SUMO);
+                    if (StringUtil.emptyString(SUMO)) {
                         toRemove.add(s);
+                        System.out.println("no SUMO mapping for " + s);
+                    }
+                    else {
+                        if (excluded(SUMO)) {
+                            toRemove.add(s);
+                            System.out.println("excluded mapping of " + s + " to " + SUMO);
+                        }
+                        else
+                            System.out.println("found SUMO " + SUMO + " for " + s);
+                    }
                 }
                 theSet.removeAll(toRemove);
                 if (theSet.isEmpty())
@@ -119,27 +201,37 @@ public class COCA {
             }
             for (Integer rem : keyRemove)
                 map.remove(rem);
+            if (map.isEmpty())
+                verbRemove.add(key);
         }
+        for (String k : verbRemove)
+            fVerbs.remove(k);
     }
 
     /** ***************************************************************
      * read adj/noun, adv/verb stats from nouns.txt and verbs.txt"
      */
-    public void readPairs() {
+    public void readPairs(String dir) {
 
         System.out.println("read pairs");
-        freqNouns = PairMap.readMap("nouns.txt");
-        freqVerbs = PairMap.readMap("verbs.txt");
-        System.out.println("Nouns: " + freqNouns);
-        System.out.println("Verbs: " + freqVerbs);
-        filterModifiers();
-        System.out.println("=================================");
-        System.out.println("Nouns: " + freqNouns);
-        System.out.println("Verbs: " + freqVerbs);
+        freqNouns = PairMap.readMap(dir + File.separator + "nouns.txt");
+        freqVerbs = PairMap.readMap(dir + File.separator + "verbs.txt");
+        //System.out.println("Nouns: " + freqNouns);
+        //System.out.println("Verbs: " + freqVerbs);
+        System.out.println("COCA.readPairs(): " + freqNouns.keySet().size() +
+                " nouns and " + freqVerbs.keySet().size() + " verbs read");
+        filterModifiers(freqVerbs,freqNouns);
+        //System.out.println("=================================");
+        //System.out.println("Nouns: " + freqNouns);
+        //System.out.println("Verbs: " + freqVerbs);
+        System.out.println("COCA.readPairs(): " + freqNouns.keySet().size() +
+                " nouns and " + freqVerbs.keySet().size() + " verbs after filtering");
     }
 
     /** ***************************************************************
-     * Get frequency sorted adjective-noun pairs from a file of COCA
+     * Get frequency sorted adjective-noun pairs from a file of COCA. Use
+     * Stanford CoreNLP to find sentence boundaries and POS, ignoring
+     * the POS data from COCA.
      */
     public void adjNounFreqFile(String fname) {
 
@@ -199,6 +291,43 @@ public class COCA {
     }
 
     /** ***************************************************************
+     * Get frequency sorted adjective-noun and adverb-verb pairs from a
+     * file of COCA.  Use the COCA POS info. Note that sentence boundaries
+     * don't matter for this method.
+     */
+    public void modifierFreqFile(String fname) {
+
+        ArrayList<String> excluded = new ArrayList<String>(
+                Arrays.asList("not","never"));
+        ArrayList<ArrayList<String>> result = readWordFile(fname);
+        String modifier = "";
+        for (ArrayList<String> ar : result) {
+            //System.out.println(ar);
+            String word = ar.get(1);
+            String pos = ar.get(2);
+            //System.out.print (word+ ":");
+            //System.out.print(pos + " ");
+            if ((pos.startsWith("nn") || pos.startsWith("vb")) && !StringUtil.emptyString(modifier)) {
+                if (pos.startsWith("nn"))
+                    PairMap.addToMap(nouns,word,modifier);
+                if (pos.startsWith("vb"))
+                    PairMap.addToMap(verbs,word,modifier);
+            }
+            if ((pos.equals("jj") || pos.equals("r") ) && !excluded.contains(word)) {
+                modifier = word;
+            }
+            else
+                modifier = "";
+            if (word.equals("@"))
+                System.out.print('.');
+        }
+        System.out.println("Nouns: " + nouns);
+        System.out.println("Verbs: " + verbs);
+        PairMap.saveMap(nouns,"nouns.txt");
+        PairMap.saveMap(verbs,"verbs.txt");
+    }
+
+    /** ***************************************************************
      * Get frequency sorted adjective-noun pairs from a directory of COCA
      */
     public void adjNounFreq(String dir) {
@@ -208,7 +337,7 @@ public class COCA {
         String[] pathnames = f.list();
         for (String s : pathnames) {
             System.out.println("running on file: " + dir + File.separator + s);
-            adjNounFreqFile(dir + File.separator + s);
+            modifierFreqFile(dir + File.separator + s);
         }
     }
 
@@ -292,7 +421,7 @@ public class COCA {
         System.out.println("COCA corpus analysis");
         System.out.println("  options:");
         System.out.println("  -h - show this help screen");
-        System.out.println("  -d fname - run on directory");
+        System.out.println("  -d fname - collect verb phrases from files in directory");
         System.out.println("  -s fname - regenerate sentences from a directory");
         System.out.println("  -a fname - collect frequency sorted adjective noun pairs from file");
         System.out.println("  -r - read adj/noun, adv/verb stats from a file");
@@ -318,10 +447,11 @@ public class COCA {
                 coca.regen(args[1]);
             }
             else if (args != null && args.length > 1 && args[0].startsWith("-a")) {
-                coca.adjNounFreqFile(args[1]);
+                coca.modifierFreqFile(args[1]);
             }
             else if (args != null && args.length > 0 && args[0].startsWith("-r")) {
-                coca.readPairs();
+                KBmanager.getMgr().initializeOnce();
+                coca.readPairs(".");
             }
             System.out.println("INFO in COCA.main(): seconds to run: " + (System.currentTimeMillis() - millis) / 1000);
         }
