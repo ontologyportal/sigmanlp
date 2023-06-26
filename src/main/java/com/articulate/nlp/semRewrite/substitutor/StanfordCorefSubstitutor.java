@@ -68,15 +68,16 @@ public class StanfordCorefSubstitutor extends SimpleSubstitutorStorage {
         Map<CoreLabelSequence, CoreLabelSequence> collectedGroups = Maps.newHashMap();
 
         for (CoreLabel label : labels) {
-            //if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): label: " + label);
+            if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): label: " + label);
             List<CorefChain.CorefMention> mentions = getMentions(label, corefChains);
-            //if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): mentions: " + mentions);
+            if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): mentions: " + mentions);
             if (mentions.size() > 1) {
                 if (!ignorablePronouns.contains(label.originalText())) {
                     int index = label.index();
                     int sentenceIdx = 1 + label.sentIndex();
 
                     CorefChain.CorefMention firstMention = findRootMention(mentions);
+                    if (debug) System.out.println("StanfordCorefSubstitutor.initialize(): root mentions: " + firstMention);
                     if (sentenceIdx != firstMention.sentNum || index < firstMention.startIndex || index >= firstMention.endIndex) {
                         String masterTag = label.tag();
                         if (isSubstitutablePronoun(label))
