@@ -17,7 +17,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static com.articulate.sigma.mlpipeline.GenSimpTestData.*;
+import static com.articulate.nlp.GenSimpTestData.*;
 
 public class GenSimpTestDataTest {
 
