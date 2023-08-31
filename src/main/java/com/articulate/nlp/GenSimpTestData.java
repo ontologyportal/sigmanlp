@@ -5,6 +5,7 @@ import com.articulate.sigma.nlg.NLGUtils;
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.utils.PairMap;
 import com.articulate.sigma.utils.StringUtil;
+import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
 import com.articulate.nlp.corpora.COCA;
@@ -94,7 +95,7 @@ public class GenSimpTestData {
     // adjective or adverb
     public HashMap<String, TreeMap<Integer,HashSet<String>>> freqVerbs = new HashMap<>();
     public HashMap<String, TreeMap<Integer,HashSet<String>>> freqNouns = new HashMap<>();
-    public static COCA coca = null;
+    public static COCA coca = new COCA();
 
     /** ***************************************************************
      */
@@ -242,7 +243,7 @@ public class GenSimpTestData {
         if (bareClass.equals("Class"))
             skip = true;
         else {
-            HashSet<String> children = kb.kbCache.getChildClasses(bareClass);
+            Set<String> children = kb.kbCache.getChildClasses(bareClass);
             ArrayList<String> cs = new ArrayList<>();
             cs.addAll(children);
             if (children == null || children.size() == 0)
@@ -499,7 +500,7 @@ public class GenSimpTestData {
             if (formatMap.get(rel) != null && !kb.isFunction(rel)) {
                 boolean skip = false;
                 if (debug) System.out.println("genStatements()  rel: " + rel);
-                ArrayList<String> sig = kb.kbCache.getSignature(rel);
+                ArrayList<String> sig = (ArrayList<String>) kb.kbCache.getSignature(rel);
                 HashMap<String, ArrayList<String>> instMap = new HashMap<>();
                 if (debug) System.out.println("sig: " + sig);
                 for (String t : sig) {
@@ -798,7 +799,8 @@ public class GenSimpTestData {
      * @param terms a collection of SUMO terms
      * @return an ArrayList of AVPair with a value of log of frequency
      *          derived from the equivalent synsets the terms map to. Attribute
-     *          of each AVPair is a SUMO term.
+     *          of each AVPair is a SUMO term.  If we didn't use the log
+     *          of frequency we'd practically just get "to be" every time
      */
     public ArrayList<AVPair> findWordFreq(Collection<String> terms) {
 
@@ -909,6 +911,14 @@ public class GenSimpTestData {
     public String verbForm(String term, boolean negated, String word, boolean plural, StringBuffer english,
                            LFeatures lfeat) {
 
+        String adverb = "";
+        if (lfeat.adverb != "") {
+            adverb = lfeat.adverb + " ";
+        }
+        if (lfeat.subj.equals("You")) {
+            lfeat.verb = lfeat.verb.toLowerCase();
+            adverb = Character.toUpperCase(adverb.charAt(0)) + adverb.substring(1);
+        }
         String result = "";
         if (debug) System.out.println("verbForm(): (term,word): " + term + ", " + word);
         if (debug) System.out.println("verbForm(): tense: " + printTense(lfeat.tense));
@@ -1397,8 +1407,23 @@ public class GenSimpTestData {
                                 String proc, String word, LFeatures lfeat) {
 
         if (debug) System.out.println("generateVerb(): word,proc,subj: " + word + ", " + proc + ", " + lfeat.subj);
-        english.append(verbForm(proc,negated,word,lfeat.subjectPlural,english,lfeat) + " ");
+        String verb = verbForm(proc,negated,word,lfeat.subjectPlural,english,lfeat);
+        String adverb = "";
+        String adverbSUMO = "";
+        if (lfeat.adverb != "") {
+            adverb = lfeat.adverb + " ";
+            adverbSUMO = WSD.getBestDefaultSUMOsense(lfeat.adverb,4);
+            adverbSUMO = WordNetUtilities.getBareSUMOTerm(adverbSUMO);
+        }
+        if (lfeat.subj.equals("You")) {
+            verb = verb.toLowerCase();
+            adverb = Character.toUpperCase(adverb.charAt(0)) + adverb.substring(1);
+        }
+        english.append(verb + " ");
         prop.append("(instance ?P " + proc + ") ");
+        if (lfeat.adverb != "") {
+            prop.append("(manner ?P " + adverbSUMO + ") ");
+        }
         if (lfeat.framePart.startsWith("It") ) {
             System.out.println("non-human subject for (prop,synset,word): " +
                     prop + ", " + lfeat.verbSynset + ", " + lfeat.verb);
@@ -1952,6 +1977,45 @@ public class GenSimpTestData {
     }
 
     /** ***************************************************************
+     */
+    private void getAdverb(LFeatures lfeat, boolean second) {
+
+        String word = "";
+        String adverb = "";
+        if (second)
+            word = lfeat.secondVerb;
+        else
+            word = lfeat.verb;
+        System.out.println("getAdverb(): verb: " + word);
+        if (coca.freqVerbs.keySet().contains(word)) {
+            TreeMap<Integer,HashSet<String>> oneVerb = coca.freqVerbs.get(word);
+            int total = 0;
+            for (int i : oneVerb.keySet())
+                total = total + (i * oneVerb.get(i).size());
+            int index = rand.nextInt(total);
+            total = 0;
+            for (int i : oneVerb.keySet()) {
+                int increment = (i * oneVerb.get(i).size());
+                if (index >= total && index < increment) {
+                    if (oneVerb.get(i).size() == 1)
+                        adverb = oneVerb.get(i).iterator().next();
+                    else {
+                        int size = oneVerb.get(i).size();
+                        ArrayList<String> ar = new ArrayList(Arrays.asList(oneVerb.get(i).toArray()));
+                        adverb = ar.get(rand.nextInt(size));
+                    }
+                }
+                total = total + increment;
+            }
+            System.out.println("adverb(): found adverb: " + adverb);
+            if (second)
+                lfeat.secondVerbModifier = adverb;
+            else
+                lfeat.adverb = adverb;
+        }
+    }
+
+    /** ***************************************************************
      * Get a randomized next verb
      * @return an AVPair with an attribute of the SUMO term and the value
      * of the 9-digit synset concatenated with a "-" and root of the verb
@@ -1968,7 +2032,7 @@ public class GenSimpTestData {
         ArrayList<String> synsets = null;
         do {
             do {
-                proc = lfeat.processes.getNext();
+                proc = lfeat.processes.getNext(); // processes is a RandSet
                 synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(proc);
                 if (synsets.size() == 0) // keep searching for processes with equivalent synsets
                     if (debug) System.out.println("getVerb(): no equivalent synsets for: " + proc);
@@ -1988,11 +2052,19 @@ public class GenSimpTestData {
             lfeat.secondVerbType = proc;
             lfeat.secondVerb = word;
             lfeat.secondVerbSynset = synset;
+            if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
+                getAdverb(lfeat,second);
+            else
+                System.out.println("getVerb(): no adverb this time for " + word);
         }
         else {
             lfeat.verbType = proc;
             lfeat.verb = word;
             lfeat.verbSynset = synset;
+            if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
+                getAdverb(lfeat,second);
+            else
+                System.out.println("getVerb(): no adverb this time for " + word);
         }
     }
 
@@ -2393,7 +2465,7 @@ public class GenSimpTestData {
     public void extendCapabilities(Collection<Capability> caps) {
 
         for (Capability c : caps) {
-            HashSet<String> childClasses = kb.kbCache.getChildClasses(c.proc);
+            Set<String> childClasses = kb.kbCache.getChildClasses(c.proc);
             if (childClasses != null) {
                 childClasses.add(c.proc); // add the original class
                 for (String cls : childClasses) { // add each of the subclasses

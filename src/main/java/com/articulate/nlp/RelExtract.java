@@ -157,7 +157,7 @@ public class RelExtract {
      */
     public static String buildFormulaString(KB kb, String rel) {
 
-        ArrayList<String> sig = kb.kbCache.signatures.get(rel);
+        List<String> sig = kb.kbCache.signatures.get(rel);
         StringBuffer sb = new StringBuffer();
         if (sig != null && sig.size() > 1) {
             sb.append("(exists (");

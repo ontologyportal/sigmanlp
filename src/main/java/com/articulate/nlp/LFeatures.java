@@ -2,10 +2,7 @@ package com.articulate.nlp;
 
 import com.articulate.sigma.utils.AVPair;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 /**
  * **************************************************************
@@ -22,6 +19,7 @@ public class LFeatures {
     public int attCount = 1;
     public String attSubj = null; // the agent holding the attitude
     public String attitude = "None";
+    public String attitudeModifier = ""; // adjective
     public boolean negatedModal = false;
     public boolean negatedBody = false;
     public ArrayList<AVPair> modals = null;
@@ -36,9 +34,11 @@ public class LFeatures {
     public String secondVerb = ""; // the verb word that appears as INFINITIVE or VERB-ing or V-ing in the frame
     public String secondVerbType = ""; // the SUMO type of the second verb
     public String secondVerbSynset = "";
+    public String secondVerbModifier= ""; // adverb
     public HashSet<String> prevHumans = new HashSet<>();
     public String subj = "";
     public String subjName = "";
+    public String subjectModifier = ""; // adjective
     public boolean subjectPlural = false;
     public int subjectCount = 1;
 
@@ -54,13 +54,16 @@ public class LFeatures {
     public String directType = null;  // the direct object
     public boolean directPlural = false;
     public int directCount = 1;
+    public String directModifier = ""; // adjective
     public String indirectName = null; // the indirect object
     public String indirectType = null; // the indirect object
     public boolean indirectPlural = false;
     public int indirectCount = 1;
+    public String indirectModifier = ""; // adjective
     public boolean question = false;
     public String verb = "";
     public String verbType = ""; // the SUMO class of the verb
+    public String adverb = "";
     public int tense = GenSimpTestData.NOTIME;
     public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
     public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
@@ -88,7 +91,7 @@ public class LFeatures {
         bodyParts = RandSet.create(bodyFreqs);
 
         HashSet<String> artInst = GenSimpTestData.kb.kbCache.getInstancesForType("Artifact");
-        HashSet<String> artClass = GenSimpTestData.kb.kbCache.getChildClasses("Artifact");
+        Set<String> artClass = GenSimpTestData.kb.kbCache.getChildClasses("Artifact");
 
         Collection<AVPair> procFreqs = genSimpTestData.findWordFreq(GenSimpTestData.kb.kbCache.getChildClasses("Process"));
         processes = RandSet.create(procFreqs);
@@ -99,7 +102,7 @@ public class LFeatures {
         }
 
         HashSet<String> orgInst = GenSimpTestData.kb.kbCache.getInstancesForType("OrganicObject");
-        HashSet<String> orgClass = GenSimpTestData.kb.kbCache.getChildClasses("OrganicObject");
+        Set<String> orgClass = GenSimpTestData.kb.kbCache.getChildClasses("OrganicObject");
 
         HashSet<String> objs = new HashSet<>();
         objs.addAll(orgClass);
