@@ -116,7 +116,7 @@ public class COCA {
 
         KB kb = KBmanager.getMgr().getKB("SUMO");
         if (p.equals("True") || p.equals("False") ||
-                kb.isInstanceOf(p,"NormativeAttribute") || kb.isSubclass(p,"NormativeAttribute"))
+                kb.isInstanceOf(p,"DeonticAttribute") || kb.isSubclass(p,"DeonticAttribute"))
             return true;
         //System.out.println("excluded(): p: " + p + " kb.isInstanceOf(p,\"Attribute\"): " + kb.isInstanceOf(p,"Attribute"));
         //System.out.println("excluded(): p: " + p + " kb.isSubclass(p,\"Attribute\"): " + kb.isSubclass(p,"Attribute"));
@@ -149,15 +149,15 @@ public class COCA {
                     SUMO = WordNetUtilities.getBareSUMOTerm(SUMO);
                     if (StringUtil.emptyString(SUMO)) {
                         toRemove.add(s);
-                        System.out.println("no SUMO mapping for " + s);
+                        //System.out.println("no SUMO mapping for " + s);
                     }
                     else {
                         if (excluded(SUMO)) {
                             toRemove.add(s);
-                            System.out.println("excluded mapping of " + s + " to " + SUMO);
+                            //System.out.println("excluded mapping of " + s + " to " + SUMO);
                         }
-                        else
-                            System.out.println("found SUMO " + SUMO + " for " + s);
+                        //else
+                            //System.out.println("found SUMO " + SUMO + " for " + s);
                     }
                 }
                 theSet.removeAll(toRemove);
@@ -184,15 +184,15 @@ public class COCA {
                     SUMO = WordNetUtilities.getBareSUMOTerm(SUMO);
                     if (StringUtil.emptyString(SUMO)) {
                         toRemove.add(s);
-                        System.out.println("no SUMO mapping for " + s);
+                        //System.out.println("no SUMO mapping for " + s + " with verb " + key);
                     }
                     else {
                         if (excluded(SUMO)) {
                             toRemove.add(s);
-                            System.out.println("excluded mapping of " + s + " to " + SUMO);
+                            //System.out.println("excluded mapping of " + s + " to " + SUMO + " with verb " + key);
                         }
-                        else
-                            System.out.println("found SUMO " + SUMO + " for " + s);
+                        //else
+                            //System.out.println("found SUMO " + SUMO + " for " + s + " with verb " + key);
                     }
                 }
                 theSet.removeAll(toRemove);
@@ -232,7 +232,7 @@ public class COCA {
      * Get frequency sorted adjective-noun pairs from a file of COCA. Use
      * Stanford CoreNLP to find sentence boundaries and POS, ignoring
      * the POS data from COCA.
-     */
+
     public void adjNounFreqFile(String fname) {
 
         ArrayList<String> excluded = new ArrayList<String>(
@@ -289,6 +289,26 @@ public class COCA {
         PairMap.saveMap(nouns,"nouns.txt");
         PairMap.saveMap(verbs,"verbs.txt");
     }
+*/
+    /** ***************************************************************
+     * Test whether the CLAWS POS tag is a noun
+     */
+    public static boolean isNounPOS(String s) {
+        if (s.startsWith("nn") || s.startsWith("np"))
+            return true;
+        else
+            return false;
+    }
+
+    /** ***************************************************************
+     * Test whether the CLAWS POS tag is a verb
+     */
+    public static boolean isVerbPOS(String s) {
+        if (s.startsWith("vb") || s.startsWith("vd") || s.startsWith("vh") || s.startsWith("vv"))
+            return true;
+        else
+            return false;
+    }
 
     /** ***************************************************************
      * Get frequency sorted adjective-noun and adverb-verb pairs from a
@@ -303,17 +323,19 @@ public class COCA {
         String modifier = "";
         for (ArrayList<String> ar : result) {
             //System.out.println(ar);
+            if (ar.size() != 3)
+                continue;
             String word = ar.get(1);
             String pos = ar.get(2);
             //System.out.print (word+ ":");
             //System.out.print(pos + " ");
-            if ((pos.startsWith("nn") || pos.startsWith("vb")) && !StringUtil.emptyString(modifier)) {
-                if (pos.startsWith("nn"))
+            if ((isNounPOS(pos)|| isVerbPOS(pos)) && !StringUtil.emptyString(modifier)) {
+                if (isNounPOS(pos))
                     PairMap.addToMap(nouns,word,modifier);
-                if (pos.startsWith("vb"))
+                if (isVerbPOS(pos))
                     PairMap.addToMap(verbs,word,modifier);
             }
-            if ((pos.equals("jj") || pos.equals("r") ) && !excluded.contains(word)) {
+            if ((pos.startsWith("jj") || pos.startsWith("r") ) && !excluded.contains(word)) {
                 modifier = word;
             }
             else
