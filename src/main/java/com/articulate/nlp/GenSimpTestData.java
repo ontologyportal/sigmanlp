@@ -915,7 +915,7 @@ public class GenSimpTestData {
         if (lfeat.adverb != "") {
             adverb = lfeat.adverb + " ";
         }
-        if (lfeat.subj.equals("You")) {
+        if ((!adverb.isEmpty()) && (lfeat.subj.equals("You"))) {
             lfeat.verb = lfeat.verb.toLowerCase();
             adverb = Character.toUpperCase(adverb.charAt(0)) + adverb.substring(1);
         }
@@ -1415,9 +1415,14 @@ public class GenSimpTestData {
             adverbSUMO = WSD.getBestDefaultSUMOsense(lfeat.adverb,4);
             adverbSUMO = WordNetUtilities.getBareSUMOTerm(adverbSUMO);
         }
-        if (lfeat.subj.equals("You")) {
+        if (lfeat.subj != null && !lfeat.subj.isEmpty() && lfeat.subj.equals("You")) {
             verb = verb.toLowerCase();
-            adverb = Character.toUpperCase(adverb.charAt(0)) + adverb.substring(1);
+
+            if (adverb != null && !adverb.isEmpty()) {
+                adverb = Character.toUpperCase(adverb.charAt(0)) + adverb.substring(1);
+            } else {
+                System.out.println("Error: adverb is null or empty");
+            }
         }
         english.append(verb + " ");
         prop.append("(instance ?P " + proc + ") ");
