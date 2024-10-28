@@ -13,7 +13,6 @@ wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-l
 unzip stanford-corenlp-4.3.1.zip
 rm stanford-corenlp-latest.zip
 cd ~/Programs/stanford-corenlp-full-4.3.1/
-unzip stanford-corenlp-4.3.1-models.jar
 cp ~/Programs/stanford-corenlp-4.3.1/stanford-corenlp-4.3.1.jar ~/workspace/sigmanlp/lib
 cp ~/Programs/stanford-corenlp-4.3.1/stanford-corenlp-4.3.1-models.jar ~/workspace/sigmanlp/lib
 cd ~/workspace/sigmanlp
