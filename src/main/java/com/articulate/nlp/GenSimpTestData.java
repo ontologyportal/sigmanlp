@@ -2539,6 +2539,20 @@ public class GenSimpTestData {
             if (debug) System.out.println("term and synset: " + s + ", " + synsets);
         }
     }
+    /** ***************************************************************
+     * generate NL paraphrases for all non-ground formulas
+     */
+    public static void englishAxioms() {
+
+        for (String fstr : kb.formulas.keySet()) {
+            Formula f = new Formula(fstr);
+            if (!Formula.isGround(fstr)) {
+                System.out.println(fstr);
+                System.out.println(StringUtil.removeHTML(NLGUtils.htmlParaphrase("", fstr, kb.getFormatMap("EnglishLanguage"),
+                        kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage")));
+            }
+        }
+    }
 
     /** ***************************************************************
      */
@@ -2552,6 +2566,7 @@ public class GenSimpTestData {
         System.out.println("  -t - run tests");
         System.out.println("  -a <filename> - generate logic/language pairs for all statements in KB");
         System.out.println("  -g <filename> - generate ground statement pairs for all relations");
+        System.out.println("  -i - generate English for all non-ground formulas");
         System.out.println("  -s <filename> <optional count> - generate NL/logic compositional <count> sentences to <filename> (no extension)");
         System.out.println("  -n - generate term formats from term names in a file");
         System.out.println("  -u - other utility");
@@ -2593,6 +2608,11 @@ public class GenSimpTestData {
                     generate();
                     englishFile.close();
                     logicFile.close();
+                }
+                if (args != null && args.length > 0 && args[0].equals("-i")) { // generate English for all non-ground statements
+                    KBmanager.getMgr().initializeOnce();
+                    kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+                    englishAxioms();
                 }
                 if (args != null && args.length > 0 && args[0].equals("-u")) {
                     GenSimpTestData gstd = new GenSimpTestData();
