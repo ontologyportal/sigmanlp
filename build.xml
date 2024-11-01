@@ -12,14 +12,14 @@
   <property name="deploy.lib" value="${deploy.home}/WEB-INF/lib"/>
   <property name="dist.home" value="${tomcat.home}/webapps"/>
   <property name="dist.war" value="sigmanlp.war"/>
- 
+
   <path id="output.classpath">
     <pathelement location="${output}"/>
      <fileset dir="${build.lib}">
         <include name="*.jar"/>
     </fileset>
   </path>
-  
+
   <path id="compile.classpath">
     <fileset dir="${basedir}/lib">
         <include name="*.jar"/>
@@ -35,7 +35,7 @@
       <include name="src/test"/>
     </dirset>
    </path>
- 
+
   <target name="init">
     <echo message="SIGMA_HOME is set to = ${env.SIGMA_HOME}"/>
     <echo message="sigmakee is set to = ${env.SIGMA_SRC}"/>
@@ -45,13 +45,13 @@
     <ant antfile="../SigmaUtils/build.xml" inheritAll="false" target="all" />
     <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
   </target>
-  
+
   <target name="compile" depends="init" description="Compile sigmanlp">
     <mkdir dir="${build.classes}"/>
     <javac destdir="${build.classes}" debug="on" optimize="on" deprecation="on" classpathref="compile.classpath" fork="true">
       <src refid="sourcepath"/>
     </javac>
-    
+
     <copy todir="${build.classes}">
       <fileset dir="${basedir}/src/main/java">
         <include name="*.class"/>
@@ -66,7 +66,7 @@
       <fileset dir="${sigmakee.home}/lib" />
     </copy>
   </target>
-  
+
   <target name="clean" description="cleanup module">
     <delete dir="${build.classes}"/>
     <delete dir="${build.lib}"/>
@@ -94,11 +94,11 @@
 	<copy todir="${deploy.home}/brat">
       <fileset dir="web/brat"/>
     </copy>
-	
+
 	<copy todir="${deploy.home}/js">
       <fileset dir="web/js"/>
     </copy>
-	
+
     <copy todir="${deploy.home}/pixmaps">
       <fileset dir="web/pixmaps"/>
     </copy>
@@ -116,7 +116,7 @@
   </target>
 
   <target name="dist" depends="web_deploy" description="Create the *.war file and place in ${build.home}.">
-    <war warfile="${dist.home}/${dist.war}" webxml="web.xml">
+    <war warfile="${dist.home}/${dist.war}" webxml="web/web.xml">
       <fileset dir="web/jsp"/>
       <fileset dir="web/brat"/>
       <fileset dir="web/js"/>
