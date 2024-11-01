@@ -57,7 +57,7 @@ public class RelExtract {
      * Copy SUMO categories in the outputMap that are associated with
      * tokens into the tokens in the cnf
      */
-    public static void addCategories(CNF cnf, HashMap<String,CoreLabel> outputMap) {
+    public static void addCategories(CNF cnf, Map<String,CoreLabel> outputMap) {
 
         for (Clause c : cnf.clauses) {
             for (Literal l : c.disjuncts) {
@@ -81,7 +81,7 @@ public class RelExtract {
      * sentence and get the dependency parse for it.  Add a period at the
      * end of the sentence
      */
-    public static CNF toCNF(Interpreter interp, String input, HashMap<String,CoreLabel> outputMap) {
+    public static CNF toCNF(Interpreter interp, String input, Map<String,CoreLabel> outputMap) {
 
         input = LanguageFormatter.removePreamble(input);
         input = Character.toUpperCase(input.charAt(0)) + input.substring(1) + ".";
@@ -467,7 +467,7 @@ public class RelExtract {
 
     /** *************************************************************
      */
-    public static void addArgsToCNF(CNF cnfResult, HashMap<String,CoreLabel> outputMap) {
+    public static void addArgsToCNF(CNF cnfResult, Map<String,CoreLabel> outputMap) {
 
         for (Clause c : cnfResult.clauses) {
             for (Literal l : c.disjuncts) {
