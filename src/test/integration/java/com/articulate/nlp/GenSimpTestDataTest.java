@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -363,7 +364,7 @@ public class GenSimpTestDataTest {
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testTypes()");
         String t = "Object";
-        HashSet<String> hinsts = kb.kbCache.getInstancesForType(t);
+        Set<String> hinsts = kb.kbCache.getInstancesForType(t);
         //System.out.println(hinsts);
         System.out.println("Object has instance BinaryPredicate: " + hinsts.contains("BinaryPredicate"));
         System.out.println("signature of 'half': " + kb.kbCache.getSignature("half"));

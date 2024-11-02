@@ -80,17 +80,17 @@ public class LFeatures {
 
         modals = initModals();
 
-        HashSet<String> roles = GenSimpTestData.kb.kbCache.getInstancesForType("SocialRole");
+        Set<String> roles = GenSimpTestData.kb.kbCache.getInstancesForType("SocialRole");
         //if (debug) System.out.println("LFeatures(): SocialRoles: " + roles);
         Collection<AVPair> roleFreqs = genSimpTestData.findWordFreq(roles);
         socRoles = RandSet.create(roleFreqs);
 
-        HashSet<String> parts = GenSimpTestData.kb.kbCache.getInstancesForType("BodyPart");
+        Set<String> parts = GenSimpTestData.kb.kbCache.getInstancesForType("BodyPart");
         //if (debug) System.out.println("LFeatures(): BodyParts: " + parts);
         Collection<AVPair> bodyFreqs = genSimpTestData.findWordFreq(parts);
         bodyParts = RandSet.create(bodyFreqs);
 
-        HashSet<String> artInst = GenSimpTestData.kb.kbCache.getInstancesForType("Artifact");
+        Set<String> artInst = GenSimpTestData.kb.kbCache.getInstancesForType("Artifact");
         Set<String> artClass = GenSimpTestData.kb.kbCache.getChildClasses("Artifact");
 
         Collection<AVPair> procFreqs = genSimpTestData.findWordFreq(GenSimpTestData.kb.kbCache.getChildClasses("Process"));
@@ -101,7 +101,7 @@ public class LFeatures {
             processes.terms.addAll(rs.terms);
         }
 
-        HashSet<String> orgInst = GenSimpTestData.kb.kbCache.getInstancesForType("OrganicObject");
+        Set<String> orgInst = GenSimpTestData.kb.kbCache.getInstancesForType("OrganicObject");
         Set<String> orgClass = GenSimpTestData.kb.kbCache.getChildClasses("OrganicObject");
 
         HashSet<String> objs = new HashSet<>();

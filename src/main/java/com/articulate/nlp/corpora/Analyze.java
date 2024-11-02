@@ -59,7 +59,7 @@ public class Analyze {
         ArrayList<Formula> rels = kb.ask("arg",0,rel);
         System.out.println("reportRelations(): rel : " + rel);
 
-        HashMap<String,HashSet<String>> relMap = new HashMap<>();
+        Map<String,Set<String>> relMap = new HashMap<>();
         for (Formula f : rels) {
             String arg1 = f.getStringArgument(1);
             String arg2 = f.getStringArgument(2);
