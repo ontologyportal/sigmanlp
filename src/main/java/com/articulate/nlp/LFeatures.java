@@ -74,7 +74,7 @@ public class LFeatures {
         //  get capabilities from axioms like
         //  (=> (instance ?GUN Gun) (capability Shooting instrument ?GUN))
         // indirect = collectCapabilities(); // TODO: need to restore and combine this filter with verb frames
-        System.out.println("LFeatures(): collect terms");
+        if (debug) System.out.println("LFeatures(): collect terms");
         genders = GenSimpTestData.readHumans();
         humans = RandSet.listToEqualPairs(genders.keySet());
 
@@ -113,7 +113,7 @@ public class LFeatures {
                 objs2.add(s);
         if (debug) System.out.println("LFeatures(): OrganicObjects and Artifacts: " + objs);
         Collection<AVPair> objFreqs = genSimpTestData.findWordFreq(objs2);
-        System.out.println("LFeatures(): create objects");
+        if (debug) System.out.println("LFeatures(): create objects");
         objects = RandSet.create(objFreqs);
         //System.out.println("LFeatures(): objects: " + objects.terms);
     }
