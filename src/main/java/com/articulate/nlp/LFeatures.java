@@ -75,7 +75,7 @@ public class LFeatures {
         //  (=> (instance ?GUN Gun) (capability Shooting instrument ?GUN))
         // indirect = collectCapabilities(); // TODO: need to restore and combine this filter with verb frames
         if (debug) System.out.println("LFeatures(): collect terms");
-        genders = GenSimpTestData.readHumans();
+        genders = GenSimpTestData.humans;
         humans = RandSet.listToEqualPairs(genders.keySet());
 
         modals = initModals();
