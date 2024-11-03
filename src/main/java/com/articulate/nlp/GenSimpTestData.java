@@ -90,6 +90,7 @@ public class GenSimpTestData {
     public static ArrayList<String> endings = new ArrayList<>(); // polite phrase at end of sentence
     public static ArrayList<String> others = new ArrayList<>(); // when next noun is same as a previous one
     public static HashMap<String,String> prepPhrase = new HashMap<>();
+    public static HashMap<String,String> humans = new HashMap<>();
 
     // verb and noun keys with values that are the frequency of coocurence with a given
     // adjective or adverb
@@ -109,6 +110,7 @@ public class GenSimpTestData {
         initEndings();
         genProcTable();
         initModifiers();
+        humans = readHumans();
     }
 
     /** ***************************************************************
@@ -192,8 +194,8 @@ public class GenSimpTestData {
 
         coca.freqNouns = PairMap.readMap("nouns.txt");
         coca.freqVerbs = PairMap.readMap("verbs.txt");
-        System.out.println("Nouns: " + coca.freqNouns);
-        System.out.println("Verbs: " + coca.freqVerbs);
+        //System.out.println("Nouns: " + coca.freqNouns);
+        //System.out.println("Verbs: " + coca.freqVerbs);
         coca.filterModifiers(coca.freqVerbs,coca.freqNouns);
     }
 
@@ -438,9 +440,8 @@ public class GenSimpTestData {
      */
     public static void generateAllHumans() {
 
-        HashMap<String,String> hums = readHumans();
-        for (String firstName : hums.keySet()) {
-            String g = hums.get(firstName);
+        for (String firstName : humans.keySet()) {
+            String g = humans.get(firstName);
             if (firstName != null) {
                 String gender = "Male";
                 if (g.toUpperCase().equals("F"))
@@ -941,7 +942,7 @@ public class GenSimpTestData {
         if (lfeat.adverb != "") {
             adverb = lfeat.adverb + " ";
         }
-        if ((!adverb.isEmpty()) && (lfeat.subj.equals("You"))) {
+        if ((!adverb.isEmpty()) && (lfeat.subj != null && lfeat.subj.equals("You"))) {
             lfeat.verb = lfeat.verb.toLowerCase();
             adverb = Character.toUpperCase(adverb.charAt(0)) + adverb.substring(1);
         }
@@ -1811,12 +1812,15 @@ public class GenSimpTestData {
             if (KButilities.isValidFormula(kb,prop.toString())) {
                 if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
                 String finalEnglish = english.toString().replaceAll("  "," ");
-                englishFile.println(english);
+                //System.out.println("writing english");
+                englishFile.println(finalEnglish);
+                //System.out.println("writing logic");
                 logicFile.println(prop);
                 sentCount++;
             }
             else {
                 System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
+                System.out.println(KButilities.errors);
                 System.out.println(english);
             }
         }
@@ -1852,12 +1856,15 @@ public class GenSimpTestData {
             if (KButilities.isValidFormula(kb,prop.toString())) {
                 if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
                 String finalEnglish = english.toString().replaceAll("  "," ");
-                englishFile.println(english);
+                //System.out.println("writing english");
+                englishFile.println(finalEnglish);
+                //System.out.println("writing logic");
                 logicFile.println(prop);
                 sentCount++;
             }
             else {
                 System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
+                System.out.println(KButilities.errors);
                 System.out.println(english);
             }
         }
@@ -1888,12 +1895,15 @@ public class GenSimpTestData {
                 if (KButilities.isValidFormula(kb,prop.toString())) {
                     if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
                     String finalEnglish = english.toString().replaceAll("  "," ");
-                    englishFile.println(english);
+                    //System.out.println("writing english");
+                    englishFile.println(finalEnglish);
+                    //System.out.println("writing logic");
                     logicFile.println(prop);
                     sentCount++;
                 }
                 else {
                     System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
+                    System.out.println(KButilities.errors);
                     System.out.println(english);
                 }
             }
@@ -2017,7 +2027,7 @@ public class GenSimpTestData {
             word = lfeat.secondVerb;
         else
             word = lfeat.verb;
-        System.out.println("getAdverb(): verb: " + word);
+        if (debug) System.out.println("getAdverb(): verb: " + word);
         if (coca.freqVerbs.keySet().contains(word)) {
             TreeMap<Integer,HashSet<String>> oneVerb = coca.freqVerbs.get(word);
             int total = 0;
@@ -2038,7 +2048,7 @@ public class GenSimpTestData {
                 }
                 total = total + increment;
             }
-            System.out.println("adverb(): found adverb: " + adverb);
+            if (debug) System.out.println("adverb(): found adverb: " + adverb);
             if (second)
                 lfeat.secondVerbModifier = adverb;
             else
@@ -2086,7 +2096,7 @@ public class GenSimpTestData {
             if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
                 getAdverb(lfeat,second);
             else
-                System.out.println("getVerb(): no adverb this time for " + word);
+            if (debug) System.out.println("getVerb(): no adverb this time for " + word);
         }
         else {
             lfeat.verbType = proc;
@@ -2095,7 +2105,7 @@ public class GenSimpTestData {
             if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
                 getAdverb(lfeat,second);
             else
-                System.out.println("getVerb(): no adverb this time for " + word);
+            if (debug) System.out.println("getVerb(): no adverb this time for " + word);
         }
     }
 
