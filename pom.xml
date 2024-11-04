@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.github.ontologyportal</groupId>
+    <artifactId>sigma-nlp</artifactId>
+    <packaging>jar</packaging>
+    <version>1.1</version>
+    <name>sigma-nlp</name>
+    <description>Natural language processing toolbox using Sigma knowledge engineering system.</description>
+    <url>www.ontologyportal.org</url>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License</name>
+            <url>http://www.gnu.org/copyleft/gpl.html</url>
+            <distribution>manual</distribution>
+            <comments>This code is copyright Articulate Software (c) 2003.  Some portions
+                copyright Teknowledge (c) 2003 and reused under the terms of the GNU license.
+                This software is released under the GNU Public License &lt;http://www.gnu.org/copyleft/gpl.html&gt;.
+                Users of this code also consent, by use of this code, to credit Articulate Software
+                and Teknowledge in any writings, briefings, publications, presentations, or
+                other representations of any software which incorporates, builds on, or uses this
+                code.  Please cite the following article in any publication with references:
+                Pease, A., (2003). The Sigma Ontology Development Environment,
+                in Working Notes of the IJCAI-2003 Workshop on Ontology and Distributed Systems,
+                August 9, Acapulco, Mexico.</comments>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Adam Pease</name>
+            <email>apease@articulatesoftware.com</email>
+            <organization>Articulate Software</organization>
+            <organizationUrl>http://www.articulatesoftware.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Ivan Zilotti</name>
+            <email>ivan.zilotti@ipsoft.com</email>
+            <organization>IPsoft Incorporated</organization>
+            <organizationUrl>http://www.ipsoft.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/ontologyportal/sigmanlp</url>
+        <connection>scm:git:https://github.com/ontologyportal/sigmanlp.git</connection>
+        <developerConnection>scm:git:https://github.com/ontologyportal/sigmanlp.git</developerConnection>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>9</version>
+    </parent>
+
+    <properties>
+        <additionalparam>-Xdoclint:none</additionalparam>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>3.5.2</version>
+            <classifier>models</classifier>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>3.8</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ontologyportal</groupId>
+            <artifactId>sigma-component</artifactId>
+            <version>2.12</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
