@@ -74,23 +74,23 @@ public class LFeatures {
         //  get capabilities from axioms like
         //  (=> (instance ?GUN Gun) (capability Shooting instrument ?GUN))
         // indirect = collectCapabilities(); // TODO: need to restore and combine this filter with verb frames
-        System.out.println("LFeatures(): collect terms");
-        genders = GenSimpTestData.readHumans();
+        if (debug) System.out.println("LFeatures(): collect terms");
+        genders = GenSimpTestData.humans;
         humans = RandSet.listToEqualPairs(genders.keySet());
 
         modals = initModals();
 
-        HashSet<String> roles = GenSimpTestData.kb.kbCache.getInstancesForType("SocialRole");
+        Set<String> roles = GenSimpTestData.kb.kbCache.getInstancesForType("SocialRole");
         //if (debug) System.out.println("LFeatures(): SocialRoles: " + roles);
         Collection<AVPair> roleFreqs = genSimpTestData.findWordFreq(roles);
         socRoles = RandSet.create(roleFreqs);
 
-        HashSet<String> parts = GenSimpTestData.kb.kbCache.getInstancesForType("BodyPart");
+        Set<String> parts = GenSimpTestData.kb.kbCache.getInstancesForType("BodyPart");
         //if (debug) System.out.println("LFeatures(): BodyParts: " + parts);
         Collection<AVPair> bodyFreqs = genSimpTestData.findWordFreq(parts);
         bodyParts = RandSet.create(bodyFreqs);
 
-        HashSet<String> artInst = GenSimpTestData.kb.kbCache.getInstancesForType("Artifact");
+        Set<String> artInst = GenSimpTestData.kb.kbCache.getInstancesForType("Artifact");
         Set<String> artClass = GenSimpTestData.kb.kbCache.getChildClasses("Artifact");
 
         Collection<AVPair> procFreqs = genSimpTestData.findWordFreq(GenSimpTestData.kb.kbCache.getChildClasses("Process"));
@@ -101,7 +101,7 @@ public class LFeatures {
             processes.terms.addAll(rs.terms);
         }
 
-        HashSet<String> orgInst = GenSimpTestData.kb.kbCache.getInstancesForType("OrganicObject");
+        Set<String> orgInst = GenSimpTestData.kb.kbCache.getInstancesForType("OrganicObject");
         Set<String> orgClass = GenSimpTestData.kb.kbCache.getChildClasses("OrganicObject");
 
         HashSet<String> objs = new HashSet<>();
@@ -113,7 +113,7 @@ public class LFeatures {
                 objs2.add(s);
         if (debug) System.out.println("LFeatures(): OrganicObjects and Artifacts: " + objs);
         Collection<AVPair> objFreqs = genSimpTestData.findWordFreq(objs2);
-        System.out.println("LFeatures(): create objects");
+        if (debug) System.out.println("LFeatures(): create objects");
         objects = RandSet.create(objFreqs);
         //System.out.println("LFeatures(): objects: " + objects.terms);
     }

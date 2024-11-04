@@ -10,10 +10,7 @@ import com.articulate.sigma.utils.StringUtil;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 /*
   Code to read the RXNorm drug database https://www.nlm.nih.gov/research/umls/rxnorm
@@ -22,13 +19,13 @@ import java.util.HashSet;
  */
 public class RxNorm {
 
-    public static HashMap<String,HashSet<String>> drugConceptID = new HashMap<>();
+    public static Map<String, Set<String>> drugConceptID = new HashMap<>();
     public static HashMap<String,String> drugAtomID = new HashMap<>();
     public static HashMap<String,HashSet<AVPair>> rels = new HashMap<>();
     public static HashMap<String,HashSet<AVPair>> attrib = new HashMap<>();
     public static HashMap<String,HashSet<String>> types = new HashMap<>();
     public static HashMap<String,HashSet<String>> doses = new HashMap<>();
-    public static HashMap<String,HashSet<String>> packaging = new HashMap<>();
+    public static Map<String,Set<String>> packaging = new HashMap<>();
     public static KB kb = null;
 
     /** ***************************************************************

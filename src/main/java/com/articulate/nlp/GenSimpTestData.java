@@ -90,6 +90,7 @@ public class GenSimpTestData {
     public static ArrayList<String> endings = new ArrayList<>(); // polite phrase at end of sentence
     public static ArrayList<String> others = new ArrayList<>(); // when next noun is same as a previous one
     public static HashMap<String,String> prepPhrase = new HashMap<>();
+    public static HashMap<String,String> humans = new HashMap<>();
 
     // verb and noun keys with values that are the frequency of coocurence with a given
     // adjective or adverb
@@ -109,6 +110,7 @@ public class GenSimpTestData {
         initEndings();
         genProcTable();
         initModifiers();
+        humans = readHumans();
     }
 
     /** ***************************************************************
@@ -192,8 +194,8 @@ public class GenSimpTestData {
 
         coca.freqNouns = PairMap.readMap("nouns.txt");
         coca.freqVerbs = PairMap.readMap("verbs.txt");
-        System.out.println("Nouns: " + coca.freqNouns);
-        System.out.println("Verbs: " + coca.freqVerbs);
+        //System.out.println("Nouns: " + coca.freqNouns);
+        //System.out.println("Verbs: " + coca.freqVerbs);
         coca.filterModifiers(coca.freqVerbs,coca.freqNouns);
     }
 
@@ -348,7 +350,7 @@ public class GenSimpTestData {
     public static void handleNonClass(String t, HashMap<String, ArrayList<String>> instMap) {
 
         if (debug) System.out.println("handleNonClass(): t: " + t);
-        HashSet<String> hinsts = kb.kbCache.getInstancesForType(t);
+        Set<String> hinsts = kb.kbCache.getInstancesForType(t);
         if (hinsts.contains("statementPeriod"))
             if (debug) System.out.println("handleNonClass(): hinsts: " + hinsts);
         ArrayList<String> insts = new ArrayList<>();
@@ -438,9 +440,8 @@ public class GenSimpTestData {
      */
     public static void generateAllHumans() {
 
-        HashMap<String,String> hums = readHumans();
-        for (String firstName : hums.keySet()) {
-            String g = hums.get(firstName);
+        for (String firstName : humans.keySet()) {
+            String g = humans.get(firstName);
             if (firstName != null) {
                 String gender = "Male";
                 if (g.toUpperCase().equals("F"))
@@ -855,6 +856,32 @@ public class GenSimpTestData {
     }
 
     /** ***************************************************************
+     * Create action sentences, possibly with modals.  Indirect object and its preposition
+     * can be left out.
+     */
+    public void parallelGenSentence() {
+
+        System.out.println("GenSimpTestData.initActions(): start");
+        KBmanager.getMgr().initializeOnce();
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        System.out.println("GenSimpTestData.initActions(): finished loading KBs");
+
+        ArrayList<Integer> numbers = new ArrayList<>();
+        for (int i =0; i < sentMax; i++)
+            numbers.add(i);
+        //ArrayList<String> terms = new ArrayList<>();
+        //if (debug) System.out.println("GenSimpTestData.initActions():  lfeat.direct: " + lfeat.direct);
+        //System.exit(1);
+        //for (Preposition p : lfeat.direct)
+        //    terms.add(p.procType);
+        numbers.parallelStream().forEach(number -> {
+            LFeatures lfeat = new LFeatures(this);
+            estSentCount = estimateSentCount(lfeat);
+            genAttitudes(lfeat);
+        });
+    }
+
+    /** ***************************************************************
      * also return true if there's no termFormat for the process
      */
     public boolean compoundVerb(String term) {
@@ -915,7 +942,7 @@ public class GenSimpTestData {
         if (lfeat.adverb != "") {
             adverb = lfeat.adverb + " ";
         }
-        if ((!adverb.isEmpty()) && (lfeat.subj.equals("You"))) {
+        if ((!adverb.isEmpty()) && (lfeat.subj != null && lfeat.subj.equals("You"))) {
             lfeat.verb = lfeat.verb.toLowerCase();
             adverb = Character.toUpperCase(adverb.charAt(0)) + adverb.substring(1);
         }
@@ -1074,7 +1101,7 @@ public class GenSimpTestData {
         if (state.equals("Liquid") || state.equals("Gas"))
             unitType = "UnitOfVolume";
         if (debug) System.out.println("getQuantity(): unitType: " + unitType);
-        HashSet<String> units = kb.kbCache.getInstancesForType(unitType);
+        Set<String> units = kb.kbCache.getInstancesForType(unitType);
         if (debug) System.out.println("getQuantity(): units: " + units);
         String unit = (String) units.toArray()[rand.nextInt(units.size())];
         String unitEng = kb.getTermFormat("EnglishLanguage",unit);
@@ -1785,12 +1812,15 @@ public class GenSimpTestData {
             if (KButilities.isValidFormula(kb,prop.toString())) {
                 if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
                 String finalEnglish = english.toString().replaceAll("  "," ");
-                englishFile.println(english);
+                //System.out.println("writing english");
+                englishFile.println(finalEnglish);
+                //System.out.println("writing logic");
                 logicFile.println(prop);
                 sentCount++;
             }
             else {
                 System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
+                System.out.println(KButilities.errors);
                 System.out.println(english);
             }
         }
@@ -1826,12 +1856,15 @@ public class GenSimpTestData {
             if (KButilities.isValidFormula(kb,prop.toString())) {
                 if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
                 String finalEnglish = english.toString().replaceAll("  "," ");
-                englishFile.println(english);
+                //System.out.println("writing english");
+                englishFile.println(finalEnglish);
+                //System.out.println("writing logic");
                 logicFile.println(prop);
                 sentCount++;
             }
             else {
                 System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
+                System.out.println(KButilities.errors);
                 System.out.println(english);
             }
         }
@@ -1862,12 +1895,15 @@ public class GenSimpTestData {
                 if (KButilities.isValidFormula(kb,prop.toString())) {
                     if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
                     String finalEnglish = english.toString().replaceAll("  "," ");
-                    englishFile.println(english);
+                    //System.out.println("writing english");
+                    englishFile.println(finalEnglish);
+                    //System.out.println("writing logic");
                     logicFile.println(prop);
                     sentCount++;
                 }
                 else {
                     System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
+                    System.out.println(KButilities.errors);
                     System.out.println(english);
                 }
             }
@@ -1991,7 +2027,7 @@ public class GenSimpTestData {
             word = lfeat.secondVerb;
         else
             word = lfeat.verb;
-        System.out.println("getAdverb(): verb: " + word);
+        if (debug) System.out.println("getAdverb(): verb: " + word);
         if (coca.freqVerbs.keySet().contains(word)) {
             TreeMap<Integer,HashSet<String>> oneVerb = coca.freqVerbs.get(word);
             int total = 0;
@@ -2012,7 +2048,7 @@ public class GenSimpTestData {
                 }
                 total = total + increment;
             }
-            System.out.println("adverb(): found adverb: " + adverb);
+            if (debug) System.out.println("adverb(): found adverb: " + adverb);
             if (second)
                 lfeat.secondVerbModifier = adverb;
             else
@@ -2060,7 +2096,7 @@ public class GenSimpTestData {
             if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
                 getAdverb(lfeat,second);
             else
-                System.out.println("getVerb(): no adverb this time for " + word);
+            if (debug) System.out.println("getVerb(): no adverb this time for " + word);
         }
         else {
             lfeat.verbType = proc;
@@ -2069,7 +2105,7 @@ public class GenSimpTestData {
             if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
                 getAdverb(lfeat,second);
             else
-                System.out.println("getVerb(): no adverb this time for " + word);
+            if (debug) System.out.println("getVerb(): no adverb this time for " + word);
         }
     }
 
@@ -2538,10 +2574,24 @@ public class GenSimpTestData {
      */
     public void showAttributes() {
 
-        HashSet<String> attribs = kb.kbCache.getInstancesForType("Attribute");
+        Set<String> attribs = kb.kbCache.getInstancesForType("Attribute");
         for (String s : attribs) {
             ArrayList<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(s);
             if (debug) System.out.println("term and synset: " + s + ", " + synsets);
+        }
+    }
+    /** ***************************************************************
+     * generate NL paraphrases for all non-ground formulas
+     */
+    public static void englishAxioms() {
+
+        for (String fstr : kb.formulas.keySet()) {
+            Formula f = new Formula(fstr);
+            if (!Formula.isGround(fstr)) {
+                System.out.println(fstr);
+                System.out.println(StringUtil.removeHTML(NLGUtils.htmlParaphrase("", fstr, kb.getFormatMap("EnglishLanguage"),
+                        kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage")));
+            }
         }
     }
 
@@ -2557,7 +2607,9 @@ public class GenSimpTestData {
         System.out.println("  -t - run tests");
         System.out.println("  -a <filename> - generate logic/language pairs for all statements in KB");
         System.out.println("  -g <filename> - generate ground statement pairs for all relations");
+        System.out.println("  -i - generate English for all non-ground formulas");
         System.out.println("  -s <filename> <optional count> - generate NL/logic compositional <count> sentences to <filename> (no extension)");
+        System.out.println("  -p <filename> <optional count> - parallel generation of NL/logic compositional <count> sentences to <filename> (no extension)");
         System.out.println("  -n - generate term formats from term names in a file");
         System.out.println("  -u - other utility");
     }
@@ -2594,10 +2646,23 @@ public class GenSimpTestData {
                     englishFile.close();
                     logicFile.close();
                 }
+                if (args != null && args.length > 1 && args[0].equals("-p")) { // create NL/logic synthetically
+                    if (args.length > 2)
+                        sentMax = Integer.parseInt(args[2]);
+                    GenSimpTestData gstd = new GenSimpTestData();
+                    gstd.parallelGenSentence();
+                    englishFile.close();
+                    logicFile.close();
+                }
                 if (args != null && args.length > 0 && args[0].equals("-g")) { // generate ground statements
                     generate();
                     englishFile.close();
                     logicFile.close();
+                }
+                if (args != null && args.length > 0 && args[0].equals("-i")) { // generate English for all non-ground statements
+                    KBmanager.getMgr().initializeOnce();
+                    kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+                    englishAxioms();
                 }
                 if (args != null && args.length > 0 && args[0].equals("-u")) {
                     GenSimpTestData gstd = new GenSimpTestData();
