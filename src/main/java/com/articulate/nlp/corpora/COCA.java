@@ -26,33 +26,23 @@ MA  02111-1307 USA
 */
 
 import com.articulate.nlp.constants.LangLib;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
-
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.KButilities;
 import com.articulate.sigma.utils.MapUtils;
-import com.articulate.sigma.utils.Pair;
 import com.articulate.sigma.utils.PairMap;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WSD;
-import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
 import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 
-import static com.articulate.nlp.pipeline.Pipeline.showResults;
+import java.io.File;
+import java.io.FileReader;
+import java.io.LineNumberReader;
+import java.util.*;
 
 public class COCA {
 
@@ -311,8 +301,8 @@ public class COCA {
     }
 
     /** ***************************************************************
-     * Get frequency sorted adjective-noun and adverb-verb pairs from a
-     * file of COCA.  Use the COCA POS info. Note that sentence boundaries
+     * Get frequency sorted adjective-noun and adverb-verb pairs from
+     * COCA.  Use the COCA POS info. Note that sentence boundaries
      * don't matter for this method.
      */
     public void modifierFreqFile(String fname) {
@@ -325,9 +315,10 @@ public class COCA {
             //System.out.println(ar);
             if (ar.size() != 3)
                 continue;
-            String word = ar.get(1);
+            String word = ar.get(1).replace(",","").replace(":","");
+              // remove delimiter characters
             String pos = ar.get(2);
-            //System.out.print (word+ ":");
+            //System.out.print (word + ":");
             //System.out.print(pos + " ");
             if ((isNounPOS(pos)|| isVerbPOS(pos)) && !StringUtil.emptyString(modifier)) {
                 if (isNounPOS(pos))
@@ -343,23 +334,37 @@ public class COCA {
             if (word.equals("@"))
                 System.out.print('.');
         }
-        System.out.println("Nouns: " + nouns);
-        System.out.println("Verbs: " + verbs);
-        PairMap.saveMap(nouns,"nouns.txt");
-        PairMap.saveMap(verbs,"verbs.txt");
+        //System.out.println("Nouns: " + nouns);
+        //System.out.println("Verbs: " + verbs);
+        String COCA = System.getenv("CORPORA") + File.separator + "COCA" + File.separator;
+        PairMap.saveMap(nouns,COCA + "nouns.txt");
+        PairMap.saveMap(verbs,COCA + "verbs.txt");
     }
 
     /** ***************************************************************
-     * Get frequency sorted adjective-noun pairs from a directory of COCA
+     * Get frequency sorted adjective-noun and adverb-verb pairs from a directory of COCA
      */
-    public void adjNounFreq(String dir) {
+    public void pairFreq(String dir) {
 
+        //System.out.println("COCA.pairFreq(): dir: " + dir);
         File f = new File(dir);
-        Collection<String> sents = new ArrayList<>();
-        String[] pathnames = f.list();
-        for (String s : pathnames) {
-            System.out.println("running on file: " + dir + File.separator + s);
-            modifierFreqFile(dir + File.separator + s);
+        File[] pathnames = f.listFiles();
+        for (File next : pathnames) {
+            //System.out.println("COCA.pairFreq(): checking file: " + next.getAbsolutePath());
+            //System.out.println("COCA.pairFreq(): checking file: " + next.getPath());
+            //System.out.println("COCA.pairFreq(): exists: " + next.exists());
+            //System.out.println("COCA.pairFreq(): directory: " + next.isDirectory());
+            if (next.isDirectory()) {
+                //System.out.println("COCA.pairFreq(): is dir: " + next.getAbsolutePath());
+                pairFreq(next.getAbsolutePath());
+            }
+            else {
+                //System.out.println("COCA.pairFreq(): not dir: " + next.getAbsolutePath());
+                if (next.getAbsolutePath().endsWith(".txt")) {
+                    //System.out.println("COCA.pairFreq(): running on file: " + next.getAbsolutePath());
+                    modifierFreqFile(next.getAbsolutePath());
+                }
+            }
         }
     }
 
@@ -445,7 +450,7 @@ public class COCA {
         System.out.println("  -h - show this help screen");
         System.out.println("  -d fname - collect verb phrases from files in directory");
         System.out.println("  -s fname - regenerate sentences from a directory");
-        System.out.println("  -a fname - collect frequency sorted adjective noun pairs from file");
+        System.out.println("  -a fname - collect frequency sorted adjective noun pairs");
         System.out.println("  -r - read adj/noun, adv/verb stats from a file");
     }
 
@@ -468,8 +473,9 @@ public class COCA {
             else if (args != null && args.length > 1 && args[0].startsWith("-s")) {
                 coca.regen(args[1]);
             }
-            else if (args != null && args.length > 1 && args[0].startsWith("-a")) {
-                coca.modifierFreqFile(args[1]);
+            else if (args != null && args.length > 0 && args[0].startsWith("-a")) {
+                String prefix = System.getenv("CORPORA") + File.separator + "COCA" + File.separator;
+                coca.pairFreq(prefix);
             }
             else if (args != null && args.length > 0 && args[0].startsWith("-r")) {
                 KBmanager.getMgr().initializeOnce();
