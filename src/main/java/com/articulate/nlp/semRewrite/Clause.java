@@ -6,7 +6,7 @@ modified 2015- Articulate Software
 
 Author: Adam Pease apease@articulatesoftware.com
 
-In conjunctive normal form (CNF) a formula is a conjunct of 
+In conjunctive normal form (CNF) a formula is a conjunct of
 disjuncts.  This is the list of disjuncts.
 
 This program is free software; you can redistribute it and/or modify
@@ -22,16 +22,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
+import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class Clause implements Comparable {
 
-    public ArrayList<Literal> disjuncts = new ArrayList<Literal>();
+    public ArrayList<Literal> disjuncts = new ArrayList<>();
     public static boolean debug = false;
     //public static boolean bindSource = true; // whether to mark the bound flag on this (true)
        // or on the argument (false) during unification
@@ -61,12 +61,14 @@ public class Clause implements Comparable {
     /** *************************************************************
      */
     public String toString() {
-        
-        StringBuffer sb = new StringBuffer();
+
+        StringBuilder sb = new StringBuilder();
         if (disjuncts.size() > 1)
             sb.append("(");
+
+        Literal c;
         for (int i = 0; i < disjuncts.size(); i++) {
-            Literal c = disjuncts.get(i);
+            c = disjuncts.get(i);
             sb.append(c.toString());
             if (disjuncts.size() > 1 && i < disjuncts.size() - 1)
                 sb.append(" | ");
@@ -75,14 +77,14 @@ public class Clause implements Comparable {
             sb.append(")");
         return sb.toString();
     }
-    
+
     /** *************************************************************
      */
     public Clause deepCopy() {
-        
+
         Clause newd = new Clause();
-        for (int i = 0; i < disjuncts.size(); i++) 
-            newd.disjuncts.add(disjuncts.get(i).deepCopy());        
+        for (Literal l : disjuncts)
+            newd.disjuncts.add(l.deepCopy());
         return newd;
     }
 
@@ -90,7 +92,7 @@ public class Clause implements Comparable {
      */
     @Override
     public boolean equals(Object o) {
-    
+
         if (!(o instanceof Clause))
             return false;
         Clause d = (Clause) o;
@@ -101,15 +103,12 @@ public class Clause implements Comparable {
                 return false;
         return true;
     }
-    
+
     /** ***************************************************************
      */
     public boolean empty() {
-        
-        if (disjuncts.size() == 0)
-            return true;
-        else
-            return false;
+
+        return disjuncts.isEmpty();
     }
 
     /** ***************************************************************
@@ -130,18 +129,17 @@ public class Clause implements Comparable {
     /** *************************************************************
      */
     public void preProcessQuestionWords(List<String> qwords) {
-        
+
         for (Literal c: disjuncts)
             c.preProcessQuestionWords(qwords);
     }
-    
+
     /** ***************************************************************
      * Clear the bound flags on each Literal
      */
     public void clearBound() {
-        
-        for (int i = 0; i < disjuncts.size(); i++) {
-            Literal l = disjuncts.get(i);
+
+        for (Literal l : disjuncts) {
             if (l.bound)
                 l.bound = false;
         }
@@ -154,8 +152,7 @@ public class Clause implements Comparable {
 
         if (disjuncts.size() > 1)
             System.out.println("Error in Clause.bind(): more than one disjunct for " + this);
-        for (int i = 0; i < disjuncts.size(); i++) {
-            Literal l = disjuncts.get(i);
+        for (Literal l : disjuncts) {
             l.bound = true;
         }
     }
@@ -164,14 +161,13 @@ public class Clause implements Comparable {
      * Clear the preserve flags on each Literal
      */
     public void clearPreserve() {
-        
-        for (int i = 0; i < disjuncts.size(); i++) {
-            Literal l = disjuncts.get(i);
+
+        for (Literal l : disjuncts) {
             if (l.preserve)
                 l.preserve = false;
         }
     }
-    
+
     /** ***************************************************************
      * If literal is not marked "preserve" then remove it if bound and
      * then reset the preserve flag.  The preserve flag is set when
@@ -180,11 +176,10 @@ public class Clause implements Comparable {
      */
     public void removeBound() {
 
-        boolean boundFound = false;
+        boolean boundFound;
         if (debug) System.out.println("INFO in Clause.removeBound(): before " + this);
-        ArrayList<Literal> newdis = new ArrayList<Literal>();
-        for (int i = 0; i < disjuncts.size(); i++) {
-            Literal l = disjuncts.get(i).deepCopy();
+        ArrayList<Literal> newdis = new ArrayList<>();
+        for (Literal l : disjuncts) {
             if (l.bound) {
                 boundFound = true;
                 if (l.preserve) {
@@ -200,13 +195,13 @@ public class Clause implements Comparable {
         disjuncts = newdis;
         if (debug) System.out.println("INFO in Clause.removeBound(): after " + this);
     }
-    
+
     /** ***************************************************************
      * Copy bound flags to this set of clauses  , merging with
      * existing bindings
      */
     public void copyBoundFlags(Clause d) {
-     
+
         for (int i = 0; i < disjuncts.size(); i++) {
             if (d.disjuncts.get(i).bound)
                 disjuncts.get(i).bound = true;
@@ -214,18 +209,19 @@ public class Clause implements Comparable {
                 disjuncts.get(i).preserve = true;
         }
     }
-    
+
     /** *************************************************************
      * @return a clause that results from applying a binding list
      * to this clause.
      */
     public Clause applyBindings(Subst bindings) {
-        
+
         Clause c = new Clause();
+        Literal l;
         for (int i = 0; i < disjuncts.size(); i++) {
-            Literal l = disjuncts.get(i);
+            l = disjuncts.get(i);
             c.disjuncts.add(l.applySubst(bindings));
-        }            
+        }
         return c;
     }
 
@@ -242,8 +238,7 @@ public class Clause implements Comparable {
 
         if (debug) System.out.println("INFO in Clause.unify(): checking this (source/rule): " + this);
         if (debug) System.out.println("INFO in Clause.unify(): against argument: " + d);
-        for (int i = 0; i < disjuncts.size(); i++) {
-            Literal c1 = disjuncts.get(i);  // rule
+        for (Literal c1 : disjuncts) {
             if (debug) System.out.println("INFO in Clause.unify(): checking " + c1);
             if (c1.pred.equals("isCELTclass") && c1.isGround())
                 if (Procedures.isCELTclass(c1).equals("true"))
@@ -267,8 +262,7 @@ public class Clause implements Comparable {
                 }
             if (debug) System.out.println("INFO in Clause.unify(): done checking procedures");
 
-            for (int j = 0; j < d.disjuncts.size(); j++) {
-                Literal c2 = d.disjuncts.get(j);
+            for (Literal c2 : d.disjuncts) {
                 Subst bindings = c2.mguTermList(c1);
                 if (debug) System.out.println("INFO in Clause.unify(): checking " + c1 + " against " + c2);
                 if (bindings != null) {
@@ -276,8 +270,8 @@ public class Clause implements Comparable {
                         c2.preserve = true;
                     //if (debug) System.out.println("Clause.unify(): bindSource: " + bindSource);
                     //if (bindSource) {
-                        if (debug) System.out.println("Clause.unify(): binding: " + c2);
-                        c2.bound = true; // mark as bound in case the rule consumes the clauses ( a ==> rule not a ?=>)
+                    if (debug) System.out.println("Clause.unify(): binding: " + c2);
+                    c2.bound = true; // mark as bound in case the rule consumes the clauses ( a ==> rule not a ?=>)
                     //}
                     //else {
                     //    c1.bound = true;
@@ -307,9 +301,9 @@ public class Clause implements Comparable {
             lex.look();
             l = Literal.parse(lex, 0);
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.testUnify() " + message);
+            System.err.println("Error in Clause.testUnify() " + message);
             ex.printStackTrace();
         }
         Clause d = new Clause();
@@ -336,9 +330,9 @@ public class Clause implements Comparable {
             lex2.look();
             l2 = Literal.parse(lex2, 0);
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.testUnify2() " + message);
+            System.err.println("Error in Clause.testUnify2() " + message);
             ex.printStackTrace();
         }
         Clause d = new Clause();
