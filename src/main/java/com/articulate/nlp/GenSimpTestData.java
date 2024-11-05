@@ -192,8 +192,14 @@ public class GenSimpTestData {
      */
     public static void initModifiers() {
 
-        coca.freqNouns = PairMap.readMap("nouns.txt");
-        coca.freqVerbs = PairMap.readMap("verbs.txt");
+        String prefix = System.getenv("CORPORA") + File.separator + "COCA" + File.separator;
+        File n = new File(prefix + "nouns.txt");
+        File v = new File(prefix + "verbs.txt");
+        if (!n.exists() || !v.exists())
+            coca.pairFreq(prefix);
+
+        coca.freqNouns = PairMap.readMap(n.getAbsolutePath());
+        coca.freqVerbs = PairMap.readMap(v.getAbsolutePath());
         //System.out.println("Nouns: " + coca.freqNouns);
         //System.out.println("Verbs: " + coca.freqVerbs);
         coca.filterModifiers(coca.freqVerbs,coca.freqNouns);
