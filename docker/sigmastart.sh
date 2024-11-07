@@ -1,6 +1,6 @@
 #!/bin/bash
 
-su -l sumo -c /home/sumo/Programs/apache-tomcat-9.0.10/bin/startup.sh
+su -l sumo -c /home/sumo/Programs/apache-tomcat-9.0.96/bin/startup.sh
 
 RV=$?
 echo "Return value is: $RV"
