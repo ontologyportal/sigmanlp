@@ -72,7 +72,7 @@ public class Rule {
      */
     public String toString() {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (cnf != null) {
             sb.append(cnf.toString());
             if (operator == RuleOp.IMP)

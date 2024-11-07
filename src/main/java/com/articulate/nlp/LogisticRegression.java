@@ -170,7 +170,7 @@ public class LogisticRegression {
     public static String toStringArrayWithPrecision(double[] ar) {
 
         DecimalFormat myFormatter = new DecimalFormat("###.##");
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("[");
         for (int i = 0; i < ar.length; i++) {
             if (i != 0)

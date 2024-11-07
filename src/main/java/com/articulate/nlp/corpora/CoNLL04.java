@@ -94,13 +94,14 @@ public class CoNLL04 {
                     else
                         return relName.compareTo(r.relName);
                 }
-                else return (new Integer(second)).compareTo(r.second);
+                else return (Integer.valueOf(second)).compareTo(r.second);
             }
-            else return (new Integer(first)).compareTo(r.first);
+            else return (Integer.valueOf(first)).compareTo(r.first);
         }
 
         /** ***************************************************************
-         */
+         * @return  */
+        @Override
         public int hashCode() {
             return first + second + relName.hashCode();
         }
@@ -121,7 +122,7 @@ public class CoNLL04 {
 
         public String toString() {
 
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append(sentString + "\n");
             for (Token t : tokens)
                 sb.append(t.toString());
@@ -259,12 +260,12 @@ public class CoNLL04 {
         boolean inSent = true; // in the sentence or in the relation list
         Sent sent = new Sent();
         int sentnum = 0;
-        StringBuffer sentAccum = new StringBuffer();
+        StringBuilder sentAccum = new StringBuilder();
         for (String s : lines) {
             if (StringUtil.emptyString(s)) {
                 if (inSent) { // transition out of a sentence: all tokens done
                     sent.sentString = sentAccum.toString();
-                    sentAccum = new StringBuffer();
+                    sentAccum = new StringBuilder();
                 }
                 if (!inSent) { // transition out of relation list: all relations read
                     if (sent.sentString.endsWith(".") || sent.sentString.endsWith("!") ||
@@ -307,7 +308,7 @@ public class CoNLL04 {
      */
     public String toString() {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (Sent s : sentences) {
             sb.append(s.toString());
         }
@@ -320,7 +321,7 @@ public class CoNLL04 {
 
         if (rels == null && rels.size() == 0)
             return "";
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (Relation r : rels) {
             Token t1 = s.tokens.get(r.first);
             sb.append(t1.tokString + " ");

@@ -104,7 +104,7 @@ public class Indexer {
      */
     private static String revertAnnotations (String dep) {
 
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         System.out.println("Searcher.depToTokens(): " + dep);
         if (dep == null)
             return null;

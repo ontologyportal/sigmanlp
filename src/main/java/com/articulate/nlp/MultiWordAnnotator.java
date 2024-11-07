@@ -78,7 +78,7 @@ public abstract class MultiWordAnnotator implements Annotator {
 
         if (tokens == null || tokens.size() == 0)
             return "";
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         for (CoreLabel cl : tokens) {
             if (result.length() > 0)
                 result.append(delimit);

@@ -91,7 +91,7 @@ public class NERAnnotator implements Annotator {
      */
     public static String toToken(IntPair ip, List<CoreLabel> tokens) {
 
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         //result.append("?");
         for (int i = ip.getSource() - 1; i < ip.getTarget(); i++) {
             if (i != ip.getSource() - 1)

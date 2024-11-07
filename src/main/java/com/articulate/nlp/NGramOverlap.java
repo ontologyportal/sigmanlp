@@ -42,11 +42,11 @@ public class NGramOverlap {
         s2.addAll(Arrays.asList(str2.split(" ")));
 
         for (int i = 0; i < s1.size()+1 - n; i++) {
-            StringBuffer s1tok = new StringBuffer();
+            StringBuilder s1tok = new StringBuilder();
             for (int z = 0; z < n; z++)
                 s1tok.append(s1.get(i + z));
             for (int j = 0; j < s2.size()+1 - n; j++) {
-                StringBuffer s2tok = new StringBuffer();
+                StringBuilder s2tok = new StringBuilder();
                 for (int z = 0; z < n; z++)
                     s2tok.append(s2.get(j+z));
                 //System.out.println("'" + s1tok + "' '" + s2tok + "'");

@@ -212,7 +212,7 @@ public class Pipeline {
      */
     public static String showResults(Annotation anno) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (!anno.containsKey(CoreAnnotations.SentencesAnnotation.class))
             throw new RuntimeException("Unable to find sentences in " + anno + "\n");
 

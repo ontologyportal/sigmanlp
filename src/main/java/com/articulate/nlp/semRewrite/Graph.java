@@ -135,7 +135,7 @@ public class Graph {
      */
     public String toString() {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         Iterator<String> it = nodes.keySet().iterator();
         sb.append(label + "\n");
         while (it.hasNext()) {

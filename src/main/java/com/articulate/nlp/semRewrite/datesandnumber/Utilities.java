@@ -60,7 +60,7 @@ public class Utilities {
 	 */
 	public String toString() {
 
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 		if (sumoTerms != null)
 			result.append("sumoTerms: " + sumoTerms.toString() + "\n");
 		if (datesList != null)

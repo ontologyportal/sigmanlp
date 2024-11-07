@@ -536,7 +536,7 @@ public class Interpreter {
     private static String prependQuantifier(ArrayList<String> vars, String form) {
 
         //System.out.println("INFO in Interpreter.prependQuantifier(): " + vars);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (vars == null || vars.size() < 1)
             return form;
         sb.append("(exists (");

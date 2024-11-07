@@ -75,7 +75,7 @@ public class TermCloud {
             addToCoocFreq(freq,combined);
         }
         else {
-            Integer freq = new Integer(1);
+            Integer freq = 1;
             freqCooc.put(combined,freq);
             addToCoocFreq(freq,combined);
         }
@@ -89,7 +89,7 @@ public class TermCloud {
         for (String s : nps) {
             Integer freq = freqTerm.get(s);
             if (freq == null)
-                freq = new Integer(0);
+                freq = 0;
             freq++;
             freqTerm.put(s,freq);
 

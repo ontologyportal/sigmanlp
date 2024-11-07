@@ -29,7 +29,7 @@ public class DependencyConverter {
             "September","October","November","December");
 
     public static KB kb;
-    public static StringBuffer output = new StringBuffer();
+    public static StringBuilder output = new StringBuilder();
     public static HashSet<String> maleNames = new HashSet<String>();
     public static HashSet<String> femaleNames = new HashSet<String>();
     
@@ -595,7 +595,7 @@ public class DependencyConverter {
      */
     public static String formatSUMO(HashSet<String> SUMO) {
         
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("(and \n");
         Iterator<String> it = SUMO.iterator();
         while (it.hasNext()) {

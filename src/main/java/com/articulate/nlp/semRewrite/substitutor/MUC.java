@@ -92,7 +92,7 @@ public class MUC {
 
     /****************************************************************
      */
-    public static String first100(StringBuffer input) {
+    public static String first100(StringBuilder input) {
 
         if (input.length() > 100)
             return input.toString().substring(0,100) + "...";
@@ -152,7 +152,7 @@ public class MUC {
      */
     public static String listToString(List<String> input) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (String s : input)
             sb.append(s + " ");
         return sb.toString();
@@ -289,7 +289,7 @@ public class MUC {
         LineNumberReader lr = null;
         try {
             String line;
-            StringBuffer doc = new StringBuffer();
+            StringBuilder doc = new StringBuilder();
             File nounFile = new File(filename);
             if (nounFile == null) {
                 System.out.println("Error in MUC.cleanSGML(): The file does not exist ");
@@ -312,7 +312,7 @@ public class MUC {
                 line = line.replaceAll("^\\@", "");
                 if (line.contains("</DOC>")) {
                     lines.add(doc.toString());
-                    doc = new StringBuffer();
+                    doc = new StringBuilder();
                 }
                 else if (line.contains("<DOC>") ||
                         line.contains("<DOCID>") ||
@@ -397,7 +397,7 @@ public class MUC {
      * its starting characters.
      * @return true if the token was found
      */
-    private static boolean removeToken(StringBuffer sb, String token) {
+    private static boolean removeToken(StringBuilder sb, String token) {
 
         //System.out.println("removeToken() remove '" + token + "'");
         //System.out.println("removeToken() before: " + first100(sb));
@@ -434,7 +434,7 @@ public class MUC {
 
     /****************************************************************
      */
-    private static void leadingTrim(StringBuffer sb) {
+    private static void leadingTrim(StringBuilder sb) {
 
         if (sb == null || sb.length() > 1)
             return;
@@ -484,7 +484,7 @@ public class MUC {
      * @return the String content of a COREF tag.
      * Destructively modifies sb to remove the tag
      */
-    private static String getTag(StringBuffer sb, Matcher m) {
+    private static String getTag(StringBuilder sb, Matcher m) {
 
         if (sb.indexOf("<") > -1)
             sb.delete(0, sb.indexOf("<"));
@@ -768,7 +768,7 @@ public class MUC {
     public void makeCorefList(String sentsDirty,
                               ArrayList<ArrayList<String>> tokenized) {
 
-        StringBuffer sb = new StringBuffer(sentsDirty);
+        StringBuilder sb = new StringBuilder(sentsDirty);
         HashMap<Integer,Coref> corefs = new HashMap<>();
         HashMap<Integer,String> corefTokens = new HashMap<>();
         HashMap<Integer,String> corefParams = new HashMap<>();
@@ -896,7 +896,7 @@ public class MUC {
 
         MUC muc = new MUC();
         String token = "Corp.";
-        StringBuffer sb = new StringBuffer("Corp.</COREF> <COREF ID=\"13\" TYPE=\"IDENT\" REF=\"10\">He</COREF> also served for 10 years as <COREF ID=\"14\" TYPE=\"IDENT\" REF=\"13\" STATUS=\"OPT\">chairman</COREF> and <COREF ID=\"15\" TYPE=\"IDENT\" REF=\"13\" MIN=\"executive\" STATUS=\"OPT\">chief executive of Paramount Pictures Corp., a unit of Paramount Communications Inc.</COREF> Arrow Investments Inc., a corporation controlled by <COREF ID=\"16\" TYPE=\"IDENT\" REF=\"13\" MIN=\"Diller\">Mr. Diller</COREF>, in <COREF ID=\"19\">December</COREF> agreed to purchase $25 million of <COREF ID=\"17\" TYPE=\"IDENT\" REF=\"6\">QVC</COREF> stock in a privately negotiated transaction.");
+        StringBuilder sb = new StringBuilder("Corp.</COREF> <COREF ID=\"13\" TYPE=\"IDENT\" REF=\"10\">He</COREF> also served for 10 years as <COREF ID=\"14\" TYPE=\"IDENT\" REF=\"13\" STATUS=\"OPT\">chairman</COREF> and <COREF ID=\"15\" TYPE=\"IDENT\" REF=\"13\" MIN=\"executive\" STATUS=\"OPT\">chief executive of Paramount Pictures Corp., a unit of Paramount Communications Inc.</COREF> Arrow Investments Inc., a corporation controlled by <COREF ID=\"16\" TYPE=\"IDENT\" REF=\"13\" MIN=\"Diller\">Mr. Diller</COREF>, in <COREF ID=\"19\">December</COREF> agreed to purchase $25 million of <COREF ID=\"17\" TYPE=\"IDENT\" REF=\"6\">QVC</COREF> stock in a privately negotiated transaction.");
         Coref c = muc.new Coref();
         removeToken(sb,token);
         System.out.println("MUC.testRemoveToken: " + sb);

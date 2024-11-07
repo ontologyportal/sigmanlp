@@ -158,7 +158,7 @@ public class RelExtract {
     public static String buildFormulaString(KB kb, String rel) {
 
         List<String> sig = kb.kbCache.signatures.get(rel);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (sig != null && sig.size() > 1) {
             sb.append("(exists (");
             int counter = 1;
@@ -341,7 +341,7 @@ public class RelExtract {
     public static Formula addFormulaTypes(Formula f, CNF pattern, Subst bindings) {
 
         Formula fnew = new Formula();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("(and ");
         sb.append(f.toString());
         for (String s : bindings.values()) {
@@ -371,7 +371,7 @@ public class RelExtract {
             int arg = cl.get(LanguageFormatter.RelationArgumentAnnotation.class);
             args.set(arg,bindings.get(s));
         }
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("(" + rel + " ");
         sb.append(args.get(1));
         for (int i = 2; i < args.size(); i++)
@@ -646,7 +646,7 @@ public class RelExtract {
                 }
             }
         }
-        StringBuffer resultStr = new StringBuffer();
+        StringBuilder resultStr = new StringBuilder();
         resultStr.append("{(" + rel + " ");
         for (int i = 1; i < valence + 1; i++) {
             if (i > 1)
@@ -758,7 +758,7 @@ public class RelExtract {
      */
     public static String toCNFLabels(CNF cnf) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (Clause c : cnf.clauses) {
             for (Literal l : c.disjuncts) {
                 sb.append(l.toLabels());
@@ -774,7 +774,7 @@ public class RelExtract {
      */
     public static String printCNFVariables(CNF cnf) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (debug) System.out.println("printCNFVariables(): " + cnf);
         for (Clause c : cnf.clauses) {
             for (Literal l : c.disjuncts) {
@@ -1000,7 +1000,7 @@ public class RelExtract {
      */
     public static String toCoreLabelString(CoreLabel cl) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         //System.out.println("after: " + cl.after());
         //System.out.println("before: " + cl.before());
         //System.out.println("beginPosition: " + cl.beginPosition());
