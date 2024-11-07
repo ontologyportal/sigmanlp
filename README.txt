@@ -22,12 +22,14 @@ Then follow the steps in "Account Management" below before proceeding
 
 In your .bashrc you'll need to have a greater heap space allocation than for sigmakee alone
 
-export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx7g"
+export CATALINA_OPTS="$CATALINA_OPTS -Xmx1g -Xss1m"
 
 export ONTOLOGYPORTAL_GIT="/home/user/workspace"
 
 Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
-  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-latest" />
+and "latest" with you're version of stanford-corenlp:
+
+  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-latest/stanford-corenlp-latest-models.jar" />
 
 If you want to run sigmanlp's web interface then
 
