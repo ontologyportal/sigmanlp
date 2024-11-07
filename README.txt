@@ -10,11 +10,11 @@ cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
 cd ~/Programs
 wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-latest.zip'
-unzip stanford-corenlp-4.3.1.zip
+unzip stanford-corenlp-latest.zip
 rm stanford-corenlp-latest.zip
-cd ~/Programs/stanford-corenlp-full-4.3.1/
-cp ~/Programs/stanford-corenlp-4.3.1/stanford-corenlp-4.3.1.jar ~/workspace/sigmanlp/lib
-cp ~/Programs/stanford-corenlp-4.3.1/stanford-corenlp-4.3.1-models.jar ~/workspace/sigmanlp/lib
+cd ~/Programs/stanford-corenlp-full-latest/
+cp ~/Programs/stanford-corenlp-latest/stanford-corenlp-latest.jar ~/workspace/sigmanlp/lib
+cp ~/Programs/stanford-corenlp-latest/stanford-corenlp-latest-models.jar ~/workspace/sigmanlp/lib
 cd ~/workspace/sigmanlp
 ant
 
@@ -27,7 +27,7 @@ export CATALINA_OPTS="$CATALINA_OPTS -Xms1000M -Xmx7g"
 export ONTOLOGYPORTAL_GIT="/home/user/workspace"
 
 Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
-  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-full-2018-01-31" />
+  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-latest" />
 
 If you want to run sigmanlp's web interface then
 
@@ -45,7 +45,7 @@ the following in your config.xml
 
 To run on the command line, try (changing to your paths)
 
-java -Xmx7g -classpath /home/user/workspace/sigmanlp/build/classes:
+java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
 /home/user/workspace/sigmanlp/build/lib/* com.articulate.nlp.semRewrite.Interpreter -i
 
 
@@ -59,10 +59,10 @@ Add the following to your $CATALINA_HOME/conf/context.xml
 
 jUnit=============
 
-java -Xmx10g -classpath /home/user/workspace/sigmanlp/build/classes:
+java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
 /home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllUnitSemRewrite
 
-java -Xmx10g -classpath /home/user/workspace/sigmanlp/build/classes:
+java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
 /home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllSemRewriteIntegTest
