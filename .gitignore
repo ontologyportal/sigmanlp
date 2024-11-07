@@ -36,3 +36,5 @@
 .Spotlight-V100
 .Trashes
 
+/lib/sigmaUtils.jar
+/MANIFEST.MF
