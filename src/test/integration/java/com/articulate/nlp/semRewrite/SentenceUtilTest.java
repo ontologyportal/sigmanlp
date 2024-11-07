@@ -2,11 +2,8 @@ package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.RelExtract;
 import com.articulate.nlp.pipeline.SentenceUtil;
-import com.articulate.sigma.IntegrationTestBase;
-import com.articulate.sigma.KB;
+import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
-import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.util.CoreMap;
@@ -15,10 +12,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /*
 Copyright 2017-     Infosys

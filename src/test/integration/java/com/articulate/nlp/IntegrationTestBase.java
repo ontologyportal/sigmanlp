@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import com.articulate.sigma.SigmaTestBase;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
 
@@ -35,8 +34,8 @@ public class IntegrationTestBase extends SigmaTestBase {
             System.out.println("Integration test base: " + uri);
         }
         catch (URISyntaxException e) {
-            System.out.println("IntegrationTestBase uri:" + uri);
-            System.out.println(e.getMessage());
+            System.err.println("IntegrationTestBase uri:" + uri);
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         RESOURCES_FILE = new File(uri);
@@ -83,7 +82,7 @@ public class IntegrationTestBase extends SigmaTestBase {
         kb.deleteUserAssertions();
 
         // Remove the assertions in the files.
-        File userAssertionsFile = new File(KB_PATH, "SUMO" + kb._userAssertionsString);
+        File userAssertionsFile = new File(KB_PATH, "SUMO" + KB._userAssertionsString);
         if (userAssertionsFile.exists()) {
             userAssertionsFile.delete();
             userAssertionsFile.createNewFile();

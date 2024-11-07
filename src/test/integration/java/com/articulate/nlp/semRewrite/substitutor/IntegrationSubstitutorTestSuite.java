@@ -1,0 +1,17 @@
+package com.articulate.nlp.semRewrite.substitutor;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
+/**
+ *
+ * @author <a href="mailto:tdnorbra@nps.edu?subject=com.articulate.nlp.semRewrite.substitutor.IntegrationSubstitutorTestSuite">Terry Norbraten, NPS MOVES</a>
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    com.articulate.nlp.semRewrite.substitutor.NounSubstitutorTest.class,
+    com.articulate.nlp.semRewrite.substitutor.IdiomSubstitutorTest.class
+})
+public class IntegrationSubstitutorTestSuite {
+
+} // end class file IntegrationSubstitutorTestSuite.java

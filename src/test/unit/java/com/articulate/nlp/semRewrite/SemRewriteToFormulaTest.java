@@ -1,7 +1,7 @@
 package com.articulate.nlp.semRewrite;
 
 import com.articulate.sigma.Formula;
-import com.articulate.sigma.UnitTestBase;
+import com.articulate.nlp.UnitTestBase;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,7 +29,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
     @Before
     public void setUpInterpreter() throws IOException {
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         interpreter.initialize();
     }
 

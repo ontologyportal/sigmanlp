@@ -1,6 +1,6 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.sigma.UnitTestBase;
+import com.articulate.nlp.UnitTestBase;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Tests the SemRewrite of a given parse.

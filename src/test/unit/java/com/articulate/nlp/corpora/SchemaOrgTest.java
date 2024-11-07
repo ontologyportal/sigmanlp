@@ -1,9 +1,7 @@
 package com.articulate.nlp.corpora;
 
-import com.articulate.nlp.IntegrationTestBase;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-import com.articulate.sigma.UnitTestBase;
 
 /**
  * Created by apease on 6/26/18.

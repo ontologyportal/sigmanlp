@@ -2,13 +2,11 @@ package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.SigmaTestBase;
-import edu.stanford.nlp.ling.CoreLabel;
+import com.articulate.nlp.SigmaTestBase;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 
 /**
@@ -34,7 +32,7 @@ public class NPtypeTest extends IntegrationTestBase {
     @After
     public void cleanup() {
 
-        NPtype.heads = new HashSet<CoreLabel>();
+        NPtype.heads = new HashSet<>();
     }
 
     /****************************************************************

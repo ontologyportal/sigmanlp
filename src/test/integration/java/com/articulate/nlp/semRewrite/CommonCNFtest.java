@@ -20,11 +20,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA
 */
 
-import com.articulate.sigma.UnitTestBase;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.KB;
-import com.articulate.sigma.IntegrationTestBase;
-import static org.junit.Assert.assertTrue;
+import com.articulate.nlp.IntegrationTestBase;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.junit.Before;

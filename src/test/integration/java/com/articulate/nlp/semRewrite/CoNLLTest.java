@@ -2,16 +2,14 @@ package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.RelExtract;
 import com.articulate.nlp.corpora.CoNLL04;
-import com.articulate.sigma.IntegrationTestBase;
+import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;

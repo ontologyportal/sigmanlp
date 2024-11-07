@@ -1,10 +1,7 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.sigma.UnitTestBase;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-
-import java.util.HashMap;
 
 /*
 Copyright 2017-     Infosys

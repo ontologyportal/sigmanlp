@@ -1,6 +1,5 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.nlp.semRewrite.datesandnumber.DateAndNumbersGeneration;
 import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.google.common.collect.ImmutableList;
@@ -12,12 +11,10 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.*;
 
-import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.*;
 
 /**
@@ -292,9 +289,9 @@ public class InterpreterGenCNFTest extends IntegrationTestBase {
 
         String input = "Mary has walked for two hours.";
         Set<String> expected = Sets.newHashSet(
-                "nsubj(walk-3,Mary-1)", "names(Mary-1,\"Mary\")", "sumo(Hour,hour-6)", "root(ROOT-0,walk-3)", 
-                "aspect(PERFECT,walk-3)", "attribute(Mary-1,Female)", "tense(PRESENT,walk-3)", "sumo(Human,Mary-1)", 
-                "sumo(Walking,walk-3)", "num(hour-6,two-5)", "aux(walk-3,have-2)", "prep_for(walk-3,hour-6)", 
+                "nsubj(walk-3,Mary-1)", "names(Mary-1,\"Mary\")", "sumo(Hour,hour-6)", "root(ROOT-0,walk-3)",
+                "aspect(PERFECT,walk-3)", "attribute(Mary-1,Female)", "tense(PRESENT,walk-3)", "sumo(Human,Mary-1)",
+                "sumo(Walking,walk-3)", "num(hour-6,two-5)", "aux(walk-3,have-2)", "prep_for(walk-3,hour-6)",
                 "number(SINGULAR,Mary-1)", "number(PLURAL,hour-6)"
         );
         doTest(input,expected);
@@ -352,9 +349,9 @@ public class InterpreterGenCNFTest extends IntegrationTestBase {
 
         String input = "Mary had been walking for two hours.";
         Set<String> expected = Sets.newHashSet(
-                "names(Mary-1,\"Mary\")", "attribute(Mary-1,Female)", "root(ROOT-0,walk-4)", "aux(walk-4,be-3)", 
-                "sumo(Human,Mary-1)", "tense(PAST,walk-4)", "sumo(Hour,hour-7)", "sumo(Walking,walk-4)", "aux(walk-4,have-2)", 
-                "num(hour-7,two-6)", "prep_for(walk-4,hour-7)", "number(PLURAL,hour-7)", "number(SINGULAR,Mary-1)", 
+                "names(Mary-1,\"Mary\")", "attribute(Mary-1,Female)", "root(ROOT-0,walk-4)", "aux(walk-4,be-3)",
+                "sumo(Human,Mary-1)", "tense(PAST,walk-4)", "sumo(Hour,hour-7)", "sumo(Walking,walk-4)", "aux(walk-4,have-2)",
+                "num(hour-7,two-6)", "prep_for(walk-4,hour-7)", "number(PLURAL,hour-7)", "number(SINGULAR,Mary-1)",
                 "nsubj(walk-4,Mary-1)", "aspect(PROGRESSIVEPERFECT,walk-4)"
         );
         doTest(input,expected);

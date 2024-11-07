@@ -3,7 +3,6 @@ package com.articulate.nlp;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semRewrite.Literal;
-import com.articulate.nlp.semRewrite.substitutor.SubstitutorsUnion;
 import com.google.common.collect.ImmutableList;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -13,7 +12,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Created by areed on 3/30/15.

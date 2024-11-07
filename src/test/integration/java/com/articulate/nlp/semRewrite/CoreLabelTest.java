@@ -1,10 +1,9 @@
 package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.RelExtract;
-import com.articulate.sigma.IntegrationTestBase;
+import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.utils.StringUtil;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -13,12 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 /*
 Copyright 2017-     Infosys

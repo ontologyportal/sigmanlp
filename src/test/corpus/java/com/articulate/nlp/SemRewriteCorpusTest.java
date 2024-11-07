@@ -1,17 +1,11 @@
-package com.articulate.nlp.semRewrite;
+package com.articulate.nlp;
 
+import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.sigma.Formula;
-import com.articulate.nlp.IntegrationTestBase;
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -28,7 +22,7 @@ public class SemRewriteCorpusTest extends IntegrationTestBase {
     public void setUpInterpreter() throws IOException {
 
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         interpreter.initialize();
     }
 
@@ -36,7 +30,7 @@ public class SemRewriteCorpusTest extends IntegrationTestBase {
      */
     private void doTest(String input, String expected) {
 
-        if (input == null || input == "" || expected == null || expected == "") {
+        if (input == null || "".equals(input) || expected == null || "".equals(expected)) {
             System.out.println("Error in SemRewriteCorpusTest.doTest(): null input");
             return;
         }
