@@ -1,5 +1,6 @@
 package com.articulate.nlp.corpora;
 
+import com.articulate.nlp.UnitTestBase;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -11,5 +12,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     com.articulate.nlp.corpora.SchemaOrgTest.class
 })
-public class UnitCorporaTestSuite {
+public class UnitCorporaTestSuite extends UnitTestBase {
+    
 } // end class file UnitCorporaTestSuite.java

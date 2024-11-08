@@ -31,8 +31,7 @@ public class ProceduresUnitTest extends UnitTestBase {
      */
     public void doTestUnifyProc(boolean expected, String input) {
 
-        Literal l = null;
-        l = new Literal(input);
+        Literal l = new Literal(input);
         String str = "";
         if (input.startsWith("isCELTclass"))
             str = Procedures.isCELTclass(l);

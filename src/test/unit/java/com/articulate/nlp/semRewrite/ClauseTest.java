@@ -1,8 +1,10 @@
 package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.UnitTestBase;
-import org.junit.Test;
 
+import java.text.ParseException;
+
+import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -31,8 +33,7 @@ public class ClauseTest extends UnitTestBase {
      */
     public void doTestUnifyProc(String input) {
 
-        Literal l = null;
-        l = new Literal(input);
+        Literal l = new Literal(input);
         Clause d = new Clause();
         d.disjuncts.add(l);
         Clause c = new Clause();
@@ -52,9 +53,9 @@ public class ClauseTest extends UnitTestBase {
             lex.look();
             l = Literal.parse(lex, 0);
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.testUnifyProc1() " + message);
+            System.err.println("Error in Clause.testUnifyProc1() " + message);
             ex.printStackTrace();
         }
         Clause d = new Clause();
@@ -95,9 +96,8 @@ public class ClauseTest extends UnitTestBase {
 
         Clause.debug = true;
         Procedures.debug = true;
-        Literal l = null;
         String input = "isCELTclass(Number,Time).";
-        l = new Literal(input);
+        Literal l = new Literal(input);
         Clause d = new Clause();
         d.disjuncts.add(l);
         Clause c = new Clause();

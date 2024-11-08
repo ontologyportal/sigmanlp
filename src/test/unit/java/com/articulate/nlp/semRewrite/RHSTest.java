@@ -1,6 +1,7 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.nlp.IntegrationTestBase;
+import com.articulate.nlp.UnitTestBase;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 /*
@@ -22,7 +23,7 @@ This program is free software; you can redistribute it and/or modify
         Foundation, Inc., 59 Temple Place, Suite 330, Boston,
         MA  02111-1307 USA
         */
-public class RHSTest extends IntegrationTestBase {
+public class RHSTest extends UnitTestBase {
 
     /****************************************************************
      */
@@ -35,7 +36,7 @@ public class RHSTest extends IntegrationTestBase {
         Lexer lex = new Lexer(input);
         Rule r = Rule.parse(lex);
         System.out.println("RHSTest.testRHSCNF(): " + r.rhs.cnf);
-        assert(r.rhs.cnf != null);
+        assertTrue(r.rhs.cnf != null);
     }
 
 

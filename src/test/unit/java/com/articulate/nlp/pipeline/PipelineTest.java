@@ -21,13 +21,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA
 */
 
+import com.articulate.nlp.UnitTestBase;
 import edu.stanford.nlp.pipeline.Annotation;
-import junit.framework.TestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 
 @Ignore
-public class PipelineTest extends TestCase {
+public class PipelineTest extends UnitTestBase {
 
     @Test
     public void testOutput() {

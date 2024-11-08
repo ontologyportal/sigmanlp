@@ -28,7 +28,7 @@ public class SemRewriteTest extends UnitTestBase {
     public void setUpInterpreter() throws IOException {
 
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         interpreter.initialize();
     }
 

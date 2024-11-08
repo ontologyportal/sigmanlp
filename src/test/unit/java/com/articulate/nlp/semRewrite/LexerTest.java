@@ -105,7 +105,7 @@ public class LexerTest extends UnitTestBase {
             assertEquals("at*", lex1.acceptTok(Lexer.Ident));
         }
         catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -204,8 +204,22 @@ public class LexerTest extends UnitTestBase {
 
         expectedException.expect(ParseException.class);
         expectedException.expectMessage("Error in Lexer.checkTok(): Unexpected token ','");
+
+        // From: https://jsparrow.github.io/rules/replace-j-unit-expected-exception.html#code-changes
+        // TODO: Not working quite right (tdn) 11/08/24
+//        ParseException exception = assertThrows(ParseException.class,
+//        () -> throwsParseException("Error in Lexer.checkTok(): Unexpected token ','"));
+
         lex1.acceptTok(Lexer.ClosePar);
+//        assertTrue(exception.getMessage().contains("Unexpected token"));
     }
+
+     /** **************************************************************
+      * Helper for JUnit 4.13 assertThrows
+      */
+     private void throwsParseException(String s) throws ParseException {
+         throw new ParseException(s, 0);
+     }
 
     /** ***************************************************************
      * Verify a misplaced ClosePar.

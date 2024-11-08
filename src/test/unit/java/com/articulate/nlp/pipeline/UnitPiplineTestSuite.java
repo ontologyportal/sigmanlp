@@ -1,5 +1,6 @@
 package com.articulate.nlp.pipeline;
 
+import com.articulate.nlp.UnitTestBase;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -11,6 +12,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     com.articulate.nlp.pipeline.PipelineTest.class
 })
-public class UnitPiplineTestSuite {
+public class UnitPiplineTestSuite extends UnitTestBase {
 
 } // end class file UnitPiplineTestSuite.java

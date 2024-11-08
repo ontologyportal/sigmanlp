@@ -1,5 +1,6 @@
 package com.articulate.nlp.imsclient;
 
+import com.articulate.nlp.UnitTestBase;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -11,6 +12,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     com.articulate.nlp.imsclient.ResultsParserTest.class
 })
-public class UnitImsclientTestSuite {
+public class UnitImsclientTestSuite extends UnitTestBase {
 
 } // end class file NewTestSuite.java

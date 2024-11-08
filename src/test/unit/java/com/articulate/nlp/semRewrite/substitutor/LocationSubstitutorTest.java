@@ -20,12 +20,15 @@ MA  02111-1307 USA
 */
 package com.articulate.nlp.semRewrite.substitutor;
 
+import com.articulate.nlp.UnitTestBase;
 import com.articulate.nlp.pipeline.Pipeline;
+
 import edu.stanford.nlp.pipeline.Annotation;
-import junit.framework.TestCase;
+
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
-public class LocationSubstitutorTest extends TestCase {
+public class LocationSubstitutorTest extends UnitTestBase {
 
     @Test
     public void testLocationSubstitution() {

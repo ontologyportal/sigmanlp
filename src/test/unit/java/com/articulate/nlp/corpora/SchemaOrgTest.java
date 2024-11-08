@@ -1,12 +1,13 @@
 package com.articulate.nlp.corpora;
 
+import com.articulate.nlp.UnitTestBase;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by apease on 6/26/18.
  */
-public class SchemaOrgTest {
+public class SchemaOrgTest extends UnitTestBase {
 
     /****************************************************************
      */

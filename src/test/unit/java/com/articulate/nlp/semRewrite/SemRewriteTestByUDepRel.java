@@ -46,7 +46,7 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
     @Before
     public void setUpInterpreter() throws IOException {
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         interpreter.initialize();
     }
 
