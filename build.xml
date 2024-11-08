@@ -193,6 +193,12 @@
                release="${javac.release}">
             <src refid="test.sourcepath"/>
         </javac>
+        <mkdir dir="${build.test.classes.dir}/resources"/>
+        <copy todir="${build.test.classes.dir}/resources">
+            <fileset dir="src/test/integration/java/resources">
+                <include name="interpreter_wsd_batch.json"/>
+            </fileset>
+        </copy>
         <mkdir dir="${reports.dir}"/>
     </target>
 
