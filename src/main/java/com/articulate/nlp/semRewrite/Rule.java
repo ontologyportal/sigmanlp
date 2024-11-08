@@ -18,7 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
 import java.text.ParseException;
@@ -28,9 +28,9 @@ import java.util.HashSet;
  * Rule ::= LHS ==> RHS.     Obligatory rewrite
             LHS ?=> RHS.     Optional rewrite
             /­- Clause.        Permanent, unresourced fact
- *             
- * Values for variables on LHS are unified with variables on the 
- * RHS           
+ *
+ * Values for variables on LHS are unified with variables on the
+ * RHS
  */
 public class Rule {
 
@@ -70,6 +70,7 @@ public class Rule {
 
     /** ***************************************************************
      */
+    @Override
     public String toString() {
 
         StringBuilder sb = new StringBuilder();
@@ -79,19 +80,19 @@ public class Rule {
                 sb.append(" ==> ");
             if (operator == RuleOp.OPT)
                 sb.append(" ?=> ");
-            sb.append(rhs.toString() + ".");
+            sb.append(rhs.toString()).append(".");
         }
         else if (operator == RuleOp.CLAUSE)
-            sb.append("/- " + clause.toString() + ".");
+            sb.append("/- ").append(clause.toString()).append(".");
         else {
             sb.append(lhs.toString());
             if (operator == RuleOp.IMP)
                 sb.append(" ==> ");
             if (operator == RuleOp.OPT)
                 sb.append(" ?=> ");
-            sb.append(rhs.toString()+ ".");
+            sb.append(rhs.toString()).append(".");
         }
-        sb.append(" ; line " + startLine);
+        sb.append(" ; line ").append(startLine);
         return sb.toString();
     }
 
@@ -141,8 +142,8 @@ public class Rule {
         Rule r = new Rule();
         r.startLine = lex.linepos();
         String errStart = "Parsing error in " + RuleSet.filename;
-        String errStr = null;
-        boolean isEOL = false;
+        String errStr;
+        boolean isEOL;
         try {
             if (lex.testTok(Lexer.Clause)) {
                 r.operator = RuleOp.CLAUSE;
@@ -180,7 +181,7 @@ public class Rule {
                 lex.next();
             }
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
             System.out.println("Error in RULE.parse(): " + message);
             ex.printStackTrace();
@@ -234,7 +235,7 @@ public class Rule {
      * A test method
      */
     public static void main (String args[]) {
-        
+
         testParse2();
     }
 }
