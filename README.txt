@@ -29,7 +29,12 @@ export ONTOLOGYPORTAL_GIT="/home/user/workspace"
 Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
 and "latest" with you're version of stanford-corenlp:
 
-  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-latest/stanford-corenlp-latest-models.jar" />
+  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-latest/stanford-corenlp-latest-models.jar"/>
+
+** NOTE: If you see a java.io.StreamCorruptedException being thrown in the
+   output console, then comment out the above "preference" element from your
+   $SIGMA_HOME/KBs/config.xml file. SigmaNLP will work without that particular
+   element
 
 If you want to run sigmanlp's web interface then
 
