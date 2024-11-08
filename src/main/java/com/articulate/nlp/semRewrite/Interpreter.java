@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
  */
 package com.articulate.nlp.semRewrite;
 
@@ -33,19 +33,13 @@ import com.articulate.sigma.utils.*;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
 import edu.stanford.nlp.ie.machinereading.structure.MachineReadingAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.semgraph.SemanticGraph;
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
-import edu.stanford.nlp.semgraph.SemanticGraphEdge;
-import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.util.CoreMap;
 import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceBuilder;
@@ -59,7 +53,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.articulate.nlp.semRewrite.EntityType.PERSON;
 
 public class Interpreter {
 
@@ -122,12 +115,12 @@ public class Interpreter {
 
     //Collection of utterances by the user
     public Document userInputs = new Document();
-    private ArrayList<Graph> userGraphs = new ArrayList<Graph>();
+    private ArrayList<Graph> userGraphs = new ArrayList<>();
 
     public Pipeline p = null;
     //private String propString =  "tokenize, ssplit, pos, lemma, ner, gender, parse, depparse, dcoref, entitymentions, wnmw, wsd, tsumo";
 
-    public static HashSet<String> firedRules = new HashSet<String>();
+    public static HashSet<String> firedRules = new HashSet<>();
     public static ArrayList<Literal> augmentedClauses = new ArrayList<>();
     public static ClauseSubstitutor substitutor = null;
     public static DateAndNumbersGeneration generator = new DateAndNumbersGeneration();
@@ -1675,8 +1668,10 @@ public class Interpreter {
      */
     public static RuleSet loadRules(String f) {
 
-        if (f.indexOf(File.separator.toString(),2) < 0)
-            f = System.getProperty("user.home") + "/workspace/sumo/WordNetMappings" + File.separator + f;
+        if (f.indexOf(File.separator,2) < 0)
+            f = System.getProperty(System.getenv("ONTOLOGYPORTAL_GIT") +
+                    File.separator + "sumo" + File.separator + "WordNetMappings" +
+                    File.separator + f);
         try {
             RuleSet rsin = RuleSet.readFile(f);
             System.out.println("INFO in Interpreter.loadRules(): " +
@@ -1685,7 +1680,7 @@ public class Interpreter {
         }
         catch (Exception e) {
             e.printStackTrace();
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             return null;
         }
     }

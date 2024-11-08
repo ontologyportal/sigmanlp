@@ -1,6 +1,5 @@
 package com.articulate.nlp;
 
-import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.*;
 import com.articulate.nlp.semconcor.Searcher;
 import com.articulate.sigma.*;
@@ -8,17 +7,11 @@ import com.articulate.sigma.utils.*;
 import com.articulate.sigma.nlg.LanguageFormatter;
 import com.articulate.sigma.nlg.NLGUtils;
 import com.articulate.sigma.wordNet.WordNet;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.IntPair;
-import edu.stanford.nlp.util.TypesafeMap;
-
-import java.io.File;
 import java.util.*;
 
 /**
