@@ -24,10 +24,13 @@ MA  02111-1307 USA
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.ListIterator;
@@ -49,9 +52,9 @@ public class JsonReader {
                 JSONObject jo = li.next();
                 result.add(transformer.apply(jo));
             }
-        } catch (Exception e) {
-            System.out.println("Parse exception reading: " + resourcePath);
-            System.out.println(e.getMessage());
+        } catch (IOException | ParseException e) {
+            System.err.println("Parse exception reading: " + resourcePath);
+            System.err.println(e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Parse exception reading: " + resourcePath);
         }
