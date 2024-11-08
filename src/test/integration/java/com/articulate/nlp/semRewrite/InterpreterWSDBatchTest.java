@@ -24,17 +24,20 @@ import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.sigma.test.JsonReader;
+
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.Collection;
-import java.util.List;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
@@ -45,7 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @RunWith(Parameterized.class)
 public class InterpreterWSDBatchTest extends IntegrationTestBase {
 
-    public static Interpreter interp = new Interpreter();
+    public static Interpreter interp;
 
     @Parameterized.Parameter(value = 0)
     public String input;
@@ -56,10 +59,11 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
     public static void initInterpreter() {
 
         KBmanager.getMgr().initializeOnce();
+        interp = new Interpreter();
         try {
             interp.initialize();
         }
-        catch (Exception e) {
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -92,7 +96,7 @@ public class InterpreterWSDBatchTest extends IntegrationTestBase {
 
         Annotation wholeDocument = interp.userInputs.annotateDocument(input);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<Literal> wsds = interp.findWSD(lastSentence);
+        List<Literal> wsds = Interpreter.findWSD(lastSentence);
 
         return wsds;
     }
