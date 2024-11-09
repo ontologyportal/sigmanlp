@@ -19,10 +19,10 @@ import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 import static com.articulate.nlp.GenSimpTestData.*;
 
-public class GenSimpTestDataTest {
+public class GenSimpTestDataTest extends IntegrationTestBase {
 
     public static LFeatures lfeat = null;
-    public static GenSimpTestData gstd = new GenSimpTestData();
+    public static GenSimpTestData gstd;
 
     /** *************************************************************
      */
@@ -30,6 +30,7 @@ public class GenSimpTestDataTest {
     public static void init() {
 
         System.out.println("GenSimpTestDataTest.init()");
+        gstd = new GenSimpTestData();
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         GenSimpTestData.initNumbers();

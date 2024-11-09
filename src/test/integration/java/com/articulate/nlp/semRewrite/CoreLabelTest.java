@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import static org.junit.Assert.assertTrue;
 
 /*
 Copyright 2017-     Infosys
@@ -44,7 +45,7 @@ public class CoreLabelTest extends IntegrationTestBase {
     public void setUpInterpreter() throws IOException {
 
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         Interpreter.debug = true;
         Interpreter.replaceInstances = false;
         //CNF.debug = true;
@@ -62,7 +63,7 @@ public class CoreLabelTest extends IntegrationTestBase {
      * printCoreLabel()
      */
     @Test
-    public static void testCoreLabel() {
+    public void testCoreLabel() {
 
         String input = "Robert sits on the mat.";
         System.out.println("RelExtract.testCoreLabel():");
@@ -71,19 +72,20 @@ public class CoreLabelTest extends IntegrationTestBase {
         try {
             interp.initialize();
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (IOException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
-        KB kb = KBmanager.getMgr().getKB("SUMO");
         Annotation anno = interp.p.annotate(input);
         List<CoreMap> sentences = anno.get(CoreAnnotations.SentencesAnnotation.class);
         System.out.println("RelExtract.testCoreLabel(): input: " + input);
+        List<CoreLabel> tokens = null;
         for (CoreMap sentence : sentences) {
-            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             for (CoreLabel cl : tokens) {
                 RelExtract.printCoreLabel(cl);
             }
         }
+        assertTrue(tokens != null && !tokens.isEmpty());
     }
 }

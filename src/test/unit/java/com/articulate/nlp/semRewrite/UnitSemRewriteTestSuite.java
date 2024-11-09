@@ -13,10 +13,9 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     AddQueryObjectQuantifierTest.class,
-    // Fails
-//    CNFNewTest.class,
+    CNFNewTest.class,
     CNFTest.class,
-    // Fails
+    // TODO: Fails
 //    ClauseTest.class,
     InterpUnitTest.class,
     LexerTest.class,
@@ -24,15 +23,13 @@ import org.junit.runners.Suite;
     ProceduresUnitTest.class,
     RHSTest.class,
     RulePrepAboutRefersToUnitTest.class,
-    // Fails
-//    SemRewriteTest.class,
-    // TODO: Works when run by itself, but fails if run with the rest of pkg tests
-//    SemRewriteTest2.class,
+    SemRewriteTest.class,
+    SemRewriteTest2.class,
     SemRewriteTestByUDepRel.class,
     SemRewriteTestTimeDate.class,
-    // Fails
+    // TODO: Fails
 //    SemRewriteToFormulaTest.class,
-    // Fails
+    // TODO: Fails
 //    LocationSubstitutorTest.class
 })
 public class UnitSemRewriteTestSuite extends UnitTestBase {

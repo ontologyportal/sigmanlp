@@ -1,5 +1,6 @@
 package com.articulate.nlp.inference;
 
+import com.articulate.nlp.IntegrationTestBase;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -9,14 +10,14 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    com.articulate.nlp.inference.DemoScript20150421_3Test.class,
-    com.articulate.nlp.inference.DemoScript20150401Test.class,
-    com.articulate.nlp.inference.DemoScript20150421_1Test.class,
-    com.articulate.nlp.inference.DemoScript20150421_4Test.class,
-    com.articulate.nlp.inference.QAInferenceTest.class,
-    com.articulate.nlp.inference.DemoScript20150421_2Test.class,
-    com.articulate.nlp.inference.InferenceInitTest.class
+    DemoScript20150421_3Test.class,
+    DemoScript20150401Test.class,
+    DemoScript20150421_1Test.class,
+    DemoScript20150421_4Test.class,
+    DemoScript20150421_2Test.class,
+    InferenceInitTest.class,
+    QAInferenceTest.class
 })
-public class IntegrationInferenceTestSuite {
+public class IntegrationInferenceTestSuite extends IntegrationTestBase {
 
 } // end class file IntegrationInferenceTestSuite.java

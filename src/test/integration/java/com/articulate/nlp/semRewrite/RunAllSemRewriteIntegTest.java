@@ -1,5 +1,6 @@
 package com.articulate.nlp.semRewrite;
 
+import com.articulate.nlp.IntegrationTestBase;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import com.articulate.nlp.semRewrite.datesandnumber.*;
@@ -15,6 +16,6 @@ import com.articulate.nlp.semRewrite.datesandnumber.*;
         UnificationTest.class
 })
 
-public class RunAllSemRewriteIntegTest {
+public class RunAllSemRewriteIntegTest extends IntegrationTestBase {
 
 }

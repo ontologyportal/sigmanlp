@@ -32,7 +32,7 @@ public class InterpreterGenCNFTest extends IntegrationTestBase {
     public void setUpInterpreter() throws IOException {
 
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         interpreter.initialize();
 
         IntegrationTestBase.resetAllForInference();

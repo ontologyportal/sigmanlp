@@ -13,12 +13,12 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    com.articulate.nlp.IntegrationNlpTestSuite.class,
+    IntegrationNlpTestSuite.class,
     IntegrationInferenceTestSuite.class,
     IntegrationSemRewriteTestSuite.class,
     IntegrationDateAndNumberTestSuite.class,
     IntegrationSubstitutorTestSuite.class
 })
-public class IntegrationTestSuite {
+public class IntegrationTestSuite extends IntegrationTestBase {
 
 } // end class file IntegrationTestSuite.java

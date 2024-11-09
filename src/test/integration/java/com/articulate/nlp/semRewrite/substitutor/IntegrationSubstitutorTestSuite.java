@@ -1,5 +1,6 @@
 package com.articulate.nlp.semRewrite.substitutor;
 
+import com.articulate.nlp.IntegrationTestBase;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -12,6 +13,6 @@ import org.junit.runners.Suite;
     com.articulate.nlp.semRewrite.substitutor.NounSubstitutorTest.class,
     com.articulate.nlp.semRewrite.substitutor.IdiomSubstitutorTest.class
 })
-public class IntegrationSubstitutorTestSuite {
+public class IntegrationSubstitutorTestSuite extends IntegrationTestBase {
 
 } // end class file IntegrationSubstitutorTestSuite.java

@@ -30,7 +30,7 @@ import org.junit.Test;
 
 public class LocationSubstitutorTest extends UnitTestBase {
 
-    @Test
+    @Test // TODO: Fails
     public void testLocationSubstitution() {
         String input = "David J. Bronczek, vice president and general manager of " +
                 "Federal Express Canada Ltd., was named senior vice president, " +

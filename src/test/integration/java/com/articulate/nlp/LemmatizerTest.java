@@ -17,7 +17,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  * Created by areed on 3/30/15.
  */
-public class LemmatizerTest {
+public class LemmatizerTest extends IntegrationTestBase {
 
     Pipeline p = new Pipeline();
 
