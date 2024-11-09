@@ -1,11 +1,12 @@
 package com.articulate.nlp.semRewrite;
 
+import com.articulate.nlp.UnitTestBase;
 import com.articulate.sigma.Formula;
-import org.junit.Assert;
-import org.junit.Test;
 
 import java.lang.reflect.Method;
 
+import org.junit.Assert;
+import org.junit.Test;
 
 /*
 Copyright 2014-2015 IPsoft
@@ -27,11 +28,11 @@ along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA
 */
-public class AddQueryObjectQuantifierTest {
+public class AddQueryObjectQuantifierTest extends UnitTestBase {
 
     String input;
     String output;
-    Method findQueryObjects = null;
+    Method findQueryObjects;
     Interpreter interpreter = null;
 
     public AddQueryObjectQuantifierTest() {

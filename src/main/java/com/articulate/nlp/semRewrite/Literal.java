@@ -424,7 +424,7 @@ public class Literal implements Comparable {
      */
     public String toString() {
         
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (bound)
             sb.append("X");
         if (negated)
@@ -439,7 +439,7 @@ public class Literal implements Comparable {
      */
     public String toLabels() {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (bound)
             sb.append("X");
         if (negated)

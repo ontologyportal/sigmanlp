@@ -1,4 +1,4 @@
-package com.articulate.sigma;
+package com.articulate.nlp;
 
 import com.articulate.sigma.*;
 import com.articulate.sigma.nlg.NLGUtils;
@@ -20,7 +20,7 @@ public class SigmaTestBase {
      * Performs the KB load.
      * @param reader
      */
-    protected static void doSetUp(BufferedReader reader) {
+    protected static void doSetUp(Reader reader) {
 
         SimpleElement configuration = null;
         if (!KBmanager.initialized) {
@@ -68,11 +68,11 @@ public class SigmaTestBase {
         }
         if (! problemList.isEmpty()) {
             StringBuilder sBuild = new StringBuilder();
+            final String NEWLINE_AND_SPACES = "\n   ";
             for (String problem : problemList) {
-                final String NEWLINE_AND_SPACES = "\n   ";
                 sBuild.append(NEWLINE_AND_SPACES).append(problem);
             }
-            System.out.println("Configuration failed. Problems:" + sBuild.toString());
+            System.err.println("Configuration failed. Problems:" + sBuild.toString());
             throw new IllegalStateException("Configuration failed. Problems:" + sBuild.toString());
         }
     }

@@ -1,139 +1,346 @@
-<project name="sigmanlp" default="all" basedir=".">
-  <property environment="env"/>
-  <property name="compiler.debug" value="on"/>
-  <property name="app.name" value="sigmanlp"/>
-  <property name="build.home" value="build"/>
-  <property name="sigmakee.home" value="${env.SIGMA_SRC}" />
-  <property name="tomcat.home" value="${env.CATALINA_HOME}"/>
-  <property name="deploy.home" value="${tomcat.home}/webapps/${app.name}"/>
-  <property name="build.classes" value="${basedir}/build/classes"/>
-  <property name="build.lib" value="${basedir}/build/lib"/>
-  <property name="deploy.classes" value="${deploy.home}/WEB-INF/classes"/>
-  <property name="deploy.lib" value="${deploy.home}/WEB-INF/lib"/>
-  <property name="dist.home" value="${tomcat.home}/webapps"/>
-  <property name="dist.war" value="sigmanlp.war"/>
- 
-  <path id="output.classpath">
-    <pathelement location="${output}"/>
-     <fileset dir="${build.lib}">
-        <include name="*.jar"/>
-    </fileset>
-  </path>
-  
-  <path id="compile.classpath">
-    <fileset dir="${basedir}/lib">
-        <include name="*.jar"/>
-    </fileset>
-      <fileset dir="${sigmakee.home}/lib">
-          <include name="*.jar"/>
-      </fileset>
-  </path>
+<project name="SigmaNLP" default="all" basedir=".">
+    <description>
+        This build file is meant to be invoked only from the command line. It's
+        purpose is for building/testing in a CI/CD environment
+    </description>
 
-  <path id="sourcepath">
-    <dirset dir="${basedir}">
-      <include name="src/main/java"/>
-      <include name="src/test"/>
-    </dirset>
-   </path>
- 
-  <target name="init">
-    <echo message="SIGMA_HOME is set to = ${env.SIGMA_HOME}"/>
-    <echo message="sigmakee is set to = ${env.SIGMA_SRC}"/>
-    <echo>sigmakee home: ${sigmakee.home}</echo>
-    <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
-    <copy todir="${basedir}/lib" file="${sigmakee.home}/build/sigmakee.jar" />
-    <ant antfile="../SigmaUtils/build.xml" inheritAll="false" target="all" />
-    <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
-  </target>
-  
-  <target name="compile" depends="init" description="Compile sigmanlp">
-    <mkdir dir="${build.classes}"/>
-    <javac destdir="${build.classes}" debug="on" optimize="on" deprecation="on" classpathref="compile.classpath" fork="true">
-      <src refid="sourcepath"/>
-    </javac>
-    
-    <copy todir="${build.classes}">
-      <fileset dir="${basedir}/src/main/java">
-        <include name="*.class"/>
-      </fileset>
-      <fileset dir="${basedir}/src/test">
-        <include name="*.class"/>
-      </fileset>
-    </copy>
+    <!--
+    ====
+    INIT
+    ====
+    -->
 
-    <copy todir="${build.lib}">
-      <fileset dir="${basedir}/lib" />
-      <fileset dir="${sigmakee.home}/lib" />
-    </copy>
-  </target>
-  
-  <target name="clean" description="cleanup module">
-    <delete dir="${build.classes}"/>
-    <delete dir="${build.lib}"/>
-  </target>
+    <property name="impl.title" value="${ant.project.name}"/>
+    <property name="product.Name" value="Sigma Natural Language Processor (${impl.title})"/>
+    <property name="product.version.major" value="1"/>
+    <property name="product.version.minor" value="0"/>
+    <property name="product.version.patch" value="0"/>
+    <property name="product.Version" value="${product.version.major}.${product.version.minor}.${product.version.patch}"/>
+    <property name="spec.vendor" value="Adam Pease"/>
+    <property name="nps" value="Naval Postgraduate School (NPS), Monterey, CA"/>
+    <property name="cs.dept" value="Computer Science (CS) DEPT"/>
+    <property name="sumo.url" value="http://www.ontologyportal.org"/>
+    <property name="manifest.mf" value="MANIFEST.MF"/>
+    <property name="main.class" value="com.articulate.nlp.semRewrite.Interpreter"/>
+    <property name="impl.vendor.id" value="edu.nps.cs"/>
 
-  <target name="web_deploy" depends="compile" description="deploy code to sigma.war">
-    <!-- Make the root. -->
-    <mkdir dir="${deploy.home}"/>
+    <property name="app.name" value="sigmanlp"/>
+    <property name="build.home" value="build"/>
+    <property name="build.classes.dir" value="${build.home}/classes"/>
+    <property name="build.lib" value="${build.home}/lib"/>
+    <property name="build.test.classes.dir" value="${build.home}/test/classes"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="dist.jar" value="${dist.dir}/${app.name}.jar"/>
+    <property name="dist.javadoc.dir" value="doc"/>
+    <property name="web.dir" value="web"/>
+    <property name="reports.dir" value="${build.home}/test/results"/>
+    <property name="unit.test.suite" value="com.articulate.nlp.UnitTestSuite"/>
+    <property name="integration.test.suite" value="com.articulate.nlp.IntegrationTestSuite"/>
+    <property name="report.html" value="file:${basedir}/${reports.dir}/html/index.html"/>
 
-    <!-- Delete the old code -->
-    <delete includeemptydirs="true" failonerror="false">
-      <fileset dir="${deploy.home}"/>
-      <fileset dir="${tomcat.home}/work/Catalina/localhost/${app.name}"/>
-    </delete>
+    <property environment="env"/>
+    <property name="tomcat.home" value="${env.CATALINA_HOME}"/>
+    <property name="dist.home" value="${tomcat.home}/webapps"/>
+    <property name="dist.war" value="${dist.home}/${app.name}.war"/>
+    <property name="deploy.home" value="${dist.home}/${app.name}"/>
+    <property name="sigmakee.home" value="${env.SIGMA_SRC}" />
+    <property name="deploy.classes" value="${build.home}/WEB-INF/classes"/>
+    <property name="deploy.lib" value="${build.home}/WEB-INF/lib"/>
 
-    <!-- Copy all the *.jsp, *.xsl, *.html, pixmaps, etc. -->
-    <copy todir="${deploy.home}">
-      <fileset dir="web/jsp"/>
-    </copy>
+    <property name="compiler.debug" value="on"/>
+    <property name="javac.release" value="11"/>
+    <property name="run.jvmargs" value="-Xmx10g -Xss1m"/>
 
-    <copy todir="${deploy.home}">
-      <fileset file="web/simple.css"/>
-    </copy>
+    <condition property="isUnixNotMac">
+        <and>
+            <os family="unix"/>
 
-	<copy todir="${deploy.home}/brat">
-      <fileset dir="web/brat"/>
-    </copy>
-	
-	<copy todir="${deploy.home}/js">
-      <fileset dir="web/js"/>
-    </copy>
-	
-    <copy todir="${deploy.home}/pixmaps">
-      <fileset dir="web/pixmaps"/>
-    </copy>
+            <not>
+                <os family="mac"/>
+            </not>
 
-      <mkdir dir="${deploy.lib}"/>
-    <copy todir="${deploy.lib}">
-      <fileset file="${build.lib}/*.jar" />
-    </copy>
+        </and>
+    </condition>
 
-    <!-- Create WEB-INF/classes/ and copy all the loose classes to it. -->
-    <mkdir dir="${deploy.classes}"/>
-    <copy todir="${deploy.classes}">
-      <fileset dir="${build.classes}"/>
-    </copy>
-  </target>
+    <path id="compile.classpath">
+        <fileset dir="${basedir}/lib">
+            <include name="*.jar"/>
+            <exclude name="junit*.jar"/>
+            <exclude name="hamcrest*.jar"/>
+        </fileset>
+        <fileset dir="${sigmakee.home}/lib">
+            <include name="*.jar"/>
+            <exclude name="junit*.jar"/>
+            <exclude name="hamcrest*.jar"/>
+        </fileset>
+    </path>
+    <path id="compile.test.classpath">
+        <path refid="compile.classpath"/>
+        <pathelement location="${build.classes.dir}"/>
+        <pathelement location="${build.test.classes.dir}"/>
+        <pathelement path="${basedir}/lib/hamcrest-core-1.3.jar:${basedir}/lib/junit-4.13.2.jar"/>
+    </path>
+    <path id="run.classpath">
+        <pathelement location="${build.classes.dir}"/>
+        <fileset dir="${build.lib}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+    <path id="run.test.classpath">
+        <path refid="compile.test.classpath"/>
+        <pathelement location="${build.test.classes.dir}"/>
+    </path>
 
-  <target name="dist" depends="web_deploy" description="Create the *.war file and place in ${build.home}.">
-    <war warfile="${dist.home}/${dist.war}" webxml="web.xml">
-      <fileset dir="web/jsp"/>
-      <fileset dir="web/brat"/>
-      <fileset dir="web/js"/>
-      <fileset file="web/simple.css"/>
-      <zipfileset dir="web/pixmaps" prefix="pixmaps"/>
-      <lib dir="${deploy.lib}"/>
-      <classes dir="${deploy.classes}"/>
-    </war>
-    <jar destfile="${build.home}/sigmanlp.jar">
-      <fileset dir="${deploy.classes}"/>
-    </jar>
-  </target>
+    <path id="sourcepath">
+        <dirset dir="${basedir}">
+            <include name="src/main/java"/>
+        </dirset>
+    </path>
+    <path id="test.sourcepath">
+        <dirset dir="${basedir}">
+            <include name="src/test"/>
+        </dirset>
+    </path>
 
-  <target name="all" depends="clean, init, compile, dist" description="build all">
-    <tstamp>
-        <format property="TODAY_US" pattern="yyyy-MM-dd HH:mm:ss:sss zzz" locale="en,US"/>
-    </tstamp>
-    <echo>the system date/time is ${TODAY_US}</echo>
-  </target>
+    <target name="init">
+        <echo message="Welcome to the ${product.Name} v${product.Version}"/>
+        <echo message="Specification Vendor:     ${spec.vendor}"/>
+        <echo message=""/>
+        <echo message="CATALINA_HOME is set to:  ${tomcat.home}"/>
+        <echo message="SIGMA_HOME is set to: ${env.SIGMA_HOME}"/>
+        <echo message="sigmakee is set to: ${env.SIGMA_SRC}"/>
+
+        <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
+        <copy todir="${basedir}/lib" file="${sigmakee.home}/build/sigmakee.jar" />
+        <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
+
+        <mkdir dir="${build.classes.dir}"/>
+        <mkdir dir="${build.lib}"/>
+
+        <tstamp>
+            <format property="TODAY_US" pattern="EEE, d MMM yyyy HHmm Z" locale="en,US"/>
+        </tstamp>
+    </target>
+
+    <target name="deploy_prepare" depends="init" description="deploy code to sigma.war">
+
+        <!-- Copy all the *.jsp, *.xsl, *.html, pixmaps, etc. -->
+        <copy todir="${build.home}/jsp">
+            <fileset dir="${web.dir}/jsp"/>
+        </copy>
+
+        <copy todir="${build.home}/brat">
+            <fileset dir="${web.dir}/brat">
+              <exclude name="static/example-READMEs/**"/>
+            </fileset>
+        </copy>
+
+        <copy todir="${build.home}/js">
+            <fileset dir="${web.dir}/js"/>
+        </copy>
+
+        <copy todir="${build.home}/pixmaps">
+            <fileset dir="${web.dir}/pixmaps"/>
+        </copy>
+
+        <copy todir="${build.home}/WEB-INF">
+            <fileset file="${web.dir}/web.xml"/>
+        </copy>
+    </target>
+
+    <!--
+    ============
+    BUILD / DIST
+    ============
+    -->
+
+    <target name="compile" depends="deploy_prepare" description="Compile sigmanlp">
+        <javac destdir="${build.classes.dir}"
+               debug="on"
+               optimize="on"
+               deprecation="on"
+               classpathref="compile.classpath"
+               release="${javac.release}"
+               includeantruntime="false"
+               fork="true">
+            <src refid="sourcepath"/>
+        </javac>
+
+        <copy todir="${build.lib}">
+            <path refid="compile.classpath"/>
+        </copy>
+
+        <mkdir dir="${deploy.lib}"/>
+        <copy todir="${deploy.lib}">
+            <fileset file="${build.lib}/*.jar" />
+        </copy>
+
+        <!-- Create WEB-INF/classes/ and copy all the loose classes to it. -->
+        <mkdir dir="${deploy.classes}"/>
+        <copy todir="${deploy.classes}">
+            <fileset dir="${build.classes.dir}"/>
+        </copy>
+    </target>
+
+    <target name="compile.test" depends="compile" description="Compile the project's test classes.">
+        <mkdir dir="${build.test.classes.dir}"/>
+        <javac destdir="${build.test.classes.dir}"
+               debug="on"
+               optimize="on"
+               deprecation="on"
+               includeantruntime="false"
+               classpathref="compile.test.classpath"
+               release="${javac.release}">
+            <src refid="test.sourcepath"/>
+        </javac>
+        <mkdir dir="${build.test.classes.dir}/resources"/>
+        <copy todir="${build.test.classes.dir}/resources">
+            <fileset dir="src/test/integration/java/resources">
+                <include name="interpreter_wsd_batch.json"/>
+            </fileset>
+        </copy>
+        <mkdir dir="${reports.dir}"/>
+    </target>
+
+    <target name="dist" depends="compile" description="Create the *.war file and place in ${build.home}.">
+        <manifest file="${manifest.mf}">
+            <attribute name="Built-By" value="${user.name}"/>
+            <attribute name="Specification-Title"
+                       value="${product.Name}"/>
+            <attribute name="Specification-Version"
+                       value="${product.version.major}.${product.version.minor}"/>
+            <attribute name="Specification-Vendor"
+                       value="${spec.vendor}"/>
+            <attribute name="Implementation-Title"
+                       value="${impl.title}"/>
+            <attribute name="Implementation-Version"
+                       value="${product.Version} built on ${TODAY_US}"/>
+            <attribute name="Implementation-Vendor"
+                       value="${nps}, ${cs.dept}"/>
+            <attribute name="Implementation-URL"
+                       value="${sumo.url}"/>
+            <attribute name="Implementation-Vendor-Id"
+                       value="${impl.vendor.id}"/>
+            <attribute name="Main-Class"
+                       value="${main.class}"/>
+        </manifest>
+        <war destfile="${dist.war}"
+             webxml="${web.dir}/web.xml"
+             manifest="${manifest.mf}">
+            <metainf file="LICENSE"/>
+          <zipfileset dir="${build.home}/jsp"/>
+          <zipfileset dir="${build.home}/brat"/>
+          <zipfileset dir="${build.home}/js"/>
+          <zipfileset dir="${build.home}/pixmaps" prefix="pixmaps"/>
+          <lib dir="${build.lib}">
+              <exclude name="junit*"/>
+              <exclude name="hamcrest*"/>
+              <exclude name="tomcat-servlet-api*"/>
+          </lib>
+          <classes dir="${build.classes.dir}"/>
+        </war>
+        <jar destfile="${build.home}/${app.name}.jar"
+             manifest="${manifest.mf}">
+            <metainf file="LICENSE"/>
+            <fileset dir="${build.classes.dir}"/>
+        </jar>
+    </target>
+
+    <!--
+    =====
+    ADMIN
+    =====
+    -->
+
+    <!-- Works only from the CLI -->
+    <target name="clean" description="Delete old build, lib, dist and deployed web aritifacts">
+        <delete includeemptydirs="true" failonerror="false">
+            <fileset dir="${build.home}"/> <!-- avoid problems with package name changes by deleting everything -->
+            <fileset dir="${dist.dir}"/>
+            <!-- Delete the old web code -->
+            <fileset dir="${deploy.home}"/>
+            <fileset dir="${tomcat.home}/work/Catalina/localhost/${app.name}"/>
+        </delete>
+        <delete file="${dist.war}"/>
+    </target>
+
+    <target name="all" depends="clean,dist" description="build all">
+        <echo>System date/time is ${TODAY_US}</echo>
+    </target>
+
+    <target name="api_doc" depends="init" description="Build the JavaDocs and place in ${dist.javadoc.dir}.">
+        <javadoc sourcepath="src/java" destdir="${dist.javadoc.dir}" author="true" version="true" use="true"
+                 windowtitle="Sigma API Specification" splitindex="true" packagenames="com.articulate.nlp.*">
+            <classpath refed="compile.classpath"/>
+            <doctitle>SigmaNLP API Specification</doctitle>
+            <header><![CDATA[<b>SigmaNLP API Specification</b>]]></header>
+            <group title="Sigma" packages="com.articulate.nlp.*"/>
+        </javadoc>
+    </target>
+
+    <!--
+    ==========
+    UNIT TESTS <- These are only meant to be run within the CI environment
+    ==========
+    -->
+
+    <target name="test.unit" depends="compile.test" description="Runs the UnitTestSuite">
+        <junit printsummary="yes"
+               showoutput="yes"
+               fork="yes">
+            <jvmarg line="${run.jvmargs}"/>
+            <formatter type="plain" usefile="false"/>
+            <classpath>
+                <path refid="run.test.classpath"/>
+            </classpath>
+            <test name="${unit.test.suite}" haltonfailure="no" todir="${reports.dir}">
+                <formatter type="xml"/>
+            </test>
+        </junit>
+        <antcall target="junit.report"/>
+    </target>
+    <target name="test.integration" depends="compile.test" description="Runs the IntegrationTestSuite">
+        <junit printsummary="yes"
+               showoutput="yes"
+               fork="yes">
+            <jvmarg line="${run.jvmargs}"/>
+            <formatter type="plain" usefile="false"/>
+            <classpath>
+                <path refid="run.test.classpath"/>
+            </classpath>
+            <test name="${integration.test.suite}" haltonfailure="no" todir="${reports.dir}">
+                <formatter type="xml"/>
+            </test>
+        </junit>
+        <antcall target="junit.report"/>
+        <!-- Prune KB after integration tests -->
+        <delete includeemptydirs="true" failonerror="false">
+            <fileset dir="${sigma.home}/KBs">
+                <include name="*.tptp"/>
+                <include name="*.ser"/>
+            </fileset>
+        </delete>
+    </target>
+    <target name="junit.report" >
+        <junitreport todir="${reports.dir}">
+            <fileset dir="${reports.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${reports.dir}/html"/>
+        </junitreport>
+        <antcall target="open.junit.report"/>
+    </target>
+    <target name="open.junit.report" depends="report.mac,report.unix"/>
+    <target name="report.mac">
+        <exec executable="sh" osfamily="mac">
+            <arg value="-c"/>
+            <arg value="open -u ${report.html}"/>
+        </exec>
+    </target>
+    <target name="report.unix" if="isUnixNotMac">
+        <exec executable="sh" osfamily="unix">
+            <arg value="xdg-open ${report.html}"/>
+        </exec>
+    </target>
+
 </project>

@@ -26,13 +26,13 @@ import="com.articulate.sigma.*"
 String userName = request.getParameter("userName");
 String password = request.getParameter("password");
 
-PasswordService ps = new PasswordService();
+PasswordService ps = PasswordService.getInstance();
 if (ps.userExists(userName)) {
     User u = User.fromDB(ps.conn,userName);
-    if (ps.encrypt(password).equals(u.password)) {
+    if (u != null && ps.encrypt(password).equals(u.password)) {
         session.setAttribute("user",u.username);
         session.setAttribute("role",u.role);
-        ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
+        ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigmanlp");
         if (siblingContext != null) {
             siblingContext.setAttribute("user",u.username);
             siblingContext.setAttribute("role",u.role);
@@ -50,10 +50,11 @@ else {
     String role = Login.validateUser(userName,password);
     session.setAttribute("user",userName);
     session.setAttribute("role",role);
-    ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigma");
+    ServletContext siblingContext = request.getSession().getServletContext().getContext("/sigmanlp");
     if (siblingContext != null) {
         siblingContext.setAttribute("user",userName);
         siblingContext.setAttribute("role",role);
+    } else {
         siblingContext.setAttribute("user","admin");
         siblingContext.setAttribute("role","admin");
     }

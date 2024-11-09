@@ -1,6 +1,6 @@
 package com.articulate.nlp.inference;
 
-import com.articulate.sigma.IntegrationTestBase;
+import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.nlp.semRewrite.Interpreter;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,7 +18,7 @@ public class DemoScript20150421_2Test extends IntegrationTestBase {
     @BeforeClass
     public static void initInterpreter() throws IOException {
         interpreter = new Interpreter();
-        interpreter.inference = true;
+        Interpreter.inference = true;
         interpreter.initialize();
 
         IntegrationTestBase.resetAllForInference();

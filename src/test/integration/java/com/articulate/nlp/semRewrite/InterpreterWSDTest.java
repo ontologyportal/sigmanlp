@@ -19,33 +19,31 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
-import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.nlp.pipeline.SentenceUtil;
-import com.articulate.nlp.semRewrite.substitutor.NounSubstitutor;
-import com.articulate.nlp.semRewrite.substitutor.SubstitutionUtil;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.util.CoreMap;
+
+import java.io.IOException;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.*;
 
-import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.*;
 
 public class InterpreterWSDTest extends IntegrationTestBase {
 
-    public static Interpreter interp = new Interpreter();
+    public static Interpreter interp;
 
     /** ***************************************************************
      */
@@ -53,10 +51,11 @@ public class InterpreterWSDTest extends IntegrationTestBase {
     public static void initClauses() {
 
         KBmanager.getMgr().initializeOnce();
+        interp = new Interpreter();
         try {
             interp.initialize();
         }
-        catch (Exception e) {
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -69,9 +68,9 @@ public class InterpreterWSDTest extends IntegrationTestBase {
 
         Annotation wholeDocument = interp.userInputs.annotateDocument(sent);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        List<Literal> wsds = interp.findWSD(lastSentence);
+        List<Literal> wsds = Interpreter.findWSD(lastSentence);
         List<CoreLabel> lastSentenceTokens = lastSentence.get(CoreAnnotations.TokensAnnotation.class);
-        List<Literal> results = interp.consolidateSpans(lastSentenceTokens,wsds);
+        List<Literal> results = Interpreter.consolidateSpans(lastSentenceTokens,wsds);
 
         System.out.println("InterpreterWSDTest: actual: " + results);
         System.out.println("InterpreterWSDTest: expected: " + Arrays.toString(expected));
@@ -82,7 +81,7 @@ public class InterpreterWSDTest extends IntegrationTestBase {
         if (actualSet.containsAll(expectedSet))
             System.out.println("InterpreterWSDTest: pass");
         else
-            System.out.println("InterpreterWSDTest: fail");
+            System.err.println("InterpreterWSDTest: fail");
         assertTrue(actualSet.containsAll(expectedSet));
     }
 

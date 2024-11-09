@@ -117,7 +117,7 @@ public class SentenceUtil {
     public static ArrayList<String> getFullNamedEntities (CoreMap sentence) {
 
         ArrayList<String> nes = new ArrayList<String>();
-        StringBuffer ne = new StringBuffer();
+        StringBuilder ne = new StringBuilder();
         String neType = "";
         int count = 1;
         int wordCount = 0; // number of words packed into a given ne
@@ -136,7 +136,7 @@ public class SentenceUtil {
             else if (!neType.equals(type)) {
                 if (!neType.equals("O"))
                     nes.add(ne.toString() + "-" + (count-wordCount));
-                ne = new StringBuffer();
+                ne = new StringBuilder();
                 if (!type.equals("O")) {
                     ne.append(word);
                     wordCount = 1;

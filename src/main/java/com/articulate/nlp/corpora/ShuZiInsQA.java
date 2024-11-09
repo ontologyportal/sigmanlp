@@ -40,7 +40,7 @@ public class ShuZiInsQA {
         public List<String> wrongAnswerIDs = new ArrayList<>();
 
         public String toString() {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append(question + "\n");
 //            if (answersID.size() > 0)
 //                sb.append(answersID.get(0) + ":" +
@@ -110,7 +110,7 @@ public class ShuZiInsQA {
     private String listAsTable(List<Float> l) {
 
         DecimalFormat myFormatter = new DecimalFormat("###.##");
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < l.size(); i++) {
             if (i != 0)
                 sb.append("\t");
@@ -134,7 +134,7 @@ public class ShuZiInsQA {
         for (int n = 2; n < nMax; n++) {
             HashSet<String> ngrams = new HashSet<>();
             for (int i = 0; i < s1.size() - n; i++) {
-                StringBuffer s1tok = new StringBuffer();
+                StringBuilder s1tok = new StringBuilder();
                 for (int z = 0; z < n; z++)
                     s1tok.append(s1.get(i + z));
                 ngrams.add(s1tok.toString());
@@ -169,7 +169,7 @@ public class ShuZiInsQA {
             String answerID = elements[0];
             String sentence = elements[1];
             String[] words = sentence.split(" ");
-            StringBuffer sent = new StringBuffer();
+            StringBuilder sent = new StringBuilder();
             for (String id : words) {
                 String word = vocab.get(id);
                 sent = sent.append(word + " ");
@@ -203,7 +203,7 @@ public class ShuZiInsQA {
             String[] answerIDs = answer.split(" ");
             String sentence = elements[0];
             String[] words = sentence.split(" ");
-            StringBuffer question = new StringBuffer();
+            StringBuilder question = new StringBuilder();
             for (String id : words) {
                 String word = vocab.get(id);
                 question = question.append(word + " ");
@@ -252,7 +252,7 @@ public class ShuZiInsQA {
             String wrongAnswers = elements[2];
             String[] wrongAnswerIDsAr = wrongAnswers.split(" ");
 
-            StringBuffer question = new StringBuffer();
+            StringBuilder question = new StringBuilder();
             for (String id : words) {
                 String word = vocab.get(id);
                 question = question.append(word + " ");
@@ -309,7 +309,7 @@ public class ShuZiInsQA {
             String wrongAnswers = elements[2];
             String[] wrongAnswerIDsAr = wrongAnswers.split(" ");
 
-            StringBuffer question = new StringBuffer();
+            StringBuilder question = new StringBuilder();
             for (String id : words) {
                 String word = vocab.get(id);
                 question = question.append(word + " ");

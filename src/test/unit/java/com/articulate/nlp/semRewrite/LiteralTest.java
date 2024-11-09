@@ -1,10 +1,8 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.sigma.UnitTestBase;
+import com.articulate.nlp.UnitTestBase;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-
-import java.util.HashMap;
 
 /*
 Copyright 2017-     Infosys
@@ -26,7 +24,7 @@ This program is free software; you can redistribute it and/or modify
         MA  02111-1307 USA
         */
 
-public class LiteralTest {
+public class LiteralTest extends UnitTestBase {
 
     /****************************************************************
      */

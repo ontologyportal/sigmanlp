@@ -19,7 +19,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by areed on 3/27/15.
  */
-public class PartOfSpeechInfoTest {
+public class PartOfSpeechInfoTest extends IntegrationTestBase {
 
     private static final Pipeline pipeline = new Pipeline(true);
 

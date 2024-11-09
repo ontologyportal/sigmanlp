@@ -419,13 +419,13 @@ public class LuceneIR {
             FileReader r = new FileReader(filename);
             LineNumberReader lr = new LineNumberReader(r);
             String line = "";
-            StringBuffer doc = new StringBuffer();
+            StringBuilder doc = new StringBuilder();
             String id = "";
             while ((line = lr.readLine()) != null) {
                 doc.append(line + "\n");
                 if (line.startsWith("</DOC>")) {
                     result.put(id,doc.toString());
-                    doc = new StringBuffer();
+                    doc = new StringBuilder();
                 }
                 if (line.startsWith("<DOCNO>")) {
                     id = line.substring(7,line.indexOf("<",8)).trim();

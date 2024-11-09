@@ -287,7 +287,7 @@ public class BratAnnotationUtil {
      */
     public static String toBratStandoff(List<BratRelation> rels, List<BratEntity> entities) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         for (BratEntity be : entities) {
             sb.append(be.getId() + "\t" + be.getType() + " " + be.getStart() +

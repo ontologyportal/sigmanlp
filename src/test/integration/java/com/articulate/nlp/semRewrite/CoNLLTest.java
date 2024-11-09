@@ -2,16 +2,14 @@ package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.RelExtract;
 import com.articulate.nlp.corpora.CoNLL04;
-import com.articulate.sigma.IntegrationTestBase;
+import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -39,15 +37,15 @@ MA  02111-1307 USA
 public class CoNLLTest extends IntegrationTestBase {
 
     private static Interpreter interpreter;
-    private static CoNLL04 conll04 = new CoNLL04();
+    private static CoNLL04 conll04;
 
     /****************************************************************
      */
     @Before
     public void setUpInterpreter() throws IOException {
-
+        
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         Interpreter.debug = true;
         Interpreter.replaceInstances = false;
         //CNF.debug = true;
@@ -58,6 +56,7 @@ public class CoNLLTest extends IntegrationTestBase {
         KBmanager.getMgr().initializeOnce();
         interpreter.initialize();
         RelExtract.initOnce();
+        conll04 = new CoNLL04();
         conll04.parse();
         System.out.println("INFO in CoNLLTest.setUpInterpreter(): completed initialization");
     }
@@ -78,7 +77,7 @@ public class CoNLLTest extends IntegrationTestBase {
 
         //String result = StringUtil.removeEnclosingCharPair(kifClauses.toString(),0,'[',']');
         String result = "";
-        if (kifClauses != null && kifClauses.size() > 0)
+        if (kifClauses != null && !kifClauses.isEmpty())
             result = kifClauses.get(0).toString();
         double seconds = ((System.currentTimeMillis() - startTime) / 1000.0);
         System.out.println("time to process: " + seconds + " seconds (not counting init)");
@@ -103,7 +102,7 @@ public class CoNLLTest extends IntegrationTestBase {
         CoNLL04.F1Matrix mat = conll04.score(rels,s.relations);
         System.out.println("CoNLL: score: " + mat);
         String result = "";
-        if (kifClauses != null && kifClauses.size() > 0)
+        if (kifClauses != null && !kifClauses.isEmpty())
             result = kifClauses.get(0).toString();
         double seconds = ((System.currentTimeMillis() - startTime) / 1000.0);
         System.out.println("time to process: " + seconds + " seconds (not counting init)");

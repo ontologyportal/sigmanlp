@@ -102,7 +102,7 @@ public class Tokens {
      */
     public String toString() {
 
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         result.append(word + ":" + lemma + ":" + ner);
         return result.toString();
     }

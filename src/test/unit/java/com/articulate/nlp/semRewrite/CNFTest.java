@@ -1,12 +1,11 @@
 package com.articulate.nlp.semRewrite;
 
+import com.articulate.nlp.UnitTestBase;
 import com.articulate.sigma.Formula;
 import com.articulate.sigma.FormulaUtil;
-import com.articulate.sigma.KBmanager;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
@@ -31,7 +30,7 @@ This program is free software; you can redistribute it and/or modify
         Foundation, Inc., 59 Temple Place, Suite 330, Boston,
         MA  02111-1307 USA
         */
-public class CNFTest {
+public class CNFTest extends UnitTestBase {
 
     /****************************************************************
      */
@@ -75,7 +74,7 @@ public class CNFTest {
 
         CNF cnf1 = new CNF("sumo(BodyMotion,Bob-2).");
         CNF cnf2 = new CNF("sumo(BodyMotion,Bob-2).");
-        ArrayList<CNF> al = new ArrayList<CNF>();
+        ArrayList<CNF> al = new ArrayList<>();
         al.add(cnf1);
         if (!al.contains(cnf2))
             al.add(cnf2);
@@ -89,8 +88,7 @@ public class CNFTest {
 
         System.out.println("INFO in CNFTest.testUnify(): -------------------------------------");
         String rule = "nmod:to(be_born*,?H2), sumo(Human,?H1), sumo(Human,?H2), nsubjpass(be_born*,?H1) ==> (parent(?H1,?H2)).";
-        Rule r = new Rule();
-        r = Rule.parseString(rule);
+        Rule r = Rule.parseString(rule);
         System.out.println(r.toString());
         CNF cnf1 = Clausifier.clausify(r.lhs);
         Lexer lex = new Lexer("nsubjpass(be_born-2,John-1), attribute(John-1,Male),   " +
@@ -124,8 +122,7 @@ public class CNFTest {
         System.out.println("INFO in CNFTest.testUnify2(): -------------------------------------");
         String rule = "sense(212345678,?E) ==> " +
                 "(sumo(Foo,?E)).";
-        Rule r = new Rule();
-        r = Rule.parseString(rule);
+        Rule r = Rule.parseString(rule);
         System.out.println(r.toString());
         CNF cnf1 = Clausifier.clausify(r.lhs);
         Lexer lex = new Lexer("sense(212345678,Foo).");

@@ -44,7 +44,7 @@ public class ExternalSubstitutor extends SimpleSubstitutorStorage {
         public ArrayList<String> types = new ArrayList<>();
 
         public String toString() {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append("segments: " + segments.toString());
             sb.append("types: " + types.toString());
             return sb.toString();
@@ -199,7 +199,7 @@ public class ExternalSubstitutor extends SimpleSubstitutorStorage {
                 JSONArray seglist = new JSONArray();
                 JSONArray typelist = new JSONArray();
                 for (CoreLabelSequence segment : seg.segments) {
-                    StringBuffer oneseg = new StringBuffer();
+                    StringBuilder oneseg = new StringBuilder();
                     for (CoreLabel cl : segment.getLabels()) {
                         if (!StringUtil.emptyString(oneseg.toString()))
                             oneseg.append(" ");
@@ -232,7 +232,7 @@ public class ExternalSubstitutor extends SimpleSubstitutorStorage {
      */
     private static String toURLSentence(List<CoreLabel> labels) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (CoreLabel cl : labels) {
             //System.out.println("Info in ExternalSubstitutor.toURLSentence(): label: " + cl);
             //System.out.println("Info in ExternalSubstitutor.toURLSentence(): label: " + cl.originalText());

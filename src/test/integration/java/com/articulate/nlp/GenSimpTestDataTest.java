@@ -9,21 +9,20 @@ import com.articulate.sigma.wordNet.WordNetUtilities;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.Set;
 
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static com.articulate.nlp.GenSimpTestData.*;
 
-public class GenSimpTestDataTest {
+public class GenSimpTestDataTest extends IntegrationTestBase {
 
     public static LFeatures lfeat = null;
-    public static GenSimpTestData gstd = new GenSimpTestData();
+    public static GenSimpTestData gstd;
 
     /** *************************************************************
      */
@@ -31,21 +30,22 @@ public class GenSimpTestDataTest {
     public static void init() {
 
         System.out.println("GenSimpTestDataTest.init()");
+        gstd = new GenSimpTestData();
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         GenSimpTestData.initNumbers();
         gstd.genProcTable();
         lfeat = new LFeatures(gstd);
         String fname = "test";
-        FileWriter fweng = null;
-        FileWriter fwlog = null;
+        FileWriter fweng;
+        FileWriter fwlog;
         try {
             fweng = new FileWriter(fname + "-eng.txt");
-            gstd.englishFile = new PrintWriter(fweng);
+            GenSimpTestData.englishFile = new PrintWriter(fweng);
             fwlog = new FileWriter(fname + "-log.txt");
-            gstd.logicFile = new PrintWriter(fwlog);
+            GenSimpTestData.logicFile = new PrintWriter(fwlog);
         }
-        catch (Exception e) {
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -59,7 +59,7 @@ public class GenSimpTestDataTest {
         System.out.println("======================= ");
         System.out.println("test: " + term);
         GenSimpTestData gstd = new GenSimpTestData();
-        StringBuffer english = new StringBuffer();
+        StringBuilder english = new StringBuilder();
         lfeat.testMode = true;
         lfeat.tense = tense;
         String v = gstd.verbForm(term,negated, word, plural, english, lfeat);
@@ -85,7 +85,7 @@ public class GenSimpTestDataTest {
         System.out.println("======================= ");
         System.out.println("test: " + term);
         GenSimpTestData gstd = new GenSimpTestData();
-        StringBuffer english = new StringBuffer();
+        StringBuilder english = new StringBuilder();
         AVPair avp = new AVPair();
         String v = gstd.nounFormFromTerm(term,avp,"");
         System.out.println("testNoun(): noun form: " + v);
@@ -105,7 +105,7 @@ public class GenSimpTestDataTest {
         System.out.println("======================= ");
         System.out.println("test: " + proc);
         GenSimpTestData gstd = new GenSimpTestData();
-        StringBuffer english = new StringBuffer();
+        StringBuilder english = new StringBuilder();
         AVPair avp = new AVPair();
         System.out.println("testCapability(): (proc,role,obj): " + proc + ", " + role + ", " + obj);
         if (capabilities.containsKey(proc))
@@ -208,8 +208,8 @@ public class GenSimpTestDataTest {
         lfeat.verbSynset = "202242464";
         lfeat.tense = PRESENT;
         lfeat.directType = "Shoe";
-        StringBuffer english = new StringBuffer();
-        StringBuffer prop = new StringBuffer();
+        StringBuilder english = new StringBuilder();
+        StringBuilder prop = new StringBuilder();
         gstd.genProc(english,prop,lfeat);
         if (english.toString().contains("sells a") || english.toString().contains("selling a") ||
                 english.toString().contains("sell a") || english.toString().contains("sold a"))
@@ -237,8 +237,8 @@ public class GenSimpTestDataTest {
         lfeat.verbSynset = "202191546";
         lfeat.directType = "Building";
         lfeat.tense = FUTUREPROG;
-        StringBuffer english = new StringBuffer();
-        StringBuffer prop = new StringBuffer("(exists (?H ?P ?DO ?IO) (and ");
+        StringBuilder english = new StringBuilder();
+        StringBuilder prop = new StringBuilder("(exists (?H ?P ?DO ?IO) (and ");
         gstd.genProc(english,prop,lfeat);
         if (StringUtil.emptyString(english.toString().trim()))
             System.out.println("Success! : " + english);
@@ -264,8 +264,8 @@ public class GenSimpTestDataTest {
         lfeat.verb = "vote";
         lfeat.verbSynset = "202462580";
         lfeat.tense = PRESENT;
-        StringBuffer english = new StringBuffer();
-        StringBuffer prop = new StringBuffer("(exists (?H ?P ?DO ?IO) (and ");
+        StringBuilder english = new StringBuilder();
+        StringBuilder prop = new StringBuilder("(exists (?H ?P ?DO ?IO) (and ");
         gstd.genProc(english,prop,lfeat);
         if (english.toString().toLowerCase().contains("vote for") || english.toString().toLowerCase().contains("voting for") ||
                 english.toString().toLowerCase().contains("voted for") || english.toString().toLowerCase().contains("votes for"))
@@ -326,7 +326,7 @@ public class GenSimpTestDataTest {
         System.out.println("GenSimpTestData.testToy()");
         String word = "toy";
         lfeat.tense = PAST;
-        StringBuffer english = new StringBuffer();
+        StringBuilder english = new StringBuilder();
         GenSimpTestData gstd = new GenSimpTestData();
         System.out.println("testToy(): past tense Game/toy: " + gstd.verbForm("Game",false,word,false, english,lfeat));
         word = "soccer";

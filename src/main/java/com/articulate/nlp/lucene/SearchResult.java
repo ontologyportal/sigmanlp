@@ -16,7 +16,7 @@ public class SearchResult {
     public HashMap<String,String> answers = new HashMap<>(); // file id, short answer
 
     public String toString() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append(id + "\n");
         sb.append(query + "\n");
         for (String k : answers.keySet()) {

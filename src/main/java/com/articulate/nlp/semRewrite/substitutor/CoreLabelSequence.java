@@ -73,7 +73,7 @@ public class CoreLabelSequence {
      */
     public String toString() {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (CoreLabel cl : labels) {
             if (!StringUtil.emptyString(sb.toString()))
                 sb.append(" ");
@@ -216,7 +216,7 @@ public class CoreLabelSequence {
     public String toWordNetID() {
 
         //System.out.println("CoreLabelSequence.toUptoWordNetIDperCase(): labels: " + labels);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (CoreLabel cl : labels) {
             if (!StringUtil.emptyString(sb.toString()))
                 sb.append("_");
