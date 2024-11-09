@@ -10,8 +10,6 @@ import com.articulate.sigma.utils.StringUtil;
 import java.io.File;
 import java.util.*;
 
-import static com.articulate.nlp.RelExtract.sentenceExtract;
-
 /**
  * Created by apease on 2/6/18.
  *
@@ -54,6 +52,7 @@ public class CoNLL04 {
      */
     public class Relation implements Comparable {
 
+        @Override
         public String toString() {
             return (first + "\t" + second + "\t" + relName + "\n");
         }
@@ -80,6 +79,7 @@ public class CoNLL04 {
 
         /** ***************************************************************
          */
+        @Override
         public int compareTo(Object o) {
 
             if (!(o instanceof Relation))
@@ -120,10 +120,11 @@ public class CoNLL04 {
         // a mapping of real token numbers to CoNLL collapsed NER token numbers
         public HashMap<Integer,Integer> tokMap = new HashMap<>();
 
+        @Override
         public String toString() {
 
             StringBuilder sb = new StringBuilder();
-            sb.append(sentString + "\n");
+            sb.append(sentString).append("\n");
             for (Token t : tokens)
                 sb.append(t.toString());
             sb.append("\n");
@@ -141,6 +142,7 @@ public class CoNLL04 {
      */
     public class Token {
 
+        @Override
         public String toString() {
             return (sentNum + "\t" + NER + "\t" + tokNum + "\t" + POS + "\t" + tokString + "\n");
         }
@@ -179,6 +181,7 @@ public class CoNLL04 {
             return result;
         }
 
+        @Override
         public String toString() {
             return ("fn: " + falseNegatives + " tp: " + truePositives + " tn: " + trueNegatives + " fp: " + falsePositives);
         }
@@ -261,6 +264,8 @@ public class CoNLL04 {
         Sent sent = new Sent();
         int sentnum = 0;
         StringBuilder sentAccum = new StringBuilder();
+        String[] tabbed;
+        Relation rel;
         for (String s : lines) {
             if (StringUtil.emptyString(s)) {
                 if (inSent) { // transition out of a sentence: all tokens done
@@ -279,7 +284,7 @@ public class CoNLL04 {
                 inSent = !inSent;
             }
             else {
-                String[] tabbed = s.split("\\t");
+                tabbed = s.split("\\t");
                 if (inSent) {
                     Token t = tokparse(tabbed);
                     sentnum = t.sentNum;
@@ -289,7 +294,7 @@ public class CoNLL04 {
                     sentAccum.append(t.tokString);
                 }
                 if (!inSent) {
-                    Relation rel = new Relation();
+                    rel = new Relation();
                     rel.first = Integer.parseInt(tabbed[0]);
                     rel.second = Integer.parseInt(tabbed[1]);
                     rel.relName = tabbed[2];
@@ -306,6 +311,7 @@ public class CoNLL04 {
 
     /***************************************************************
      */
+    @Override
     public String toString() {
 
         StringBuilder sb = new StringBuilder();
@@ -324,8 +330,8 @@ public class CoNLL04 {
         StringBuilder sb = new StringBuilder();
         for (Relation r : rels) {
             Token t1 = s.tokens.get(r.first);
-            sb.append(t1.tokString + " ");
-            sb.append(r.relName + " ");
+            sb.append(t1.tokString).append(" ");
+            sb.append(r.relName).append(" ");
             Token t2 = s.tokens.get(r.second);
             sb.append(t2.tokString);
             sb.append(", ");
@@ -339,21 +345,22 @@ public class CoNLL04 {
      */
     public String convertRelName(String pred) {
 
-        if (pred.equals("located"))
-            return "Located_In";
-        else if (pred.equals("orgLocated"))
-            return "OrgBased_In";
-        else if (pred.equals("inhabits"))
-            return "Live_In";
-        else if (pred.equals("birthplace"))
-            return "Live_In";
-        else if (pred.equals("employs"))
-            return "Work_For";
-        else if (pred.equals("killed"))
-            return "Kill";
-        else {
-            System.out.println("Error in CoNLL04.convertRelName(): unknown relation " + pred);
-            return pred;
+        switch (pred) {
+            case "located":
+                return "Located_In";
+            case "orgLocated":
+                return "OrgBased_In";
+            case "inhabits":
+                return "Live_In";
+            case "birthplace":
+                return "Live_In";
+            case "employs":
+                return "Work_For";
+            case "killed":
+                return "Kill";
+            default:
+                System.out.println("Error in CoNLL04.convertRelName(): unknown relation " + pred);
+                return pred;
         }
     }
 
@@ -363,20 +370,23 @@ public class CoNLL04 {
 
         if (debug) System.out.println("toCoNLLRels(): tok map: " + s.tokMap);
         Set<Relation> rels = new HashSet<>();
+        Literal lit;
+        Relation rel;
+        int tok1, tok2;
         for (RHS rhs : kifClauses) {
-            Literal lit = rhs.toLiteral();
+            lit = rhs.toLiteral();
             if (debug) System.out.println("toCoNLLRels(): literal: " + lit);
             if (debug) System.out.println("toCoNLLRels(): arg1: " + lit.clArg1);
             if (debug) System.out.println("toCoNLLRels(): arg2: " + lit.clArg2);
-            Relation rel = new Relation();
+            rel = new Relation();
             rel.relName = convertRelName(lit.pred);
-            int tok1 = lit.clArg1.index();
+            tok1 = lit.clArg1.index();
             if (tok1 == -1)
                 tok1 = Literal.tokenNum(lit.arg1);
             if (s.tokMap.keySet().contains(tok1))
                 tok1 = s.tokMap.get(tok1);
             rel.first = tok1;
-            int tok2 = lit.clArg2.index();
+            tok2 = lit.clArg2.index();
             if (tok2 == -1)
                 tok2 = Literal.tokenNum(lit.arg2);
             if (s.tokMap.keySet().contains(tok2))
@@ -422,14 +432,17 @@ public class CoNLL04 {
     public static ArrayList<RHS> pruneNonNER(ArrayList<RHS> kifClauses) {
 
         ArrayList<RHS> result = new ArrayList<>();
+        CNF cnf;
+        Collection<Literal> lits;
+        Literal lit;
         for (RHS rhs : kifClauses) {
-            CNF cnf = rhs.cnf;
+            cnf = rhs.cnf;
             if (cnf == null)
                 continue;
-            Collection<Literal> lits = cnf.toLiterals();
-            if (lits == null || lits.size() == 0 || lits.size() > 1)
+            lits = cnf.toLiterals();
+            if (lits == null || lits.isEmpty() || lits.size() > 1)
                 continue;
-            Literal lit = (Literal) lits.toArray()[0];
+            lit = (Literal) lits.toArray()[0];
             if (Character.isUpperCase(lit.arg1.charAt(0)) &&
                     Character.isUpperCase(lit.arg2.charAt(0)))
                 result.add(rhs);
@@ -444,16 +457,16 @@ public class CoNLL04 {
         F1Matrix total = new F1Matrix();
         long startTime = System.currentTimeMillis();
         int totalGroundTruth = 0;
-        int totalExtracted = 0;
+        int totalExtracted = 0, sentNum;
+        ArrayList<RHS> kifClauses;
         for (Sent s : sentences) {
-            if (s.relations.size() > 0) { // test only sentences with marked relations
-                int sentNum = s.tokens.get(0).sentNum;
+            if (!s.relations.isEmpty()) { // test only sentences with marked relations
+                sentNum = s.tokens.get(0).sentNum;
                 System.out.println("\nextractAll(): " + s.tokens.get(0).sentNum + " : " + s.sentString);
-                ArrayList<RHS> kifClauses = null;
                 try {
                     kifClauses = RelExtract.sentenceExtract(s.sentString);
                     kifClauses = pruneNonNER(kifClauses);
-                    if (kifClauses.size() > 0)
+                    if (!kifClauses.isEmpty())
                         totalExtracted++;
                     System.out.println("CoNLL: generated relations: " + kifClauses);
                     Set<Relation> rels = toCoNLLRels(kifClauses,s);
@@ -464,10 +477,12 @@ public class CoNLL04 {
                     System.out.println("CoNLL: cumulative score: " + total);
                     System.out.println("CoNLL: generated relations: " + relsToString(rels,s));
                     System.out.println("CoNLL: expected relations: " + relsToString(s.relations,s));
-                    if (s.relations.size() > 0)
+                    if (!s.relations.isEmpty())
                         totalGroundTruth++;
                 }
-                catch (Exception e) { e.printStackTrace(); }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         System.out.println("CoNLL04.extractAll(): expected: " + totalGroundTruth + " found: " + totalExtracted);

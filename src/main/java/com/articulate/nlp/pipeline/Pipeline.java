@@ -19,15 +19,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
 import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Literal;
+import com.articulate.nlp.WNMultiWordAnnotator;
+import com.articulate.nlp.WSDAnnotator;
+import com.articulate.nlp.TimeSUMOAnnotator;
+
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.KBmanager;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.IndexedWord;
@@ -38,9 +44,6 @@ import edu.stanford.nlp.time.TimeAnnotations;
 import edu.stanford.nlp.time.TimeAnnotator;
 import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.util.CoreMap;
-import com.articulate.nlp.WNMultiWordAnnotator;
-import com.articulate.nlp.WSDAnnotator;
-import com.articulate.nlp.TimeSUMOAnnotator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -55,10 +58,10 @@ public class Pipeline {
 
     public StanfordCoreNLP pipeline;
     public static boolean debug = false;
-    
+
     /* default multiWord parser is WordNet - wnmw for WordNet, dbpmw for DBPedia
      Only the multiWord parser annotator type value comes from sigmakee/config.xml
-     */ 
+     */
     public static String defaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, dbpmw, tsumo";
 
@@ -132,7 +135,7 @@ public class Pipeline {
     /** ***************************************************************
      */
     public Annotation annotate(String text) {
-        
+
         // create an empty Annotation just with the given text
         Annotation document = new Annotation(text);
         // run all Annotators on this text
@@ -190,14 +193,18 @@ public class Pipeline {
         ArrayList<SemanticGraphEdge> dependencies = SentenceUtil.toEdgesList(lastSentence);
         if (debug) System.out.println("toCNFEdgeDependencies(): " + dependencies);
         CNF newcnf = new CNF();
+        IndexedWord gov;
+        IndexedWord dep;
+        GrammaticalRelation gr;
+        Literal lit;
         for (SemanticGraphEdge sge : dependencies) {
             if (debug) System.out.println("toCNFEdgeDependencies(): " + sge);
             if (sge.getRelation().toString().equals("punct"))
                 continue;
-            IndexedWord gov = sge.getGovernor();
-            IndexedWord dep = sge.getDependent();
-            GrammaticalRelation gr = sge.getRelation();
-            Literal lit = new Literal();
+            gov = sge.getGovernor();
+            dep = sge.getDependent();
+            gr = sge.getRelation();
+            lit = new Literal();
             lit.clArg1 = new CoreLabel(gov);
             lit.arg1 = lit.clArg1.toString();
             lit.clArg2 = new CoreLabel(dep);
@@ -219,37 +226,41 @@ public class Pipeline {
         sb.append("Pipeline.showResults(): time annotations at root" + "\n");
         List<CoreMap> timexAnnsAll = anno.get(TimeAnnotations.TimexAnnotations.class);
         if (timexAnnsAll != null) {
+            String tsumo ;
             for (CoreMap token : timexAnnsAll) {
-                sb.append("time token: " + token + "\n");
-                String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
-                sb.append("SUMO: " + tsumo + "\n");
+                sb.append("time token: ").append(token).append("\n");
+                tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
+                sb.append("SUMO: ").append(tsumo).append("\n");
             }
         }
 
         sb.append("Pipeline.showResults(): annotations at sentence level" + "\n");
         List<CoreMap> sentences = anno.get(CoreAnnotations.SentencesAnnotation.class);
+        List<CoreLabel> tokens;
+        List<CoreMap> timexAnnsAllLocal;
+        String orig, lemma, pos, sense, sumo, multi;
         for (CoreMap sentence : sentences) {
-            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
-            List<CoreMap> timexAnnsAllLocal = sentence.get(TimeAnnotations.TimexAnnotations.class);
-            sb.append("local time: " + timexAnnsAllLocal + "\n");
+            tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            timexAnnsAllLocal = sentence.get(TimeAnnotations.TimexAnnotations.class);
+            sb.append("local time: ").append(timexAnnsAllLocal).append("\n");
             for (CoreLabel token : tokens) {
-                String orig = token.originalText();
-                String lemma = token.lemma();
-                String pos = token.tag();
-                String sense = token.get(WSDAnnotator.WSDAnnotation.class);
-                String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
-                String multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
+                orig = token.originalText();
+                lemma = token.lemma();
+                pos = token.tag();
+                sense = token.get(WSDAnnotator.WSDAnnotation.class);
+                sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
                 sb.append(orig);
                 if (!StringUtil.emptyString(lemma))
-                    sb.append("/" + lemma);
+                    sb.append("/").append(lemma);
                 if (!StringUtil.emptyString(pos))
-                    sb.append("/" + pos);
+                    sb.append("/").append(pos);
                 if (!StringUtil.emptyString(sense))
-                    sb.append("/" + sense);
+                    sb.append("/").append(sense);
                 if (!StringUtil.emptyString(sumo))
-                    sb.append("/" + sumo);
+                    sb.append("/").append(sumo);
                 if (!StringUtil.emptyString(multi))
-                    sb.append("/" + multi);
+                    sb.append("/").append(multi);
                 sb.append(" ");
             }
             sb.append("\n");
@@ -269,7 +280,7 @@ public class Pipeline {
             contents = new String(Files.readAllBytes(Paths.get(filename)));
         }
         catch (IOException ioe) {
-            System.out.println("error in Pipeline.processFile()");
+            System.err.println("error in Pipeline.processFile()");
             ioe.printStackTrace();
         }
         Annotation wholeDocument = p.annotate(contents);
@@ -304,15 +315,16 @@ public class Pipeline {
         Pipeline p = new Pipeline(true);
         //Properties props = new Properties();
         //p.pipeline.addAnnotator(new TimeAnnotator("sutime", props));
-        BufferedReader d = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("type 'quit' (without the quotes) on its own line to quit");
-        String line = "";
-        try {
+        try (BufferedReader d = new BufferedReader(new InputStreamReader(System.in))) {
+            System.out.println("type 'quit' (without the quotes) on its own line to quit");
+            String line = "";
+
+            Annotation wholeDocument;
             while (!line.equals("quit")) {
                 System.out.print("> ");
                 line = d.readLine();
                 if (!line.equals("quit")) {
-                    Annotation wholeDocument = new Annotation(line);
+                    wholeDocument = new Annotation(line);
                     wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, "2017-05-08");
                     p.pipeline.annotate(wholeDocument);
                     System.out.println(showResults(wholeDocument));
@@ -321,7 +333,7 @@ public class Pipeline {
         }
         catch (IOException ioe) {
             ioe.printStackTrace();
-            System.out.println("error in Pipeline.interactive()");
+            System.err.println("error in Pipeline.interactive()");
         }
     }
 
