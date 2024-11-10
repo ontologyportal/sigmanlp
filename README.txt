@@ -1,30 +1,29 @@
 First follow the instructions to install sigmakee at https://github.com/ontologyportal/sigmakee
 Check the version number of the CoreNLP zip that you download and unzip and modify paths
-accordingly
+accordingly. For macOS, replace .bashrc with .zshrc
 
 cd ~
-echo "export SIGMA_SRC=~/workspace/sigmakee" >> .bashrc
-echo "export CORPORA=~/workspace/sigmanlp/corpora" >> .bashrc
-source .bashrc
+echo "export ONTOLOGYPORTAL_GIT="~/workspace" >> .bashrc
+echo "export SIGMA_SRC=$ONTOLOGYPORTAL_GIT/sigmakee" >> .bashrc
+echo "export CORPORA=$ONTOLOGYPORTAL_GIT/sigmanlp/corpora" >> .bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
 cd ~/Programs
-wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-latest.zip'
-unzip stanford-corenlp-latest.zip
-rm stanford-corenlp-latest.zip
-cd ~/Programs/stanford-corenlp-full-latest/
-cp ~/Programs/stanford-corenlp-latest/stanford-corenlp-latest.jar ~/workspace/sigmanlp/lib
-cp ~/Programs/stanford-corenlp-latest/stanford-corenlp-latest-models.jar ~/workspace/sigmanlp/lib
+wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-4.5.7.zip'
+unzip stanford-corenlp-4.5.7.zip
+rm stanford-corenlp-4.5.7.zip
+cd ~/Programs/stanford-corenlp-full-4.5.7/
+cp ~/Programs/stanford-corenlp-4.5.7/stanford-corenlp-4.5.7.jar ~/workspace/sigmanlp/lib
+cp ~/Programs/stanford-corenlp-4.5.7/stanford-corenlp-4.5.7-models.jar ~/workspace/sigmanlp/lib
 cd ~/workspace/sigmanlp
 ant
 
 Then follow the steps in "Account Management" below before proceeding
 
-In your .bashrc you'll need to have a greater heap space allocation than for sigmakee alone
+In your .bashrc/.zshrc you'll need to have a greater heap space allocation than for sigmakee alone
 
-export CATALINA_OPTS="$CATALINA_OPTS -Xmx1g -Xss1m"
-
-export ONTOLOGYPORTAL_GIT="/home/user/workspace"
+export CATALINA_OPTS="$CATALINA_OPTS -Xmx10g -Xss1m"
+source ~/.bashrc
 
 Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
 and "latest" with you're version of stanford-corenlp:
@@ -36,11 +35,11 @@ and "latest" with you're version of stanford-corenlp:
    $SIGMA_HOME/KBs/config.xml file. SigmaNLP will work without that particular
    element
 
-If you want to run sigmanlp's web interface then
+If you want to run sigmanlp's web interface then:
 
 ant dist
 
-Start Tomcat with
+Start Tomcat with:
 $CATALINA_HOME/bin/startup.sh
 
 http://localhost:8080/sigmanlp/NLP.jsp
@@ -64,7 +63,8 @@ Add the following to your $CATALINA_HOME/conf/context.xml
 <Context crossContext="true">
 
 
-jUnit=============
+jUnit
+=====
 
 java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
 /home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
