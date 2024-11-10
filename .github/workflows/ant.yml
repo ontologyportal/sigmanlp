@@ -1,0 +1,169 @@
+# This workflow will build a Java project with Ant
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-ant
+name: Java CI with Ant
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+permissions:
+  id-token: write
+  contents: read
+  checks: write
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout sigmanlp
+        uses: actions/checkout@v4
+        with:
+          path: sigmanlp
+
+      - name: checkout sigmakee
+        uses: actions/checkout@v4
+        with:
+          path: sigmakee
+
+      - name: checkout TPTP-ANTLR
+        uses: actions/checkout@v4
+        with:
+          path: TPTP-ANTLR
+
+      - name: checkout SigmaUtils
+        uses: actions/checkout@v4
+        with:
+          path: SigmaUtils
+
+      - name: checkout sumo
+        uses: actions/checkout@v4
+        with:
+          path: sumo
+
+      - name: Setup SigmaNLP
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "SIGMA_HOME: $SIGMA_HOME"
+          echo "SIGMA_SRC: $SIGMA_SRC"
+          echo "ONTOLOGYPORTAL_GIT: $ONTOLOGYPORTAL_GIT"
+          echo "CORPORA: $CORPORA"
+          mkdir -p $SIGMA_HOME/KBs/WordNetMappings
+          cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
+          cp -R $ONTOLOGYPORTAL_GIT/sumo/* $SIGMA_HOME/KBs
+          cp /opt/WordNet-3.0/dict/* $SIGMA_HOME/KBs/WordNetMappings/
+          wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-4.5.7.zip'
+          unzip stanford-corenlp-4.5.7.zip
+          rm stanford-corenlp-4.5.7.zip
+          cp stanford-corenlp-4.5.7/stanford-corenlp-4.5.7.jar sigmanlp/lib
+          cp stanford-corenlp-4.5.7/stanford-corenlp-4.5.7-models.jar sigmanlp/lib
+
+      - name: Set up JDK 11 for x64
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Build with Ant
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        run: ant
+        working-directory: ./sigmanlp
+
+      - name: Prepare test env
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        working-directory: ./sigmanlp
+        run: |
+          sed -i "s|/home/apease/.sigmakee|$SIGMA_HOME|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
+          sed -i "s|/home/apease/workspace/sumo|$ONTOLOGYPORTAL_GIT/sumo|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
+          sed -i "s|/home/apease/E/bin/e_ltb_runner|/usr/local/bin/e_ltb_runner|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
+          sed -i "s|/home/apease/workspace/vampire/vampire|/usr/local/bin/vampire|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
+
+      - name: Run unit tests
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        working-directory: ./sigmanlp
+        run: |
+          ant test.unit
+
+      - name: Setup SIGMA_HOME for integration tests
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        working-directory: ${{ github.workspace }}
+        run: |
+          find $SIGMA_HOME/KBs -name '*.ser' -delete
+          cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
+          sed -i "s|/home/theuser/.sigmakee|$SIGMA_HOME|g" $SIGMA_HOME/KBs/config.xml
+          sed -i "s|/home/theuser/workspace/sumo|$ONTOLOGYPORTAL_GIT/sumo|g" $SIGMA_HOME/KBs/config.xml
+          sed -i "s|/home/theuser/E/bin/e_ltb_runner|/usr/local/bin/e_ltb_runner|g" $SIGMA_HOME/KBs/config.xml
+          sed -i "s|/home/theuser/workspace/vampire/vampire|/usr/local/bin/vampire|g" $SIGMA_HOME/KBs/config.xml
+          sed -i '/<kb name/,/<\/kb>/d' $SIGMA_HOME/KBs/config.xml
+
+      - name: Setup KB for integration tests
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        working-directory: ${{ github.workspace }}
+        run: >
+          sed -i '/<\/configuration>/i\
+          <kb name="SUMO">\n
+          <constituent filename="Merge.kif"\/>\n
+          <constituent filename="Mid-level-ontology.kif"\/>\n
+          <constituent filename="english_format.kif"\/>\n
+          <constituent filename="domainEnglishFormat.kif"\/>\n
+          <\/kb>' $SIGMA_HOME/KBs/config.xml
+
+      - name: Run integration tests
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        working-directory: ./sigmanlp
+        run: |
+          ant test.integration
+
+      - name: Prune KB after integration tests
+        env:
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+        working-directory: ${{ github.workspace }}
+        run: |
+          find $SIGMA_HOME/KBs -name '*.ser' -delete
+          rm -rf $SIGMA_HOME/KBs/tests
+
+      - name: Upload sigmanlp jars
+        uses: actions/upload-artifact@v4
+        with:
+          path: |
+            ./sigmanlp/build/WEB-INF/lib/*.jar
+            ./sigmanlp/build/sigmanlp.jar
+            ./sigmakee/config.xml
+            ./sigmakee-runtime
+
+      - name: Upload sigmanlp war
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigmanlp-webapp
+          path: /usr/local/tomcat/webapps/sigmanlp.war

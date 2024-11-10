@@ -22,8 +22,10 @@
 
 # Build related files
 /lib/sigmakee.jar
-/lib/stanford-corenlp-*.jar
 /lib/sigmaUtils.jar
+
+# Manually install
+/lib/stanford-corenlp-*.jar
 
 # NetBeans IDE
 nbproject/private
