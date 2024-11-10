@@ -23,7 +23,7 @@ Then follow the steps in "Account Management" below before proceeding
 In your .bashrc/.zshrc you'll need to have a greater heap space allocation than for sigmakee alone
 
 export CATALINA_OPTS="$CATALINA_OPTS -Xmx10g -Xss1m"
-source ~/.bashrc
+source ~/.*shrc
 
 Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
 and "latest" with you're version of stanford-corenlp:
