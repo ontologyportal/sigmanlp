@@ -33,21 +33,25 @@ jobs:
       - name: checkout sigmakee
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/sigmakee'
           path: sigmakee
 
       - name: checkout TPTP-ANTLR
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/TPTP-ANTLR'
           path: TPTP-ANTLR
 
       - name: checkout SigmaUtils
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/SigmaUtils'
           path: SigmaUtils
 
       - name: checkout sumo
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/sumo'
           path: sumo
 
 
