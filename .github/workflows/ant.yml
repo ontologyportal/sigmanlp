@@ -171,18 +171,3 @@ jobs:
         run: |
           find $SIGMA_HOME/KBs -name '*.ser' -delete
           rm -rf $SIGMA_HOME/KBs/tests
-
-      - name: Upload sigmanlp jars
-        uses: actions/upload-artifact@v4
-        with:
-          path: |
-            ./sigmanlp/build/WEB-INF/lib/*.jar
-            ./sigmanlp/build/sigmanlp.jar
-            ./sigmakee/config.xml
-            ./sigmakee-runtime
-
-      - name: Upload sigmanlp war
-        uses: actions/upload-artifact@v4
-        with:
-          name: sigmanlp-webapp
-          path: /usr/local/tomcat/webapps/sigmanlp.war
