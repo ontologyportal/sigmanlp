@@ -7,6 +7,13 @@ on:
     branches: [ "master", "main" ]
   pull_request:
     branches: [ "master", "main" ]
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 permissions:
   id-token: write
   contents: read
@@ -26,22 +33,33 @@ jobs:
       - name: checkout sigmakee
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/sigmakee'
           path: sigmakee
 
       - name: checkout TPTP-ANTLR
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/TPTP-ANTLR'
           path: TPTP-ANTLR
 
       - name: checkout SigmaUtils
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/SigmaUtils'
           path: SigmaUtils
 
       - name: checkout sumo
         uses: actions/checkout@v4
         with:
+          repository: 'ontologyportal/sumo'
           path: sumo
+
+
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+#        if: failure() && github.event_name == 'workflow_dispatch'
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        uses: mxschmitt/action-tmate@v3
 
       - name: Setup SigmaNLP
         env:
@@ -58,10 +76,11 @@ jobs:
           mkdir -p $SIGMA_HOME/KBs/WordNetMappings
           cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
           cp -R $ONTOLOGYPORTAL_GIT/sumo/* $SIGMA_HOME/KBs
-          cp /opt/WordNet-3.0/dict/* $SIGMA_HOME/KBs/WordNetMappings/
-          wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-4.5.7.zip'
+          wget 'https://wordnetcode.princeton.edu/3.0/WordNet-3.0.tar.gz'
+          tar -xvzf WordNet-3.0.tar.gz
+          cp WordNet-3.0/dict/* $SIGMA_HOME/KBs/WordNetMappings/
+          wget 'https://nlp.stanford.edu/software/stanford-corenlp-4.5.7.zip'
           unzip stanford-corenlp-4.5.7.zip
-          rm stanford-corenlp-4.5.7.zip
           cp stanford-corenlp-4.5.7/stanford-corenlp-4.5.7.jar sigmanlp/lib
           cp stanford-corenlp-4.5.7/stanford-corenlp-4.5.7-models.jar sigmanlp/lib
 
@@ -152,18 +171,3 @@ jobs:
         run: |
           find $SIGMA_HOME/KBs -name '*.ser' -delete
           rm -rf $SIGMA_HOME/KBs/tests
-
-      - name: Upload sigmanlp jars
-        uses: actions/upload-artifact@v4
-        with:
-          path: |
-            ./sigmanlp/build/WEB-INF/lib/*.jar
-            ./sigmanlp/build/sigmanlp.jar
-            ./sigmakee/config.xml
-            ./sigmakee-runtime
-
-      - name: Upload sigmanlp war
-        uses: actions/upload-artifact@v4
-        with:
-          name: sigmanlp-webapp
-          path: /usr/local/tomcat/webapps/sigmanlp.war

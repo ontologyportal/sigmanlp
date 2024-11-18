@@ -9,7 +9,7 @@ echo "export CORPORA=$ONTOLOGYPORTAL_GIT/sigmanlp/corpora" >> .bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
 cd ~/Programs
-wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-4.5.7.zip'
+wget 'https://nlp.stanford.edu/software/stanford-corenlp-4.5.7.zip'
 unzip stanford-corenlp-4.5.7.zip
 rm stanford-corenlp-4.5.7.zip
 cd ~/Programs/stanford-corenlp-full-4.5.7/
