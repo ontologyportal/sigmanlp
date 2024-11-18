@@ -77,12 +77,10 @@ jobs:
           cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
           cp -R $ONTOLOGYPORTAL_GIT/sumo/* $SIGMA_HOME/KBs
           wget 'https://wordnetcode.princeton.edu/3.0/WordNet-3.0.tar.gz'
-          tar -xvzfn WordNet-3.0.tar.gz
-          rm WordNet-3.0.tar.gz
+          tar -xvzf WordNet-3.0.tar.gz
           cp WordNet-3.0/dict/* $SIGMA_HOME/KBs/WordNetMappings/
           wget 'https://huggingface.co/stanfordnlp/CoreNLP/resolve/main/stanford-corenlp-4.5.7.zip'
           unzip stanford-corenlp-4.5.7.zip
-          rm stanford-corenlp-4.5.7.zip
           cp stanford-corenlp-4.5.7/stanford-corenlp-4.5.7.jar sigmanlp/lib
           cp stanford-corenlp-4.5.7/stanford-corenlp-4.5.7-models.jar sigmanlp/lib
 
