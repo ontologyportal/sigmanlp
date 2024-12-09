@@ -109,7 +109,7 @@
         <fail message="Unsupported JDK version: ${ant.java.version}. Please use JDK version 21 or greater."
               unless="jdk21+">
         </fail>
-        
+
         <echo message="Welcome to the ${product.Name} v${product.Version}"/>
         <echo message="Specification Vendor:     ${spec.vendor}"/>
         <echo message=""/>
@@ -258,6 +258,31 @@
     ADMIN
     =====
     -->
+    
+    <target name="update.sigmanlp">
+        <git command="pull" dir=".">
+            <args>
+                <arg value="--progress"/>
+                <arg value="--verbose"/>
+                <arg value="https://github.com/ontologyportal/${app.name}"/>
+                <arg value="."/>
+            </args>
+        </git>
+    </target>
+
+    <!-- git macro utils setup from: https://tonyyan.wordpress.com/2017/03/10/integrate-git-into-ant-targets/-->
+    <macrodef name="git">
+        <attribute name="command"/>
+        <attribute name="dir" default="${workspace.dir}"/>
+        <element name="args" optional="true"/>
+        <sequential>
+            <echo message="git @{command}"/>
+            <exec executable="git" dir="@{dir}">
+                <arg value="@{command}"/>
+                <args/>
+            </exec>
+        </sequential>
+    </macrodef>
 
     <!-- Works only from the CLI -->
     <target name="clean" description="Delete old build, lib, dist and deployed web aritifacts">
