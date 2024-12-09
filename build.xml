@@ -103,10 +103,13 @@
     </path>
 
     <target name="init">
-        <available property="jdk11+" classname="java.net.http.HttpClient"/>
-        <fail message="Unsupported JDK version: ${ant.java.version}. Please use JDK version 11 or greater, but avoid JDK 17."
-              unless="jdk11+">
+        <condition property="jdk21+">
+            <javaversion atleast="21"/>
+        </condition>
+        <fail message="Unsupported JDK version: ${ant.java.version}. Please use JDK version 21 or greater."
+              unless="jdk21+">
         </fail>
+
         <echo message="Welcome to the ${product.Name} v${product.Version}"/>
         <echo message="Specification Vendor:     ${spec.vendor}"/>
         <echo message=""/>
@@ -126,7 +129,7 @@
         </tstamp>
     </target>
 
-    <target name="deploy_prepare" depends="init" description="deploy code to sigma.war">
+    <target name="deploy.prepare" depends="init" description="deploy code to sigma.war">
 
         <!-- Copy all the *.jsp, *.xsl, *.html, pixmaps, etc. -->
         <copy todir="${build.home}/jsp">
@@ -158,7 +161,7 @@
     ============
     -->
 
-    <target name="compile" depends="deploy_prepare" description="Compile sigmanlp">
+    <target name="compile" depends="deploy.prepare" description="Compile sigmanlp">
         <javac destdir="${build.classes.dir}"
                debug="on"
                optimize="on"
@@ -255,6 +258,31 @@
     ADMIN
     =====
     -->
+
+    <target name="update.sigmanlp">
+        <git command="pull" dir="${user.dir}">
+            <args>
+                <arg value="--progress"/>
+                <arg value="--verbose"/>
+                <arg value="https://github.com/ontologyportal/${app.name}"/>
+                <arg value="${user.dir}"/>
+            </args>
+        </git>
+    </target>
+
+    <!-- git macro utils setup from: https://tonyyan.wordpress.com/2017/03/10/integrate-git-into-ant-targets/-->
+    <macrodef name="git">
+        <attribute name="command"/>
+        <attribute name="dir" default="${workspace.dir}"/>
+        <element name="args" optional="true"/>
+        <sequential>
+            <echo message="git @{command}"/>
+            <exec executable="git" dir="@{dir}">
+                <arg value="@{command}"/>
+                <args/>
+            </exec>
+        </sequential>
+    </macrodef>
 
     <!-- Works only from the CLI -->
     <target name="clean" description="Delete old build, lib, dist and deployed web aritifacts">

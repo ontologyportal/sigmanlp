@@ -20,6 +20,11 @@ cd ~/workspace/sigmanlp
 ant
 ```
 
+To keep this repository updated
+```sh
+ant update.sigmanlp
+```
+
 Then follow the steps in "Account Management" below before proceeding
 
 In your .bashrc/.zshrc you'll need to have a greater heap space allocation than for sigmakee alone
