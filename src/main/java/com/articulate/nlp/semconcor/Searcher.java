@@ -69,7 +69,7 @@ public class Searcher {
 
         if (debug) System.out.println("Searcher.highlightDep(): bindings: " + bindings);
         if (debug) System.out.println("Searcher.highlightDep(): cnf: " + depcnf);
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         for (Clause c : depcnf.clauses) {
             for (Literal l : c.disjuncts) {
                 if (result.length() > 0)

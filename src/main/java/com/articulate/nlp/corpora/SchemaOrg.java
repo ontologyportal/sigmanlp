@@ -139,7 +139,7 @@ public class SchemaOrg {
 
     private static String printPrices(String id, String name, String prettyID) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         HashMap<String,ArrayList<String>> statements = nodes.get(id);
         ArrayList<String> offerId = statements.get("offer");
         statements = nodes.get(offerId); // now the statements are for the offer, not the node!

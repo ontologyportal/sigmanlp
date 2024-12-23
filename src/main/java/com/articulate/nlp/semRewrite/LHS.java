@@ -47,7 +47,7 @@ public class LHS {
      */
     public String toString() {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (operator == LHSop.AND)
             sb.append("[" + lhs1.toString() + ", " + lhs2.toString() + "]");
         else if (operator == LHSop.OR)

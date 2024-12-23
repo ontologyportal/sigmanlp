@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by apease on 7/2/18.
  */
-public class DBPediaTest {
+public class DBPediaTest extends IntegrationTestBase {
 
     private String defaultProp = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, coref, depparse, wnmw, wsd, tsumo, dbpmw";

@@ -314,7 +314,7 @@ public class NPtype {
         sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
         String lastPOS = "";
         String lastLemma = "";
-        StringBuffer NP = new StringBuffer();
+        StringBuilder NP = new StringBuilder();
         int tokCount = 0;
         for (CoreMap sentence : sentences) {
             List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
@@ -339,7 +339,7 @@ public class NPtype {
                         if (eval && evaluateNP(NP.toString(),lastLemma))
                             result.put(NP.toString(),lastLemma);
                         if (debug) System.out.println("NPtype.findNPs(): result so far 3 : " + result);
-                        NP = new StringBuffer();
+                        NP = new StringBuilder();
                         tokCount = 1;  // reset counter of words in NP
                         NP.append(orig);
                         lastPOS = pos;
@@ -352,7 +352,7 @@ public class NPtype {
                     if (eval && evaluateNP(NP.toString(),lastLemma))
                         result.put(NP.toString(),lastLemma);
                     if (debug) System.out.println("NPtype.findNPs(): result so far 5 : " + result);
-                    NP = new StringBuffer();
+                    NP = new StringBuilder();
                     tokCount = 0;  // reset counter of words in NP
                     lastPOS = pos;
                 }

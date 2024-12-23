@@ -5,12 +5,12 @@ Copyright 2015-2017 Articulate Software
           2017-     Infosys
 
 Author: Adam Pease apease@articulatesoftware.com
-        Stephan Schulz 
+        Stephan Schulz
 
 A simple lexical analyser that converts a string into a sequence of
 tokens.  Java's StreamTokenizer can't be used since it only can
 "push back" one token.
-     
+
 This will convert a string into a sequence of
 tokens that can be inspected and processed in-order. It is a bit
 of an overkill for a simple application, but makes actual
@@ -33,20 +33,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
 import java.io.*;
 import java.text.ParseException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Lexer {
-       
+
     public static final String NoToken        = "No Token";
     public static final String WhiteSpace     = "White Space";
     public static final String Newline        = "Newline";
@@ -54,7 +53,7 @@ public class Lexer {
     public static final String Directive      = "Directive";
     public static final String Ident          = "Identifier";
     public static final String Number         = "Positive or negative Integer or real";
-    public static final String QuotedString   = "Quoted string";   
+    public static final String QuotedString   = "Quoted string";
     public static final String FullStop       = ". (full stop)";
     public static final String OpenPar        = "(";
     public static final String ClosePar       = ")";
@@ -64,8 +63,8 @@ public class Lexer {
     public static final String Or             = "|";
     public static final String Plus           = "+";
     public static final String Comma          = ",";
-    public static final String Implies        = "==>";   
-    public static final String OptImplies     = "?=>";    
+    public static final String Implies        = "==>";
+    public static final String OptImplies     = "?=>";
     public static final String Clause         = "/-";
     public static final String Var            = "Variable";
     public static final String Negation       = "-";
@@ -80,77 +79,68 @@ public class Lexer {
     public String SZS = "";
     public int pos = 0;  // character position on the current line
     public LineNumberReader input = null;
-    public ArrayDeque<String> tokenStack = new ArrayDeque<String>();
+    public ArrayDeque<String> tokenStack = new ArrayDeque<>();
 
     /** This array contains all of the compiled Pattern objects that
      * will be used by methods in this file. */
-    public static LinkedHashMap<String,Pattern> tokenDefs = new LinkedHashMap<String,Pattern>();
-    
-    public static ArrayList<String> andOr = new ArrayList<String>();
-    public static ArrayList<String> binaryRel = new ArrayList<String>();
-    public static ArrayList<String> quant = new ArrayList<String>(); 
-    
+    public static LinkedHashMap<String,Pattern> tokenDefs = new LinkedHashMap<>();
+
+    public static ArrayList<String> andOr = new ArrayList<>();
+    public static ArrayList<String> binaryRel = new ArrayList<>();
+    public static ArrayList<String> quant = new ArrayList<>();
+
     /** ***************************************************************
      */
     public Lexer() {
         init();
     }
-    
+
     /** ***************************************************************
      */
     public Lexer(String s) {
-        
+
         init();
         //source = s;
         input = new LineNumberReader(new StringReader(s));
         filename = "";
     }
-  
+
     /** ***************************************************************
      * Read a text file into the "input" String variables.  Throws an
      * error on file not found.
      */
     public Lexer(File f) {
-        
+
         init();
         //source = file2string(f);
         try {
             input = new LineNumberReader(new FileReader(f));
         }
         catch (FileNotFoundException fnf) {
-            System.out.println("Error in Lexer(): File not found: " + f);
-            System.out.println(fnf.getMessage());
+            System.err.println("Error in Lexer(): File not found: " + f);
+            System.err.println(fnf.getMessage());
             fnf.printStackTrace();
         }
     }
-    
+
     /** ***************************************************************
      * Read the contents of a text file into a String.  Throws IOException
      */
     public String file2string(File f) {
 
         String result = null;
-        DataInputStream in = null;
 
-        try {
-            byte[] buffer = new byte[(int) f.length()];
-            in = new DataInputStream(new FileInputStream(f));
+        byte[] buffer = new byte[(int) f.length()];
+        try (DataInputStream in = new DataInputStream(new FileInputStream(f))) {
             in.readFully(buffer);
             result = new String(buffer);
-        } 
+        }
         catch (IOException e) {
             throw new RuntimeException("IO problem in fileToString", e);
-        } 
-        finally {
-            try {
-                in.close();
-            } 
-            catch (IOException e) { /* ignore it */
-            }
         }
         return result;
     }
-    
+
     /** ***************************************************************
      * @return the line number of the token by counting all the
      * newlines in the position up to the current token.
@@ -159,21 +149,21 @@ public class Lexer {
 
         return input.getLineNumber();
         //return source.substring(0,pos).split(" ").length + 1;
-    }        
+    }
 
     /** ***************************************************************
      * Set up the regular expressions to recognize each token type.
      */
     private static void init() {
-        
-        tokenDefs.put(FullStop,     Pattern.compile("\\."));                   
-        tokenDefs.put(OpenPar,      Pattern.compile("\\("));                   
-        tokenDefs.put(ClosePar,     Pattern.compile("\\)"));      
-        tokenDefs.put(OpenBracket,  Pattern.compile("\\{"));                   
-        tokenDefs.put(CloseBracket, Pattern.compile("\\}"));   
-        tokenDefs.put(Comma,        Pattern.compile(","));                                   
-        tokenDefs.put(Or,           Pattern.compile("\\|"));                                                 
-        tokenDefs.put(Implies,      Pattern.compile("==>"));  
+
+        tokenDefs.put(FullStop,     Pattern.compile("\\."));
+        tokenDefs.put(OpenPar,      Pattern.compile("\\("));
+        tokenDefs.put(ClosePar,     Pattern.compile("\\)"));
+        tokenDefs.put(OpenBracket,  Pattern.compile("\\{"));
+        tokenDefs.put(CloseBracket, Pattern.compile("\\}"));
+        tokenDefs.put(Comma,        Pattern.compile(","));
+        tokenDefs.put(Or,           Pattern.compile("\\|"));
+        tokenDefs.put(Implies,      Pattern.compile("==>"));
         tokenDefs.put(OptImplies,   Pattern.compile("\\?=>"));
         tokenDefs.put(Clause,       Pattern.compile("/-"));
 
@@ -192,14 +182,14 @@ public class Lexer {
         tokenDefs.put(QuotedString, Pattern.compile("\"[^\"]*\""));
         tokenDefs.put(Ident,        Pattern.compile("[^,()]+"));
         tokenDefs.put(Stop,         Pattern.compile("stop"));
-        
+
         andOr.add(Comma);
         andOr.add(Or);
-        
+
         binaryRel.add(Implies);
-        binaryRel.add(OptImplies);  
+        binaryRel.add(OptImplies);
     }
-    
+
     /** ***************************************************************
      * @return the next token type without consuming it.
      */
@@ -229,9 +219,9 @@ public class Lexer {
         look();
         return literal;
     }
-            
+
     /** ***************************************************************
-     * Take a list of expected token types. 
+     * Take a list of expected token types.
      * @return True if the next token is expected, False otherwise.
      */
     public boolean testTok(ArrayList<String> tokens) throws ParseException {
@@ -252,7 +242,7 @@ public class Lexer {
      */
     public boolean testTok(String tok) throws ParseException {
 
-        ArrayList<String> tokens = new ArrayList<String>();
+        ArrayList<String> tokens = new ArrayList<>();
         tokens.add(tok);
         return testTok(tokens);
     }
@@ -260,11 +250,11 @@ public class Lexer {
     /** ***************************************************************
      * Take a list of expected token types. If the next token is
      * not among the expected ones, exit with an error. Otherwise do
-     * nothing. 
+     * nothing.
      */
     public void checkTok(String tok) throws ParseException {
 
-        ArrayList<String> tokens = new ArrayList<String>();
+        ArrayList<String> tokens = new ArrayList<>();
         tokens.add(tok);
         checkTok(tokens);
     }
@@ -272,7 +262,7 @@ public class Lexer {
     /** ***************************************************************
      * Take a list of expected token types. If the next token is
      * not among the expected ones, exit with an error. Otherwise do
-     * nothing. 
+     * nothing.
      */
     public void checkTok(ArrayList<String> tokens) throws ParseException {
 
@@ -286,13 +276,13 @@ public class Lexer {
 
     /** ***************************************************************
      * Take an expected token type. If the next token is
-     * the same as the expected one, consume and return it. Otherwise, exit 
-     * with an error. 
+     * the same as the expected one, consume and return it. Otherwise, exit
+     * with an error.
      * @return the token matching the type of the input
      */
     public String acceptTok(String token) throws ParseException {
 
-        ArrayList<String> tokens = new ArrayList<String>();
+        ArrayList<String> tokens = new ArrayList<>();
         tokens.add(token);
         checkTok(tokens);
         return next();
@@ -300,8 +290,8 @@ public class Lexer {
 
     /** ***************************************************************
      * Take a list of expected token types. If the next token is
-     * among the expected ones, consume and return it. Otherwise, exit 
-     * with an error. 
+     * among the expected ones, consume and return it. Otherwise, exit
+     * with an error.
      * @return the token matching one of the types in the inputs
      */
     public String acceptTok(ArrayList<String> tokens) throws ParseException {
@@ -311,21 +301,21 @@ public class Lexer {
     }
 
     /** ***************************************************************
-     * @param litval an expected literal string. 
+     * @param litval an expected literal string.
      * @return True if the
      * next token's string value the same as the input, False otherwise.
      */
     public boolean testLit(String litval) throws ParseException {
 
-        ArrayList<String> litvals = new ArrayList<String>();
+        ArrayList<String> litvals = new ArrayList<>();
         litvals.add(litval);
         return testLit(litvals);
     }
-    
+
     /** ***************************************************************
      * @param litvals a list of expected literal strings
      * @return True if the next token's string value is among the input
-     * string and false otherwise. 
+     * string and false otherwise.
      */
     public boolean testLit(ArrayList<String> litvals) throws ParseException {
 
@@ -336,15 +326,15 @@ public class Lexer {
         }
         return false;
     }
-    
+
     /** ***************************************************************
      * Take an expected literal string. If the next token's
      * literal is not the expected one, exit with an
-     * error. Otherwise do nothing. 
+     * error. Otherwise do nothing.
      */
     private void checkLit(String litval) throws ParseException {
 
-        ArrayList<String> litvals = new ArrayList<String>();
+        ArrayList<String> litvals = new ArrayList<>();
         litvals.add(litval);
         checkLit(litvals);
     }
@@ -352,7 +342,7 @@ public class Lexer {
     /** ***************************************************************
      * Take a list of expected literal strings. If the next token's
      * literal is not among the expected ones, exit with an
-     * error. Otherwise do nothing. 
+     * error. Otherwise do nothing.
      */
     private void checkLit(ArrayList<String> litvals) throws ParseException {
 
@@ -365,29 +355,29 @@ public class Lexer {
     /** ***************************************************************
      * Take a list of expected literal strings. If the next token's
      * literal is among the expected ones, consume and return the
-     * literal. Otherwise, exit with an error. 
+     * literal. Otherwise, exit with an error.
      */
     public String acceptLit(ArrayList<String> litvals) throws ParseException {
 
         checkLit(litvals);
         return next();
     }
-    
+
     /** ***************************************************************
      * Take a list of expected literal strings. If the next token's
      * literal is among the expected ones, consume and return the
-     * literal. Otherwise, exit with an error. 
+     * literal. Otherwise, exit with an error.
      */
     public String acceptLit(String litval) throws ParseException {
 
-        ArrayList<String> litvals = new ArrayList<String>();
+        ArrayList<String> litvals = new ArrayList<>();
         litvals.add(litval);
         checkLit(litvals);
         return next();
     }
 
     /** ***************************************************************
-     * @return next semantically relevant token (not whitespace, 
+     * @return next semantically relevant token (not whitespace,
      * comments etc)
      */
     public String next() throws ParseException {
@@ -401,28 +391,28 @@ public class Lexer {
         //System.out.println("INFO in next(): returning token: " + res);
         return res;
     }
-    
+
     /** ***************************************************************
      * @return next token, including tokens, such as whitespace and
-     * comments, that are ignored by most languages. 
+     * comments, that are ignored by most languages.
      */
     public String nextUnfiltered() throws ParseException {
 
         //System.out.println("INFO in Lexer.nextUnfiltered(): " + line);
-        if (tokenStack.size() > 0)
+        if (!tokenStack.isEmpty())
             return tokenStack.pop();
         else {
             if (line == null || line.length() <= pos) {
                 try {
                     do {
                         line = input.readLine();
-                    } while (line != null && line.length() == 0);    
+                    } while (line != null && line.length() == 0);
                     //System.out.println("INFO in Lexer.nextUnfiltered(): " + line);
                     pos = 0;
                 }
                 catch (IOException ioe) {
-                    System.out.println("Error in Lexer.nextUnfiltered()");
-                    System.out.println(ioe.getMessage());
+                    System.err.println("Error in Lexer.nextUnfiltered()");
+                    System.err.println(ioe.getMessage());
                     ioe.printStackTrace();
                     return EOFToken;
                 }
@@ -432,41 +422,43 @@ public class Lexer {
                     return EOFToken;
                 }
             }
-            Iterator<String> it = tokenDefs.keySet().iterator();
-            while (it.hasNext()) {  // Go through all the token definitions and process the first one that matches
-                String key = it.next();
-                Pattern value = tokenDefs.get(key);
-                Matcher m = value.matcher(line.substring(pos));
+
+            Pattern value;
+            Matcher m;
+            for (String key : tokenDefs.keySet()) {
+                // Go through all the token definitions and process the first one that matches
+                value = tokenDefs.get(key);
+                m = value.matcher(line.substring(pos));
                 //System.out.println("INFO in Lexer.nextUnfiltered(): checking: " + key + " against: " + line.substring(pos));
                 if (m.lookingAt()) {
                     //System.out.println("INFO in Lexer.nextUnfiltered(): got token against source: " + line.substring(pos));
                     literal = line.substring(pos + m.start(),pos + m.end());
                     pos = pos + m.end();
                     type = key;
-                    //System.out.println("INFO in Lexer.nextUnfiltered(): got token: " + literal + " type: " + type + 
+                    //System.out.println("INFO in Lexer.nextUnfiltered(): got token: " + literal + " type: " + type +
                     //        " at pos: " + pos + " with regex: " + value);
                     return m.group();
                 }
             }
             if (pos + 4 > line.length())
                 if (pos - 4 < 0)
-                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + 
+                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " +
                             line.substring(0,line.length()) + "... at line " + input.getLineNumber(),pos);
                 else
-                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + 
+                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " +
                             line.substring(pos - 4,line.length()) + "... at line " + input.getLineNumber(),pos);
             else
-                throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + 
+                throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " +
                         line.substring(pos,pos+4) + "... at line " + input.getLineNumber(),pos);
         }
     }
 
     /** ***************************************************************
-     * Return a list of all tokens in the source. 
+     * Return a list of all tokens in the source.
      */
     public ArrayList<String> lex() throws ParseException {
 
-        ArrayList<String> res = new ArrayList<String>();
+        ArrayList<String> res = new ArrayList<>();
         while (!testTok(EOFToken)) {
             String tok = next();
             //System.out.println("INFO in Lexer.lex(): " + tok);
@@ -476,40 +468,41 @@ public class Lexer {
     }
 
     /** ***************************************************************
-     * Return a list of all tokens in the source. 
+     * Return a list of all tokens in the source.
      */
     public ArrayList<String> lexTypes() throws ParseException {
 
-        ArrayList<String> res = new ArrayList<String>();
+        ArrayList<String> res = new ArrayList<>();
+        String type, tok;
         while (!testTok(EOFToken)) {
-            String type = lookType();
-            String tok = next();
+            type = lookType();
+            tok = next();
             //System.out.println("INFO in Lexer.lex(): " + type);
             res.add(type);
         }
         return res;
     }
-    
+
     /** ***************************************************************
      ** ***************************************************************
      */
     private static String example1 = "sense(212345678,?E), nsubj(?E,?X), dobj(?E,?Y) ==> " +
-            "{(exists (?X ?E ?Y) " + 
+            "{(exists (?X ?E ?Y) " +
               "(and " +
                 "(instance ?X Organization) " +
                 "(instance ?Y Human)}" +
                 "(instance ?E Hiring)" +
                 "(agent ?E ?X) " +
                 "(patient ?E ?Y)))}.";
-    
+
     private static String example2 = "bank2";
     private static String example3 = "at*";
     private static String example4 = "num(PM-6, 8:30-5)";
     private static String example5 = "name(John-6, \"John\")";
     private static String example6 = "conj:and($_200,000-2,$_60,000-5)";
-    
+
     /** ***************************************************************
-     * Test that comments and whitespace are normally ignored. 
+     * Test that comments and whitespace are normally ignored.
      */
     private static void testLex() {
 
@@ -522,12 +515,12 @@ public class Lexer {
             System.out.println("INFO in Lexer.testLex(): completed parsing example 6: " + res1);
 
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     /** ***************************************************************
      * Test accepTok()
      */
@@ -537,16 +530,16 @@ public class Lexer {
         System.out.println("INFO in Lexer.testString()");
         Lexer lex1 = new Lexer(example3);
         try {
-            System.out.println(lex1.acceptTok(Ident)); 
+            System.out.println(lex1.acceptTok(Ident));
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     /** ***************************************************************
-     * Test that self.example 1 is split into the expected tokens. 
+     * Test that self.example 1 is split into the expected tokens.
      */
     private static void testTerm() {
 
@@ -565,8 +558,8 @@ public class Lexer {
             lex1.acceptTok(OpenPar);   // (
             // ...
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -575,17 +568,17 @@ public class Lexer {
      * Do a deep compare to two ArrayList<String> for equality.
      */
     private static boolean compareArrays(ArrayList<String> s1, ArrayList<String> s2) {
-        
+
         if (s1.size() != s2.size())
             return false;
-        for (int i = 0; i < s1.size(); i++) 
+        for (int i = 0; i < s1.size(); i++)
             if (!s1.get(i).equals(s2.get(i)))
                 return false;
         return true;
     }
-    
+
     /** ***************************************************************
-     * Check the positive case of AcceptLit(). 
+     * Check the positive case of AcceptLit().
      */
     private static void testAcceptLit() {
 
@@ -603,48 +596,48 @@ public class Lexer {
             lex.acceptLit("nsubj");
             lex.acceptLit("(");
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     /** ***************************************************************
-     * Provoke different errors. 
+     * Provoke different errors.
      */
     private static void testErrors() {
 
         System.out.println("-------------------------------------------------");
         System.out.println("INFO in Lexer.testErrors(): Should throw three errors");
-        Lexer lex = null;
+        Lexer lex;
         try {
             lex = new Lexer(example1);
-            lex.look(); 
+            lex.look();
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         try {
             lex = new Lexer(example1);
-            lex.checkTok(Implies); 
+            lex.checkTok(Implies);
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         try {
             lex = new Lexer(example1);
             lex.checkLit("abc");
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     /** ***************************************************************
-     * Check the positive case of AcceptLit(). 
+     * Check the positive case of AcceptLit().
      */
     private static void testAcceptClause() {
 
@@ -652,7 +645,7 @@ public class Lexer {
         System.out.println("INFO in Lexer.testAcceptClause()");
         Lexer lex = new Lexer(example4);
         try {
-            
+
             Pattern value = tokenDefs.get(Number);
             Matcher m = value.matcher("8:30");
             if (m.lookingAt()) {
@@ -665,8 +658,8 @@ public class Lexer {
             System.out.println(lex.next());
             System.out.println(lex.next());
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -688,13 +681,13 @@ public class Lexer {
             }
         }
         catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
 
     /** ***************************************************************
-     * Check the positive case of AcceptLit(). 
+     * Check the positive case of AcceptLit().
      */
     private static void testAcceptClause2() {
 
@@ -709,16 +702,16 @@ public class Lexer {
             System.out.println(lex.next());
             System.out.println(lex.next());
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     /** ***************************************************************
      */
     public static void main(String[] args) {
-        
+
         System.out.println("INFO in Lexer.main()");
         if (args != null && args.length > 1 && args[0].equals("-s")) {
             //Interpreter interp = new Interpreter();
@@ -728,10 +721,10 @@ public class Lexer {
                 lex = new Lexer(args[1]);
                 System.out.println("main(): types: " + lex.lexTypes());
             }
-            catch (Exception e) {
-                System.out.println(e.getMessage());
+            catch (ParseException e) {
+                System.err.println(e.getMessage());
                 e.printStackTrace();
-            }        
+            }
         }
         else if (args != null && args.length > 0 && args[0].equals("-h")) {
             System.out.println("Lexer");

@@ -6,12 +6,9 @@ import com.articulate.sigma.KBmanager;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /*
 Copyright 2017-     Infosys

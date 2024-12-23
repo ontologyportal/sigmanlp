@@ -1,16 +1,8 @@
 package com.articulate.nlp.semRewrite.datesandnumber;
 
-import com.articulate.nlp.semRewrite.datesandnumber.DateAndNumbersGeneration;
 import com.articulate.nlp.semRewrite.*;
 import com.articulate.nlp.IntegrationTestBase;
-import com.articulate.nlp.pipeline.SentenceUtil;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.util.CoreMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -18,9 +10,7 @@ import org.junit.Ignore;
 import java.io.IOException;
 import java.util.*;
 
-import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 /**
  * Tests Interpreter.interpretGenCNF( )
@@ -39,7 +29,7 @@ public class InterpretNumericsTest extends IntegrationTestBase {
     public void setUpInterpreter() throws IOException {
 
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         interpreter.initialize();
 
         IntegrationTestBase.resetAllForInference();

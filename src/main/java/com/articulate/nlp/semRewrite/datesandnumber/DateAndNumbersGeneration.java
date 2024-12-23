@@ -61,7 +61,7 @@ public class DateAndNumbersGeneration {
 
 		for (TimeInfo times : timesList) {
 			if ((times.getSecond() != null) || (times.getMinute() != null) || (times.getHour() != null)) {
-				//StringBuffer timeFn = new StringBuffer();
+				//StringBuilder timeFn = new StringBuilder();
 				if (times.getSecond() != null) {
 					utilities.sumoTerms.add(new Literal("second(" + "time-" + utilities.timeCount + "," +
                             times.getSecond() + ")"));

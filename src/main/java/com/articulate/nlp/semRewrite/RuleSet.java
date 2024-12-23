@@ -18,53 +18,56 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 
 public class RuleSet {
 
-    public ArrayList<Rule> rules = new ArrayList<Rule>();
-    public ArrayList<String> warningSet = new ArrayList<String>();
+    public ArrayList<Rule> rules = new ArrayList<>();
+    public ArrayList<String> warningSet = new ArrayList<>();
     public static String filename = "";
-    
+
     /** ***************************************************************
      */
-    public String toString() {   
-        
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < rules.size(); i++) 
-            sb.append(rules.get(i).toString() + "\n");
+    @Override
+    public String toString() {
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < rules.size(); i++)
+            sb.append(rules.get(i).toString()).append("\n");
         return sb.toString();
     }
 
     /** ***************************************************************
      */
     public RuleSet parse(Lexer lex) {
-        
+
         RuleSet rs = new RuleSet();
         String errStart = "Parsing error in " + filename;
         String errStr = null;
         boolean isEOL = false;
         try {
+            Rule r;
             do {
-                Rule r = Rule.parse(lex);
+                r = Rule.parse(lex);
                 if (r != null)
                     rs.rules.add(r);
             } while (!lex.testTok(Lexer.EOFToken));
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
             warningSet.add("Error in RuleSet.parse() " + message);
             ex.printStackTrace();
         }
         return rs;
     }
-    
+
     /** ***************************************************************
      */
     public static RuleSet readFile(String fname) throws Exception {
@@ -90,54 +93,53 @@ public class RuleSet {
                 try {
                     fr.close();
                 }
-                catch (Exception ex2) {
+                catch (IOException ex2) {
                 }
             }
         }
-        if (exThr != null) 
-            throw exThr;        
+        if (exThr != null)
+            throw exThr;
         return null;
     }
-    
+
     /** *************************************************************
      * A test method
      */
     public static CNF testRuleAndClausify() {
-        
+
         String rule = "sense(212345678,?E), nsubj(?E,?X), dobj(?E,?Y) ==> " +
-                "{(exists (?X ?E ?Y) " + 
+                "{(exists (?X ?E ?Y) " +
                   "(and " +
                     "(instance ?X Organization) " +
                     "(instance ?Y Human)" +
                     "(instance ?E Hiring)" +
                     "(agent ?E ?X) " +
                     "(patient ?E ?Y)))}.";
-        Rule r = new Rule();
-        r = Rule.parseString(rule);
+        Rule r = Rule.parseString(rule);
         //System.out.println(r.toString());
         return Clausifier.clausify(r.lhs);
     }
-    
+
     /** *************************************************************
      * A test method
      */
     public static void testReadRuleSet() {
-    
-        String filename = System.getProperty("user.home") + "/IPsoft/SemRewrite.txt";
+
+        String fName = System.getProperty("user.home") + "/IPsoft/SemRewrite.txt";
         try {
-            RuleSet rs = RuleSet.readFile(filename);
+            RuleSet.readFile(fName);
         }
         catch (Exception e) {
             e.printStackTrace();
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
         }
     }
-    
+
     /** *************************************************************
      * A test method
      */
     public static void main (String args[]) {
-        
+
         testReadRuleSet();
     }
 }

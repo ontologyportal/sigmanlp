@@ -151,7 +151,7 @@ public class LogicLevel {
     public void readParaFile(LineNumberReader lnr) throws IOException {
 
         String line;
-        StringBuffer para = new StringBuffer();
+        StringBuilder para = new StringBuilder();
         int linecount = 0;
         while ((line = lnr.readLine()) != null) {
             linecount++;
@@ -164,7 +164,7 @@ public class LogicLevel {
                 for (CoreMap cm : sents)
                     sentences.add(cm);
                 //System.out.println("run(): sents: " + sents);
-                para = new StringBuffer();
+                para = new StringBuilder();
             }
             else {
                 para.append(line + " ");
@@ -177,7 +177,7 @@ public class LogicLevel {
     public void readLineFile(LineNumberReader lnr) throws IOException {
 
         String line;
-        StringBuffer para = new StringBuffer();
+        StringBuilder para = new StringBuilder();
         int linecount = 0;
         while ((line = lnr.readLine()) != null) {
             linecount++;
@@ -206,7 +206,7 @@ public class LogicLevel {
     public void readWordFile(LineNumberReader lnr) throws IOException {
 
         String line;
-        StringBuffer l = new StringBuffer();
+        StringBuilder l = new StringBuilder();
         int linecount = 0;
         while ((line = lnr.readLine()) != null) {
             System.out.println(line);
@@ -221,7 +221,7 @@ public class LogicLevel {
                 for (CoreMap cm : sents)
                     sentences.add(cm);
                 //System.out.println("readWordFile(): sents: " + sents);
-                l = new StringBuffer();
+                l = new StringBuilder();
             }
             else {
                 if (line.indexOf("\t") != -1)

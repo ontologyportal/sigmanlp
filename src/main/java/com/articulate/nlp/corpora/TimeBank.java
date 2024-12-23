@@ -111,7 +111,7 @@ public class TimeBank {
             return new Formula("(ImmediateFutureFn " + parseDateString(anchorDate).toString() + ")");
         if (s.equals("PRESENT_REF"))
             return new Formula(parseDateString(anchorDate).toString());
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         Formula f = new Formula();
         int dashIndex = s.indexOf('-');
         String year = "";
@@ -244,7 +244,7 @@ public class TimeBank {
 
         System.out.println("in TimeBank.toSUMOFromDate(): ");
         Formula f = new Formula();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (!time.timexType().equals("DATE"))
             return null;
         Calendar c;
@@ -294,7 +294,7 @@ public class TimeBank {
 
         System.out.println("in TimeBank.toSUMOFromTime(): ");
         Formula f = new Formula();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (!time.timexType().equals("TIME"))
             return null;
         Calendar c;
@@ -343,7 +343,7 @@ public class TimeBank {
         Formula f = new Formula();
         if (tString == null)
             return null;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         // from http://www.timeml.org/timeMLdocs/TimeML.xsd
         //Pattern p = Pattern.compile("P((((\\p{Nd}+|X{1,2})Y)?((\\p{Nd}+|X{1,2})M)?" +
         //        "((\\p{Nd}+|X{1,2})D)?(T((\\p{Nd}+|X{1,2})H)?((\\p{Nd}+|X{1,2})M)?" +
@@ -415,7 +415,7 @@ public class TimeBank {
 
         System.out.println("in TimeBank.toSUMO(): ");
         Formula f = new Formula();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         String type = time.timexType(); // 'DATE' | 'TIME' | 'DURATION' | 'SET'
         Calendar c;
         if (type.equals("DATE"))
@@ -729,8 +729,8 @@ public class TimeBank {
      */
     public static void processFile (BufferedReader br) {
 
-        StringBuffer sb = new StringBuffer();
-        StringBuffer sent = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
+        StringBuilder sent = new StringBuilder();
         try {
             while (br.ready()) {
                 char c = (char) br.read();
@@ -749,8 +749,8 @@ public class TimeBank {
                         System.out.println("processFile(): SUMO: " + f.toString());
                     score(tags,suMarkup,f);
                     System.out.println("------------------");
-                    sb = new StringBuffer();
-                    sent = new StringBuffer();
+                    sb = new StringBuilder();
+                    sent = new StringBuilder();
                 }
                 else if (sb.toString().trim().equals("<TIMEX3")) { // timex not wrapped in <s> is an anchor
                     while (br.ready() && !sent.toString().endsWith("</TIMEX3>"))
@@ -758,11 +758,11 @@ public class TimeBank {
                     String sentStr = "<TIMEX3" + sent.toString().substring(0,sent.toString().length()-4);
                     getAnchorDate(sentStr);
                     System.out.println("------------------");
-                    sb = new StringBuffer();
-                    sent = new StringBuffer();
+                    sb = new StringBuilder();
+                    sent = new StringBuilder();
                 }
                 else if (sb.length() > 7)
-                    sb = new StringBuffer();
+                    sb = new StringBuilder();
             }
         }
         catch (IOException ioe) {
@@ -864,11 +864,11 @@ public class TimeBank {
 
     public static void processLines(ArrayList<String> lines) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (String s : lines) {
             if (StringUtil.emptyString(s) && sb.length() > 0) {
                 processParagraph(sb.toString());
-                sb = new StringBuffer();
+                sb = new StringBuilder();
             }
             else {
                 sb.append(s);

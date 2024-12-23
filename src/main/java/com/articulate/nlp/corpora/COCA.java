@@ -41,6 +41,7 @@ import edu.stanford.nlp.util.CoreMap;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.LineNumberReader;
 import java.util.*;
 
@@ -73,14 +74,14 @@ public class COCA {
             LineNumberReader lnr = new LineNumberReader(r);
             ArrayList<ArrayList<String>> result = new ArrayList<>();
             String line;
-            StringBuffer l = new StringBuffer();
+            StringBuilder l = new StringBuilder();
             int linecount = 0;
             while ((line = lnr.readLine()) != null) {
                 //System.out.println(line);
                 linecount++;
                 if (linecount == 1000)
                     System.out.print(".");
-                if (line.indexOf("\t") != -1) {
+                if (line.contains("\t")) {
                     ArrayList<String> temp = new ArrayList<>();
                     temp.addAll(Arrays.asList(line.split("\t")));
                     result.add(temp);
@@ -88,7 +89,7 @@ public class COCA {
             }
             return result;
         }
-        catch (Exception e) {
+        catch (IOException e) {
             e.printStackTrace();
             return null;
         }
@@ -112,13 +113,7 @@ public class COCA {
         //System.out.println("excluded(): p: " + p + " kb.isSubclass(p,\"Attribute\"): " + kb.isSubclass(p,"Attribute"));
         //System.out.println("excluded(): p: " + p + " (kb.isInstanceOf(p,\"Attribute\") || kb.isSubclass(p,\"Attribute\"): " +
         //        (kb.isInstanceOf(p,"Attribute") || kb.isSubclass(p,"Attribute")));
-        if (kb.isInstanceOf(p,"Attribute") || kb.isSubclass(p,"Attribute") ) {
-            //System.out.println("excluded(): " + p + " is not excluded");
-            return false;
-        }
-        else {
-            return true;
-        }
+        return !(kb.isInstanceOf(p,"Attribute") || kb.isSubclass(p,"Attribute")); //System.out.println("excluded(): " + p + " is not excluded");
     }
 
     /** ***************************************************************
@@ -234,7 +229,7 @@ public class COCA {
         ArrayList<ArrayList<String>> result = readWordFile(fname);
         boolean verb = true;
         String root = "";
-        StringBuffer sent = new StringBuffer();
+        StringBuilder sent = new StringBuilder();
         HashSet<String> allpairs = new HashSet<>();
 
         for (ArrayList<String> ar : result) {
@@ -266,7 +261,7 @@ public class COCA {
                     //System.out.println("\n" + pairs);
                     allpairs.addAll(pairs);
                 }
-                sent = new StringBuffer();
+                sent = new StringBuilder();
             }
             else if (word.equals("@"))
                 System.out.print('.');
@@ -294,10 +289,7 @@ public class COCA {
      * Test whether the CLAWS POS tag is a verb
      */
     public static boolean isVerbPOS(String s) {
-        if (s.startsWith("vb") || s.startsWith("vd") || s.startsWith("vh") || s.startsWith("vv"))
-            return true;
-        else
-            return false;
+        return s.startsWith("vb") || s.startsWith("vd") || s.startsWith("vh") || s.startsWith("vv");
     }
 
     /** ***************************************************************
@@ -307,7 +299,7 @@ public class COCA {
      */
     public void modifierFreqFile(String fname) {
 
-        ArrayList<String> excluded = new ArrayList<String>(
+        ArrayList<String> excluded = new ArrayList<>(
                 Arrays.asList("not","never"));
         ArrayList<ArrayList<String>> result = readWordFile(fname);
         String modifier = "";
@@ -380,22 +372,26 @@ public class COCA {
         ArrayList<ArrayList<String>> result = readWordFile(fname);
         boolean verb = true;
         String root = "";
-        StringBuffer sent = new StringBuffer();
+        StringBuilder sent = new StringBuilder();
         for (ArrayList<String> ar : result) {
             //System.out.println(ar);
             String word = ar.get(0);
-            if (word.equals("#")) {
-                Annotation wholeDocument = p.annotate(sent.toString());
-                System.out.println("subst: " + Interpreter.corefSubst(wholeDocument));
-                List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
-                for (CoreMap sentence : sentences)
-                    System.out.println(sentence);
-                sent = new StringBuffer();
+            switch (word) {
+                case "#":
+                    Annotation wholeDocument = p.annotate(sent.toString());
+                    System.out.println("subst: " + Interpreter.corefSubst(wholeDocument));
+                    List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
+                    for (CoreMap sentence : sentences)
+                        System.out.println(sentence);
+                    sent = new StringBuilder();
+                    break;
+                case "@":
+                    System.out.print('.');
+                    break;
+                default:
+                    sent.append(word).append(" ");
+                    break;
             }
-            else if (word.equals("@"))
-                System.out.print('.');
-            else
-                sent.append(word + " ");
         }
     }
 
@@ -459,25 +455,25 @@ public class COCA {
     public static void main(String[] args) {
 
         if (args == null || args.length == 0 ||
-                (args != null && args.length > 1 && args[0].equals("-h"))) {
+                (args.length > 1 && args[0].equals("-h"))) {
             showHelp();
         }
         else {
             COCA coca = new COCA();
             long millis = System.currentTimeMillis();
-            if (args != null && args.length > 1 && args[0].startsWith("-d")) {
+            if (args.length > 1 && args[0].startsWith("-d")) {
                 coca.runDir(args[1]);
                 Map<Integer, HashSet<String>> sorted = MapUtils.toSortedFreqMap(coca.verbPhrase);
                 System.out.println(sorted);
             }
-            else if (args != null && args.length > 1 && args[0].startsWith("-s")) {
+            else if (args.length > 1 && args[0].startsWith("-s")) {
                 coca.regen(args[1]);
             }
-            else if (args != null && args.length > 0 && args[0].startsWith("-a")) {
+            else if (args.length > 0 && args[0].startsWith("-a")) {
                 String prefix = System.getenv("CORPORA") + File.separator + "COCA" + File.separator;
                 coca.pairFreq(prefix);
             }
-            else if (args != null && args.length > 0 && args[0].startsWith("-r")) {
+            else if (args.length > 0 && args[0].startsWith("-r")) {
                 KBmanager.getMgr().initializeOnce();
                 coca.readPairs(".");
             }

@@ -1,17 +1,20 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.sigma.UnitTestBase;
+import com.articulate.nlp.UnitTestBase;
+
 import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /*
 Copyright 2014-2015 IPsoft
@@ -50,7 +53,7 @@ public class SemRewriteTestTimeDate extends UnitTestBase {
     @Before
     public void setUpInterpreter() throws IOException {
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         interpreter.initialize();
     }
 

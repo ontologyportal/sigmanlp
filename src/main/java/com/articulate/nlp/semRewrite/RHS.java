@@ -41,7 +41,7 @@ public class RHS {
      */
     public String toString() {
         
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (stop)
             sb.append("stop");
         else if (cnf != null)
@@ -118,7 +118,7 @@ public class RHS {
                 lex.next();
             }
             else if (lex.testTok(Lexer.OpenBracket)) {
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
                 String st = lex.nextUnfiltered();
                 while (!st.equals("}")) {
                     st = lex.nextUnfiltered();

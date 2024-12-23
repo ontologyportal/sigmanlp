@@ -61,7 +61,7 @@ public class TimeInfo {
 	 */
 	public String toString() {
 
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 		result.append(hour + ":" + minute + ":" + second + " (" + wordIndex + ")");
 		return result.toString();
 	}

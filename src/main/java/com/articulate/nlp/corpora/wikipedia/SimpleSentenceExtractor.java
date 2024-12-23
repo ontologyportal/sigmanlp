@@ -60,7 +60,7 @@ public class SimpleSentenceExtractor {
 
     /****************************************************************
      */
-    public static void processKeyword(StringBuffer sb, StringBuffer nested,
+    public static void processKeyword(StringBuilder sb, StringBuilder nested,
                                       char ch, String keyword) {
 
     }
@@ -70,7 +70,7 @@ public class SimpleSentenceExtractor {
      * their content part of the extracted sentence, or to discard the
      * content.
      */
-    public static void processNest(StringBuffer sb, StringBuffer nested, char ch) {
+    public static void processNest(StringBuilder sb, StringBuilder nested, char ch) {
 
         //System.out.println("processNext(): nested: " + nested);
         String nestedStr = nested.toString();
@@ -103,8 +103,8 @@ public class SimpleSentenceExtractor {
         int nestLevel = 0;
         char nestChar = ' '; // [,<,{,'
         boolean inQuotes = false;
-        StringBuffer sb = new StringBuffer();
-        StringBuffer nestedSb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
+        StringBuilder nestedSb = new StringBuilder();
         try {
             InputStream in = new FileInputStream(filename);
             Reader reader = new InputStreamReader(in);

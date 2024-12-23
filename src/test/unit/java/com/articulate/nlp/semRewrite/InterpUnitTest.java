@@ -1,14 +1,9 @@
 package com.articulate.nlp.semRewrite;
 
-import com.articulate.sigma.Formula;
-import com.articulate.sigma.FormulaUtil;
-import org.junit.Test;
-
+import com.articulate.nlp.UnitTestBase;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 
 /*
@@ -30,19 +25,18 @@ This program is free software; you can redistribute it and/or modify
         Foundation, Inc., 59 Temple Place, Suite 330, Boston,
         MA  02111-1307 USA
         */
-public class InterpUnitTest {
+public class InterpUnitTest extends UnitTestBase {
 
     /****************************************************************
      */
     @Test
     public void testInterpCNF() {
 
-
         String input = "attribute(Mary-1,Female), aux(walk-3,might-2), " +
                 "names(Mary-1,\"Mary\"), nsubj(walk-3,Mary-1), " +
                 "number(SINGULAR,Mary-1), root(ROOT-0,walk-3), sumo(Human,Mary-1), " +
                 "sumo(Walking,walk-3).";
-        ArrayList<CNF> clauses = new ArrayList<CNF>();
+        ArrayList<CNF> clauses = new ArrayList<>();
         clauses.add(new CNF(input));
         Rule r = Rule.parseString("aux(?V,might*) ==> (possible(?V,DUMMY)).");
         RuleSet rs = new RuleSet();

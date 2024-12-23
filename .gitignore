@@ -21,9 +21,14 @@
 /.idea
 
 # Build related files
-/build
 /lib/sigmakee.jar
+/lib/sigmaUtils.jar
+
+# Manually install
 /lib/stanford-corenlp-*.jar
+
+# NetBeans IDE
+nbproject/private
 
 # Emacs backup and temporary files
 *~
@@ -36,3 +41,4 @@
 .Spotlight-V100
 .Trashes
 
+/MANIFEST.MF

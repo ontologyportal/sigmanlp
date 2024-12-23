@@ -319,7 +319,7 @@ public class CNF implements Comparable {
      */
     public String toString() {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         //sb.append("[");
         for (int i = 0; i < clauses.size(); i++) {
             Clause d = clauses.get(i);
@@ -348,7 +348,7 @@ public class CNF implements Comparable {
         ArrayList<CNF> newcnfs = new ArrayList();
         newcnfs.addAll(cnfs);
         Collections.sort(newcnfs);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (CNF c : newcnfs)
             if (c != null)
                 sb.append(c.toSortedString());
