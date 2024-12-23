@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 
 public class GenSimpTestData {
 
-    public static boolean debug = false;
+    public static boolean debug = true;
     public static KB kb;
     public static boolean skip = false;
     public static HashSet<String> skipTypes = new HashSet<>();
@@ -66,7 +66,7 @@ public class GenSimpTestData {
     public static final int PROGRESSIVE = 3;  // is speaking, is docking
     public static final int FUTURE = 4;       // will speak, will dock
     public static final int FUTUREPROG = 5;   // will be speaking, will be docking
-    public static final int IMPERATIVE = 6;   // treat imperatives like a tense
+    public static final int IMPERATIVE = 6;   // treat imperatives like a tense - not currently used in non-conversational NLP
 
     public static final HashSet<String> verbEx = new HashSet<>(
             Arrays.asList("Acidification","Vending","OrganizationalProcess",
@@ -437,6 +437,10 @@ public class GenSimpTestData {
             String firstName = ar.get(0);
             String g = ar.get(1);
             result.put(firstName,g);
+        }
+        for (int i = 1; i <= 3; i++) {
+            result.put("UNK_PERSON_" + i,"M");
+            result.put("UNK_PERSON_" + i,"F");
         }
         return result;
     }
@@ -1126,9 +1130,12 @@ public class GenSimpTestData {
     /** ***************************************************************
      * @param term is a SUMO term
      * @param avp is a hack to return whether there was a plural, and its count
+     * @return the term as a string
      */
     public String nounFormFromTerm(String term, AVPair avp, String other) {
 
+        if (term.startsWith("UNK"))
+            return term;
         String word = kb.getTermFormat("EnglishLanguage",term);
         if (word == null) {
             System.out.println("nounFormFromTerm(): no term format for " + term);
@@ -1300,7 +1307,7 @@ public class GenSimpTestData {
             english.delete(english.length() - 7, english.length());
             english.append(" \""); // restore space and quote
         }
-        if (biasedBoolean(1,5) && english.length() == 0) {
+        if (biasedBoolean(1,5) && english.length() == 0) { // 20% time generate "who" as subject
             lfeat.subj = "who";
             lfeat.question = true;
             english.append(capital(lfeat.subj) + " ");
@@ -1365,7 +1372,7 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("non-human subject for (prop,synset,word): " +
                 prop + ", " + lfeat.verbSynset + ", " + lfeat.verb);
-        if (biasedBoolean(1,5) && english.length() == 0) {
+        if (biasedBoolean(1,5) && english.length() == 0) { // generate a question work "what" as the subject 20% of the time
             lfeat.subj = "what";
             lfeat.question = true;
             english.append(capital(lfeat.subj) + " ");
@@ -2168,7 +2175,7 @@ public class GenSimpTestData {
             english.append(capital("at "));
             DateTimeFormatter format = DateTimeFormatter.ofPattern("ha");
             english.append(t.format(format) + " ");
-            prop.append("(instance ?T (HourFn " + hour + ")) (during ?P ?T) ");
+            prop.append("(instance ?T (HourFn " + hour + ")) (during (WhenFn ?P) ?T) ");
             hastime = true;
             startOfSentence = false;
         }
@@ -2176,7 +2183,7 @@ public class GenSimpTestData {
             DateTimeFormatter format = DateTimeFormatter.ofPattern(dateOption);
             english.append(capital("on "));
             english.append(d.format(format) + " ");
-            prop.append("(instance ?T (DayFn " + day + " (MonthFn " + month + " (YearFn " + year + ")))) (during ?P ?T) ");
+            prop.append("(instance ?T (DayFn " + day + " (MonthFn " + month + " (YearFn " + year + ")))) (during (WhenFn ?P) ?T) ");
             hasdate = true;
             startOfSentence = false;
         }
@@ -2184,7 +2191,7 @@ public class GenSimpTestData {
             english.append(capital("on "));
             DateTimeFormatter format = DateTimeFormatter.ofPattern(dateOption + " 'at' ha");
             prop.append("(instance ?T (HourFn " + hour + " (DayFn " + day +
-                    " (MonthFn " + month + " (YearFn " + year + "))))) (during ?P ?T) ");
+                    " (MonthFn " + month + " (YearFn " + year + "))))) (during (WhenFn ?P)  ?T) ");
             english.append(ldt.format(format) + " ");
             startOfSentence = false;
         }
@@ -2218,7 +2225,8 @@ public class GenSimpTestData {
                         LFeatures lfeat) {
 
         progressPrint();
-        lfeat.tense = rand.nextInt(IMPERATIVE+1) - 1;
+        // lfeat.tense = rand.nextInt(IMPERATIVE+1) - 1;
+        lfeat.tense = rand.nextInt(IMPERATIVE) - 1;  // don't use imperative forms in 2025
         if (lfeat.tense == IMPERATIVE && rand.nextBoolean()) {
             lfeat.polite = true;
             if (rand.nextBoolean())

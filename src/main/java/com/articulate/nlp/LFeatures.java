@@ -113,11 +113,41 @@ public class LFeatures {
                 objs2.add(s);
         if (debug) System.out.println("LFeatures(): OrganicObjects and Artifacts: " + objs);
         Collection<AVPair> objFreqs = genSimpTestData.findWordFreq(objs2);
+        addUnknownsObjects(objFreqs);
         if (debug) System.out.println("LFeatures(): create objects");
         objects = RandSet.create(objFreqs);
         //System.out.println("LFeatures(): objects: " + objects.terms);
     }
 
+    /***************************************************************
+     * add UNK words to the list of objects
+     */
+    public void addUnknownsObjects(Collection<AVPair> objFreqs) {
+
+        int count = (int) Math.round(Math.log(200) + 1.0); // say that
+        // some unknowns occur same as words that show up 200 times in the Brown Corpus - WorndNet cntlist file
+        for (int i = 1; i <= 3; i++) {
+            AVPair avp = null;
+            avp = new AVPair("UNK_FAC_" + i, "10");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_GPE_" + i, "30");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_LANGUAGE_" + i, "10");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_LAW_" + i, "10");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_LOC_" + i, "30");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_NORP_" + i, "10");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_ORG_" + i, "10");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_PRODUCT_" + i, "10");
+            objFreqs.add(avp);
+            avp = new AVPair("UNK_WORK_OF_ART_" + i, "10");
+            objFreqs.add(avp);
+        }
+    }
 
     /** ***************************************************************
      */
@@ -138,8 +168,7 @@ public class LFeatures {
         return modals;
     }
 
-    /**
-     * **************************************************************
+    /***************************************************************
      * clear basic flags in the non-modal part of the sentence
      */
     public void clearSVO() {
