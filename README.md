@@ -59,9 +59,9 @@ the following in your config.xml
 
   <preference name="nlpTools" value="yes" />
 
-To run on the command line, try (changing to your paths)
+To run on the command line, try
 ```
-java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:/home/user/workspace/sigmanlp/build/lib/* com.articulate.nlp.semRewrite.Interpreter -i
+java -Xmx10g -Xss1m -cp $ONTOLOGYPORTAL_GIT/sigmanlp/build/classes:$ONTOLOGYPORTAL_GIT/sigmanlp/lib/* com.articulate.nlp.semRewrite.Interpreter -i
 ```
 
 Account Management
