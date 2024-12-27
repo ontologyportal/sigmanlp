@@ -146,6 +146,8 @@ public class LFeatures {
             objFreqs.add(avp);
             avp = new AVPair("UNK_WORK_OF_ART_" + i, "10");
             objFreqs.add(avp);
+            avp = new AVPair("UNK_noun_" + i, "10");
+            objFreqs.add(avp);
         }
     }
 
