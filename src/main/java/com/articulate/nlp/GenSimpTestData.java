@@ -1141,6 +1141,8 @@ public class GenSimpTestData {
      */
     public String nounFormFromTerm(String term, AVPair avp, String other) {
 
+        if (term.startsWith("UNK"))
+            return term;
         String word = kb.getTermFormat("EnglishLanguage",term);
         if (word == null) {
             System.out.println("nounFormFromTerm(): no term format for " + term);
@@ -2225,7 +2227,7 @@ public class GenSimpTestData {
                         LFeatures lfeat) {
 
         progressPrint();
-        lfeat.tense = rand.nextInt(IMPERATIVE+1) - 1;
+        lfeat.tense = rand.nextInt(FUTUREPROG+1) - 1;
         if (lfeat.tense == IMPERATIVE && rand.nextBoolean()) {
             lfeat.polite = true;
             if (rand.nextBoolean())
