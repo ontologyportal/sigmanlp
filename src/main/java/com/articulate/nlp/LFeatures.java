@@ -76,6 +76,7 @@ public class LFeatures {
         // indirect = collectCapabilities(); // TODO: need to restore and combine this filter with verb frames
         if (debug) System.out.println("LFeatures(): collect terms");
         genders = GenSimpTestData.humans;
+        addUnknownsHumansOrgs(genders);
         humans = RandSet.listToEqualPairs(genders.keySet());
 
         modals = initModals();
@@ -148,6 +149,17 @@ public class LFeatures {
             objFreqs.add(avp);
             avp = new AVPair("UNK_noun_" + i, "10");
             objFreqs.add(avp);
+        }
+    }
+
+    /***************************************************************
+     * add UNK words to the list of objects
+     */
+    public void addUnknownsHumansOrgs(HashMap<String, String> humans) {
+
+        for (int i = 1; i <= 3; i++) {
+            humans.put("UNK_ORG_" + i,"N");
+            humans.put("UNK_PERSON_" + i,"M");
         }
     }
 
