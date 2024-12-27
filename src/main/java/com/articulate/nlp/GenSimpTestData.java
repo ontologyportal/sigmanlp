@@ -47,6 +47,7 @@ public class GenSimpTestData {
     public static KB kb;
     public static boolean skip = false;
     public static HashSet<String> skipTypes = new HashSet<>();
+    public static final boolean allowImperatives = false;
     public static final int instLimit = 200;
     public static PrintWriter pw = null;
 
@@ -1291,7 +1292,8 @@ public class GenSimpTestData {
         StringBuilder type = new StringBuilder();
         StringBuilder name = new StringBuilder();
         if ((lfeat.attitude.equals("None") || lfeat.attitude.equals("says")) &&
-                lfeat.modal.attribute.equals("None") && english.length() == 0)
+                lfeat.modal.attribute.equals("None") && english.length() == 0 &&
+                allowImperatives)
             generateHuman(english,prop,true,"?H",type,name,lfeat);
         else
             generateHuman(english,prop,false,"?H",type,name,lfeat);
@@ -2227,7 +2229,7 @@ public class GenSimpTestData {
                         LFeatures lfeat) {
 
         progressPrint();
-        lfeat.tense = rand.nextInt(FUTUREPROG+1) - 1;
+        lfeat.tense = rand.nextInt(IMPERATIVE+1) - 1;
         if (lfeat.tense == IMPERATIVE && rand.nextBoolean()) {
             lfeat.polite = true;
             if (rand.nextBoolean())
