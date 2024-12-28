@@ -609,7 +609,7 @@ public class GenSimpTestData {
 
         if ((sentCount % 100) != 0) return;
         if (!debug) System.out.print("\r\33[2K");
-        double value = ((double) sentCount / (double) sentMax);
+        double value = ((double) sentCount / (double) sentMax) * 100;
         System.out.print(String.format("%.2f", value));
         System.out.print("% complete. ");
         System.out.print(sentCount + " of total " + sentMax);
