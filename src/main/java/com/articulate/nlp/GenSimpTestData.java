@@ -1222,9 +1222,6 @@ public class GenSimpTestData {
     }
 
     /** ***************************************************************
-     * Generate a boolean true value randomly num out of max times.
-     * So biasedBoolean(8,10) generates a true most of the time
-     * (8 out of 10 times on average)
      */
     public static String capital(String s) {
 
