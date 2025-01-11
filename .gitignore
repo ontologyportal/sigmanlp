@@ -42,3 +42,17 @@ nbproject/private
 .Trashes
 
 /MANIFEST.MF
+
+# Utility files
+word_pairs.db
+allAxioms-eng.txt
+allAxioms-log.txt
+combined-eng.txt
+combined-log.txt
+groundRelations-eng.txt
+groundRelations-log.txt
+out-eng.txt
+out-log.txt
+
+# COCA
+/corpora/COCA/*
