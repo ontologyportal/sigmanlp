@@ -857,14 +857,14 @@ public class GenSimpTestData {
      */
     public void runGenSentence() {
 
-        System.out.println("GenSimpTestData.initActions(): start");
+        System.out.println("GenSimpTestData.runGenSentence(): start");
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        System.out.println("GenSimpTestData.initActions(): finished loading KBs");
+        System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
         LFeatures lfeat = new LFeatures(this);
         ArrayList<String> terms = new ArrayList<>();
-        //if (debug) System.out.println("GenSimpTestData.initActions():  lfeat.direct: " + lfeat.direct);
+        //if (debug) System.out.println("GenSimpTestData.runGenSentence():  lfeat.direct: " + lfeat.direct);
         //System.exit(1);
         //for (Preposition p : lfeat.direct)
         //    terms.add(p.procType);
@@ -878,16 +878,16 @@ public class GenSimpTestData {
      */
     public void parallelGenSentence() {
 
-        System.out.println("GenSimpTestData.initActions(): start");
+        System.out.println("GenSimpTestData.parallelGenSentence(): start");
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        System.out.println("GenSimpTestData.initActions(): finished loading KBs");
+        System.out.println("GenSimpTestData.parallelGenSentence(): finished loading KBs");
 
         ArrayList<Integer> numbers = new ArrayList<>();
         for (int i =0; i < sentMax; i++)
             numbers.add(i);
         //ArrayList<String> terms = new ArrayList<>();
-        //if (debug) System.out.println("GenSimpTestData.initActions():  lfeat.direct: " + lfeat.direct);
+        //if (debug) System.out.println("GenSimpTestData.parallelGenSentence():  lfeat.direct: " + lfeat.direct);
         //System.exit(1);
         //for (Preposition p : lfeat.direct)
         //    terms.add(p.procType);
@@ -1265,8 +1265,9 @@ public class GenSimpTestData {
      * @param prop is the formula to append to
      */
     private void addBodyPart(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
-
-        String bodyPart = lfeat.bodyParts.getNext();     // get a body part
+        String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "BodyPart");
+        if (bodyPart == null)
+            bodyPart = lfeat.bodyParts.getNext();
         AVPair plural = new AVPair();
         english.append(capital(nounFormFromTerm(bodyPart,plural,""))).append(" ");
         if (plural.attribute.equals("true"))
@@ -1333,7 +1334,7 @@ public class GenSimpTestData {
                 // english.append(capital(nounFormFromTerm(lfeat.subj)) + " "); // already created in generateHuman
             }
         }
-        else {                                              // John... etc
+        else {
             if (lfeat.framePart.startsWith("Somebody's (body part)")) {
                 // english.append(capital(lfeat.subj) + "'s ");
                 english.append("'s ");
@@ -1384,7 +1385,13 @@ public class GenSimpTestData {
             english.append(capital(lfeat.subj)).append(" ");
         }
         else if (lfeat.framePart.startsWith("Something")) {
+            // Thompson START
+            String term = WordPairFrequency.getNounFromVerb(lfeat);
+            /*
+            Original code:
             String term = lfeat.objects.getNext();
+             */
+            // Thompson END
             lfeat.subj = term;
             AVPair plural = new AVPair();
             english.append(capital(nounFormFromTerm(term,plural,""))).append(" ");
@@ -1547,7 +1554,9 @@ public class GenSimpTestData {
                 lfeat.directType = "Human";
             }
             else {
-                lfeat.directType = lfeat.socRoles.getNext();
+                lfeat.directType = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+                if (lfeat.directType == null)
+                    lfeat.directType = lfeat.socRoles.getNext();
             }
             if (lfeat.framePart.trim().startsWith("to somebody"))
                 lfeat.directPrep = "to ";
@@ -1558,7 +1567,12 @@ public class GenSimpTestData {
                 lfeat.framePart = "";
         }
         else if (lfeat.framePart.trim().startsWith("something") || lfeat.framePart.trim().startsWith("on something")) {
+            // Thompson Start
+            lfeat.directType = WordPairFrequency.getNounFromNounAndVerb(lfeat);
+            /* Original code
             lfeat.directType = lfeat.objects.getNext();
+            */
+            // Thompson End
             if (lfeat.framePart.contains("on something"))
                 lfeat.directPrep = "on ";
             int index = lfeat.framePart.indexOf("something");
@@ -1981,11 +1995,13 @@ public class GenSimpTestData {
                 lfeat.indirectType = "Human";
             }
             else {
-                lfeat.indirectType = lfeat.socRoles.getNext();
+                lfeat.indirectType = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+                if (lfeat.indirectType == null)
+                    lfeat.indirectType = lfeat.socRoles.getNext();
             }
         }
         else if (lfeat.framePart.endsWith("something")) {
-            lfeat.indirectType = lfeat.objects.getNext();
+            lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeat);
         }
         if (debug) System.out.println("getIndirect(): type: " + lfeat.indirectType);
     }
@@ -2108,20 +2124,16 @@ public class GenSimpTestData {
             lfeat.secondVerbType = proc;
             lfeat.secondVerb = word;
             lfeat.secondVerbSynset = synset;
-            if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
-                getAdverb(lfeat,second);
-            else
-            if (debug) System.out.println("getVerb(): no adverb this time for " + word);
         }
         else {
             lfeat.verbType = proc;
             lfeat.verb = word;
             lfeat.verbSynset = synset;
-            if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
-                getAdverb(lfeat,second);
-            else
-            if (debug) System.out.println("getVerb(): no adverb this time for " + word);
         }
+        if (rand.nextBoolean())  // try to generate an adverb half the time, most will fail anyway due to missing verb data
+            getAdverb(lfeat,second);
+        else
+        if (debug) System.out.println("getVerb(): no adverb this time for " + word);
     }
 
     /** ***************************************************************
@@ -2269,13 +2281,14 @@ public class GenSimpTestData {
         lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
         int indCount = 0;
         boolean onceWithoutInd = false;
-        lfeat.indirectType = lfeat.objects.getNext();
+        lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeat);
         if (lfeat.negatedBody)
             prop.append("(not ");
         prop.append("(exists (?H ?P ?DO ?IO) (and ");
         if (biasedBoolean(1,10) && english.length() == 0)
             addTimeDate(english,prop,lfeat);
         if (debug) System.out.println("genProc(2) startOfSentence: " + startOfSentence);
+
         generateSubject(english, prop, lfeat);
         generateVerb(lfeat.negatedBody, english, prop, lfeat.verbType, lfeat.verb, lfeat);
         if (prop.toString().equals(""))
@@ -2323,7 +2336,10 @@ public class GenSimpTestData {
                 if (debug) System.out.println("GenSimpTestData.generateHuman(): generated a You (understood)");
             }
             else if (val < 6) { // a role
-                type.append(lfeat.socRoles.getNext());
+                String socialRole = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+                if (socialRole == null)
+                    socialRole = lfeat.socRoles.getNext();
+                type.append(socialRole);
                 prop.append("(attribute ").append(var).append(" ").append(type).append(") ");
                 AVPair plural = new AVPair();
                 english.append(capital(nounFormFromTerm(type.toString(),plural,""))).append(" ");
@@ -2366,7 +2382,9 @@ public class GenSimpTestData {
         if (debug) System.out.println("GenSimpTestData.genWithRoles()");
         int humCount = 0;
         for (int i = 0; i < humanMax; i++) {
-            String role = lfeat.socRoles.getNext();
+            String role = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+            if (role == null)
+                role = lfeat.socRoles.getNext();
             if (lfeat.subj.equals(role)) continue;
             if (humCount++ > loopMax) break;
             lfeat.subj = role;
