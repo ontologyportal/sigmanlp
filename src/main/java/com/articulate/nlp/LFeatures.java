@@ -203,4 +203,49 @@ public class LFeatures {
         secondVerb = "";
         secondVerbType = "";
     }
+
+    @Override
+    public String toString() {
+        return "LFeatures{" +
+                "attNeg=" + attNeg +
+                ",\n attPlural=" + attPlural +
+                ",\n attCount=" + attCount +
+                ",\n attSubj='" + attSubj + '\'' +
+                ",\n attitude='" + attitude + '\'' +
+                ",\n attitudeModifier='" + attitudeModifier + '\'' +
+                ",\n negatedModal=" + negatedModal +
+                ",\n negatedBody=" + negatedBody +
+                ",\n directPrep='" + directPrep + '\'' +
+                ",\n indirectPrep='" + indirectPrep + '\'' +
+                ",\n secondVerb='" + secondVerb + '\'' +
+                ",\n secondVerbType='" + secondVerbType + '\'' +
+                ",\n secondVerbSynset='" + secondVerbSynset + '\'' +
+                ",\n secondVerbModifier='" + secondVerbModifier + '\'' +
+                ",\n subj='" + subj + '\'' +
+                ",\n subjName='" + subjName + '\'' +
+                ",\n subjectModifier='" + subjectModifier + '\'' +
+                ",\n subjectPlural=" + subjectPlural +
+                ",\n subjectCount=" + subjectCount +
+                ",\n frame='" + frame + '\'' +
+                ",\n framePart='" + framePart + '\'' +
+                ",\n verbSynset='" + verbSynset + '\'' +
+                ",\n directName='" + directName + '\'' +
+                ",\n directType='" + directType + '\'' +
+                ",\n directPlural=" + directPlural +
+                ",\n directCount=" + directCount +
+                ",\n directModifier='" + directModifier + '\'' +
+                ",\n indirectName='" + indirectName + '\'' +
+                ",\n indirectType='" + indirectType + '\'' +
+                ",\n indirectPlural=" + indirectPlural +
+                ",\n indirectCount=" + indirectCount +
+                ",\n indirectModifier='" + indirectModifier + '\'' +
+                ",\n question=" + question +
+                ",\n verb='" + verb + '\'' +
+                ",\n verbType='" + verbType + '\'' +
+                ",\n adverb='" + adverb + '\'' +
+                ",\n tense=" + tense +
+                ",\n polite=" + polite +
+                ",\n politeFirst=" + politeFirst +
+                '}';
+    }
 }
