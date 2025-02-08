@@ -10,11 +10,11 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    DemoScript20150421_3Test.class,
     DemoScript20150401Test.class,
     DemoScript20150421_1Test.class,
-    DemoScript20150421_4Test.class,
     DemoScript20150421_2Test.class,
+    DemoScript20150421_3Test.class,
+    DemoScript20150421_4Test.class,
     InferenceInitTest.class,
     QAInferenceTest.class
 })
