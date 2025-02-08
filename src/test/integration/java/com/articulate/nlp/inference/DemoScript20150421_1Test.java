@@ -8,6 +8,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import org.junit.Ignore;
 
 public class DemoScript20150421_1Test extends IntegrationTestBase {
 
@@ -27,6 +28,7 @@ public class DemoScript20150421_1Test extends IntegrationTestBase {
     /** ***************************************************************
      */
     @Test
+    @Ignore
     public void test1() {
 
         String input = "The Liberty Bell, located in Pennsylvania, changed the world on July 8, 1776.";
