@@ -15,7 +15,7 @@ import org.junit.runners.Suite;
 //    GenSimpTestDataTest.class,
     LemmatizerTest.class,
     // TODO: Fails
-//    PartOfSpeechInfoTest.class,
+    PartOfSpeechInfoTest.class,
     WNMWAnnotatorTest.class
 })
 public class IntegrationNlpTestSuite extends IntegrationTestBase {
