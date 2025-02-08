@@ -180,7 +180,7 @@ public class Interpreter {
         int comma = s.indexOf(',');
         int lastParen = s.lastIndexOf(')');
         if (paren < 2 || comma < 4 || comma < paren) {
-            System.out.println("Error in Interpreter.getArg(): bad clause format: " + s);
+            System.err.println("Error in Interpreter.getArg(): bad clause format: " + s);
             return "";
         }
         String arg1 = s.substring(paren + 1,comma).trim();
@@ -189,7 +189,7 @@ public class Interpreter {
             return arg1;
         if (argnum == 2)
             return arg2;
-        System.out.println("Error in Interpreter.getArg(): bad clause number: " + argnum);
+        System.err.println("Error in Interpreter.getArg(): bad clause number: " + argnum);
         return "";
     }
 
@@ -223,13 +223,13 @@ public class Interpreter {
             comma = clause.indexOf(',');
 
             if (paren < 2 || comma < 4 || comma < paren) {
-                System.out.println("Error in Interpreter.extractWords(): bad clause format: " + clause);
+                System.err.println("Error in Interpreter.extractWords(): bad clause format: " + clause);
                 continue;
             }
             arg1 = clause.substring(paren + 1,comma).trim();
             wordend1 = arg1.indexOf('-');
             if (wordend1 < 0) {
-                System.out.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
+                System.err.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
                 continue;
             }
             purearg1 = arg1.substring(0, wordend1);
@@ -239,7 +239,7 @@ public class Interpreter {
             arg2 = clause.substring(comma + 1, clause.length()-1).trim();
             wordend2 = arg2.indexOf('-');
             if (wordend2 < 0) {
-                System.out.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
+                System.err.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
                 continue;
             }
             purearg2 = arg2.substring(0, wordend2);
@@ -1277,7 +1277,7 @@ public class Interpreter {
         if (inputs == null || inputs.isEmpty() || inputs.contains(null))
             return null;
         if (inputs.size() > 1) {
-            System.out.println("Error in Interpreter.interpretCNF(): multiple clauses");
+            System.err.println("Error in Interpreter.interpretCNF(): multiple clauses");
             return null;
         }
         ArrayList<String> kifoutput = new ArrayList<>();
@@ -1393,7 +1393,7 @@ public class Interpreter {
             else
                 if (addUnprocessed)
                     addUnprocessed(kifoutput,newInput); // a hack to add unprocessed SDP clauses as if they were KIF
-            inputs = new ArrayList<CNF>();
+            inputs = new ArrayList<>();
             inputs.addAll(newinputs);
             //System.out.println("INFO in Interpreter.interpretCNF(): KB: " + printKB(inputs));
             //System.out.println("INFO in Interpreter.interpretCNF(): KIF: " + kifoutput);
