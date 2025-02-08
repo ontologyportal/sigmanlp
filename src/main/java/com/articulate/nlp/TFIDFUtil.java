@@ -38,14 +38,14 @@ public class TFIDFUtil {
      * Currently, sentences are not separated if they occur on the same line.
      */
     public static List<String> readFile(String filename, boolean separateSentences) throws IOException {
-        
+
         List<String> documents = Lists.newArrayList();
         URL fileURL = Resources.getResource(filename);
         File f = new File(filename);
         BufferedReader bf = new BufferedReader(new FileReader(fileURL.getPath()));
         String line;
         while ((line = bf.readLine()) != null) {
-            if (line == null || line.equals("")) 
+            if (line == null || line.equals(""))
                 continue;
             documents.add(line);
         }
@@ -69,7 +69,7 @@ public class TFIDFUtil {
         List<String> documents = new ArrayList<>();
         KBmanager.getMgr().initializeOnce();
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        ArrayList<Formula> forms = kb.ask("arg",0,"documentation");
+        List<Formula> forms = kb.ask("arg",0,"documentation");
         for (Formula f : forms) {
             String term = f.getStringArgument(1);
             String doc = f.getStringArgument(3);
@@ -85,7 +85,7 @@ public class TFIDFUtil {
         }
 
         catch (IOException e) {
-            System.out.println("Error in TFIDFUtil.indexDocumentation(): " + e.getMessage());
+            System.err.println("Error in TFIDFUtil.indexDocumentation(): " + e.getMessage());
             e.printStackTrace();
             return cb;
         }

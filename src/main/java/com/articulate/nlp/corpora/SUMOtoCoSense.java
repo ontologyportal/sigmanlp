@@ -1,13 +1,14 @@
 package com.articulate.nlp.corpora;
 
+import com.articulate.nlp.pipeline.Pipeline;
 import com.articulate.sigma.*;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
+
 import edu.stanford.nlp.util.CoreMap;
-import com.articulate.nlp.pipeline.Pipeline;
 
 import java.util.*;
 
@@ -37,7 +38,7 @@ import java.util.*;
 public class SUMOtoCoSense {
 
     // a map index by WordNet sense keys where values are counts of co-occurring words
-    public static HashMap<String,HashMap<String,Integer>> senses = new HashMap<>();
+    public static Map<String,Map<String,Integer>> senses = new HashMap<>();
 
     /***************************************************************
      * Merge two maps of counts of words that co-occur in a sentence with
@@ -45,22 +46,24 @@ public class SUMOtoCoSense {
      * @param wordList1 keys are words and values are counts of that word
      * @param wordList2 keys are words and values are counts of that word
      */
-    private static HashMap<String,Integer> mergeWordCounts(HashMap<String,Integer> wordList1,
-                                                           HashMap<String,Integer> wordList2) {
+    private static Map<String,Integer> mergeWordCounts(Map<String,Integer> wordList1,
+                                                       Map<String,Integer> wordList2) {
 
-        HashMap<String,Integer> wordCounts = new HashMap<>();
-        HashSet<String> words = new HashSet<>();
+        Map<String,Integer> wordCounts = new HashMap<>();
+        Set<String> words = new HashSet<>();
         words.addAll(wordList1.keySet());
         words.addAll(wordList2.keySet());
+        Integer count1, count2;
+        int c1, c2;
         for (String w : words) {
-            Integer count1 = wordList1.get(w);
-            int c1 = 0;
+            count1 = wordList1.get(w);
+            c1 = 0;
             if (count1 != null)
-                c1 = count1.intValue();
-            Integer count2 = wordList2.get(w);
-            int c2 = 0;
+                c1 = count1;
+            count2 = wordList2.get(w);
+            c2 = 0;
             if (count2 != null)
-                c2 = count2.intValue();
+                c2 = count2;
             wordCounts.put(w,c1 + c2);
         }
         return wordCounts;
@@ -68,11 +71,12 @@ public class SUMOtoCoSense {
 
     /***************************************************************
      */
-    private static HashMap<String,Integer> createWordCounts(ArrayList<String> wordList) {
+    private static Map<String,Integer> createWordCounts(List<String> wordList) {
 
-        HashMap<String,Integer> wordCounts = new HashMap<>();
+        Map<String,Integer> wordCounts = new HashMap<>();
+        Integer count;
         for (String s : wordList) {
-            Integer count = Integer.valueOf(0);
+            count = 0;
             if (wordCounts.containsKey(s))
                 count = wordCounts.get(s);
             count++;
@@ -83,14 +87,15 @@ public class SUMOtoCoSense {
 
     /***************************************************************
      */
-    private static void addToSenses(HashSet<String> senseList, ArrayList<String> wordList) {
+    private static void addToSenses(Set<String> senseList, List<String> wordList) {
 
-        HashMap<String,Integer> wordCounts = createWordCounts(wordList);
+        Map<String,Integer> wordCounts = createWordCounts(wordList);
+        Map<String,Integer> newWordCount;
         for (String sense : senseList) {
             if (!senses.containsKey(sense))
                 senses.put(sense,wordCounts);
             else {
-                HashMap<String,Integer> newWordCount = mergeWordCounts(wordCounts,senses.get(sense));
+                newWordCount = mergeWordCounts(wordCounts,senses.get(sense));
                 senses.put(sense,newWordCount);
             }
         }
@@ -108,22 +113,32 @@ public class SUMOtoCoSense {
         String propString = "tokenize, ssplit, pos, lemma";
         Pipeline p = new Pipeline(true,propString);
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        ArrayList<Formula> docs = kb.ask("arg",0,"documentation");
+        List<Formula> docs = kb.ask("arg",0,"documentation");
         //ArrayList<Formula> docs = kb.askWithRestriction(0,"documentation",1,"CognitiveAgent"); // test sample
+        Set<String> snss;
+        List<String> words;
+        String term, lang, doc, st, t, key;
+        List<CoreMap> sentences;
+        List<CoreLabel> tokens;
+        Iterator<CoreLabel> it;
+        CoreLabel token;
+        int len;
+        List<String> wordList;
+        List<String> senseList;
         for (Formula f : docs) {
-            HashSet<String> snss = new HashSet<>(); // must be sense keys
-            ArrayList<String> words = new ArrayList<>();
-            String term = f.getStringArgument(1);
-            String lang = f.getStringArgument(2);
-            String doc = f.getStringArgument(3);
+            snss = new HashSet<>(); // must be sense keys
+            words = new ArrayList<>();
+            term = f.getStringArgument(1);
+            lang = f.getStringArgument(2);
+            doc = f.getStringArgument(3);
             if (lang.equals("EnglishLanguage")) {
                 Annotation wholeDocument = p.annotate(doc);
-                List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
+                sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
                 for (CoreMap sentence : sentences) {
-                    List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
-                    Iterator<CoreLabel> it = tokens.iterator();
+                    tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+                    it = tokens.iterator();
                     while (it.hasNext()) {
-                        CoreLabel token = it.next();
+                        token = it.next();
                         if (Character.isAlphabetic(token.lemma().charAt(0))) {
                             if (!WordNet.wn.isStopWord(token.lemma()))
                                 words.add(token.lemma());
@@ -133,22 +148,22 @@ public class SUMOtoCoSense {
                             if (token.lemma().equals("%") && it.hasNext()) {
                                 token = it.next();
                                 if (Formula.isTerm(token.originalText())) {
-                                    String st = token.originalText();
-                                    int len = token.originalText().length();
-                                    String t = st.substring(0,len);
+                                    st = token.originalText();
+                                    len = token.originalText().length();
+                                    t = st.substring(0,len);
                                     while (len > 1) {
                                         t = st.substring(0,len);
                                         if (kb.containsTerm(t))
                                             break;
                                         len--;
                                     }
-                                    ArrayList<String> senseList = WordNet.wn.SUMOHash.get(t);
+                                    senseList = WordNet.wn.SUMOHash.get(t);
                                     if (senseList != null) {
-                                        ArrayList<String> wordList = new ArrayList<String>();
+                                        wordList = new ArrayList<>();
                                         for (String s : senseList) // add all the words corresponding to a SUMO term
                                             wordList.addAll(WordNet.wn.synsetsToWords.get(s));
                                         for (String synset : senseList) {
-                                            String key = WordNetUtilities.getKeyFromSense(synset);
+                                            key = WordNetUtilities.getKeyFromSense(synset);
                                             if (key != null)
                                                 snss.add(key);
                                         }

@@ -47,13 +47,13 @@ import java.util.*;
 
 public class COCA {
 
-    public HashMap<String, HashMap<String,Integer>> verbs = new HashMap<>();
-    public HashMap<String, HashMap<String,Integer>> nouns = new HashMap<>();
+    public Map<String, Map<String,Integer>> verbs = new HashMap<>();
+    public Map<String, Map<String,Integer>> nouns = new HashMap<>();
 
-    public HashMap<String, TreeMap<Integer,HashSet<String>>> freqVerbs = new HashMap<>();
-    public HashMap<String, TreeMap<Integer,HashSet<String>>> freqNouns = new HashMap<>();
+    public Map<String, Map<Integer,Set<String>>> freqVerbs = new HashMap<>();
+    public Map<String, Map<Integer,Set<String>>> freqNouns = new HashMap<>();
 
-    public HashMap<String, Integer> verbPhrase = new HashMap<>();
+    public Map<String, Integer> verbPhrase = new HashMap<>();
 
     /** ***************************************************************
      * Parse lines that have words from a sentence in three columns.
@@ -67,22 +67,21 @@ public class COCA {
      * outer ArrayList is a list of those triples, where a '#' token
      * delineates sentences.
      */
-    public ArrayList<ArrayList<String>> readWordFile(String filename) {
+    public List<List<String>> readWordFile(String filename) {
 
-        try {
-            FileReader r = new FileReader(filename);
-            LineNumberReader lnr = new LineNumberReader(r);
-            ArrayList<ArrayList<String>> result = new ArrayList<>();
+        try (FileReader r = new FileReader(filename);
+            LineNumberReader lnr = new LineNumberReader(r)) {
+            List<List<String>> result = new ArrayList<>();
             String line;
-            StringBuilder l = new StringBuilder();
             int linecount = 0;
+            List<String> temp;
             while ((line = lnr.readLine()) != null) {
                 //System.out.println(line);
                 linecount++;
                 if (linecount == 1000)
                     System.out.print(".");
                 if (line.contains("\t")) {
-                    ArrayList<String> temp = new ArrayList<>();
+                    temp = new ArrayList<>();
                     temp.addAll(Arrays.asList(line.split("\t")));
                     result.add(temp);
                 }
@@ -119,18 +118,23 @@ public class COCA {
     /** ***************************************************************
      * allow only modifiers that have a mapping to SUMO
      */
-    public static void filterModifiers(HashMap<String, TreeMap<Integer,HashSet<String>>> fVerbs,
-        HashMap<String, TreeMap<Integer,HashSet<String>>> fNouns ) {
+    public static void filterModifiers(Map<String, Map<Integer,Set<String>>> fVerbs,
+        Map<String, Map<Integer,Set<String>>> fNouns ) {
 
-        HashSet<String> nounRemove = new HashSet<>();
+        Set<String> nounRemove = new HashSet<>();
+        String SUMO;
+        Set<Integer> keyRemove;
+        Map<Integer,Set<String>> map;
+        Set<String> theSet;
+        Set<String> toRemove;
         for (String key : fNouns.keySet()) {
-            TreeMap<Integer,HashSet<String>> map = fNouns.get(key);
-            HashSet<Integer> keyRemove = new HashSet<>();
+            map = fNouns.get(key);
+            keyRemove = new HashSet<>();
             for (Integer i : map.keySet()) {
-                HashSet<String> theSet = map.get(i);
-                HashSet<String> toRemove = new HashSet<>();
+                theSet = map.get(i);
+                toRemove = new HashSet<>();
                 for (String s : theSet) {
-                    String SUMO = WSD.getBestDefaultSUMOsense(s,3);
+                    SUMO = WSD.getBestDefaultSUMOsense(s,3);
                     SUMO = WordNetUtilities.getBareSUMOTerm(SUMO);
                     if (StringUtil.emptyString(SUMO)) {
                         toRemove.add(s);
@@ -157,15 +161,15 @@ public class COCA {
         for (String k : nounRemove)
             fNouns.remove(k);
 
-        HashSet<String> verbRemove = new HashSet<>();
+        Set<String> verbRemove = new HashSet<>();
         for (String key : fVerbs.keySet()) {
-            TreeMap<Integer,HashSet<String>> map = fVerbs.get(key);
-            HashSet<Integer> keyRemove = new HashSet<>();
+            map = fVerbs.get(key);
+            keyRemove = new HashSet<>();
             for (Integer i : map.keySet()) {
-                HashSet<String> theSet = map.get(i);
-                HashSet<String> toRemove = new HashSet<>();
+                theSet = map.get(i);
+                toRemove = new HashSet<>();
                 for (String s : theSet) {
-                    String SUMO = WSD.getBestDefaultSUMOsense(s,4);
+                    SUMO = WSD.getBestDefaultSUMOsense(s,4);
                     SUMO = WordNetUtilities.getBareSUMOTerm(SUMO);
                     if (StringUtil.emptyString(SUMO)) {
                         toRemove.add(s);
@@ -279,10 +283,7 @@ public class COCA {
      * Test whether the CLAWS POS tag is a noun
      */
     public static boolean isNounPOS(String s) {
-        if (s.startsWith("nn") || s.startsWith("np"))
-            return true;
-        else
-            return false;
+        return s.startsWith("nn") || s.startsWith("np");
     }
 
     /** ***************************************************************
@@ -299,17 +300,18 @@ public class COCA {
      */
     public void modifierFreqFile(String fname) {
 
-        ArrayList<String> excluded = new ArrayList<>(
+        List<String> excluded = new ArrayList<>(
                 Arrays.asList("not","never"));
-        ArrayList<ArrayList<String>> result = readWordFile(fname);
+        List<List<String>> result = readWordFile(fname);
         String modifier = "";
-        for (ArrayList<String> ar : result) {
+        String word, pos;
+        for (List<String> ar : result) {
             //System.out.println(ar);
             if (ar.size() != 3)
                 continue;
-            String word = ar.get(1).replace(",","").replace(":","");
+            word = ar.get(1).replace(",","").replace(":","");
               // remove delimiter characters
-            String pos = ar.get(2);
+            pos = ar.get(2);
             //System.out.print (word + ":");
             //System.out.print(pos + " ");
             if ((isNounPOS(pos)|| isVerbPOS(pos)) && !StringUtil.emptyString(modifier)) {
@@ -369,18 +371,21 @@ public class COCA {
         String propString = "tokenize, ssplit, pos, lemma, " +
             "ner, nersumo, gender, parse, coref";
         Pipeline p = new Pipeline(true,propString);
-        ArrayList<ArrayList<String>> result = readWordFile(fname);
+        List<List<String>> result = readWordFile(fname);
         boolean verb = true;
         String root = "";
         StringBuilder sent = new StringBuilder();
-        for (ArrayList<String> ar : result) {
+        String word;
+        Annotation wholeDocument;
+        List<CoreMap> sentences;
+        for (List<String> ar : result) {
             //System.out.println(ar);
-            String word = ar.get(0);
+            word = ar.get(0);
             switch (word) {
                 case "#":
-                    Annotation wholeDocument = p.annotate(sent.toString());
+                    wholeDocument = p.annotate(sent.toString());
                     System.out.println("subst: " + Interpreter.corefSubst(wholeDocument));
-                    List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
+                    sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
                     for (CoreMap sentence : sentences)
                         System.out.println(sentence);
                     sent = new StringBuilder();
@@ -415,12 +420,14 @@ public class COCA {
 
         File f = new File(dir);
         String[] pathnames = f.list();
+        List<List<String>> result;
+        boolean verb;
         for (String s : pathnames) {
             System.out.println("running on file: " + s);
-            ArrayList<ArrayList<String>> result = readWordFile(dir + File.separator + s);
-            boolean verb = true;
+            result = readWordFile(dir + File.separator + s);
+            verb = true;
             String root = "";
-            for (ArrayList<String> ar : result) {
+            for (List<String> ar : result) {
                 if (ar.size() > 2) {
                     if (ar.get(2).startsWith("v") && !verb) {
                         root = ar.get(1);
@@ -463,7 +470,7 @@ public class COCA {
             long millis = System.currentTimeMillis();
             if (args.length > 1 && args[0].startsWith("-d")) {
                 coca.runDir(args[1]);
-                Map<Integer, HashSet<String>> sorted = MapUtils.toSortedFreqMap(coca.verbPhrase);
+                Map<Integer, Set<String>> sorted = MapUtils.toSortedFreqMap(coca.verbPhrase);
                 System.out.println(sorted);
             }
             else if (args.length > 1 && args[0].startsWith("-s")) {

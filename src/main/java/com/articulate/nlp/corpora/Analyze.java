@@ -10,6 +10,7 @@ import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.utils.MapUtils;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WSD;
+
 import edu.stanford.nlp.util.CoreMap;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class Analyze {
     public static HashMap<String,String> nps = new HashMap<>();
     public static HashSet<String> newNps = new HashSet<>();
     //public static Map<String,Integer> sumo = new HashMap<>();
-    public static Map<Integer,HashSet<String>> freqMapSUMO = new HashMap<>();
+    public static Map<Integer,Set<String>> freqMapSUMO = new HashMap<>();
 
     /** ***************************************************************
      */
@@ -54,23 +55,25 @@ public class Analyze {
 
     /** ***************************************************************
      */
-    public static void reportRelations(String rel, HashSet<String> cats) {
+    public static void reportRelations(String rel, Set<String> cats) {
 
-        ArrayList<Formula> rels = kb.ask("arg",0,rel);
+        List<Formula> rels = kb.ask("arg",0,rel);
         System.out.println("reportRelations(): rel : " + rel);
 
         Map<String,Set<String>> relMap = new HashMap<>();
+        String arg1, arg2;
         for (Formula f : rels) {
-            String arg1 = f.getStringArgument(1);
-            String arg2 = f.getStringArgument(2);
+            arg1 = f.getStringArgument(1);
+            arg2 = f.getStringArgument(2);
             if (debug) System.out.println("reportRelations(): rel, arg1, arg2 : " + rel + "," + arg1 + "," + arg2);
             if (StringUtil.emptyString(arg1) || StringUtil.emptyString(arg2) || arg1.contains("(") || arg2.contains("("))
                 continue;
             MapUtils.addToMap(relMap,arg2,arg1);
         }
+        Set<String> sumoTerms;
         for (int i : freqMapSUMO.keySet()) {
             if (debug) System.out.println("reportRelations(): freq : " + i);
-            HashSet<String> sumoTerms =  freqMapSUMO.get(i);
+            sumoTerms =  freqMapSUMO.get(i);
             //System.out.println("reportRelations(): sumo terms : " + sumoTerms);
             for (String kbVal : relMap.keySet()) {
                 //System.out.println("reportRelations(): kbVal : " + kbVal);

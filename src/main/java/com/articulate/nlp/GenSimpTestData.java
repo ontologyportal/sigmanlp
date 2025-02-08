@@ -46,7 +46,7 @@ public class GenSimpTestData {
     public static boolean debug = false;
     public static KB kb;
     public static boolean skip = false;
-    public static HashSet<String> skipTypes = new HashSet<>();
+    public static Set<String> skipTypes = new HashSet<>();
     public static final boolean allowImperatives = false;
     public static final int instLimit = 200;
     public static PrintWriter pw = null;
@@ -69,14 +69,14 @@ public class GenSimpTestData {
     public static final int FUTUREPROG = 5;   // will be speaking, will be docking
     public static final int IMPERATIVE = 6;   // treat imperatives like a tense
 
-    public static final HashSet<String> verbEx = new HashSet<>(
+    public static final Set<String> verbEx = new HashSet<>(
             Arrays.asList("Acidification","Vending","OrganizationalProcess",
                     "NaturalProcess","Corkage","LinguisticCommunication"));
-    public static final ArrayList<Word> attitudes = new ArrayList<>();
-    public static final HashSet<String> suppress = new HashSet<>( // forms to suppress, usually for testing
+    public static final List<Word> attitudes = new ArrayList<>();
+    public static final Set<String> suppress = new HashSet<>( // forms to suppress, usually for testing
             Arrays.asList());
 
-    public static final HashMap<String,HashSet<Capability>> capabilities = new HashMap<>();
+    public static final Map<String,Set<Capability>> capabilities = new HashMap<>();
 
     public static PrintWriter englishFile = null; //generated English sentences
     public static PrintWriter logicFile = null;   //generated logic sentences, one per line,
@@ -86,17 +86,17 @@ public class GenSimpTestData {
     public static long sentCount = 0;
     public static long sentMax = 10000000;
     public static boolean startOfSentence = true;
-    public static ArrayList<String> numbers = new ArrayList<>();
-    public static ArrayList<String> requests = new ArrayList<>(); // polite phrase at start of sentence
-    public static ArrayList<String> endings = new ArrayList<>(); // polite phrase at end of sentence
-    public static ArrayList<String> others = new ArrayList<>(); // when next noun is same as a previous one
-    public static HashMap<String,String> prepPhrase = new HashMap<>();
-    public static HashMap<String,String> humans = new HashMap<>();
+    public static List<String> numbers = new ArrayList<>();
+    public static List<String> requests = new ArrayList<>(); // polite phrase at start of sentence
+    public static List<String> endings = new ArrayList<>(); // polite phrase at end of sentence
+    public static List<String> others = new ArrayList<>(); // when next noun is same as a previous one
+    public static Map<String,String> prepPhrase = new HashMap<>();
+    public static Map<String,String> humans = new HashMap<>();
 
     // verb and noun keys with values that are the frequency of coocurence with a given
     // adjective or adverb
-    public HashMap<String, TreeMap<Integer,HashSet<String>>> freqVerbs = new HashMap<>();
-    public HashMap<String, TreeMap<Integer,HashSet<String>>> freqNouns = new HashMap<>();
+    public Map<String, Map<Integer,Set<String>>> freqVerbs = new HashMap<>();
+    public Map<String, Map<Integer,Set<String>>> freqNouns = new HashMap<>();
     public static COCA coca = new COCA();
 
     /** ***************************************************************
@@ -253,7 +253,7 @@ public class GenSimpTestData {
             skip = true;
         else {
             Set<String> children = kb.kbCache.getChildClasses(bareClass);
-            ArrayList<String> cs = new ArrayList<>();
+            List<String> cs = new ArrayList<>();
             cs.addAll(children);
             if (children == null || children.isEmpty())
                 skip = true;
@@ -270,12 +270,13 @@ public class GenSimpTestData {
      * available instances for each argument type and output English
      * paraphrase
      */
-    public static ArrayList<Formula> genFormulas(String rel, ArrayList<String> sig,
-                                                 HashMap<String, ArrayList<String>> instMap) {
+    public static List<Formula> genFormulas(String rel, List<String> sig,
+                                                 Map<String, List<String>> instMap) {
 
-        ArrayList<StringBuilder> forms = new ArrayList<>();
+        List<StringBuilder> forms = new ArrayList<>();
+        String currT;
         for (int i = 1; i < sig.size(); i++) {
-            String currT = sig.get(i);
+            currT = sig.get(i);
             if (currT.endsWith("+"))
                 return new ArrayList<>(); // bail out if there is a subclass argument
         }
@@ -284,8 +285,7 @@ public class GenSimpTestData {
         form.append("(").append(rel).append(" ");
         forms.add(form);
 
-        ArrayList<StringBuilder> newforms;
-        String currT;
+        List<StringBuilder> newforms;
         String arg;
         StringBuilder f;
         for (int i = 1; i < sig.size(); i++) {
@@ -318,7 +318,7 @@ public class GenSimpTestData {
                 System.out.println("genFormulas(): size so far: " + forms.size());
         }
 
-        ArrayList<Formula> formsList = new ArrayList<>();
+        List<Formula> formsList = new ArrayList<>();
         Formula formula;
         for (StringBuilder sb : forms) {
             sb.deleteCharAt(sb.length() - 1);
@@ -332,25 +332,25 @@ public class GenSimpTestData {
     /** ***************************************************************
      * handle quantities
      */
-    public static void handleQuantity(String t, HashMap<String, ArrayList<String>> instMap) {
+    public static void handleQuantity(String t, Map<String, List<String>> instMap) {
 
-        TreeSet<String> instances = kb.getAllInstances(t);
+        Set<String> instances = kb.getAllInstances(t);
         if (instances.size() < 1) {
             if (debug) System.out.println("handleQuantity(): no instances for " + t);
             return;
         }
-        ArrayList<String> arInsts = new ArrayList<>();
+        List<String> arInsts = new ArrayList<>();
         arInsts.addAll(instances);
         int rint = rand.nextInt(instances.size());
         String inst = arInsts.get(rint); // get an instance of a quantity
         float num = rand.nextFloat() * 100;
         String f = "(MeasureFn " + num + " " + inst + ")";
         if (instMap.containsKey(t)) {
-            ArrayList<String> insts = instMap.get(t);
+            List<String> insts = instMap.get(t);
             insts.add(f);
         }
         else {
-            ArrayList<String> insts = new ArrayList<>();
+            List<String> insts = new ArrayList<>();
             insts.add(f);
             instMap.put(t,insts);
         }
@@ -359,18 +359,18 @@ public class GenSimpTestData {
     /** ***************************************************************
      * handle the case where the argument type is not a subclass
      */
-    public static void handleNonClass(String t, HashMap<String, ArrayList<String>> instMap) {
+    public static void handleNonClass(String t, Map<String, List<String>> instMap) {
 
         if (debug) System.out.println("handleNonClass(): t: " + t);
         Set<String> hinsts = kb.kbCache.getInstancesForType(t);
         if (hinsts.contains("statementPeriod"))
             if (debug) System.out.println("handleNonClass(): hinsts: " + hinsts);
-        ArrayList<String> insts = new ArrayList<>();
+        List<String> insts = new ArrayList<>();
         insts.addAll(hinsts);
         if (debug) System.out.println("handleNonClass(): insts: " + insts);
         if (!insts.isEmpty()) {
             if (instMap.containsKey(t)) {
-                ArrayList<String> oldinsts = instMap.get(t);
+                List<String> oldinsts = instMap.get(t);
                 oldinsts.addAll(insts);
             }
             else
@@ -387,7 +387,7 @@ public class GenSimpTestData {
             //System.out.println("handleNonClass(): termFormat: " + kb.getTermFormatMap(lang).get(t));
             String fString = "a " + kb.getTermFormatMap(lang).get(t); // kb.getTermFormat(lang,t);
             String form = "(termFormat EnglishLanguage " + term + " \"" + fString + "\")";
-            HashMap<String, String> langTermFormatMap = kb.getTermFormatMap(lang);
+            Map<String, String> langTermFormatMap = kb.getTermFormatMap(lang);
             langTermFormatMap.put(term, fString);
             //System.out.println(form);
             kb.tell(form);
@@ -417,10 +417,11 @@ public class GenSimpTestData {
             KIF kif = new KIF(canonicalPath);
             kif.setParseMode(KIF.RELAXED_PARSE_MODE);
             kif.readFile(fname);
+            String t, s;
             for (Formula f : kif.formulaMap.values()) {
                 if (f.car().equals("instance")) {
-                    String t = f.getStringArgument(1);
-                    String s = StringUtil.camelCaseToSep(t);
+                    t = f.getStringArgument(1);
+                    s = StringUtil.camelCaseToSep(t);
                     System.out.println("(termFormat EnglishLanguage " + t + " \"" + s + "\")");
                 }
             }
@@ -433,15 +434,15 @@ public class GenSimpTestData {
     /** ***************************************************************
      * generate new SUMO termFormat and instance statements for names
      */
-    public static HashMap<String,String> readHumans() {
+    public static Map<String,String> readHumans() {
 
-        HashMap<String,String> result = new HashMap<>();
-        ArrayList<ArrayList<String>> fn = DB.readSpreadsheet(kb.kbDir +
+        Map<String,String> result = new HashMap<>();
+        List<List<String>> fn = DB.readSpreadsheet(kb.kbDir +
                 File.separator + "WordNetMappings/FirstNames.csv", null, false, ',');
         fn.remove(0);  // remove the header
 
         String firstName, g;
-        for (ArrayList<String> ar : fn) {
+        for (List<String> ar : fn) {
             firstName = ar.get(0);
             g = ar.get(1);
             result.put(firstName,g);
@@ -454,8 +455,9 @@ public class GenSimpTestData {
      */
     public static void generateAllHumans() {
 
+        String g;
         for (String firstName : humans.keySet()) {
-            String g = humans.get(firstName);
+            g = humans.get(firstName);
             if (firstName != null) {
                 String gender = "Male";
                 if (g.toUpperCase().equals("F"))
@@ -493,7 +495,7 @@ public class GenSimpTestData {
         System.out.println("GenSimpTestData.genMissingTermFormats(): start");
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        ArrayList<Formula> res;
+        List<Formula> res;
         for (String s : kb.terms) {
             res = kb.askWithRestriction(0,"termFormat",2,s);
             if (res == null || res.isEmpty()) {
@@ -509,15 +511,15 @@ public class GenSimpTestData {
      * generate new SUMO statements for relations and output English
      * paraphrase
      */
-    public static void genStatements(HashMap<String, String> formatMap) {
+    public static void genStatements(Map<String, String> formatMap) {
 
         for (String rel : kb.kbCache.relations) {
             skip = false;
             if (formatMap.get(rel) != null && !kb.isFunction(rel)) {
                 boolean skip = false;
                 if (debug) System.out.println("genStatements()  rel: " + rel);
-                ArrayList<String> sig = (ArrayList<String>) kb.kbCache.getSignature(rel);
-                HashMap<String, ArrayList<String>> instMap = new HashMap<>();
+                List<String> sig = kb.kbCache.getSignature(rel);
+                Map<String, List<String>> instMap = new HashMap<>();
                 if (debug) System.out.println("sig: " + sig);
                 for (String t : sig) {
                     if (skipTypes.contains(t))
@@ -534,9 +536,10 @@ public class GenSimpTestData {
                     }
                 }
                 if (!skip) {
-                    ArrayList<Formula> forms = genFormulas(rel,sig,instMap);
+                    String form;
+                    List<Formula> forms = genFormulas(rel,sig,instMap);
                     for (Formula f : forms) {
-                        String form = f.getFormula();
+                        form = f.getFormula();
                         if (!StringUtil.emptyString(form)) {
                             logicFile.println(form);
                             String actual = toEnglish(form);
@@ -551,9 +554,9 @@ public class GenSimpTestData {
     /** ***************************************************************
      * generate English for all ground relation statements
      */
-    public static void handleGroundStatements(HashMap<String, String> formatMap ) {
+    public static void handleGroundStatements(Map<String, String> formatMap ) {
 
-        HashSet<Formula> forms = new HashSet<>();
+        Set<Formula> forms = new HashSet<>();
         forms.addAll(kb.formulaMap.values());
         System.out.println("handleGroundStatements(): search through " + forms.size() + " statements");
         for (Formula f : forms) {
@@ -575,7 +578,7 @@ public class GenSimpTestData {
         //resultLimit = 0; // don't limit number of results on command line
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         System.out.println("generate(): # relations: " + kb.kbCache.relations.size());
-        HashMap<String, String> formatMap = kb.getFormatMap("EnglishLanguage");
+        Map<String, String> formatMap = kb.getFormatMap("EnglishLanguage");
         skipTypes.addAll(Arrays.asList("Formula") );
         System.out.println("generate(): output existing ground statements ");
         handleGroundStatements(formatMap);
@@ -592,8 +595,9 @@ public class GenSimpTestData {
         System.out.println("GenSimpTestData.allAxioms()");
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        String form;
         for (Formula f : kb.formulaMap.values()) {
-            String form = f.getFormula();
+            form = f.getFormula();
             if (!StringUtil.emptyString(form) && !form.contains("\"") &&
                     !Formula.DOC_PREDICATES.contains(f.car())) {
                 logicFile.println(form.replace("\n", "").replace("\r", ""));
@@ -645,7 +649,7 @@ public class GenSimpTestData {
     public class ProcInfo {
         public String term = null;
         public String synset = null; // the synset equivalent to the SUMO term
-        public HashMap<String,String> words = new HashMap<>(); // word is the key, value is transitivity string
+        public Map<String,String> words = new HashMap<>(); // word is the key, value is transitivity string
         public String noun = null;
     }
 
@@ -654,8 +658,9 @@ public class GenSimpTestData {
      */
     public void addArguments(Collection<String> col, Collection<Preposition> objects) {
 
+        Preposition p;
         for (String s : col) {
-            Preposition p = this.new Preposition();
+            p = this.new Preposition();
             p.prep = "";
             p.procType = s;
             objects.add(p);
@@ -686,14 +691,15 @@ public class GenSimpTestData {
      * forms
      * @return Capability objects
      */
-    public HashSet<Capability> collectCapabilities() {
+    public Set<Capability> collectCapabilities() {
 
-        HashSet<Capability> result = new HashSet<>();
-        ArrayList<Formula> forms2 = kb.ask("arg",0,"requiredRole");
+        Set<Capability> result = new HashSet<>();
+        List<Formula> forms2 = kb.ask("arg",0,"requiredRole");
         System.out.println("collectCapabilities(): requiredRoles: " + forms2);
+        Capability p;
         for (Formula f : forms2) {
             //System.out.println("collectCapabilities(): form: " + f);
-            Capability p = this.new Capability();
+            p = this.new Capability();
             p.proc = f.getStringArgument(1);
             p.caserole = f.getStringArgument(2);
             p.object = f.getStringArgument(3);
@@ -701,10 +707,10 @@ public class GenSimpTestData {
             result.add(p);
         }
 
-        ArrayList<Formula> forms3 = kb.ask("arg",0,"prohibitedRole");
+        List<Formula> forms3 = kb.ask("arg",0,"prohibitedRole");
         for (Formula f : forms3) {
             //System.out.println("collectCapabilities(): form: " + f);
-            Capability p = this.new Capability();
+            p = this.new Capability();
             p.proc = f.getStringArgument(1);
             p.caserole = f.getStringArgument(2);
             p.object = f.getStringArgument(3);
@@ -712,20 +718,22 @@ public class GenSimpTestData {
             result.add(p);
         }
 
-        ArrayList<Formula> forms = kb.ask("cons",0,"capability");
+        List<Formula> forms = kb.ask("cons",0,"capability");
+        String ant, antClass, cons, kind, consClass, rel;
+        Formula fant, fcons, fneg;
         for (Formula f : forms) {
             //System.out.println("collectCapabilities(): form: " + f);
-            String ant = FormulaUtil.antecedent(f);
-            Formula fant = new Formula(ant);
+            ant = FormulaUtil.antecedent(f);
+            fant = new Formula(ant);
             if (fant.isSimpleClause(kb) && fant.car().equals("instance")) {
-                String antClass = fant.getStringArgument(2); // the thing that plays a role
-                String cons = FormulaUtil.consequent(f);
-                Formula fcons = new Formula(cons);
-                String kind = fcons.getStringArgument(0); // capability or requiredRole
+                antClass = fant.getStringArgument(2); // the thing that plays a role
+                cons = FormulaUtil.consequent(f);
+                fcons = new Formula(cons);
+                kind = fcons.getStringArgument(0); // capability or requiredRole
                 if (fcons.isSimpleClause(kb)) {
-                    String consClass = fcons.getStringArgument(1);  // the process type
-                    String rel = fcons.getStringArgument(2);  // the role it plays
-                    Capability p = this.new Capability();
+                    consClass = fcons.getStringArgument(1);  // the process type
+                    rel = fcons.getStringArgument(2);  // the role it plays
+                    p = this.new Capability();
                     p.proc = consClass;
                     p.caserole = rel;
                     p.object = antClass;
@@ -736,10 +744,10 @@ public class GenSimpTestData {
                     result.add(p);
                 }
                 else if (fcons.isSimpleNegatedClause(kb)) {
-                    Formula fneg = fcons.getArgument(1);
-                    String consClass = fneg.getStringArgument(1);  // the process type
-                    String rel = fneg.getStringArgument(2);  // the role it plays
-                    Capability p = this.new Capability();
+                    fneg = fcons.getArgument(1);
+                    consClass = fneg.getStringArgument(1);  // the process type
+                    rel = fneg.getStringArgument(2);  // the role it plays
+                    p = this.new Capability();
                     p.proc = consClass;
                     p.caserole = rel;
                     p.object = antClass;
@@ -761,15 +769,17 @@ public class GenSimpTestData {
     public void constrainTerms(Collection<String> terms) {
 
         if (debug) System.out.println("constrainTerms(): ");
-        HashSet<String> newProcList = new HashSet<>(terms);
+        Set<String> newProcList = new HashSet<>(terms);
         terms.clear();
+        List<String> synsets;
+        int freq;
         for (String proc : newProcList) {
             if (debug) System.out.println("constrainTerms(): proc list size: " + newProcList.size() + " for terms: " + terms);
-            ArrayList<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(proc);
+            synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(proc);
             int maxInt = 0;
             for (String s : synsets) {
                 if (WordNet.wn.senseFrequencies.containsKey(s)) {
-                    int freq = WordNet.wn.senseFrequencies.get(s);
+                    freq = WordNet.wn.senseFrequencies.get(s);
                     if (freq > maxInt)
                         maxInt = freq;
                 }
@@ -820,11 +830,13 @@ public class GenSimpTestData {
      *          of each AVPair is a SUMO term.  If we didn't use the log
      *          of frequency we'd practically just get "to be" every time
      */
-    public ArrayList<AVPair> findWordFreq(Collection<String> terms) {
+    public List<AVPair> findWordFreq(Collection<String> terms) {
 
-        ArrayList<AVPair> avpList = new ArrayList<>();
+        List<AVPair> avpList = new ArrayList<>();
+        List<String> resultWords;
+        AVPair avp;
         for (String term : terms) {
-            ArrayList<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(term);
+            List<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(term);
             //if (debug) System.out.println("findWordFreq(): proc list size: " + terms.size());
             int count;
             if (synsets == null || synsets.isEmpty())
@@ -832,7 +844,7 @@ public class GenSimpTestData {
             else {
                 int freq = 0;
                 for (String s : synsets) {
-                    ArrayList<String> resultWords = WordNet.wn.getWordsFromSynset(s);
+                    resultWords = WordNet.wn.getWordsFromSynset(s);
                     //System.out.println("findWordFreq(): freq: " + WordNet.wn.senseFrequencies.size());
                     //System.out.println("findWordFreq(): synset: " + s);
                     int f = 0;
@@ -843,7 +855,7 @@ public class GenSimpTestData {
                 }
                 count = (int) Math.round(Math.log(freq) + 1.0);
             }
-            AVPair avp = new AVPair(term,Integer.toString(count));
+            avp = new AVPair(term,Integer.toString(count));
             avpList.add(avp);
         }
         return avpList;
@@ -863,7 +875,7 @@ public class GenSimpTestData {
         System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
         LFeatures lfeat = new LFeatures(this);
-        ArrayList<String> terms = new ArrayList<>();
+//        List<String> terms = new ArrayList<>();
         //if (debug) System.out.println("GenSimpTestData.runGenSentence():  lfeat.direct: " + lfeat.direct);
         //System.exit(1);
         //for (Preposition p : lfeat.direct)
@@ -883,7 +895,7 @@ public class GenSimpTestData {
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         System.out.println("GenSimpTestData.parallelGenSentence(): finished loading KBs");
 
-        ArrayList<Integer> numbers = new ArrayList<>();
+        List<Integer> numbers = new ArrayList<>();
         for (int i =0; i < sentMax; i++)
             numbers.add(i);
         //ArrayList<String> terms = new ArrayList<>();
@@ -1108,7 +1120,7 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("getQuantity(): term: " + term);
         float val = rand.nextFloat() * 20;
-        ArrayList<Formula> forms = kb.askWithRestriction(0,"roomTempState",1,term);
+        List<Formula> forms = kb.askWithRestriction(0,"roomTempState",1,term);
         if (debug) System.out.println("getQuantity(): forms: " + forms);
         if (forms == null || forms.isEmpty())
             return null;
@@ -1963,19 +1975,21 @@ public class GenSimpTestData {
 
     /** ***************************************************************
      */
-    public ArrayList<String> getVerbFramesForTerm(String term) {
+    public List<String> getVerbFramesForTerm(String term) {
 
-        ArrayList<String> frames = new ArrayList<>();
-        ArrayList<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(term);
+        List<String> frames = new ArrayList<>();
+        List<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(term);
         if (debug) System.out.println("GenSimpTestData.getVerbFramesForTerm(): synsets size: " +
                 synsets.size() + " for term: " + term);
         if (synsets.isEmpty())
             return frames;
             //synsets = WordNetUtilities.getVerbSynsetsFromSUMO(term);
+        List<String> words;
+        List<String> newframes;
         for (String s : synsets) {
-            ArrayList<String> words = WordNet.wn.getWordsFromSynset(s);
+            words = WordNet.wn.getWordsFromSynset(s);
             for (String w : words) {
-                ArrayList<String> newframes = WordNetUtilities.getVerbFramesForWord(s,w);
+                newframes = WordNetUtilities.getVerbFramesForWord(s,w);
                 if (newframes != null)
                     frames.addAll(newframes);
             }
@@ -2060,20 +2074,22 @@ public class GenSimpTestData {
             word = lfeat.verb;
         if (debug) System.out.println("getAdverb(): verb: " + word);
         if (coca.freqVerbs.keySet().contains(word)) {
-            TreeMap<Integer,HashSet<String>> oneVerb = coca.freqVerbs.get(word);
+            Map<Integer,Set<String>> oneVerb = coca.freqVerbs.get(word);
             int total = 0;
             for (int i : oneVerb.keySet())
                 total = total + (i * oneVerb.get(i).size());
             int index = rand.nextInt(total);
             total = 0;
+            int increment;
+            List<String> ar;
             for (int i : oneVerb.keySet()) {
-                int increment = (i * oneVerb.get(i).size());
+                increment = (i * oneVerb.get(i).size());
                 if (index >= total && index < increment) {
                     if (oneVerb.get(i).size() == 1)
                         adverb = oneVerb.get(i).iterator().next();
                     else {
                         int size = oneVerb.get(i).size();
-                        ArrayList<String> ar = new ArrayList(Arrays.asList(oneVerb.get(i).toArray()));
+                        ar = new ArrayList(Arrays.asList(oneVerb.get(i).toArray()));
                         adverb = ar.get(rand.nextInt(size));
                     }
                 }
@@ -2101,7 +2117,8 @@ public class GenSimpTestData {
         String proc = "";
         String word = "";
         String synset = "";
-        ArrayList<String> synsets = null;
+        List<String> synsets = null;
+        List<String> words;
         do {
             do {
                 proc = lfeat.processes.getNext(); // processes is a RandSet
@@ -2112,7 +2129,7 @@ public class GenSimpTestData {
             if (debug) System.out.println("getVerb(): checking process: " + proc);
             if (debug) System.out.println("getVerb(): synsets size: " + synsets.size() + " for term: " + proc);
             synset = synsets.get(rand.nextInt(synsets.size()));
-            ArrayList<String> words = WordNet.wn.getWordsFromSynset(synset);
+            words = WordNet.wn.getWordsFromSynset(synset);
             int count = 0;
             do {
                 count++;
@@ -2329,6 +2346,8 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("GenSimpTestData.generateHuman(): allow You (understood): " + allowYou);
         boolean found = false;
+        String socialRole;
+        AVPair plural;
         do {
             int val = rand.nextInt(10);
             if (allowYou && val < 2) { // "You" - no appended English or SUMO
@@ -2336,12 +2355,12 @@ public class GenSimpTestData {
                 if (debug) System.out.println("GenSimpTestData.generateHuman(): generated a You (understood)");
             }
             else if (val < 6) { // a role
-                String socialRole = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+                socialRole = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
                 if (socialRole == null)
                     socialRole = lfeat.socRoles.getNext();
                 type.append(socialRole);
                 prop.append("(attribute ").append(var).append(" ").append(type).append(") ");
-                AVPair plural = new AVPair();
+                plural = new AVPair();
                 english.append(capital(nounFormFromTerm(type.toString(),plural,""))).append(" ");
                 if (lfeat.prevHumans.contains(type))  // don't allow the same name or role twice in a sentence
                     found = true;
@@ -2381,15 +2400,16 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("GenSimpTestData.genWithRoles()");
         int humCount = 0;
+        String role;
+        StringBuilder prop1, english1;
         for (int i = 0; i < humanMax; i++) {
-            String role = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+            role = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
             if (role == null)
                 role = lfeat.socRoles.getNext();
             if (lfeat.subj.equals(role)) continue;
             if (humCount++ > loopMax) break;
             lfeat.subj = role;
             int tryCount = 0;
-            StringBuilder prop1, english1;
             do {
                 prop1 = new StringBuilder(prop);
                 english1 = new StringBuilder(english);
@@ -2434,11 +2454,12 @@ public class GenSimpTestData {
         int humCount = 0;
         HashSet<String> previous = new HashSet<>(); // humans appearing already in the sentence
         StringBuilder english, prop, type, name;
+        Word attWord;
         while (sentCount < sentMax) {
             english = new StringBuilder();
             prop = new StringBuilder();
             startOfSentence = true;
-            Word attWord = attitudes.get(rand.nextInt(attitudes.size()));
+            attWord = attitudes.get(rand.nextInt(attitudes.size()));
             lfeat.attitude = attWord.term;
             if (debug) System.out.println("GenSimpTestData.genAttitudes(): ========================= start ");
             if (!attWord.term.equals("None") && !suppress.contains("attitude")) {
@@ -2538,7 +2559,7 @@ public class GenSimpTestData {
      */
     public void extendCapabilities(Collection<Capability> caps) {
 
-        HashSet<Capability> hs;
+        Set<Capability> hs;
         Set<String> childClasses;
         for (Capability c : caps) {
             childClasses = kb.kbCache.getChildClasses(c.proc);
@@ -2573,7 +2594,7 @@ public class GenSimpTestData {
         if (debug) System.out.println("checkCapabilities(): (proc,role,obj): " + proc + ", " + role + ", " + obj);
         if (capabilities.containsKey(proc)) {
             if (debug) System.out.println("checkCapabilities(): found capabilities: " + capabilities.get(proc));
-            HashSet<Capability> caps = capabilities.get(proc);
+            Set<Capability> caps = capabilities.get(proc);
             for (Capability c : caps) {
                 if (c.caserole.equals(role) && (c.object.equals(obj) || kb.isSubclass(obj,c.object)) && !c.negated && c.must) {
                     if (debug) System.out.println("checkCapabilities(): approved");
@@ -2610,8 +2631,9 @@ public class GenSimpTestData {
     public void showAttributes() {
 
         Set<String> attribs = kb.kbCache.getInstancesForType("Attribute");
+        List<String> synsets;
         for (String s : attribs) {
-            ArrayList<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(s);
+            synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(s);
             if (debug) System.out.println("term and synset: " + s + ", " + synsets);
         }
     }

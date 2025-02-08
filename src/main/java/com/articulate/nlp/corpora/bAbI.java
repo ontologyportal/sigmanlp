@@ -7,10 +7,7 @@ import com.articulate.sigma.utils.FileUtil;
 import com.articulate.sigma.utils.MapUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class bAbI {
 
@@ -28,7 +25,7 @@ public class bAbI {
     public static KB kb;
     public static Interpreter interp;
     public static HashSet<String> newNps = new HashSet<>();
-    public static Map<Integer,HashSet<String>> freqMapSUMO = new HashMap<>();
+    public static Map<Integer,Set<String>> freqMapSUMO = new HashMap<>();
 
     /** ***************************************************************
      */

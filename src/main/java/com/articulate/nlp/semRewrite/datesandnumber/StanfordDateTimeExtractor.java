@@ -19,7 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
 import com.articulate.nlp.pipeline.Pipeline;
@@ -43,7 +43,7 @@ public class StanfordDateTimeExtractor {
 	public static List<String> DATE_ENTITIES = new ArrayList<String>(Arrays.asList("DATE", "TIME"));
 	public static List<String> MEASURE_ENTITIES = new ArrayList<String>(Arrays.asList(
 			"NUMBER", "PERCENT", "ORDINAL"));
-	
+
 	private List<String> dependencyList = new ArrayList<String>();
 	private SemanticGraph dependencies;
 	private int tokenCount = 0;
@@ -53,19 +53,19 @@ public class StanfordDateTimeExtractor {
 	public List<String> getDependencyList() {
 		return dependencyList;
 	}
-	
+
 	/** ***************************************************************
 	 */
 	public int getTokenCount() {
 		return tokenCount;
 	}
-	
+
 	/** ***************************************************************
 	 */
 	public SemanticGraph getDependencies() {
 		return dependencies;
 	}
-	
+
 	/** ***************************************************************
 	 */
 	public void setDependencies(SemanticGraph dependencies) {
@@ -76,19 +76,20 @@ public class StanfordDateTimeExtractor {
      * Calls the stanford parser and extracts the necessary information about the words in the string
      * and stores them in Token object for further usage.
      * @param sentence: The natural language string.
-     * @return List of Tokens.
      */
     public void populateParserInfo(CoreMap sentence, List<Tokens> tokenList) {
 
     	//System.out.println("StanfordDateTimeExtractor.populateParserInfo() " + sentence);
 		//System.out.println("StanfordDateTimeExtractor.populateParserInfo() " + tokenList);
         tokenCount = 1;
+        String namedEntity;
+        Tokens tokens;
         for (CoreLabel token: sentence.get(TokensAnnotation.class)) {
-            String namedEntity = token.get(NamedEntityTagAnnotation.class);
+            namedEntity = token.get(NamedEntityTagAnnotation.class);
             if ((DATE_ENTITIES.contains(namedEntity)) || ((MEASURE_ENTITIES.contains(namedEntity)) &&
                     (token.get(PartOfSpeechAnnotation.class).equals("CD") || token.get(PartOfSpeechAnnotation.class).equals("JJ")))
                     || (namedEntity.equals("DURATION") && token.get(PartOfSpeechAnnotation.class).equals("CD"))) {
-                Tokens tokens = new Tokens();
+                tokens = new Tokens();
                 tokens.setId(tokenCount);
                 tokens.setWord(token.get(TextAnnotation.class));
                 tokens.setNer(token.get(NamedEntityTagAnnotation.class));
@@ -113,7 +114,7 @@ public class StanfordDateTimeExtractor {
      * @return List of Tokens.
      */
 	public List<Tokens> populateParserInfo(String inputSentence) {
-		
+
 		//Properties props = new Properties();
 		// props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
 		//props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse");

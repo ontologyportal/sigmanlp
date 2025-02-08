@@ -12,6 +12,7 @@ import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.IntPair;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -693,7 +694,7 @@ public class RelExtract {
             e.printStackTrace();
         }
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        ArrayList<Formula> forms = kb.ask("arg",0,"format");
+        List<Formula> forms = kb.ask("arg",0,"format");
         for (Formula f : forms) {
             varnum = 0;
             generateOneRelationPattern(f,kb,interp);
@@ -726,7 +727,7 @@ public class RelExtract {
             e.printStackTrace();
         }
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        ArrayList<Formula> forms = kb.ask("arg",0,"format");
+        List<Formula> forms = kb.ask("arg",0,"format");
         for (Formula f : forms) {
             HashMap<String,CNF> temp = processOneRelation(f,kb,interp);
             if (temp == null)
@@ -907,7 +908,7 @@ public class RelExtract {
             e.printStackTrace();
         }
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        ArrayList<Formula> forms = kb.askWithRestriction(0,"format",2,"wears");
+        List<Formula> forms = kb.askWithRestriction(0,"format",2,"wears");
         System.out.println("; RelExtract.testGenerateRelationPattern()" + forms);
         generateOneRelationPattern(forms.get(0),kb,interp);
     }
@@ -924,7 +925,7 @@ public class RelExtract {
         try {
             interp.initialize();
         }
-        catch (Exception e) {
+        catch (IOException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }

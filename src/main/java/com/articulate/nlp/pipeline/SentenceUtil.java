@@ -18,14 +18,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
+import com.articulate.nlp.constants.LangLib;
 import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.nlp.semRewrite.Literal;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
 import edu.stanford.nlp.coref.CorefCoreAnnotations;
 import edu.stanford.nlp.coref.data.CorefChain;
 import edu.stanford.nlp.coref.data.Mention;
@@ -33,16 +36,12 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.*;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
-import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.util.CoreMap;
-import com.articulate.nlp.constants.LangLib;
 
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
@@ -66,24 +65,27 @@ public class SentenceUtil {
 
     /** ***************************************************************
      * Print all the sentences in this document
-     * CoreMap is essentially a Map that uses class objects as keys and 
+     * CoreMap is essentially a Map that uses class objects as keys and
      * has values with custom types
      */
     public static void printSentences(Annotation document) {
 
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+        int count;
+        String word, pos, ne;
+        List<CoreMap> entity;
         for (CoreMap sentence : sentences) {
             // traversing the words in the current sentence
             // a CoreLabel is a CoreMap with additional token-specific methods
-            int count = 1;
+            count = 1;
             for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
                 // this is the text of the token
-                String word = token.get(TextAnnotation.class);
+                word = token.get(TextAnnotation.class);
                 // this is the POS tag of the token
-                String pos = token.get(PartOfSpeechAnnotation.class);
+                pos = token.get(PartOfSpeechAnnotation.class);
                 // this is the NER label of the token
-                String ne = token.get(NamedEntityTagAnnotation.class);
-                List<CoreMap> entity = token.get(MentionsAnnotation.class);
+                ne = token.get(NamedEntityTagAnnotation.class);
+                entity = token.get(MentionsAnnotation.class);
                 System.out.println(word + "-" + count + "/" + pos + "/" + ne + "/" + entity);
                 count++;
             }
@@ -325,9 +327,9 @@ public class SentenceUtil {
 
     /** ***************************************************************
      */
-    public static ArrayList<SemanticGraphEdge> toEdgesList(CoreMap sentence) {
+    public static List<SemanticGraphEdge> toEdgesList(CoreMap sentence) {
 
-        ArrayList<SemanticGraphEdge> results = new ArrayList<>();
+        List<SemanticGraphEdge> results = new ArrayList<>();
         SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
         //System.out.println("SentenceUtil.toDependenciesList(): deps: " + dependencies.toList());
         if (dependencies == null) {
@@ -345,12 +347,13 @@ public class SentenceUtil {
 
     /** ***************************************************************
      */
-    public static ArrayList<Literal> toDepList(CoreMap sentence) {
+    public static List<Literal> toDepList(CoreMap sentence) {
 
-        ArrayList<Literal> result = new ArrayList<>();
-        ArrayList<SemanticGraphEdge> edges = toEdgesList(sentence);
+        List<Literal> result = new ArrayList<>();
+        List<SemanticGraphEdge> edges = toEdgesList(sentence);
+        Literal l;
         for (SemanticGraphEdge sge : edges) {
-            Literal l = new Literal();
+            l = new Literal();
             l.pred = sge.getRelation().toString();
             l.clArg1 = sge.getGovernor().backingLabel();
             l.clArg2 = sge.getDependent().backingLabel();
@@ -363,17 +366,17 @@ public class SentenceUtil {
 
     /** ***************************************************************
      */
-    public static ArrayList<Literal> toDependenciesList(Annotation document) {
+    public static List<Literal> toDependenciesList(Annotation document) {
 
         return toDependenciesList(getLastSentence(document));
     }
 
     /** ***************************************************************
      */
-    public static ArrayList<Literal> toDependenciesList(CoreMap sentence) {
+    public static List<Literal> toDependenciesList(CoreMap sentence) {
 
-        ArrayList<Literal> results = new ArrayList<>();
-        Collection<TypedDependency> typedDeps = null;
+        List<Literal> results = new ArrayList<>();
+        Collection<TypedDependency> typedDeps;
         SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
         if (dependencies == null) {
             System.out.println("Error in SentenceUtil.toDependenciesList(): no dependencies for " + sentence);
@@ -381,8 +384,10 @@ public class SentenceUtil {
         }
         else
             typedDeps = dependencies.typedDependencies();
+
+        Literal l;
         for (TypedDependency dep : typedDeps) {
-            Literal l = new Literal();
+            l = new Literal();
             l.pred = dep.reln().toString();
             l.clArg1 = dep.gov().backingLabel();
             l.clArg2 = dep.dep().backingLabel();
@@ -396,12 +401,13 @@ public class SentenceUtil {
     /** ***************************************************************
      * Also remove tokens with trailing apostrophe - see dependency manual sec 4.6
      */
-    public static ArrayList<Literal> toDependenciesList(List<CoreMap> sentences) {
+    public static List<Literal> toDependenciesList(List<CoreMap> sentences) {
 
         //System.out.println("SentenceUtil.toDependenciesList(): " + sentences);
-        ArrayList<Literal> results = new ArrayList<>();
+        List<Literal> results = new ArrayList<>();
+        List<Literal> al;
         for (CoreMap sentence : sentences) {
-            List al = toDependenciesList(sentence);
+            al = toDependenciesList(sentence);
             if (al != null)
                 results.addAll(al);
         }
@@ -414,7 +420,7 @@ public class SentenceUtil {
     public static CNF toCNFDependenciesList(List<CoreMap> sentences) {
 
         CNF cnf = new CNF();
-        ArrayList<Literal> lits = toDependenciesList(sentences);
+        List<Literal> lits = toDependenciesList(sentences);
         for (Literal l : lits) {
             cnf.append(l);
         }

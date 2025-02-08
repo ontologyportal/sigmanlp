@@ -7,8 +7,11 @@ import com.articulate.sigma.wordNet.WordNetUtilities;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /*
 Copyright 2017 Articulate Software
@@ -36,7 +39,7 @@ Read the contents of eXtended WordNet http://www.hlt.utdallas.edu/~xwn/downloads
 public class XtendedWN {
 
     // a map index by WordNet sense keys where values are counts of co-occurring words
-    public static HashMap<String,HashMap<String,Integer>> senses = new HashMap<>();
+    public static Map<String,Map<String,Integer>> senses = new HashMap<>();
     public static int errorCount = 0;
 
     /***************************************************************
@@ -62,33 +65,39 @@ public class XtendedWN {
      */
     private static void readFile(String filename, String pos) {
 
-        ArrayList<String> snss = new ArrayList<>();
-        ArrayList<String> words = new ArrayList<>();
-        try {
-            FileReader r = new FileReader(filename);
-            LineNumberReader lr = new LineNumberReader(r);
+        List<String> snss = new ArrayList<>();
+        List<String> words = new ArrayList<>();
+        try (Reader r = new FileReader(filename);
+             LineNumberReader lr = new LineNumberReader(r)) {
             String line;
+            Map<String,Integer> wordList;
+            String synset;
+            int item, close;
+            String attribs, word, POSlet, senseKey, synset20;
+            char POSnum;
+            Map<String,String> m;
+            Integer count;
             while ((line = lr.readLine()) != null) {
                 if (line.startsWith("<gloss")) {
-                    String synset = pos + line.substring(line.length()-10,line.length()-2);
+                    synset = pos + line.substring(line.length()-10,line.length()-2);
                     snss = new ArrayList<>();
                     snss.add(synset);
                     words = new ArrayList<>();
                 }
                 else if (line.startsWith("      <wf ")) { // parse all the word senses
-                    int item = line.indexOf("<");
-                    int close = line.indexOf(">");
-                    String attribs = line.substring(item+4,close);
-                    HashMap<String,String> m = stringToMap(attribs);
-                    String word = line.substring(close+1,line.indexOf("<",close + 1));
+                    item = line.indexOf("<");
+                    close = line.indexOf(">");
+                    attribs = line.substring(item+4,close);
+                    m = stringToMap(attribs);
+                    word = line.substring(close+1,line.indexOf("<",close + 1));
                     if (m.containsKey("lemma") && !WordNet.wn.isStopWord(m.get("lemma")))
                         words.add(m.get("lemma"));
                     if (m.containsKey("pos") && m.containsKey("lemma") && m.containsKey("wnsn")) {
                         String POSpenn = StringUtil.removeEnclosingQuotes(m.get("pos"));
-                        char POSnum = WordNetUtilities.posPennToNumber(POSpenn);
-                        String POSlet = WordNetUtilities.posNumberToLetters(Character.toString(POSnum));
-                        String senseKey = m.get("lemma") + "_" + POSlet + "_" + m.get("wnsn");
-                        String synset20 = POSnum + WordNet.wn.senseIndex.get(senseKey);
+                        POSnum = WordNetUtilities.posPennToNumber(POSpenn);
+                        POSlet = WordNetUtilities.posNumberToLetters(Character.toString(POSnum));
+                        senseKey = m.get("lemma") + "_" + POSlet + "_" + m.get("wnsn");
+                        synset20 = POSnum + WordNet.wn.senseIndex.get(senseKey);
                         if (WordNet.wn.senseIndex.get(senseKey) == null && POSlet.equals("JJ")) {
                             // WordNet calls some adjectives "adjective satellites"
                             POSlet = "AS";
@@ -112,24 +121,24 @@ public class XtendedWN {
                 }
                 else if (line.startsWith("  </wsd>")) { // add all the co-occurrence data
                     for (String sense : snss) {
-                        HashMap<String,Integer> wordList = new HashMap<>();
+                        wordList = new HashMap<>();
                         if (senses.containsKey(sense))
                             wordList = senses.get(sense);
                         else {
                             senses.put(sense,wordList);
                         }
-                        for (String word : words) {
-                            Integer count = Integer.valueOf(1);
-                            if (wordList.containsKey(word))
-                                count = count + wordList.get(word);
-                            wordList.put(word,count);
+                        for (String wrd : words) {
+                            count = 1;
+                            if (wordList.containsKey(wrd))
+                                count = count + wordList.get(wrd);
+                            wordList.put(wrd,count);
                         }
                     }
                 }
             }
         }
         catch (IOException i) {
-            System.out.println("Error in XtendedWN.readFile() reading file " + filename + ": " + i.getMessage());
+            System.err.println("Error in XtendedWN.readFile() reading file " + filename + ": " + i.getMessage());
             i.printStackTrace();
         }
     }
@@ -139,10 +148,12 @@ public class XtendedWN {
      */
     public static void convertSynsetsToSenseKeys() {
 
-        HashMap<String,HashMap<String,Integer>> newsenses = new HashMap<>();
+        Map<String,Map<String,Integer>> newsenses = new HashMap<>();
+        Map<String,Integer> value;
+        String senseKey;
         for (String synset : senses.keySet()) {
-            HashMap<String,Integer> value = senses.get(synset);
-            String senseKey = WordNetUtilities.getKeyFromSense(synset);
+            value = senses.get(synset);
+            senseKey = WordNetUtilities.getKeyFromSense(synset);
             if (senseKey != null)
                 newsenses.put(senseKey,value);
         }
@@ -160,7 +171,7 @@ public class XtendedWN {
             WordNetUtilities.updateWNversionReading("/home/apease/corpora/mappings-upc-2007/mapping-30-20/", "30-20");
         }
         catch (IOException ioe) {
-            System.out.println("Error in XtendedWN.main()" + ioe.getMessage());
+            System.err.println("Error in XtendedWN.main()" + ioe.getMessage());
             ioe.printStackTrace();
         }
         XtendedWN.readFile("/home/apease/corpora/XWN2.0-1.1/noun.xml","1");
