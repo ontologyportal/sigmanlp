@@ -60,7 +60,6 @@
             <not>
                 <os family="mac"/>
             </not>
-
         </and>
     </condition>
 
@@ -92,7 +91,6 @@
         <path refid="compile.test.classpath"/>
         <pathelement location="${build.test.classes.dir}"/>
     </path>
-
     <path id="sourcepath">
         <dirset dir="${basedir}">
             <include name="src/main/java"/>
@@ -211,7 +209,7 @@
         <mkdir dir="${reports.dir}"/>
     </target>
 
-    <target name="dist" depends="compile" description="Create the *.war file and place in ${build.home}.">
+    <target name="dist" depends="compile,compile.test" description="Create the *.war file and place in $CATALINA_HOME/webapps.">
         <manifest file="${manifest.mf}">
             <attribute name="Built-By" value="${user.name}"/>
             <attribute name="Specification-Title"
