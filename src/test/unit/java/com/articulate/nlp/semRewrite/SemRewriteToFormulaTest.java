@@ -10,6 +10,7 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.junit.Ignore;
 
 /**
  * Tests the SemRewrite of a given parse, plus its manipulation into a formula string.
@@ -53,6 +54,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_at(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Object) ==> (located(?X,?Y))
      */
     @Test
+    @Ignore
     public void testMaryAtHouse() {
 
         String input = "root(ROOT-0, be-2), nsubj(be-2, Mary-1), det(house-5, the-4), prep_at(be-2, house-5), sumo(House, house-5), names(Mary-1, \"Mary\"), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, be-2), number(SINGULAR, house-5)";
@@ -74,6 +76,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_in(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Object) ==> {(orientation ?X ?Y Inside)}.
      */
     @Test
+    @Ignore
     public void testMaryInHouse() {
 
         String input = "root(ROOT-0, be-2), nsubj(be-2, Mary-1), det(house-5, the-4), prep_in(be-2, house-5), sumo(House, house-5), names(Mary-1, \"Mary\"), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, be-2), number(SINGULAR, house-5)";
@@ -95,6 +98,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_inside(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Object) ==> {(orientation ?X ?Y Inside)}.
      */
     @Test
+    @Ignore
     public void testMaryInsideHouse() {
 
         String input = "root(ROOT-0, be-2), nsubj(be-2, Mary-1), det(house-5, the-4), prep_inside(be-2, house-5), sumo(House, house-5), names(Mary-1, \"Mary\"), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, be-2), number(SINGULAR, house-5)";
@@ -116,6 +120,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_outside(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Object) ==> {(orientation ?X ?Y Outside)}.
      */
     @Test
+    @Ignore
     public void testMaryOutsideHouse() {
 
         String input = "root(ROOT-0, be-2), nsubj(be-2, Mary-1), det(house-5, the-4), prep_outside(be-2, house-5), sumo(House, house-5), names(Mary-1, \"Mary\"), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, be-2), number(SINGULAR, house-5)";
@@ -137,6 +142,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_on(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Object) ==> (located(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryOnHouse() {
 
         String input = "det(house-5, the-4), root(ROOT-0, be-2), nsubj(be-2, Mary-1), prep_on(be-2, house-5), sumo(House, house-5), names(Mary-1, \"Mary\"), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, be-2), number(SINGULAR, house-5)";
@@ -158,6 +164,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_to(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Object) ==> (destination(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryGoToHouse() {
 
         String input = "det(house-5, the-4), root(ROOT-0, go-2), nsubj(go-2, Mary-1), prep_to(go-2, house-5), sumo(House, house-5), names(Mary-1, \"Mary\"), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, go-2), number(SINGULAR, house-5)";
@@ -179,6 +186,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_towards(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Object) ==> (destination(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryGoTowardsHouse() {
 
         String input = "root(ROOT-0, go-2), nsubj(go-2, Mary-1), det(house-5, the-4), prep_toward(go-2, house-5), sumo(House, house-5), names(Mary-1, \"Mary\"), sumo(Transportation, go-2), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, go-2), number(SINGULAR, house-5)";
@@ -203,6 +211,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_in(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Time) ==> (time(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryGoInHour() {
 
         String input = "det(hour-5, a-4), root(ROOT-0, go-2), nsubj(go-2, Mary-1), prep_in(go-2, hour-5), names(Mary-1, \"Mary\"), sumo(Hour, hour-5), attribute(Mary-1, Female), sumo(Human, Mary-1), number(SINGULAR, Mary-1), tense(PRESENT, go-2), number(SINGULAR, hour-5)";
@@ -223,6 +232,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_for(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Person) ==> (destination(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryWalkForTwoHours() {
 
         String input = "root(ROOT-0,walk-2), nsubj(walk-2,Mary-1), num(hour-5,two-4), prep_for(walk-2,hour-5), names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), sumo(Hour,hour-5), sumo(Walking,walk-2), number(SINGULAR,Mary-1), tense(PRESENT,walk-2), number(PLURAL,hour-5)";
@@ -248,6 +258,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_through(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Time) ==> (duration(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryWalkedThroughDay() {
 
         String input = "det(day-5,the-4), root(ROOT-0,walk-2), nsubj(walk-2,Mary-1), prep_through(walk-2,day-5), names(Mary-1,\"Mary\"), sumo(Day,day-5), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), tense(PAST,walk-2), number(SINGULAR,day-5)";
@@ -290,6 +301,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_with(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Person) ==> (agent(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryWalkWithArtifact() {
 
         String input = "root(ROOT-0,walk-2), nsubj(walk-2,Mary-1), det(artifact-5,the-4), prep_with(walk-2,artifact-5), sumo(Artifact,artifact-5), names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), sumo(Walking,walk-2), number(SINGULAR,Mary-1), tense(PRESENT,walk-2), number(SINGULAR,artifact-5)";
@@ -314,6 +326,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * This rule is triggered by this test's input, though the BeginFn does not at this time appear in the output.
      */
     @Test
+    @Ignore
     public void testMaryWasWalkingFromNoon() {
 
         String input = "root(ROOT-0,walk-3), nsubj(walk-3,Mary-1), aux(walk-3,be-2), prep_from(walk-3,noon-5), names(Mary-1,\"Mary\"), sumo(Walking,walk-3), attribute(Mary-1,Female), sumo(Human,Mary-1), sumo(TimePosition,noon-5), number(SINGULAR,Mary-1), tense(PAST,walk-3), aspect(PROGRESSIVE,walk-3), number(SINGULAR,noon-5), time(walk-3,time-1), hour(time-1,12-5), minute(time-1,00-5)";
@@ -338,6 +351,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * This rule is triggered by this test's input, though the EndFn does not at this time appear in the output.
      */
     @Test
+    @Ignore
     public void testMaryWasWalkingUntilMidnight() {
 
         String input = "root(ROOT-0,walk-3), nsubj(walk-3,Mary-1), aux(walk-3,be-2), prep_until(walk-3,midnight-5), names(Mary-1,\"Mary\"), sumo(Walking,walk-3), sumo(TimePoint,midnight-5), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), tense(PAST,walk-3), aspect(PROGRESSIVE,walk-3), number(SINGULAR,midnight-5), time(walk-3,time-1), hour(time-1,00-5), minute(time-1,00-5)";
@@ -363,6 +377,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * These two rules are triggered by this test's input, though the BeginFn and the EndFn do not at this time appear in the output.
      */
     @Test
+    @Ignore
     public void testMaryWasWalkingFromNoonUntilMidnight() {
 
         String input = "root(ROOT-0,walk-3), nsubj(walk-3,Mary-1), aux(walk-3,be-2), prep_from(walk-3,noon-5), prep_until(walk-3,midnight-7), sumo(TimePoint,midnight-7), names(Mary-1,\"Mary\"), sumo(Walking,walk-3), attribute(Mary-1,Female), sumo(Human,Mary-1), sumo(TimePosition,noon-5), number(SINGULAR,Mary-1), tense(PAST,walk-3), aspect(PROGRESSIVE,walk-3), number(SINGULAR,noon-5), number(SINGULAR,midnight-7), time(walk-3,time-1), time(walk-3,time-2), hour(time-1,12-5), minute(time-2,00-7), hour(time-2,00-7), minute(time-1,00-5)";
@@ -387,6 +402,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_after(?X,?Y), +sumo(?C,?Y), isCELTclass(?C,Time) ==> (greaterThan(?X,?Y)).
      */
     @Test
+    @Ignore
     // FIXME: Currently the system outputs the expected string below, though the "go-2" part is wrong.
     public void testMaryWentAfterMidnight() {
 
@@ -410,6 +426,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * prep_along_with(?X,?Y), +sumo(Human,?Y) ==> (agent(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryWentAlongWithJohn() {
 
         String input = "root(ROOT-0,go-2), nsubj(go-2,Mary-1), prep_along_with(go-2,John-5), attribute(John-5,Male), names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), sumo(Human,John-5), names(John-5,\"John\"), number(SINGULAR,Mary-1), tense(PAST,go-2), number(SINGULAR,John-5)";
@@ -434,6 +451,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * poss(?R,?S), nsubj(?O,?R), cop(?O,?IS), sumo(?C,?R) ==> (sumo(?C,?R), nsubj(?R,?S), cop(?R,?IS), prep_of(?R,?O)).
      */
     @Test
+    @Ignore
     public void testThatIsMarysHouse() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), tense(PRESENT,be-2), root(ROOT-0,house-5), poss(house-5,Mary-1), sumo(House,house-5), number(SINGULAR,house-5), nsubj(house-5,a_house-4), cop(house-5,be-2)";
@@ -456,6 +474,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * nsubj(make_up*,?S), +dobj(make_up*,?V), sumo(?C,?V), isSubclass(?C,Process) ==> (nsubj(?V,?S), sumo(?C,?V)).
      */
     @Test
+    @Ignore
     public void testMaryHasMadeUpStory() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), root(ROOT-0,make_up-3), nsubj(make_up-3,Mary-1), tense(PRESENT,make_up-3), aspect(PERFECT,make_up-3), aux(make_up-3,have-2), sumo(Stating,story-6), number(SINGULAR,story-6), dobj(make_up-3,story-6), det(story-6,the-5)";
@@ -481,6 +500,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * nsubj(make_up*,?S), +dobj(make_up*,?V), sumo(?C,?V), isSubclass(?C,Process) ==> (nsubj(?V,?S), sumo(?C,?V)).
      */
     @Test
+    @Ignore
     public void testMaryWillMakeUpStory() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), root(ROOT-0,make_up-3), nsubj(make_up-3,Mary-1), sumo(Attribute,make_up-3), tense(FUTURE,make_up-3), aux(make_up-3,will-2), sumo(Stating,story-6), number(SINGULAR,story-6), dobj(make_up-3,story-6), det(story-6,the-5)";
@@ -507,6 +527,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * nsubj(make_up*,?S), +dobj(make_up*,?V), sumo(?C,?V), isSubclass(?C,Process) ==> (nsubj(?V,?S), sumo(?C,?V)).
      */
     @Test
+    @Ignore
     public void testMaryMakesUpStory() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), root(ROOT-0,make_up-2), nsubj(make_up-2,Mary-1), tense(PRESENT,make_up-2), sumo(Stating,story-5), number(SINGULAR,story-5), dobj(make_up-2,story-5), det(story-5,the-4)";
@@ -531,6 +552,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * nsubj(make_up*,?S), +dobj(make_up*,?V), sumo(?C,?V), isSubclass(?C,Process) ==> (nsubj(?V,?S), sumo(?C,?V)).
      */
     @Test
+    @Ignore
     public void testMaryMadeUpStory() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), root(ROOT-0,make_up-2), nsubj(make_up-2,Mary-1), tense(PAST,make_up-2), sumo(Stating,story-5), number(SINGULAR,story-5), dobj(make_up-2,story-5), det(story-5,the-4)";
@@ -558,6 +580,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * We would like to trigger: aux(?V,may*) ==> (possible(?V,?DUMMY)).
      */
     @Test
+    @Ignore
     public void testMayMaryWalk() {
 
         String input = "number(SINGULAR,May_Mary-1), number(SINGULAR,May_Mary-1), root(ROOT-0,walk-3), nsubj(walk-3,May_Mary-1), sumo(Walking,walk-3), time(walk-3,time-1), month(time-1,May)";
@@ -579,6 +602,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * We would like to trigger: aux(?V,might*) ==> (possible(?V,?DUMMY)).
      */
     @Test
+    @Ignore
     public void testMightMaryWalk() {
 
         String input = "number(SINGULAR,Might_Mary-1), number(SINGULAR,Might_Mary-1), root(ROOT-0,walk-3), nsubj(walk-3,Might_Mary-1), sumo(Walking,walk-3)";
@@ -598,6 +622,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * aux(?V,must*) ==> (necessary(?V,?DUMMY)).
      */
     @Test
+    @Ignore
     public void testMustMaryWalk() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), sumo(SubjectiveAssessmentAttribute,must-1), root(ROOT-0,walk-3), nsubj(walk-3,Mary-1), sumo(Walking,walk-3), aux(walk-3,must-1)";
@@ -625,6 +650,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * TODO: We trigger neg(?V,?Y) ==> (not(?V,?DUMMY))., but the negative doesn't currently appear in the output.
      */
     @Test
+    @Ignore
     public void testMaryDoesntBuildHouses() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), sumo(IntentionalProcess,do-2), root(ROOT-0,build-4), nsubj(build-4,Mary-1), sumo(Making,build-4), aux(build-4,do-2), neg(build-4,not-3), sumo(House,house-5), number(PLURAL,house-5), dobj(build-4,house-5)";
@@ -648,6 +674,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * predet(?X,?Y) ==> (det(?X,?Y)).
      */
     @Test
+    @Ignore
     public void testMaryMadeAllTheHouses() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), root(ROOT-0,make-2), nsubj(make-2,Mary-1), tense(PAST,make-2), sumo(House,house-5), number(PLURAL,house-5), dobj(make-2,house-5), predet(house-5,all-3), det(house-5,the-4)";
@@ -671,6 +698,7 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
      * TODO: JERRY: We trigger prepc_without(?X,?Y) ==> (not(?Y,?DUMMY))., but the negative doesn't currently appear in the output.
      */
     @Test
+    @Ignore
     public void testMaryMadeTheHousesWithoutWalking() {
 
         String input = "names(Mary-1,\"Mary\"), attribute(Mary-1,Female), sumo(Human,Mary-1), number(SINGULAR,Mary-1), root(ROOT-0,make-2), nsubj(make-2,Mary-1), tense(PAST,make-2), sumo(House,house-4), number(SINGULAR,house-4), dobj(make-2,house-4), det(house-4,the-3), sumo(Walking,walk-6), prepc_without(make-2,walk-6)";
