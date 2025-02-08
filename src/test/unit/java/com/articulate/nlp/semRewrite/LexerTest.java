@@ -8,6 +8,7 @@ import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,8 +47,8 @@ public class LexerTest extends UnitTestBase {
         Lexer lex1 = new Lexer(example1);
         Lexer lex2 = new Lexer(example2);
         try {
-            ArrayList<String> res1 = lex1.lex();
-            ArrayList<String> res2 = lex2.lex();
+            List<String> res1 = lex1.lex();
+            List<String> res2 = lex2.lex();
         }
         catch (ParseException e) {
             e.printStackTrace();
@@ -104,7 +105,7 @@ public class LexerTest extends UnitTestBase {
         try {
             assertEquals("at*", lex1.acceptTok(Lexer.Ident));
         }
-        catch (Exception e) {
+        catch (ParseException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
@@ -258,8 +259,8 @@ public class LexerTest extends UnitTestBase {
             assertEquals("nsubj",lex.acceptLit("nsubj"));
             assertEquals("(",lex.acceptLit("("));
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -283,8 +284,8 @@ public class LexerTest extends UnitTestBase {
             assertEquals("8:30-5", lex.next());
             assertEquals(")", lex.next());
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -305,8 +306,8 @@ public class LexerTest extends UnitTestBase {
             assertEquals("\"John\"", lex.next());
             assertEquals(")", lex.next());
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -325,7 +326,7 @@ public class LexerTest extends UnitTestBase {
             assertTrue(m.lookingAt());
         }
         catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -346,8 +347,8 @@ public class LexerTest extends UnitTestBase {
             assertEquals("be-5", lex.next());
             assertEquals(")", lex.next());
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -368,8 +369,8 @@ public class LexerTest extends UnitTestBase {
             assertEquals("Although-1", lex.next());
             assertEquals(")", lex.next());
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -391,7 +392,7 @@ public class LexerTest extends UnitTestBase {
             assertEquals(")", lex.next());
         }
         catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -407,10 +408,10 @@ public class LexerTest extends UnitTestBase {
         try {
             do {
                 lex.next();
-            } while (lex.look() != Lexer.EOFToken);
+            } while (lex.look() == null ? Lexer.EOFToken != null : !lex.look().equals(Lexer.EOFToken));
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (ParseException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
