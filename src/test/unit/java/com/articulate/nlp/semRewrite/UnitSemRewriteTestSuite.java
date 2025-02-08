@@ -16,7 +16,7 @@ import org.junit.runners.Suite;
     CNFNewTest.class,
     CNFTest.class,
     // TODO: Fails
-//    ClauseTest.class,
+    ClauseTest.class,
     InterpUnitTest.class,
     LexerTest.class,
     LiteralTest.class,
@@ -28,9 +28,9 @@ import org.junit.runners.Suite;
     SemRewriteTestByUDepRel.class,
     SemRewriteTestTimeDate.class,
     // TODO: Fails
-//    SemRewriteToFormulaTest.class,
+    SemRewriteToFormulaTest.class,
     // TODO: Fails
-//    LocationSubstitutorTest.class
+    LocationSubstitutorTest.class
 })
 public class UnitSemRewriteTestSuite extends UnitTestBase {
 
