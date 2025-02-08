@@ -195,7 +195,7 @@ public class SemRewriteTestTimeDate extends UnitTestBase {
         if (cleanedActual.contains(expected))
             System.out.println("testMaryJuly51980on(): pass");
         else
-            System.out.println("testMaryJuly51980on(): fail");
+            System.err.println("testMaryJuly51980on(): fail");
         assertTrue(cleanedActual.contains(expected));
     }
 
