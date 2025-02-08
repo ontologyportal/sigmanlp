@@ -41,7 +41,6 @@ public class InferenceInitTest extends IntegrationTestBase {
 
         interpreter.interpret("Mike hits a wagon.");
 
-        initInterpreter();
         IntegrationTestBase.resetAllForInference();
 
         String actualAnswer = interpreter.interpret("What does Mike hit?").get(0);
