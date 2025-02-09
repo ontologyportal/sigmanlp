@@ -578,6 +578,7 @@
             <!-- Prune KB after integration tests -->
             <fileset dir="${sigma_home}/KBs">
                 <include name="*.fof"/>
+                <include name="*.tff"/>
                 <include name="*.tptp"/>
                 <include name="*.ser"/>
             </fileset>
