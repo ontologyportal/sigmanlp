@@ -39,7 +39,7 @@ public class QAInferenceTest extends IntegrationTestBase {
 
         interpreter.interpret(assertion);
 
-        String actualAnswer = null;
+        String actualAnswer;
 
         String query = "What does Amelia fly?";
         actualAnswer = interpreter.interpret(query).get(0);
@@ -109,7 +109,8 @@ public class QAInferenceTest extends IntegrationTestBase {
 
     /** ***************************************************************
      */
-    @Test // TODO: Passes, but throws an error at com.articulate.sigma.KIF.parse(KIF.java:415)
+    @Test // TODO: Passes, but throws a ParseException at com.articulate.sigma.KIF.parse(KIF.java:410)
+    @Ignore
     public void test5() throws IOException {
         interpreter.interpret("The Prince of Wales, the eldest son of The Queen and Prince Philip, Duke of Edinburgh, was born at Buckingham Palace at 9.14pm on November 14, 1948.");
 

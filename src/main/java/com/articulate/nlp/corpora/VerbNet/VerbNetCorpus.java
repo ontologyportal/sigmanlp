@@ -4,6 +4,7 @@ import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.VerbNet.*;
 import com.articulate.sigma.wordNet.WordNet;
+import java.io.IOException;
 
 import java.util.List;
 
@@ -17,12 +18,13 @@ public class VerbNetCorpus {
             Interpreter interp = new Interpreter();
             KBmanager.getMgr().initializeOnce();
             interp.initialize();
-            interp.coref = false;
+            Interpreter.coref = false;
+            List<String> results;
             for (Verb v : VerbNet.verbs.values()) {
                 for (Frame f : v.frames) {
                     System.out.println();
                     System.out.println("VerbNet.tryExamples(): " + f.example);
-                    List<String> results = null;
+                    results = null;
                     try {
                         results = interp.interpret(f.example);
                     }
@@ -36,7 +38,7 @@ public class VerbNetCorpus {
                 }
             }
         }
-        catch (Exception e) {
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -48,7 +50,7 @@ public class VerbNetCorpus {
         KBmanager.getMgr().initializeOnce();
         WordNet.initOnce();
         VerbNet.kb = KBmanager.getMgr().getKB("SUMO");
-        System.out.println("VerbNet.main()");
+        System.out.println("VerbNetCorpus.main()");
         //readVerbFiles();
         VerbNet.initOnce();
         VerbNet.processVerbs();

@@ -30,9 +30,7 @@ import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.Formula;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 public class Procedures {
@@ -187,7 +185,7 @@ public class Procedures {
         if (c.arg1.equals("Sub") && c.arg2.equals("Super"))
             return "true";
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        ArrayList<Formula> forms = kb.ask("arg",1,c.arg1);
+        List<Formula> forms = kb.ask("arg",1,c.arg1);
         if (debug) System.out.println("INFO in Procedures.isInstanceOf(): " + forms);
         Formula f = null;
         //if (forms != null && forms.size() > 0) forms.get(0);
@@ -222,7 +220,7 @@ public class Procedures {
         KB kb = KBmanager.getMgr().getKB("SUMO");
         if (kb.isSubAttribute(c.arg1, c.arg2)) {
             return "true";
-        } 
+        }
         else {
             return "false";
         }

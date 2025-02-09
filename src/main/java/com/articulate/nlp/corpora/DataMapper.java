@@ -5,14 +5,12 @@ import com.articulate.nlp.TFIDFUtil;
 import com.articulate.sigma.*;
 import com.articulate.sigma.utils.*;
 import com.articulate.sigma.trans.DB2KIF;
-import com.google.common.io.Resources;
 
 import java.io.*;
-import java.net.URL;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 /*
@@ -39,13 +37,13 @@ public class DataMapper {
 
     public TFIDF cb = null;
 
-    public static ArrayList<ArrayList<String>> cells = new ArrayList<>();
+    public static List<List<String>> cells = new ArrayList<>();
 
     // map from column name to column number in matches
-    public static HashMap<String,Integer> headerIndexMap = new HashMap<>();
+    public static Map<String,Integer> headerIndexMap = new HashMap<>();
 
     // a map from column names to a list of the top N matches. List values are SUMO terms
-    public static HashMap<String,ArrayList<String>> relMatches = new HashMap<>();
+    public static Map<String,List<String>> relMatches = new HashMap<>();
 
     public static String corpusDir = System.getenv("CORPORA");
 
@@ -105,15 +103,18 @@ public class DataMapper {
      * Find a match for the given SUMO term in the list of matches,
      * where each match is of the form "sumo : doc..."
      */
-    public static int findTermIndex(String choice, ArrayList<String> choices) {
+    public static int findTermIndex(String choice, List<String> choices) {
 
         int index = -1;
         if (choices == null)
             return index;
+
+        String s, sumo;
+        int space;
         for (int i = 0; i < choices.size(); i++) {
-            String s = choices.get(i);
-            int space = s.indexOf(" : ");
-            String sumo = s.substring(0,space);
+            s = choices.get(i);
+            space = s.indexOf(" : ");
+            sumo = s.substring(0,space);
             if (sumo.equals(choice))
                 return i;
         }
@@ -126,7 +127,7 @@ public class DataMapper {
      */
     public static void swapMatches(int colnum, String choice) {
 
-        ArrayList<String> choices = relMatches.get(colnum);
+        List<String> choices = relMatches.get(colnum);
         System.out.println("DataMapper.swapMatches(): swapping " + choice + " in " + choices);
         int found = findTermIndex(choice,choices);
         if (found != -1) {
@@ -143,7 +144,7 @@ public class DataMapper {
 
         //String fname = System.getenv("CORPORA") + File.separator + "UICincome" + File.separator + "adult.data-AP.txt.csv";
         cells = DB.readSpreadsheet(inputFilename,null,false,',');
-        ArrayList<String> header = cells.get(0);
+        List<String> header = cells.get(0);
         for (int i = 0; i < header.size(); i++)
             headerIndexMap.put(header.get(i),i);
     }
@@ -224,11 +225,12 @@ public class DataMapper {
      * Strip off the documentation strings from each match string, leaving
      * just the SUMO term, and add to relMatches.
      */
-    private void addMatches(String colname, ArrayList<String> match) {
+    private void addMatches(String colname, List<String> match) {
 
-        ArrayList<String> newMatch = new ArrayList<>();
+        String m;
+        List<String> newMatch = new ArrayList<>();
         for (int i = 0; i < match.size(); i++) {
-            String m = match.get(i);
+            m = match.get(i);
             int colon = m.indexOf(":");
             if (colon != -1) {
                 newMatch.add(m.substring(0,colon-1));
@@ -251,21 +253,24 @@ public class DataMapper {
             return;
         int size = cells.get(1).size();
         System.out.println("Info in DataMapper.match(): matching " + size + " columns ");
-        ArrayList<String> row = cells.get(1);
+        List<String> row = cells.get(1);
         relMatches = new HashMap<>();  // clear relMatches to prepare for adding new matches
+        String s, colname;
+        List<String> match;
+        KB kb;
         for (int i = 0; i < size; i++) {
-            String s = row.get(i);
+            s = row.get(i);
             //System.out.println("Info in DataMapper.match(): column: " + i);
             System.out.println("Info in DataMapper.match(): comment: " + s);
             if (!StringUtil.emptyString(s)) {
-                ArrayList<String> match = (ArrayList) cb.matchInput(s, 10);
-                String colname = cells.get(0).get(i);
-                KB kb = KBmanager.getMgr().getKB("SUMO");
+                match = (ArrayList) cb.matchInput(s, 10);
+                colname = cells.get(0).get(i);
+                kb = KBmanager.getMgr().getKB("SUMO");
                 if (kb.terms.contains(colname)) { // If there's an exact match from a column label to SUMO relation name, make it the top guess
                     match.add(0, colname);
                 }
                 System.out.println("Info in DataMapper.match(): match size " + match.size());
-                if (match != null && match.size() > 0) {
+                if (match != null && !match.isEmpty()) {
                     addMatches(colname,match);
                     System.out.println("Info in DataMapper.match(): result: " + match.get(0));
                 }
@@ -289,19 +294,19 @@ public class DataMapper {
         System.out.println("DataMap.jsp: doc size: " + dm.cb.lines.size());
 
         dm.match();
-        ArrayList<String> header = cells.get(0);
-        ArrayList<String> docs = cells.get(1);
-        String kbHref = "";
+        List<String> header = cells.get(0);
+        List<String> docs = cells.get(1);
+        String kbHref = "", name, doc, sumo, SUMOlink;
         for (int i = 0; i < header.size(); i++) {
-            String name = header.get(i);
+            name = header.get(i);
             if (StringUtil.emptyString(name))
                 continue;
-            String doc = docs.get(i);
+            doc = docs.get(i);
             System.out.println(name + "<P>\n");
             System.out.println(doc + "<P>\n");
-            if (dm.relMatches.size() > i) {
-                String sumo = dm.relMatches.get(name).get(0);
-                String SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
+            if (DataMapper.relMatches.size() > i) {
+                sumo = dm.relMatches.get(name).get(0);
+                SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
                 System.out.println(SUMOlink + "<P>\n");
             }
             System.out.println("<P>");
@@ -313,7 +318,7 @@ public class DataMapper {
     public static void updateRelMap(String col, String ont) {
 
         int colnum = headerIndexMap.get(col);
-        ArrayList<String> matchCandidates = relMatches.get(colnum);
+        List<String> matchCandidates = relMatches.get(colnum);
         if (matchCandidates.contains(ont)) {
             int ontIndex = matchCandidates.indexOf(ont);
             String oldCandidate = matchCandidates.get(0);
@@ -342,7 +347,7 @@ public class DataMapper {
      */
     public static void infMatch() {
 
-        if (cells.size() == 0)
+        if (cells.isEmpty())
             loadCells();
         if (cells.size() < 3) {
             System.out.println("infMatch(): file too small for header, def'n and content");

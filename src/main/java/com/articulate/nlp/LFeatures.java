@@ -22,9 +22,9 @@ public class LFeatures {
     public String attitudeModifier = ""; // adjective
     public boolean negatedModal = false;
     public boolean negatedBody = false;
-    public ArrayList<AVPair> modals = null;
+    public List<AVPair> modals = null;
     public AVPair modal = new AVPair("None", "none"); // attribute if SUMO ModalAttribute, value is English
-    public HashMap<String, String> genders = null;
+    public Map<String, String> genders = null;
     public RandSet humans = null;
     public RandSet socRoles = null;
     public RandSet objects = null;
@@ -35,7 +35,7 @@ public class LFeatures {
     public String secondVerbType = ""; // the SUMO type of the second verb
     public String secondVerbSynset = "";
     public String secondVerbModifier= ""; // adverb
-    public HashSet<String> prevHumans = new HashSet<>();
+    public Set<String> prevHumans = new HashSet<>();
     public String subj = "";
     public String subjName = "";
     public String subjectModifier = ""; // adjective
@@ -45,7 +45,7 @@ public class LFeatures {
     public RandSet processes = null;
     public static boolean useCapabilities = true; // include process types from capabilities list
 
-    public ArrayList<String> frames = null;  // verb frames for the current process type
+    public List<String> frames = null;  // verb frames for the current process type
     public String frame = null; // the particular verb frame under consideration.
     public String framePart = null; // the frame that gets "consumed" during processing
     // Note that the frame is destructively modified as we proceed through the sentence
@@ -155,7 +155,7 @@ public class LFeatures {
     /***************************************************************
      * add UNK words to the list of objects
      */
-    public void addUnknownsHumansOrgs(HashMap<String, String> humans) {
+    public void addUnknownsHumansOrgs(Map<String, String> humans) {
 
         for (int i = 1; i <= 3; i++) {
             humans.put("UNK_ORG_" + i,"N");
@@ -165,9 +165,9 @@ public class LFeatures {
 
     /** ***************************************************************
      */
-    public ArrayList<AVPair> initModals() {
+    public List<AVPair> initModals() {
 
-        ArrayList<AVPair> modals = new ArrayList<>();
+        List<AVPair> modals = new ArrayList<>();
         for (int i = 0; i < 50; i++)
             modals.add(new AVPair("None",""));
         if (!GenSimpTestData.suppress.contains("modal")) {

@@ -10,6 +10,7 @@ import com.articulate.sigma.utils.StringUtil;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 /*
@@ -40,16 +41,18 @@ public class RxNorm {
 
     /** ***************************************************************
      */
-    public static void processRxnconso(ArrayList<ArrayList<String>> rxnconso ) {
+    public static void processRxnconso(List<List<String>> rxnconso ) {
 
         System.out.println("processRxnconso()");
         // 141962|ENG||||||944489|944489|141962||RXNORM|SCD|141962|Azithromycin 250 MG Oral Capsule||N|4096|
-        for (ArrayList<String> line : rxnconso) {
-            String conceptid = line.get(0);
-            String id = line.get(7);
-            String drug = line.get(14);
-            ArrayList<String> parts = decomposeNameParts(drug);
-            if (parts.size() > 0) {
+        String conceptid, id, drug;
+        List<String> parts;
+        for (List<String> line : rxnconso) {
+            conceptid = line.get(0);
+            id = line.get(7);
+            drug = line.get(14);
+            parts = decomposeNameParts(drug);
+            if (!parts.isEmpty()) {
                 MapUtils.addToMap(drugConceptID, conceptid, parts.get(0));
                 drugAtomID.put(id,parts.get(1));
                 MapUtils.addToMap(packaging, id, parts.get(2));
@@ -212,7 +215,7 @@ public class RxNorm {
                 System.out.println("(subclass " + source + " " + superclass + ")");
             }
         }
-        catch (Exception e) {
+        catch (IOException e) {
             e.printStackTrace();
             System.out.println("; processRxnsty(): " +
                     "Unable to read line in file. Last line successfully read was: " + line);
@@ -229,7 +232,7 @@ public class RxNorm {
 
         //String filename = input + "RXNCONSO-small.RRF";
         String filename = input + "RXNCONSO.RRF";
-        ArrayList<ArrayList<String>> sheet = DB.readSpreadsheet(filename,null,false,'|');
+        List<List<String>> sheet = DB.readSpreadsheet(filename,null,false,'|');
         processRxnconso(sheet);
 
         //filename = input + "RXNREL-small.RRF";
@@ -243,7 +246,7 @@ public class RxNorm {
         //filename = input + "RXNSTY.RRF";
         filename = input + "RXNSTY.RRF";
         processRxnsty(filename);
-        
+
 
     }
 

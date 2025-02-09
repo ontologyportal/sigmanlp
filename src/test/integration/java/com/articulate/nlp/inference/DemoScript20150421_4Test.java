@@ -2,10 +2,12 @@ package com.articulate.nlp.inference;
 
 import com.articulate.nlp.IntegrationTestBase;
 import com.articulate.nlp.semRewrite.Interpreter;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.io.IOException;
+
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,6 +29,7 @@ public class DemoScript20150421_4Test extends IntegrationTestBase {
     /** ***************************************************************
      */
     @Test
+    @Ignore // Throws Java heap space out of mem w/ 10G
     public void test1() {
 
         String input = "Adolf Hitler was an Austrian-born German politician who was the leader of the Nazi Party (German: National sozialistische Deutsche Arbeiter partei (NSDAP); National Socialist German Workers Party).";

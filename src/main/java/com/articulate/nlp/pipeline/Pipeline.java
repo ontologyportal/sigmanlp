@@ -190,7 +190,7 @@ public class Pipeline {
         Annotation wholeDocument = annotate(input);
         wholeDocument.set(CoreAnnotations.DocDateAnnotation.class, anchorDate);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
-        ArrayList<SemanticGraphEdge> dependencies = SentenceUtil.toEdgesList(lastSentence);
+        List<SemanticGraphEdge> dependencies = SentenceUtil.toEdgesList(lastSentence);
         if (debug) System.out.println("toCNFEdgeDependencies(): " + dependencies);
         CNF newcnf = new CNF();
         IndexedWord gov;

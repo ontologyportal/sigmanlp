@@ -75,7 +75,7 @@ public class LogicLevel {
     public void process(CoreMap sent) {
 
         boolean simple = true;
-        ArrayList<Literal> deps = SentenceUtil.toDependenciesList(sent);
+        List<Literal> deps = SentenceUtil.toDependenciesList(sent);
         //System.out.println("process(): deps: " + deps);
         for (Literal lit : deps) {
             if (lit.pred.equals("neg")) {

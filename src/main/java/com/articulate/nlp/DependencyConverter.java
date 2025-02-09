@@ -32,24 +32,24 @@ public class DependencyConverter {
     public static StringBuilder output = new StringBuilder();
     public static HashSet<String> maleNames = new HashSet<String>();
     public static HashSet<String> femaleNames = new HashSet<String>();
-    
+
     /** *************************************************************
      */
     public static boolean isModal(String arg) {
-        
+
         if (arg.equals("may") || arg.equals("should") || arg.equals("might") ||
                 arg.equals("must") || arg.equals("shall"))
             return true;
         else
             return false;
     }
-    
+
     /** *************************************************************
      */
     public static String getArg(int argnum, String line) {
-        
+
         if (argnum < 0 || argnum > 2 || line == null) {
-            System.out.println("Error in DependencyConverter.getArg(): argnum,string: " + 
+            System.out.println("Error in DependencyConverter.getArg(): argnum,string: " +
                     argnum + ", " + line);
             return "";
         }
@@ -62,36 +62,36 @@ public class DependencyConverter {
             return line.substring(line.indexOf(',') + 2,line.indexOf(')'));
         return result;
     }
-    
+
     /** *************************************************************
      * remove punctuation
      */
     private static String processInput(String st) {
-        
+
         if (st.indexOf("'") > -1)
             return st.replace("'", "");
         else
             return st;
     }
-    
+
     /** *************************************************************
      * Get the output of the Stanford Dependency Parser for the given
      * input file.
      */
     public static ArrayList<String> getDependencies(String input) throws IOException {
-        
+
         ArrayList<String> result = new ArrayList<String>();
         Process _nlp;
-        BufferedReader _reader; 
-        BufferedWriter _writer; 
+        BufferedReader _reader;
+        BufferedWriter _writer;
         BufferedReader _error;
         String tmpfname = "tmp.txt";
-//        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27" + 
+//        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27" +
         String stanfordCore = System.getProperty("user.home") + "/Programs/stanford-corenlp-full-2015-12-09";
         String newcore = KBmanager.getMgr().getPref("stanford-core");
         if (!StringUtil.emptyString(newcore))
         	stanfordCore = newcore;
-        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + stanfordCore + 
+        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + stanfordCore +
                 "/stanford-corenlp-3.5.1.jar edu.stanford.com.articulate.nlp.parser.lexparser.LexicalizedParser " +
                 "-outputFormat typedDependencies " + stanfordCore + "/englishPCFG-mcg.ser.gz " + tmpfname;
                 //"-outputFormat typedDependencies " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27/englishPCFG.ser.gz " + tmpfname;
@@ -112,20 +112,20 @@ public class DependencyConverter {
             if (fr != null) { fr.close(); }
         }
         System.out.println("INFO in DependencyConverter.getDependencies(): executing: " + execString);
-        
+
         ProcessBuilder builder = new ProcessBuilder(WordNet.splitToArrayList(execString));
         builder.redirectErrorStream(true);
         _nlp = builder.start();
-        
+
         //_nlp = Runtime.getRuntime().exec(execString);
         _reader = new BufferedReader(new InputStreamReader(_nlp.getInputStream()));
         _error = new BufferedReader(new InputStreamReader(_nlp.getErrorStream()));
         //System.out.println("INFO in DependencyConverter.getDependencies(): initializing process");
-        String line = null; 
+        String line = null;
         boolean recording = false;
         while ((line = _reader.readLine ()) != null) {
-            // line = _reader.readLine(); 
-            
+            // line = _reader.readLine();
+
             if (line != null && line.startsWith("Parsed file"))
                 break;
 
@@ -137,27 +137,27 @@ public class DependencyConverter {
                 recording = true;
         }
         _writer = new BufferedWriter(new OutputStreamWriter(_nlp.getOutputStream()));
-        
+
         return result;
     }
-    
+
     /** *************************************************************
-     * Run the Stanford NLP tools on the given text file to split a 
+     * Run the Stanford NLP tools on the given text file to split a
      * text into sentences.
      * @param infile the fully qualified filename of the input file
      */
     public static ArrayList<String> splitSentences(String infile) throws IOException {
-        
+
         ArrayList<String> result = new ArrayList<String>();
         Process _nlp;
-        BufferedReader _reader; 
-        BufferedWriter _writer; 
+        BufferedReader _reader;
+        BufferedWriter _writer;
         BufferedReader _error;
         String stanfordCore = System.getProperty("user.home") + "/Programs/stanford-corenlp-full-2015-12-09";
         String newcore = KBmanager.getMgr().getPref("stanford-core");
         if (!StringUtil.emptyString(newcore))
         	stanfordCore = newcore;
-        String execString = System.getProperty("java.home") + "/java -classpath " + stanfordCore + 
+        String execString = System.getProperty("java.home") + "/java -classpath " + stanfordCore +
                 "/stanford-parser.jar edu.stanford.com.articulate.nlp.process.DocumentPreprocessor " +
                 infile;
         System.out.println("INFO in DependencyConverter.splitSentences(): executing: " + execString);
@@ -165,15 +165,15 @@ public class DependencyConverter {
         _reader = new BufferedReader(new InputStreamReader(_nlp.getInputStream()));
         _error = new BufferedReader(new InputStreamReader(_nlp.getErrorStream()));
         //System.out.println("INFO in DependencyConverter.splitSentences(): initializing process");
-        String line = null; 
+        String line = null;
         while (true) {
-            line = _reader.readLine(); 
+            line = _reader.readLine();
             System.out.println(line);
             if (line == null)
                 break;
-            result.add(line);           
+            result.add(line);
         }
-        _writer = new BufferedWriter(new OutputStreamWriter(_nlp.getOutputStream()));        
+        _writer = new BufferedWriter(new OutputStreamWriter(_nlp.getOutputStream()));
         return result;
     }
 
@@ -190,7 +190,7 @@ public class DependencyConverter {
             String baseDir = KBmanager.getMgr().getPref("kbDir");
             swFile = new File(baseDir + File.separator + "WordNetMappings" + File.separator + "FirstNames.csv");
             if (swFile == null) {
-                System.out.println("Error in DependencyConverter.readFirstNames(): " + 
+                System.out.println("Error in DependencyConverter.readFirstNames(): " +
                                     "The first names file does not exist in " + baseDir);
                 return;
             }
@@ -208,10 +208,10 @@ public class DependencyConverter {
                 String gender = StringUtil.removeEnclosingChars(line.substring(comma+1,line.length()).trim(),Integer.MAX_VALUE,'"');
                 //System.out.println("INFO in DependencyConverter.readFirstNames(): gender: " + gender);
                 if (gender.equals("M"))
-                    maleNames.add(name);   
+                    maleNames.add(name);
                 else if (gender.equals("F"))
-                    femaleNames.add(name); 
-                else 
+                    femaleNames.add(name);
+                else
                     throw new Exception("bad gender tag in '" + line + "'");
             }
             System.out.println("  " + ((System.currentTimeMillis() - t1) / 1000.0)
@@ -242,7 +242,7 @@ public class DependencyConverter {
      * a new context to be inherited by child nodes.
      */
     public static HashMap<String,String> processDependency(Node n) {
-        
+
         HashMap<String,String> context = new HashMap<String,String>();
         String process = "";
         String Subject = "";
@@ -320,9 +320,9 @@ public class DependencyConverter {
                     if (isModal(arg1)) {
                         // do something with it
                     }
-                }                
+                }
                 else if (prep.equals("mwe")) {
-                    // rather than, as well as, such as, because of, instead of, 
+                    // rather than, as well as, such as, because of, instead of,
                     // in addition to, all but, such as, instead of, due to
                 }
                 else if (prep.equals("neg")) {
@@ -439,8 +439,8 @@ public class DependencyConverter {
                         output.append("(earlier " + context.get("SubjectInstance") + " (YearFn " + bareArg2 + ")) ");
                     else {
                         //context.put("ObjectInstance",arg2);
-                        if (kb.isChildOf(context.get("ObjectInstance"),"Region")) {                           
-                            output.append("(traverses " + context.get("SubjectInstance") + " " + context.get("ObjectInstance") + ") "); 
+                        if (kb.isChildOf(context.get("ObjectInstance"),"Region")) {
+                            output.append("(traverses " + context.get("SubjectInstance") + " " + context.get("ObjectInstance") + ") ");
                         }
 
                     }
@@ -448,9 +448,9 @@ public class DependencyConverter {
                 else if (prep.equals("ref")) {
                     output.append("(equal " + arg1 + " ?" + arg2 + ") ");
                 }
-                else if (prep.equals("num")) {                    
+                else if (prep.equals("num")) {
                     if (MONTHS.contains(bareArg1)) {
-          
+
                         context.put("Month", bareArg1);
                         if (bareArg2.length() == 4) {
                             context.put("Year",bareArg2);
@@ -458,13 +458,13 @@ public class DependencyConverter {
                         else {
                             context.put("Day", bareArg2);
                         }
-                    }  
+                    }
                     else {
                         output.append("(memberCount " + arg1 + " " + bareArg2 + ") ");
                     }
                     if (context.get("Day") != null && context.get("Month")  != null && context.get("Year") != null)
-                        output.append("(overlapsTemporally " + context.get("ProcessInstance") + " (DayFn " + 
-                                context.get("Day") + " (MonthFn " + 
+                        output.append("(overlapsTemporally " + context.get("ProcessInstance") + " (DayFn " +
+                                context.get("Day") + " (MonthFn " +
                                 context.get("Month") + " (YearFn " + context.get("Year") + ")))) ");
                 }
             }
@@ -477,7 +477,7 @@ public class DependencyConverter {
     /** *************************************************************
      */
     public void traverseNodes(Node root) {
-        
+
         ArrayDeque<Node> Q = new ArrayDeque<Node>();
         HashSet<Node> V = new HashSet<Node>();
         Q.add(root);
@@ -495,12 +495,12 @@ public class DependencyConverter {
                     if (!V.contains(newNode)) {
                         V.add(newNode);
                         Q.addFirst(newNode);
-                    }  
+                    }
                 }
             }
         }
     }
-    
+
     /** *************************************************************
      */
     public class Node {
@@ -513,11 +513,11 @@ public class DependencyConverter {
         public ArrayList<Node> nodes = new ArrayList<Node>();
         public HashMap<String,String> context = new HashMap<String,String>();
     }
-    
+
     /** *************************************************************
      */
     public void addNode(String dep, HashMap<String,Node> index) {
-    
+
         String pred = getArg(0,dep);
         String arg1 = getArg(1,dep);
         String arg2 = getArg(2,dep);
@@ -543,7 +543,7 @@ public class DependencyConverter {
     /** *************************************************************
      */
     public Node findRoot(HashMap<String,Node> index) {
-        
+
         HashSet<String> hasParent = new HashSet<String>();
         HashSet<String> noParent = new HashSet<String>();
         noParent.addAll(index.keySet());
@@ -570,11 +570,11 @@ public class DependencyConverter {
         System.out.println("Info in DependencyConverter.findRoot(): root: " + noParent);
         return index.get(noParent.iterator().next());
     }
-    
+
     /** *************************************************************
      */
     public Node createGraph(ArrayList<String> deps) {
-        
+
         System.out.println("Info in DependencyConverter.createGraph(): deps: " + deps);
         HashMap<String,Node> index = new HashMap<String,Node>();
         for (int i = 0; i < deps.size(); i++) {
@@ -586,15 +586,15 @@ public class DependencyConverter {
             return null;
         }
         n.context.put("Enclosing", "true");
-        if (n.nodes != null && n.nodes.size() > 0) 
+        if (n.nodes != null && n.nodes.size() > 0)
             output.append("(and ");
         return n;
     }
-    
+
     /** *************************************************************
      */
     public static String formatSUMO(HashSet<String> SUMO) {
-        
+
         StringBuilder sb = new StringBuilder();
         sb.append("(and \n");
         Iterator<String> it = SUMO.iterator();
@@ -641,7 +641,7 @@ public class DependencyConverter {
      * print out its dependency parse.
      */
     public static void test(String input) {
-        
+
         try {
             Properties props = new Properties();
             props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
@@ -656,22 +656,22 @@ public class DependencyConverter {
         }
         catch (Exception e) {
             e.printStackTrace();
-            System.out.println(e.getMessage());
-        }    
+            System.err.println(e.getMessage());
+        }
     }
-    
+
     /** *************************************************************
      */
     public static void main(String[] args) {
-        
+
         if (args != null && args.length > 0 && args[0].equals("-s")) {
             String input = args[1];
             System.out.println("Info in DependencyConverter.main(): processing: " + input);
             try {
                 System.out.println(splitSentences(input));
             }
-            catch (Exception ex) {
-                System.out.println(ex.getMessage());
+            catch (IOException ex) {
+                System.err.println(ex.getMessage());
                 ex.printStackTrace();
             }
         }
@@ -711,11 +711,11 @@ public class DependencyConverter {
                 WordNet.wn.initOnce();
                 //System.out.println("Africa: " + WSD.getBestDefaultSUMOsense("Africa",1));
                 //System.out.println("Africa: " + WordNetUtilities.getBareSUMOTerm(WSD.getBestDefaultSUMOsense("Africa",1)));
-    
+
                 //System.out.println("Info in DependencyConverter.main(): simplification: " + WordNetUtilities.subst("rolls","s$",""));
-                //System.out.println("Info in DependencyConverter.main(): is there a substitution: " + WordNetUtilities.substTest("rolls","s$","",WordNet.wn.verbSynsetHash)); 
-                //System.out.println("Info in DependencyConverter.main(): synsets for roll: " + WordNet.wn.verbSynsetHash.get("roll")); 
-                //System.out.println("Info in DependencyConverter.main(): root form: " + WordNet.wn.verbRootForm("rolls","rolls")); 
+                //System.out.println("Info in DependencyConverter.main(): is there a substitution: " + WordNetUtilities.substTest("rolls","s$","",WordNet.wn.verbSynsetHash));
+                //System.out.println("Info in DependencyConverter.main(): synsets for roll: " + WordNet.wn.verbSynsetHash.get("roll"));
+                //System.out.println("Info in DependencyConverter.main(): root form: " + WordNet.wn.verbRootForm("rolls","rolls"));
                 DependencyConverter dc = new DependencyConverter();
                 // ArrayList<String> results = getDependencies("After an unsuccessful Baltimore theatrical debut in 1856, John played minor roles in Philadelphia until 1859, when he joined a Shakespearean stock company in Richmond, Va.");
                 ArrayList<String> results = getDependencies("John killed Mary on 31 March and also in July.");

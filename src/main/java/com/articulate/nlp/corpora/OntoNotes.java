@@ -17,6 +17,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,7 +61,7 @@ public class OntoNotes {
     public static double millis = 0;
 
     // a map index by WordNet sense keys where values are counts of co-occurring words
-    public HashMap<String, HashMap<String,Integer>> senses = new HashMap<>();
+    public Map<String, Map<String,Integer>> senses = new HashMap<>();
 
     public static Pipeline p = new Pipeline(true,"tokenize, ssplit, pos, lemma");
 
@@ -258,7 +260,7 @@ public class OntoNotes {
      */
     private void processOnfFile(ArrayList<Token> tokens) {
 
-        ArrayList<String> sentence = recreateSentence(tokens);
+        List<String> sentence = recreateSentence(tokens);
         sentence = WordNet.wn.removeStopWords(sentence);
         HashMap<String,Integer> words = new HashMap<>();
         HashSet<String> tempSenses = new HashSet<>();
@@ -342,15 +344,17 @@ public class OntoNotes {
             }
         }
 
+        Map<String,Integer> wordList;
+        Integer count;
         for (String sense : tempSenses) {
-            HashMap<String,Integer> wordList = new HashMap<>();
+            wordList = new HashMap<>();
             if (senses.containsKey(sense))
                 wordList = senses.get(sense);
             else {
                 senses.put(sense,wordList);
             }
             for (String word : words.keySet()) {
-                Integer count = 1;
+                count = 1;
                 if (wordList.containsKey(word))
                     count = count + wordList.get(word);
                 wordList.put(word,count);

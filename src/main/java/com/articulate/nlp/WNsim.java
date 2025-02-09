@@ -112,17 +112,19 @@ public class WNsim {
         //System.out.println("====================================");
 
         //System.out.println("Iterating:");
+        Set<String> tsnew;
+        List<AVPair> wnrels;
         while (!ts.isEmpty() && safetyCounter < 50) {
-            TreeSet<String> tsnew = new TreeSet<>();
+            tsnew = new TreeSet<>();
             for (String synset : ts) {
                 if (seen.contains(synset))
                     continue;
                 seen.add(synset);
                 //System.out.println(WordNet.wn.getWordsFromSynset(synset).get(0) + "-" + synset);
                 if (!freqs.keySet().contains(synset)) {
-                    freqs.put(synset, Integer.valueOf(WordNet.wn.senseFrequencies.get(synset)));
+                    freqs.put(synset, WordNet.wn.senseFrequencies.get(synset));
                 }
-                ArrayList<AVPair> wnrels = WordNet.wn.relations.get(synset);
+                wnrels = WordNet.wn.relations.get(synset);
                 for (AVPair avp : wnrels) {
                     if (parentRels.contains(avp.attribute)) {
                         tsnew.add(avp.value);
@@ -168,7 +170,7 @@ public class WNsim {
             HashSet<String> childRels,
             HashSet<String> parentRels)  {
 
-        ArrayList<AVPair> wnrels = WordNet.wn.relations.get(synset);
+        List<AVPair> wnrels = WordNet.wn.relations.get(synset);
         int total = 1;
         for (AVPair avp : wnrels) {
             if (childRels.contains(avp.attribute))
@@ -224,8 +226,8 @@ public class WNsim {
         if (cachedSims.containsKey(s1) && cachedSims.get(s1).containsKey(s2))
             return cachedSims.get(s1).get(s2);
         float result = (float) -100.0;
-        HashSet<String> syns1 = WordNetUtilities.wordsToSynsets(s1);
-        HashSet<String> syns2 = WordNetUtilities.wordsToSynsets(s2);
+        Set<String> syns1 = WordNetUtilities.wordsToSynsets(s1);
+        Set<String> syns2 = WordNetUtilities.wordsToSynsets(s2);
         if (!allSynsets) {
             syns1 = new HashSet<String>();
             String sense1 = WSD.getBestDefaultSense(s1);
@@ -236,10 +238,10 @@ public class WNsim {
             if (!sense2.isEmpty())
                 syns2.add(sense2);
         }
-        if (syns1 == null && syns2 == null || syns1.size() == 0 || syns2.size() == 0)
+        if (syns1 == null && syns2 == null || syns1.isEmpty() || syns2.isEmpty())
             return 0;
-        String bestSyn1 = "";
-        String bestSyn2 = "";
+        String bestSyn1;
+        String bestSyn2;
         if (syns1 == null || syns2 == null)
             return (float) -100.0;
         for (String syn1 : syns1) {
@@ -379,7 +381,7 @@ public class WNsim {
     public static HashSet<String> getChildList(String s) {
 
         HashSet<String> result = new HashSet<String>();
-        ArrayList<AVPair> rels = WordNet.wn.relations.get(s);
+        List<AVPair> rels = WordNet.wn.relations.get(s);
         for (AVPair avp : rels) {
             if (avp.attribute.equals("hyponym") || avp.attribute.equals("instance hyponym"))
                 result.add(avp.value);
@@ -471,7 +473,7 @@ public class WNsim {
             adjectiveSynsetToIndex.put("4" + s,i++);
         }
 
-        HashSet<String> leaves = WordNetUtilities.findLeavesInTree(Sets.newHashSet("hyponym", "instance hyponym"));
+        Set<String> leaves = WordNetUtilities.findLeavesInTree(Sets.newHashSet("hyponym", "instance hyponym"));
 
         // a bit is true if the synset (in order of byte offset number) is subsumed by the
         // synset in the key
@@ -480,7 +482,7 @@ public class WNsim {
         adjectiveBits = new BitSet(adjectiveSynsetToIndex.size());
         adverbBits = new BitSet(adverbSynsetToIndex.size());
 
-        HashSet<String> roots = WordNetUtilities.findLeavesInTree(Sets.newHashSet("hypernym", "instance hypernym"));
+        Set<String> roots = WordNetUtilities.findLeavesInTree(Sets.newHashSet("hypernym", "instance hypernym"));
         for (String s : roots) {
             setBits(s);
         }

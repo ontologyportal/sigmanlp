@@ -24,13 +24,14 @@
     <property name="main.class" value="com.articulate.nlp.semRewrite.Interpreter"/>
     <property name="impl.vendor.id" value="edu.nps.cs"/>
 
-    <property name="app.name" value="sigmanlp"/>
+    <property name="app.name" value="sigma"/>
+    <property name="web.app.name" value="${app.name}nlp"/>
     <property name="build.home" value="build"/>
     <property name="build.classes.dir" value="${build.home}/classes"/>
     <property name="build.lib" value="${build.home}/lib"/>
     <property name="build.test.classes.dir" value="${build.home}/test/classes"/>
     <property name="dist.dir" value="dist"/>
-    <property name="dist.jar" value="${dist.dir}/${app.name}.jar"/>
+    <property name="dist.jar" value="${dist.dir}/${web.app.name}.jar"/>
     <property name="dist.javadoc.dir" value="doc"/>
     <property name="web.dir" value="web"/>
     <property name="reports.dir" value="${build.home}/test/results"/>
@@ -41,8 +42,9 @@
     <property environment="env"/>
     <property name="tomcat.home" value="${env.CATALINA_HOME}"/>
     <property name="dist.home" value="${tomcat.home}/webapps"/>
-    <property name="dist.war" value="${dist.home}/${app.name}.war"/>
-    <property name="deploy.home" value="${dist.home}/${app.name}"/>
+    <property name="dist.war" value="${dist.home}/${web.app.name}.war"/>
+    <property name="deploy.home" value="${dist.home}/${web.app.name}"/>
+    <property name="git.home" value="${env.ONTOLOGYPORTAL_GIT}"/>
     <property name="sigmakee.home" value="${env.SIGMA_SRC}" />
     <property name="deploy.classes" value="${build.home}/WEB-INF/classes"/>
     <property name="deploy.lib" value="${build.home}/WEB-INF/lib"/>
@@ -58,7 +60,6 @@
             <not>
                 <os family="mac"/>
             </not>
-
         </and>
     </condition>
 
@@ -90,7 +91,6 @@
         <path refid="compile.test.classpath"/>
         <pathelement location="${build.test.classes.dir}"/>
     </path>
-
     <path id="sourcepath">
         <dirset dir="${basedir}">
             <include name="src/main/java"/>
@@ -117,19 +117,19 @@
         <echo message="SIGMA_HOME is set to: ${env.SIGMA_HOME}"/>
         <echo message="sigmakee is set to: ${env.SIGMA_SRC}"/>
 
+        <tstamp>
+            <format property="TODAY_US" pattern="EEE, d MMM yyyy HHmm Z" locale="en,US"/>
+        </tstamp>
+
         <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
         <copy todir="${basedir}/lib" file="${sigmakee.home}/build/sigmakee.jar" />
         <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
 
         <mkdir dir="${build.classes.dir}"/>
         <mkdir dir="${build.lib}"/>
-
-        <tstamp>
-            <format property="TODAY_US" pattern="EEE, d MMM yyyy HHmm Z" locale="en,US"/>
-        </tstamp>
     </target>
 
-    <target name="deploy.prepare" depends="init" description="deploy code to sigma.war">
+    <target name="deploy.prepare" depends="init" description="deploy code to sigmanlp.war">
 
         <!-- Copy all the *.jsp, *.xsl, *.html, pixmaps, etc. -->
         <copy todir="${build.home}/jsp">
@@ -209,7 +209,7 @@
         <mkdir dir="${reports.dir}"/>
     </target>
 
-    <target name="dist" depends="compile" description="Create the *.war file and place in ${build.home}.">
+    <target name="dist" depends="compile,compile.test" description="Create the *.war file and place in $CATALINA_HOME/webapps.">
         <manifest file="${manifest.mf}">
             <attribute name="Built-By" value="${user.name}"/>
             <attribute name="Specification-Title"
@@ -246,7 +246,7 @@
           </lib>
           <classes dir="${build.classes.dir}"/>
         </war>
-        <jar destfile="${build.home}/${app.name}.jar"
+        <jar destfile="${build.home}/${web.app.name}.jar"
              manifest="${manifest.mf}">
             <metainf file="LICENSE"/>
             <fileset dir="${build.classes.dir}"/>
@@ -271,7 +271,7 @@
     <!-- git macro utils setup from: https://tonyyan.wordpress.com/2017/03/10/integrate-git-into-ant-targets/-->
     <macrodef name="git">
         <attribute name="command"/>
-        <attribute name="dir" default="${workspace.dir}"/>
+        <attribute name="dir" default="${git.home}"/>
         <element name="args" optional="true"/>
         <sequential>
             <echo message="git @{command}"/>
@@ -289,7 +289,7 @@
             <fileset dir="${dist.dir}"/>
             <!-- Delete the old web code -->
             <fileset dir="${deploy.home}"/>
-            <fileset dir="${tomcat.home}/work/Catalina/localhost/${app.name}"/>
+            <fileset dir="${tomcat.home}/work/Catalina/localhost/${web.app.name}"/>
         </delete>
         <delete file="${dist.war}"/>
     </target>

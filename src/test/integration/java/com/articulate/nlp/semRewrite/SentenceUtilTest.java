@@ -11,7 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,7 +71,7 @@ public class SentenceUtilTest extends IntegrationTestBase {
 
         Annotation anno = interpreter.p.annotate(input);
         CoreMap sentence = SentenceUtil.getLastSentence(anno);
-        ArrayList<Literal> lits = SentenceUtil.toDependenciesList(sentence);
+        List<Literal> lits = SentenceUtil.toDependenciesList(sentence);
         assertThat(lits, hasItems(new Literal("nmod:on(sits-2,mat-5)")));
     }
 
@@ -87,9 +87,9 @@ public class SentenceUtilTest extends IntegrationTestBase {
 
         Annotation anno = interpreter.p.annotate(input);
         CoreMap sentence = SentenceUtil.getLastSentence(anno);
-        ArrayList<SemanticGraphEdge> edges = SentenceUtil.toEdgesList(sentence);
+        List<SemanticGraphEdge> edges = SentenceUtil.toEdgesList(sentence);
         System.out.println("Edges: " + edges);
-        ArrayList<Literal> lits = SentenceUtil.toDepList(sentence);
+        List<Literal> lits = SentenceUtil.toDepList(sentence);
         System.out.println("Deps: " + lits);
         assertThat(lits, hasItems(new Literal("nmod:on(sits-2,mat-5)")));
         //assertThat(edges, hasItems(new Literal("nmod:on(sits-2,mat-5)")));

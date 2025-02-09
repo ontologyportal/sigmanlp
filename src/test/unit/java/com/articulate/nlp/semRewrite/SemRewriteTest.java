@@ -52,7 +52,7 @@ public class SemRewriteTest extends UnitTestBase {
         if (cleanedActual.containsAll(expectedSet))
             System.out.println("SemRewriteTest: pass");
         else
-            System.out.println("SemRewriteTest: fail");
+            System.err.println("SemRewriteTest: fail");
         assertThat(cleanedActual, hasItems(expectedOutput));
     }
 

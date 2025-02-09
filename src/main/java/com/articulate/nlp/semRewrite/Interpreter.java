@@ -24,27 +24,30 @@ package com.articulate.nlp.semRewrite;
 import com.articulate.nlp.*;
 import com.articulate.nlp.DependencyConverter;
 import com.articulate.nlp.Document;
+import com.articulate.nlp.pipeline.Pipeline;
+import com.articulate.nlp.pipeline.SentenceBuilder;
+import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.datesandnumber.DateAndNumbersGeneration;
 import com.articulate.nlp.semRewrite.datesandnumber.StanfordDateTimeExtractor;
 import com.articulate.nlp.semRewrite.datesandnumber.Tokens;
+import com.articulate.nlp.semRewrite.substitutor.*;
+
 import com.articulate.sigma.*;
 import com.articulate.sigma.tp.Vampire;
 import com.articulate.sigma.utils.*;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
+
 import edu.stanford.nlp.ie.machinereading.structure.MachineReadingAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
-import com.articulate.nlp.pipeline.Pipeline;
-import com.articulate.nlp.pipeline.SentenceBuilder;
-import com.articulate.nlp.pipeline.SentenceUtil;
-import com.articulate.nlp.semRewrite.substitutor.*;
 import edu.stanford.nlp.util.IntPair;
 
 import java.io.File;
@@ -177,7 +180,7 @@ public class Interpreter {
         int comma = s.indexOf(',');
         int lastParen = s.lastIndexOf(')');
         if (paren < 2 || comma < 4 || comma < paren) {
-            System.out.println("Error in Interpreter.getArg(): bad clause format: " + s);
+            System.err.println("Error in Interpreter.getArg(): bad clause format: " + s);
             return "";
         }
         String arg1 = s.substring(paren + 1,comma).trim();
@@ -186,7 +189,7 @@ public class Interpreter {
             return arg1;
         if (argnum == 2)
             return arg2;
-        System.out.println("Error in Interpreter.getArg(): bad clause number: " + argnum);
+        System.err.println("Error in Interpreter.getArg(): bad clause number: " + argnum);
         return "";
     }
 
@@ -220,13 +223,13 @@ public class Interpreter {
             comma = clause.indexOf(',');
 
             if (paren < 2 || comma < 4 || comma < paren) {
-                System.out.println("Error in Interpreter.extractWords(): bad clause format: " + clause);
+                System.err.println("Error in Interpreter.extractWords(): bad clause format: " + clause);
                 continue;
             }
             arg1 = clause.substring(paren + 1,comma).trim();
             wordend1 = arg1.indexOf('-');
             if (wordend1 < 0) {
-                System.out.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
+                System.err.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
                 continue;
             }
             purearg1 = arg1.substring(0, wordend1);
@@ -236,7 +239,7 @@ public class Interpreter {
             arg2 = clause.substring(comma + 1, clause.length()-1).trim();
             wordend2 = arg2.indexOf('-');
             if (wordend2 < 0) {
-                System.out.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
+                System.err.println("Error in Interpreter.extractWords(): bad token, missing token number suffix: " + clause);
                 continue;
             }
             purearg2 = arg2.substring(0, wordend2);
@@ -287,7 +290,7 @@ public class Interpreter {
         Set<Literal> contents = new HashSet<>();
         List<Literal> results = new ArrayList<>();
         String arg1, arg2;
-        HashSet<String> parents;
+        Set<String> parents;
         for (Literal l : input) {
             if (l.pred.equals(sumoInstance)) {
                 arg1 = getArg(l.arg1,1);
@@ -645,7 +648,7 @@ public class Interpreter {
 
     /** *************************************************************
      */
-    public String toFOL(ArrayList<String> clauses) {
+    public String toFOL(List<String> clauses) {
 
         StringBuilder sb = new StringBuilder();
         if (clauses.size() > 1)
@@ -1274,7 +1277,7 @@ public class Interpreter {
         if (inputs == null || inputs.isEmpty() || inputs.contains(null))
             return null;
         if (inputs.size() > 1) {
-            System.out.println("Error in Interpreter.interpretCNF(): multiple clauses");
+            System.err.println("Error in Interpreter.interpretCNF(): multiple clauses");
             return null;
         }
         ArrayList<String> kifoutput = new ArrayList<>();
@@ -1390,7 +1393,7 @@ public class Interpreter {
             else
                 if (addUnprocessed)
                     addUnprocessed(kifoutput,newInput); // a hack to add unprocessed SDP clauses as if they were KIF
-            inputs = new ArrayList<CNF>();
+            inputs = new ArrayList<>();
             inputs.addAll(newinputs);
             //System.out.println("INFO in Interpreter.interpretCNF(): KB: " + printKB(inputs));
             //System.out.println("INFO in Interpreter.interpretCNF(): KIF: " + kifoutput);
@@ -1408,7 +1411,7 @@ public class Interpreter {
      * @return the response from the E prover, whether an acknowledgement
      * of an assertion, or a formula with the answer bindings substituted in
      */
-    public String fromKIFClauses(ArrayList<String> kifcs) {
+    public String fromKIFClauses(List<String> kifcs) {
 
         String s1 = toFOL(kifcs);
         //System.out.println("INFO in Interpreter.fromKIFClauses(): toFOL: " + s1);
@@ -1420,7 +1423,7 @@ public class Interpreter {
             KB kb = KBmanager.getMgr().getKB("SUMO");
             if (question) {
                 Formula query = new Formula(s3);
-                ArrayList<String> inferenceAnswers = Lists.newArrayList();
+                List<String> inferenceAnswers = Lists.newArrayList();
                 if (verboseProof) {
                     Vampire vamp = kb.askVampire(s3, timeOut_value, 1);
                     inferenceAnswers = vamp.output;

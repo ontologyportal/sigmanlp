@@ -8,8 +8,8 @@ import com.articulate.sigma.wordNet.WordNetUtilities;
 
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.BeforeClass;
@@ -66,7 +66,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println("testVerb(): verb form: " + v);
         if (!v.equalsIgnoreCase(expected)) {
             if (!v.replace("won't","will not").equalsIgnoreCase(expected)) {
-                System.out.println("Error!: found " + v + " Expected: " + expected);
+                System.err.println("Error!: found " + v + " Expected: " + expected);
                 assertTrue(v.equalsIgnoreCase(expected));
             }
             else
@@ -90,7 +90,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         String v = gstd.nounFormFromTerm(term,avp,"");
         System.out.println("testNoun(): noun form: " + v);
         if (!v.toLowerCase().contains(expected)) {
-            System.out.println("Error!: found " + v + " Expected: " + expected);
+            System.err.println("Error!: found " + v + " Expected: " + expected);
             assertTrue(v.equalsIgnoreCase(expected));
         }
         else
@@ -114,7 +114,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
             System.out.println("testCapability(): proc not found");
         boolean actual = gstd.checkCapabilities(proc,role,obj);
         if (actual != expected) {
-            System.out.println("Error!: found " + actual + " Expected: " + expected);
+            System.err.println("Error!: found " + actual + " Expected: " + expected);
             assertTrue(actual == expected);
         }
         else
@@ -130,7 +130,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testVerbs()");
         String t = "Trespassing";
-        ArrayList<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(t);
+        List<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(t);
         System.out.println("testVerb(): equiv synsets size: " + synsets.size() + " for term: " + t);
         synsets = WordNetUtilities.getVerbSynsetsFromSUMO(t);
         System.out.println("testVerb(): synsets size: " + synsets.size() + " for term: " + t);
@@ -310,7 +310,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testGiving()");
         String t = "Giving";
-        ArrayList<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(t);
+        List<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(t);
         System.out.println("testGiving(): equiv synsets size: " + synsets.size() + " for term: " + t);
         synsets = WordNetUtilities.getVerbSynsetsFromSUMO(t);
         System.out.println("testGiving(): synsets size: " + synsets.size() + " for term: " + t);
@@ -348,7 +348,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testPutting()");
         String t = "Putting";
-        ArrayList<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(t);
+        List<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(t);
         System.out.println("testPutting(): equiv synsets size: " + synsets.size() + " for term: " + t);
 
         synsets = WordNetUtilities.getVerbSynsetsFromSUMO(t);

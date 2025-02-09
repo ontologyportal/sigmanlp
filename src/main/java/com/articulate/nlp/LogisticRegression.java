@@ -96,7 +96,7 @@ public class LogisticRegression {
      */
     public void load(String filename) {
 
-        ArrayList<ArrayList<String>> fn = DB.readSpreadsheet(filename,null,false,',');
+        List<List<String>> fn = DB.readSpreadsheet(filename,null,false,',');
         labels = new ArrayList<>();
         labels.addAll(fn.get(0));
         types = new ArrayList<>();
@@ -111,32 +111,20 @@ public class LogisticRegression {
      */
     public void save() {
 
-        ArrayList<ArrayList<String>> values = new ArrayList<>();
+        List<List<String>> values = new ArrayList<>();
         values.add(labels);
         values.add(types);
-        ArrayList<String> betaString = new ArrayList<>();
+        List<String> betaString = new ArrayList<>();
         for (int i = 0; i < betas.length; i++)
             betaString.add(Double.toString(betas[i]));
         values.add(betaString);
         String out = DB.writeSpreadsheet(values,false);
-        PrintWriter pw = null;
-        try {
-            pw = new PrintWriter(new FileWriter("LRbetas.txt"));
+        try (PrintWriter pw = new PrintWriter(new FileWriter("LRbetas.txt"))) {
             pw.println(out);
         }
-        catch (Exception ex) {
-            System.out.println("Error writing file LRbetas.txt");
+        catch (IOException ex) {
+            System.err.println("Error writing file LRbetas.txt");
             ex.printStackTrace();
-        }
-        finally {
-            try {
-                if (pw != null) {
-                    pw.close();
-                }
-            }
-            catch (Exception ioe) {
-                ioe.printStackTrace();
-            }
         }
     }
 

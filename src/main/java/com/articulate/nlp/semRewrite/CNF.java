@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
 import com.articulate.sigma.KB;
@@ -705,7 +705,7 @@ public class CNF implements Comparable {
         if (debug) System.out.println("INFO in CNF.composeUnifications(): local subs: " + local);
         if (debug) System.out.println("INFO in CNF.composeUnifications(): global subs: " + global);
         HashSet<Unification> result = new HashSet<>();
-        if (global.size() == 0) {
+        if (global.isEmpty()) {
             for (Unification lu : local) {
                 Unification u = new Unification();
                 u.sub.putAll(lu.sub);
@@ -738,7 +738,7 @@ public class CNF implements Comparable {
      */
     public HashSet<Unification> unifyNew(CNF cnf) {
 
-        ArrayList<Subst> result = new ArrayList<Subst>();
+        ArrayList<Subst> result = new ArrayList<>();
         Integer globalCount = 0;
         HashSet<Unification> unis = new HashSet(); // Subst> globalSubs = new HashMap<>(); // values for variables
         //HashMap<Integer,HashSet<Clause>> globalBindings = new HashMap<>(); // bound clauses from sentence
@@ -747,7 +747,7 @@ public class CNF implements Comparable {
             HashSet<Unification> localUnis = new HashSet<>();
             HashSet<String> bindFound = new HashSet<>(); // was a binding found in the argument for this global substitution value
             for (Clause sc : cnf.clauses) {
-                if (unis.size() == 0) {
+                if (unis.isEmpty()) {
                     if (debug) System.out.println("INFO in CNF.unifyNew(): empty substitution list so far ");
                     Clause rcCopy = rc.deepCopy();
                     Clause scCopy = sc.deepCopy();
@@ -794,7 +794,7 @@ public class CNF implements Comparable {
                 //else
                 //    System.out.println("INFO in CNF.unifyNew(): no binding found for candidate: " + u.bound +
                 //            " with bind list " + bindFound);
-            if (localUnis.size() > 0)
+            if (!localUnis.isEmpty())
                 unis = composeUnifications(localUnis,newUnis);
             else
                 return null; // every clause from the rule must bind to something to succeed
@@ -835,7 +835,7 @@ public class CNF implements Comparable {
         if (debug) System.out.println("INFO in CNF.unifyNew(): substList: " + substList);
         if (substList == null)
             return null;
-        if (substList.size() == 0)
+        if (substList.isEmpty())
             return new Subst(); // empty map
         //System.out.println("INFO in CNF.unify(): cnf source 'rule': " + this);
         //System.out.println("INFO in CNF.unify(): cnf content (argument): " + cnf);
@@ -849,7 +849,7 @@ public class CNF implements Comparable {
      * A test method
      */
     public static void testMerge() {
-        
+
         Lexer lex = new Lexer("sumo(BodyMotion,Bob-2), sumo(Human,John-1).");
         CNF cnf1 = CNF.parseSimple(lex);
         Lexer lex2 = new Lexer("foo(BodyMotion,Bob-2), bar(Human,John-1).");
@@ -862,7 +862,7 @@ public class CNF implements Comparable {
      * A test method
      */
     public static void testParseSimple() {
-        
+
         Lexer lex = new Lexer("num(?O,?N), +sumo(?C,?O).");
         CNF cnf1 = CNF.parseSimple(lex);
         System.out.println("INFO in CNF.testParseSimple(): " + cnf1);
@@ -875,7 +875,7 @@ public class CNF implements Comparable {
      * A test method
      */
     public static void testEquality() {
-        
+
         Lexer lex = new Lexer("sumo(BodyMotion,Bob-2), sumo(Human,John-1).");
         CNF cnf1 = CNF.parseSimple(lex);
         Lexer lex2 = new Lexer("sumo(BodyMotion,Bob-2), sumo(Human,John-1).");
@@ -902,7 +902,7 @@ public class CNF implements Comparable {
      * A test method
      */
     public static void testContains() {
-        
+
         Lexer lex = new Lexer("sumo(BodyMotion,Bob-2).");
         CNF cnf1 = CNF.parseSimple(lex);
         Lexer lex2 = new Lexer("sumo(BodyMotion,Bob-2).");

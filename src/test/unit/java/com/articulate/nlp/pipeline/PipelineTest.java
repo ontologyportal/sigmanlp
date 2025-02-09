@@ -23,10 +23,8 @@ MA  02111-1307 USA
 
 import com.articulate.nlp.UnitTestBase;
 import edu.stanford.nlp.pipeline.Annotation;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class PipelineTest extends UnitTestBase {
 
     @Test

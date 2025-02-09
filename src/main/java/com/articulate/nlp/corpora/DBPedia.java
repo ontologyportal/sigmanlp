@@ -1,7 +1,5 @@
 package com.articulate.nlp.corpora;
 
-import com.articulate.nlp.semRewrite.Interpreter;
-import com.articulate.nlp.semconcor.Indexer;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.MultiWords;
@@ -11,6 +9,7 @@ import com.articulate.sigma.wordNet.WordNetUtilities;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -76,7 +75,7 @@ public class DBPedia {
     public static HashMap<String, String> wnToOnto = new HashMap<>();
 
     // the sense index from WordNet 2.0
-    public static HashMap<String, String> senseIndex20 = new HashMap<>();
+    public static Map<String, String> senseIndex20 = new HashMap<>();
 
     public static boolean suppressErrors = false;
 
