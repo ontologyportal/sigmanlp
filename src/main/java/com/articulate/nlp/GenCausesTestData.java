@@ -206,12 +206,12 @@ public class GenCausesTestData {
      * Then asks ollama what is caused by that process.
      */
     public static void main(String[] args) throws Exception {
-        if (args == null || args.length < 2 || args.length > 3 || args[0].equals("-h"))
-            System.out.println("Usage: GenCausesTestData <file prefix> <num to generate> <optional: -e (for equivalence mappings only)");
+        if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h"))
+            System.out.println("Usage: GenCausesTestData <file prefix> <num to generate> <ollama port number> <optional: -e (for equivalence mappings only)");
         outputFileEnglish = args[0] + "-eng.txt";
         outputFileLogic = args[0] + "-log.txt";
         int numToGenerate = Integer.parseInt(args[1]);
-        if (args.length == 3 && args[2].equals("-e")) {
+        if (args.length == 4 && args[3].equals("-e")) {
             EQUIVALENCE_MAPPINGS = true;
             System.out.println("Using ONLY equivalence mappings");
         }
@@ -219,7 +219,9 @@ public class GenCausesTestData {
             System.out.println("Drawing from equivalence and subsuming mappings.");
         }
 
-        OllamaAPI ollamaAPI = new OllamaAPI();
+        String host = "http://localhost:" + args[2] + "/";
+        System.out.println("Connecting to " + host);
+        OllamaAPI ollamaAPI = new OllamaAPI(host);
         ollamaAPI.setVerbose(false);
         boolean RAW_PROMPT = false;
         Options options = new OptionsBuilder().setTemperature(1.0f).build();
@@ -265,9 +267,7 @@ public class GenCausesTestData {
                 char firstChar = Character.toUpperCase(englishSentence.charAt(0));
                 String remainingChars = englishSentence.substring(1).toLowerCase();
                 englishSentence = firstChar + remainingChars;
-                String logicPhrase = "( exists ( ?V1 ?V2)  (and (instance ?V1 " + randomSumoProcess + " ) "
-                                        + " (instance ?V2 " + responseInSumo + " ) "
-                                        + " (causesSubclass ?V1 ?V2) ) )\n";
+                String logicPhrase = "(causesSubclass " + randomSumoProcess + " " + responseInSumo + ")\n";
                 if (debug) System.out.println("Resulting English sentence: '" + englishSentence + "'");
                 if (debug) System.out.println("Resulting logic: '" + logicPhrase + "'");
                 writeEnglishLogicPairToFile(englishSentence, logicPhrase);
