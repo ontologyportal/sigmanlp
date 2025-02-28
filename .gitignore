@@ -18,7 +18,7 @@
 /EBatchConfig.txt
 
 # IDEA files
-/.idea
+.idea
 
 # Build related files
 /lib/sigmakee.jar
@@ -33,6 +33,7 @@ nbproject/private
 # Emacs backup and temporary files
 *~
 .#*
+*.txt
 
 # macOS files
 .DS_Store
