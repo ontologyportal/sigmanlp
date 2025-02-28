@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 
 public class GenSimpTestData {
 
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static KB kb;
     public static boolean skip = false;
     public static boolean printFrame = false;
@@ -82,6 +82,7 @@ public class GenSimpTestData {
     public static PrintWriter englishFile = null; //generated English sentences
     public static PrintWriter logicFile = null;   //generated logic sentences, one per line,
                                                   // NL/logic should be on same line in the different files
+    public static PrintWriter frameFile = null; // LFeatures for the current sentence, to support future processing
 
     public static long estSentCount = 1;
     public static long sentCount = 0;
@@ -1876,6 +1877,7 @@ public class GenSimpTestData {
                 englishFile.println(finalEnglish);
                 //System.out.println("writing logic");
                 logicFile.println(prop);
+                frameFile.println(lfeat);
                 sentCount++;
             }
             else {
@@ -1920,6 +1922,7 @@ public class GenSimpTestData {
                 englishFile.println(finalEnglish);
                 //System.out.println("writing logic");
                 logicFile.println(prop);
+                frameFile.println(lfeat);
                 sentCount++;
             }
             else {
@@ -1959,6 +1962,7 @@ public class GenSimpTestData {
                     englishFile.println(finalEnglish);
                     //System.out.println("writing logic");
                     logicFile.println(prop);
+                    frameFile.println(lfeat);
                     sentCount++;
                 }
                 else {
@@ -2706,11 +2710,14 @@ public class GenSimpTestData {
             else {
                 FileWriter fweng;
                 FileWriter fwlog;
+                FileWriter fwframe;
                 if (args.length > 1) {
                     fweng = new FileWriter(args[1] + "-eng.txt");
                     englishFile = new PrintWriter(fweng);
                     fwlog = new FileWriter(args[1] + "-log.txt");
                     logicFile = new PrintWriter(fwlog);
+                    fwframe = new FileWriter(args[1] + "-frame.txt");
+                    frameFile = new PrintWriter(fwframe);
                 }
                 else {
                     if (args[0].equals("-s") || args[0].equals("-a") ||args[0].equals("-g")) {
@@ -2725,6 +2732,7 @@ public class GenSimpTestData {
                     gstd.runGenSentence();
                     englishFile.close();
                     logicFile.close();
+                    frameFile.close();
                 }
                 if (args.length > 1 && args[0].equals("-p")) { // create NL/logic synthetically
                     if (args.length > 2)
@@ -2733,6 +2741,7 @@ public class GenSimpTestData {
                     gstd.parallelGenSentence();
                     englishFile.close();
                     logicFile.close();
+                    frameFile.close();
                 }
                 if (args.length > 0 && args[0].equals("-g")) { // generate ground statements
                     generate();
