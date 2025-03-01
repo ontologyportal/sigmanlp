@@ -1157,6 +1157,8 @@ public class GenSimpTestData {
     public String getTermFormat(String term) {
 
         ArrayList<Formula> forms = (ArrayList) kb.askWithTwoRestrictions(0,"termFormat",1,"EnglishLanguage",2,term);
+        if (forms == null || forms.size() == 0)
+            return null;
         int rint = rand.nextInt(forms.size());
         return StringUtil.removeEnclosingQuotes(forms.get(rint).getStringArgument(3));
     }
