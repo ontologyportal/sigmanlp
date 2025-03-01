@@ -1152,13 +1152,25 @@ public class GenSimpTestData {
 
     /** ***************************************************************
      * @param term is a SUMO term
+     * get a random term format if there is more than one
+     */
+    public String getTermFormat(String term) {
+
+        ArrayList<Formula> forms = (ArrayList) kb.askWithTwoRestrictions(0,"termFormat",1,"EnglishLanguage",2,term);
+        int rint = rand.nextInt(forms.size());
+        return StringUtil.removeEnclosingQuotes(forms.get(rint).getStringArgument(3));
+    }
+
+    /** ***************************************************************
+     * @param term is a SUMO term
      * @param avp is a hack to return whether there was a plural, and its count
      */
     public String nounFormFromTerm(String term, AVPair avp, String other) {
 
         if (term.startsWith("UNK"))
             return term;
-        String word = kb.getTermFormat("EnglishLanguage",term);
+        //String word = kb.getTermFormat("EnglishLanguage",term);
+        String word = getTermFormat(term);
         if (word == null) {
             System.out.println("nounFormFromTerm(): no term format for " + term);
             return null;
@@ -1279,6 +1291,7 @@ public class GenSimpTestData {
      * @param prop is the formula to append to
      */
     private void addBodyPart(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
+
         String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "BodyPart");
         if (bodyPart == null)
             bodyPart = lfeat.bodyParts.getNext();
@@ -1660,6 +1673,8 @@ public class GenSimpTestData {
      */
     public void generateDirectObject(StringBuilder english, StringBuilder prop,
                              LFeatures lfeat) {
+
+        // can I generate possessives?
 
         if (debug) System.out.println("generateDirectObject(1): english: " + english);
         if (debug) System.out.println("generateDirectObject(1): prep: " + lfeat.directPrep);
