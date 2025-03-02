@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,14 +26,17 @@ import java.util.Random;
 import com.articulate.sigma.*;
 import java.util.*;
 import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.wordNet.WSD;
 
 public class GenCausesTestData {
 
-    public static boolean debug = false;
+    public static boolean debug = true;
     public static KB kb;
     public static String outputFileEnglish = "causes-eng.txt";
     public static String outputFileLogic = "causes-log.txt";
     public static boolean EQUIVALENCE_MAPPINGS = false;
+    public static boolean RAW_PROMPT = false;
+    public static Options options;
 
     public static String[] phrasesCauses = {
             " causes ",
@@ -46,6 +50,20 @@ public class GenCausesTestData {
             " prompts ",
             " gives rise to ",
             " is responsible for "
+    };
+
+    public static String[] phrasesNotCauses = {
+            " does not cause ",
+            " does not lead to ",
+            " does not result in ",
+            " does not bring about ",
+            " does not trigger ",
+            " does not provoke ",
+            " does not induce ",
+            " does not produce ",
+            " does not prompt ",
+            " does not give rise to ",
+            " is not responsible for "
     };
 
     public static String[] phrasesCausedBy = {
@@ -65,6 +83,25 @@ public class GenCausesTestData {
             " is driven by ",
             " is attributable to ",
             " can be traced back to "
+    };
+
+    public static String[] phrasesNotCausedBy = {
+            " is not caused by ",
+            " is not due to ",
+            " is not a result of ",
+            " is not because of ",
+            " is not brought about by ",
+            " is not triggered by ",
+            " is not provoked by ",
+            " is not induced by ",
+            " is not produced by ",
+            " is not prompted by ",
+            " does not stem from ",
+            " does not arise from ",
+            " does not originate from ",
+            " is not driven by ",
+            " is not attributable to ",
+            " cannot be traced back to "
     };
 
     /** ***************************************************************
@@ -93,6 +130,8 @@ public class GenCausesTestData {
         FileChannel fileChannel2 = null;
         FileLock lock1 = null;
         FileLock lock2 = null;
+        english = english + "\n";
+        logic = logic + "\n";
 
         try {
             fileChannel1 = FileChannel.open(Paths.get(outputFileEnglish), StandardOpenOption.WRITE, StandardOpenOption.APPEND);
@@ -119,6 +158,53 @@ public class GenCausesTestData {
                 e.printStackTrace();
             }
         }
+    }
+
+    public static boolean askOllamaIfArticlesAreValid(OllamaAPI ollamaAPI, String englishSentenceWithArticles) throws Exception {
+        String prompt = "Just the response. In a single word, are the grammer articles in this sentence used correctly: '" + englishSentenceWithArticles + "'";
+        if (debug) System.out.println("Articles Valid Prompt: " + prompt);
+        OllamaResult result =
+                ollamaAPI.generate("llama3.2", prompt, RAW_PROMPT, options);
+
+        if (debug) System.out.println("Ollama, are the grammer articles in this sentence used correctly returns: " + result.getResponse());
+        String response = result.getResponse();
+        if (response != null) {
+            if (response.length() >= 5) {
+                response = response.substring(0, 5);
+            }
+            response = response.toLowerCase();
+            return response.contains("yes");
+        }
+        return false;
+    }
+
+    /** ***********************************************************************
+     *   Ask Ollama for a random process. Prompt changes based on input paramters.
+     */
+    public static String askOllamaForProcess(OllamaAPI ollamaAPI, String process, boolean negation, boolean SUMOProcessFirst) throws Exception {
+        String prompt = "";
+        if (negation) {
+            if (!SUMOProcessFirst) {
+                prompt = "Just the response. In a single word, what is '" + process + "' not caused by?";
+            }
+            else {
+                prompt = "Just the response. In a single word, what does '" + process + "' not cause?";
+            }
+        }
+        else {
+            if (!SUMOProcessFirst) {
+                prompt = "Just the response. In a single word, what causes '" + process + "'?";
+            }
+            else {
+                prompt = "Just the response. In a single word, what does '" + process + "' cause?";
+            }
+        }
+        if (debug) System.out.println("Prompt: " + prompt);
+        OllamaResult result =
+                ollamaAPI.generate("llama3.2", prompt, RAW_PROMPT, options);
+
+        if (debug) System.out.println("Ollama returns: " + result.getResponse());
+        return cleanOllamaResponse(result.getResponse());
     }
 
     /** ***************************************************************
@@ -168,12 +254,13 @@ public class GenCausesTestData {
         return result.toString();
     }
 
-    /** ***************************************************************
-     * Given a term, looks up all the equivalent mappings of that therm
-     * in WordNet, and returns a random mapping.
-     * @return a random equivalent SUMO Mapping
+    /** **********************************************************************************
+     * Given a term, looks up all the mappings of that term
+     * in WordNet, and returns a random mapping that is a process.
+     * if EQUIVALENCE_MAPPINGS is set to true, then it only returns equivalence mappings.
+     * @return a random SUMO Mapping
      */
-    private static String getEquivalentSUMOMapping(String term) {
+    private static String getRandomSUMOMapping(String term) {
         Set<String> synsetOfTerm = WordNet.wn.getSynsetsFromWord(term.toLowerCase());
         ArrayList<String> equivalentTerms = new ArrayList();
         int counter = 0;
@@ -184,7 +271,7 @@ public class GenCausesTestData {
                 sumoMapping = sumoMapping.substring(2);
                 if (sumoMapping.charAt(sumoMapping.length() - 1) == '=' || EQUIVALENCE_MAPPINGS == false) {
                     String sumoTerm = sumoMapping.substring(0, sumoMapping.length() - 1);
-                    if (debug) System.out.println("Equivalent mapping to: " + sumoTerm);
+                    if (debug) System.out.println("Mapping to: " + sumoTerm);
                     if(kb.kbCache.subclassOf(sumoTerm, "Process")) {
                         if (debug) System.out.println(sumoTerm + " is a process. Added.");
                         equivalentTerms.add(sumoMapping.substring(0, sumoMapping.length() - 1));
@@ -199,13 +286,39 @@ public class GenCausesTestData {
         return null;
     }
 
+    public static String addArticlesToSentence(String sentence, String [] processes) {
+        sentence = sentence.substring(0, 1).toLowerCase() + sentence.substring(1);
+        for (String process : processes) {
+            System.out.println("Process in add article: " + process);
+            char firstChar = Character.toLowerCase(process.charAt(0));
+            if (GenSimpTestData.biasedBoolean(1, 2)) {
+                sentence = sentence.replace(process, "the " + process);
+            }
+            else {
+                if (firstChar == 'a' || firstChar == 'e' || firstChar == 'i' || firstChar == 'o' || firstChar == 'u' || firstChar == 'y') {
+                    sentence = sentence.replace(process, "an " + process);
+                }
+                else {
+                    sentence = sentence.replace(process, "a " + process);
+                }
+            }
+        }
+        return sentence.substring(0, 1).toUpperCase() + sentence.substring(1);
+    }
+
     /** *********************************************************************
-     * Main method. Builds a test set of the form "<term> causes <term>"
+     * Main method. Builds a test set of the form
+     *   "<term> causes <term>"
+     *   "<term> does not cause <term>"
+     *   "<term> is caused by <term>"
+     *        or
+     *   "<term> is not caused by <term>
      * and its logical equivalent.
      * First, selects a random process from SUMO.
      * Then asks ollama what is caused by that process.
      */
     public static void main(String[] args) throws Exception {
+        // parse input variables
         if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h"))
             System.out.println("Usage: GenCausesTestData <file prefix> <num to generate> <ollama port number> <optional: -e (for equivalence mappings only)");
         outputFileEnglish = args[0] + "-eng.txt";
@@ -219,19 +332,21 @@ public class GenCausesTestData {
             System.out.println("Drawing from equivalence and subsuming mappings.");
         }
 
+        // connect ot Ollama
         String host = "http://localhost:" + args[2] + "/";
         System.out.println("Connecting to " + host);
         OllamaAPI ollamaAPI = new OllamaAPI(host);
         ollamaAPI.setVerbose(false);
-        boolean RAW_PROMPT = false;
-        Options options = new OptionsBuilder().setTemperature(1.0f).build();
+        options = new OptionsBuilder().setTemperature(1.0f).build();
 
+        // load the knowledge base
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         System.out.println("Finished loading KBs");
         Set<String> allSUMOTermsSet = kb.kbCache.getChildClasses("Process");
         RandSet allSUMOTermsRandSet = RandSet.listToEqualPairs(allSUMOTermsSet);
-        
+
+        // create output files
         createFileIfDoesNotExists(outputFileEnglish);
         createFileIfDoesNotExists(outputFileLogic);
         Random random = new Random();
@@ -239,6 +354,7 @@ public class GenCausesTestData {
 
         int sentenceGeneratedCounter = 0;
         while (sentenceGeneratedCounter < numToGenerate) {
+            // get a random SUMO Process
             if (debug) System.out.println("\n");
             String randomSumoProcess = allSUMOTermsRandSet.getNext();
             String randomSumoProcessEnglish = kb.getTermFormat("EnglishLanguage", randomSumoProcess);
@@ -246,38 +362,90 @@ public class GenCausesTestData {
                 randomSumoProcessEnglish = addSpaceBeforeCapitals((randomSumoProcess));
             }
             if (debug) System.out.println("Random SUMO Process: " + randomSumoProcess);
-            String prompt = "Just the response. In a single word, what does '" + randomSumoProcessEnglish + "' cause?";
+            boolean negation = GenSimpTestData.biasedBoolean(1, 2);
+            boolean SUMOProcessFirst = GenSimpTestData.biasedBoolean(1, 2);
 
-            OllamaResult result =
-                    ollamaAPI.generate("llama3.2", prompt, RAW_PROMPT, options);
+            // Get a related process from Ollama
+            String responseOllamaEnglish = askOllamaForProcess(ollamaAPI, randomSumoProcessEnglish, negation, SUMOProcessFirst);
 
-            if (debug) System.out.println("Ollama returns: " + result.getResponse());
-            String responseOllamaEnglish = cleanOllamaResponse(result.getResponse());
-            String responseInSumo = getEquivalentSUMOMapping(responseOllamaEnglish);
-            
+            // Find the word sense disambibuation, aka, the closest mapping to the Ollama response in SUMO.
+            String[] arr = randomSumoProcessEnglish.split("\\s+"); // Splitting by one or more whitespace characters
+            ArrayList<String> processSplitIntoWords = new ArrayList<>(Arrays.asList(arr));
+            processSplitIntoWords.add("causes");
+            String responseOllamaWNSynset = WSD.findWordSenseInContext(responseOllamaEnglish, processSplitIntoWords);
+
+            String responseInSumo = null;
+            if (responseOllamaWNSynset != null) {
+                responseInSumo = WordNet.wn.getSUMOMapping(responseOllamaWNSynset);
+                if (responseInSumo != null) {
+                    responseInSumo = responseInSumo.substring(2, responseInSumo.length() - 1);
+                    // The resulting term must be a process. If its not, then just choose a random process that maps to the term.
+                    if (!kb.kbCache.subclassOf(responseInSumo, "Process")) {
+                        responseInSumo = getRandomSUMOMapping(responseOllamaEnglish);
+                    }
+                }
+            }
+
             if (responseInSumo != null) {
-                if (random.nextBoolean()) {
+                String causingProcess = (SUMOProcessFirst) ? randomSumoProcessEnglish : responseOllamaEnglish.toLowerCase();
+                String causingProcessLog = (SUMOProcessFirst) ? randomSumoProcess : responseInSumo;
+
+                String resultProcess = (SUMOProcessFirst) ? responseOllamaEnglish.toLowerCase() : randomSumoProcessEnglish;
+                String resultProcessLog = (SUMOProcessFirst) ? responseInSumo : randomSumoProcess;
+                if (debug) System.out.println("Causing Process: " + causingProcess);
+                if (debug) System.out.println("Result  Process: " + resultProcess);
+                if (GenSimpTestData.biasedBoolean(1, 2)) {
                     int randomIndex = random.nextInt(phrasesCauses.length);
-                    englishSentence = randomSumoProcessEnglish + phrasesCauses[randomIndex] + responseOllamaEnglish.toLowerCase() + ".\n";
+                    String causePhrase = negation ? phrasesNotCauses[randomIndex] : phrasesCauses[randomIndex] ;
+                    englishSentence = causingProcess + causePhrase + resultProcess + ".";
                 }
                 else {
                     int randomIndex = random.nextInt(phrasesCausedBy.length);
-                    englishSentence = responseOllamaEnglish.toLowerCase() + phrasesCausedBy[randomIndex] + randomSumoProcessEnglish + ".\n";
+                    String causedByPhrase = negation ? phrasesNotCausedBy[randomIndex] : phrasesCausedBy[randomIndex];
+                    englishSentence = resultProcess + causedByPhrase + causingProcess + ".";
                 }
                 char firstChar = Character.toUpperCase(englishSentence.charAt(0));
                 String remainingChars = englishSentence.substring(1).toLowerCase();
                 englishSentence = firstChar + remainingChars;
-                String logicPhrase = "(causesSubclass " + randomSumoProcess + " " + responseInSumo + ")\n";
+                String logicPhrase = "";
+                logicPhrase = "(causesSubclass " + causingProcessLog + " " + resultProcessLog + ")";
+                if (negation) {
+                    logicPhrase = "(not " + logicPhrase + " )";
+                }
                 if (debug) System.out.println("Resulting English sentence: '" + englishSentence + "'");
                 if (debug) System.out.println("Resulting logic: '" + logicPhrase + "'");
                 writeEnglishLogicPairToFile(englishSentence, logicPhrase);
                 sentenceGeneratedCounter++;
-                if (sentenceGeneratedCounter % 100 == 0) {
-                    System.out.print("...." + sentenceGeneratedCounter);
+
+                // Add articles to the sentence
+                if (sentenceGeneratedCounter < numToGenerate) {
+                    String[] processes = {causingProcess, resultProcess};
+                    String englishSentenceWithArticles = addArticlesToSentence(englishSentence, processes);
+                    boolean articlesAreValid = askOllamaIfArticlesAreValid(ollamaAPI, englishSentenceWithArticles);
+                    if (articlesAreValid) {
+                        // Convert to uppercase
+                        String causingVariableName = causingProcessLog.toUpperCase();
+                        String resultingVariableName = resultProcessLog.toUpperCase();
+                        // Remove all white space
+                        causingVariableName = causingVariableName.replaceAll("\\s+", "");
+                        resultingVariableName = resultingVariableName.replaceAll("\\s+", "");
+
+                        if (negation) {
+                            logicPhrase = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (not (causes ?"+causingVariableName+" ?"+resultingVariableName+"))))";
+                        }
+                        else {
+                            logicPhrase = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+")))";
+                        }
+                        writeEnglishLogicPairToFile(englishSentenceWithArticles, logicPhrase);
+                        sentenceGeneratedCounter++;
+                    }
+                }
+                if (sentenceGeneratedCounter % 1000 == 0) {
+                    System.out.println("...." + sentenceGeneratedCounter);
                 }
             }
             else {
-                if (debug) System.out.println("No related process for: " + result.getResponse());
+                if (debug) System.out.println("No related process for: " + responseOllamaEnglish);
             }
         }
     }
