@@ -18,47 +18,178 @@ public class GenAdjectives {
 
     /** ***************************************************************
      */
-    public static void init() {
+    public static String makeLogTense(LFeatures lfeat) {
+
+        if (lfeat.tense == gstd.PAST)
+            return "(before ?T Now) ";
+        else if (lfeat.tense == gstd.FUTURE)
+            return "(before Now ?T) ";
+        else // (lfeat.tense == gstd.PRESENT)
+            return "(equal ?T Now) ";
+    }
+
+    /** ***************************************************************
+     */
+    public static String conjugateToBe(LFeatures lfeat) {
+
+        String verb = "";
+        String neg = " ";
+        if (lfeat.negatedBody) {
+            if (gstd.rand.nextBoolean())
+                neg = " not ";
+            else
+                neg = "n't ";
+        }
+        if (lfeat.tense == gstd.PAST)
+            verb = "was" + neg;
+        if (lfeat.tense == gstd.PRESENT)
+            verb = "is" + neg;
+        if (lfeat.tense == gstd.FUTURE) {
+            if (lfeat.negatedBody) {
+                if (neg.equals("n't "))
+                    verb = "won't be ";
+                else
+                    verb = "will not be ";
+            }
+            else {
+                verb = "will be ";
+            }
+        }
+        return verb;
+    }
+
+    /** ***************************************************************
+     */
+    public static  String conjugateToHave(LFeatures lfeat) {
+
+        String verb = "";
+        String neg = " ";
+        if (lfeat.negatedBody) {
+            if (gstd.rand.nextBoolean())
+                neg = " not ";
+            else
+                neg = "n't ";
+        }
+        if (lfeat.tense == gstd.PAST) {
+            if (lfeat.negatedBody)
+                verb = "did" + neg + "have ";
+            else
+                verb = "has ";
+        }
+        if (lfeat.tense == gstd.PRESENT) {
+            if (lfeat.negatedBody)
+                verb = "does" + neg + "have ";
+            else
+                verb = "has ";
+        }
+        if (lfeat.tense == gstd.FUTURE) {
+            if (lfeat.negatedBody) {
+                if (neg.equals("n't "))
+                    verb = "won't have ";
+                else
+                    verb = "will not have ";
+            }
+            else {
+                verb = "will have ";
+            }
+        }
+        return verb;
+    }
+
+    /** ***************************************************************
+     */
+    public static String conjugateToFeel(LFeatures lfeat) {
+
+        String verb = "";
+        String neg = " ";
+        if (lfeat.negatedBody) {
+            if (gstd.rand.nextBoolean())
+                neg = " not ";
+            else
+                neg = "n't ";
+        }
+        if (lfeat.tense == gstd.PAST) {
+            if (lfeat.negatedBody)
+                verb = "did" + neg + "feel ";
+            else
+                verb = "felt ";
+        }
+        if (lfeat.tense == gstd.PRESENT) {
+            if (lfeat.negatedBody)
+                verb = "does" + neg + "have ";
+            else
+                verb = "has ";
+        }
+        if (lfeat.tense == gstd.FUTURE) {
+            if (lfeat.negatedBody) {
+                if (neg.equals("n't "))
+                    verb = "won't have ";
+                else
+                    verb = "will not have ";
+            }
+            else {
+                verb = "will have ";
+            }
+        }
+        return verb;
     }
 
     /** ***************************************************************
      */
     public static void createIs(){
 
+        boolean useTense = true;
         Lists val = Lists.EMO;
         for (int i = 0; i < gstd.sentMax; i++) {
+            LFeatures lfeat = new LFeatures(gstd);
+            lfeat.tense = gstd.rand.nextInt(3) * 2; // PAST = 0; PRESENT = 2; FUTURE = 4
+            lfeat.negatedBody = gstd.rand.nextBoolean();
+
             StringBuilder english = new StringBuilder();
             StringBuilder prop = new StringBuilder();
+            if (lfeat.negatedBody)
+                prop.append("(not ");
             prop.append("(exists (?H) (and ");
-            LFeatures lfeat = new LFeatures(gstd);
+
             lfeat.frame = WordNet.wn.VerbFrames.get(7);
             lfeat.framePart = WordNet.wn.VerbFrames.get(7);
             gstd.generateHumanSubject(english, prop, lfeat);
             String term = "";
-            if (gstd.biasedBoolean(1,3)) {
+            if (gstd.biasedBoolean(1, 3)) {
                 term = emoState.getNext();
                 val = Lists.EMO;
-            }
-            else if (gstd.biasedBoolean(1,3)) {
+            } else if (gstd.biasedBoolean(1, 3)) {
                 term = consc.getNext();
                 val = Lists.CONSC;
-            }
-            else {
+            } else {
                 term = disease.getNext();
                 val = Lists.ILL;
             }
             String word = gstd.getTermFormat(term);
+            String verb = "";
             if (val == Lists.CONSC)
-                english.append("is " + word);
-            else
-                english.append("has " + word);
+                verb = conjugateToBe(lfeat);
+            else if (val == Lists.ILL)
+                verb = conjugateToHave(lfeat);
+            else if (val == Lists.EMO)
+                verb = conjugateToFeel(lfeat);
+
+            english.append(verb + word);
             if (lfeat.question)
                 english.append("?");
             else
                 english.append(".");
             gstd.capitalize(english);
             gstd.englishFile.println(english);
+            if (useTense) {
+                prop.append(makeLogTense(lfeat));
+                prop.append("(holdsDuring ?T ");
+            }
             prop.append("(attribute ?H " + term + ")))");
+            if (useTense)
+                prop.append(")");
+            if (lfeat.negatedBody)
+                prop.append(")");
             gstd.logicFile.println(prop);
             gstd.frameFile.println(lfeat);
         }
