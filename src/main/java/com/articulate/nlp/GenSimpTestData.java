@@ -1263,6 +1263,13 @@ public class GenSimpTestData {
     }
 
     /** ***************************************************************
+     */
+    public static void capitalize(StringBuilder s) {
+
+        s.replace(0,1,Character.toString(Character.toUpperCase(s.charAt(0))));
+    }
+
+    /** ***************************************************************
      * Generate a boolean true value randomly num out of max times.
      * So biasedBoolean(8,10) generates a true most of the time
      * (8 out of 10 times on average)
