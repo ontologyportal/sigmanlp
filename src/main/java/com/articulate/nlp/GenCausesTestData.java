@@ -332,7 +332,7 @@ public class GenCausesTestData {
             System.out.println("Drawing from equivalence and subsuming mappings.");
         }
 
-        // connect ot Ollama
+        // connect to Ollama
         String host = "http://localhost:" + args[2] + "/";
         System.out.println("Connecting to " + host);
         OllamaAPI ollamaAPI = new OllamaAPI(host);
