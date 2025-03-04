@@ -95,18 +95,6 @@ nbproject/private/private.properties file with these keys:
 
     catalina.home=${path.to.your.tomcat9}
 
-    private.resources.dir=nbproject/private/resources
-    main.config=${private.resources.dir}/config.xml
-    integration.config=${private.resources.dir}/config_topAndMid.xml
-    unit.config=${private.resources.dir}/config_topOnly.xml
-
-    # The above properties allow you to keep and restore the various forms of
-    # config.xml that get overwritten when running Unit Tests. Copy these files
-    # to the respective "resources" directory complete with your personal system
-    # paths replacing the "/home/theuser/" pseudos. config.xml is found in the
-    # sigmakee base directory and the other two are found in test/*/resources
-    # directories
-
     # JavaMail properties
     user=${your.email.user.name}
     my.email=${user}@${your.email.domain}
