@@ -49,7 +49,6 @@
     <property name="deploy.classes" value="${build.home}/WEB-INF/classes"/>
     <property name="deploy.lib" value="${build.home}/WEB-INF/lib"/>
 
-    <property name="compiler.debug" value="on"/>
     <property name="javac.release" value="11"/>
     <property name="run.jvmargs" value="-Xmx10g -Xss1m"/>
 
@@ -106,8 +105,14 @@
         <condition property="jdk21+">
             <javaversion atleast="21"/>
         </condition>
-        <fail message="Unsupported JDK version: ${ant.java.version}. Please use JDK version 21 or greater."
+        <fail message="Unsupported JDK version: ${ant.java.version}. Please use a Java Development Kit (JDK) version 21 or greater."
               unless="jdk21+">
+        </fail>
+        <condition property="nojdk">
+            <contains string="${java.home}" substring="jdk"/>
+        </condition>
+        <fail message="Please install a Java Development Kit (JDK) version 21 or greater."
+              unless="nojdk">
         </fail>
 
         <echo message="Welcome to the ${product.Name} v${product.Version}"/>
