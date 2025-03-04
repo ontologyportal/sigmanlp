@@ -310,7 +310,7 @@
 
     <!--
     ==========
-    UNIT TESTS <- These are only meant to be run within the CI environment
+    UNIT TESTS
     ==========
     -->
 
@@ -343,13 +343,6 @@
             </test>
         </junit>
         <antcall target="junit.report"/>
-        <!-- Prune KB after integration tests -->
-        <delete includeemptydirs="true" failonerror="false">
-            <fileset dir="${sigma.home}/KBs">
-                <include name="*.tptp"/>
-                <include name="*.ser"/>
-            </fileset>
-        </delete>
     </target>
     <target name="junit.report" >
         <junitreport todir="${reports.dir}">
