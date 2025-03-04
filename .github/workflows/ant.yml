@@ -163,11 +163,3 @@ jobs:
         working-directory: ./sigmanlp
         run: |
           ant test.integration
-
-      - name: Prune KB after integration tests
-        env:
-          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
-        working-directory: ${{ github.workspace }}
-        run: |
-          find $SIGMA_HOME/KBs -name '*.ser' -delete
-          rm -rf $SIGMA_HOME/KBs/tests
