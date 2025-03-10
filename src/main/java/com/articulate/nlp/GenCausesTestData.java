@@ -37,6 +37,12 @@ public class GenCausesTestData {
     public static boolean EQUIVALENCE_MAPPINGS = false;
     public static boolean RAW_PROMPT = false;
     public static Options options;
+    public static String englishSentence;
+    public static String logicPhrase = "";
+    public static OllamaAPI ollamaAPI;
+    public static RandSet allSUMOTermsRandSet;
+    public static Random random;
+    public static int numToGenerate;
 
     public static String[] phrasesCauses = {
             " causes ",
@@ -103,6 +109,43 @@ public class GenCausesTestData {
             " is not attributable to ",
             " cannot be traced back to "
     };
+
+    public static void init(String[] args) {
+        // parse input variables
+        if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h")) {
+            System.out.println("Usage: GenCausesTestData <file prefix> <num to generate> <ollama port number> <optional: -e (for equivalence mappings only)");
+            System.exit(0);
+        }
+        outputFileEnglish = args[0] + "-eng.txt";
+        outputFileLogic = args[0] + "-log.txt";
+        numToGenerate = Integer.parseInt(args[1]);
+        if (args.length == 4 && args[3].equals("-e")) {
+            EQUIVALENCE_MAPPINGS = true;
+            System.out.println("Using ONLY equivalence mappings");
+        }
+        else {
+            System.out.println("Drawing from equivalence and subsuming mappings.");
+        }
+
+        // connect to Ollama
+        String host = "http://localhost:" + args[2] + "/";
+        System.out.println("Connecting to " + host);
+        ollamaAPI = new OllamaAPI(host);
+        ollamaAPI.setVerbose(false);
+        options = new OptionsBuilder().setTemperature(1.0f).build();
+
+        // load the knowledge base
+        KBmanager.getMgr().initializeOnce();
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        System.out.println("Finished loading KBs");
+        Set<String> allSUMOTermsSet = kb.kbCache.getChildClasses("Process");
+        allSUMOTermsRandSet = RandSet.listToEqualPairs(allSUMOTermsSet);
+        random = new Random();
+
+        // create output files
+        createFileIfDoesNotExists(outputFileEnglish);
+        createFileIfDoesNotExists(outputFileLogic);
+    }
 
     /** ***************************************************************
      *   Creates a file if one doesn't exist already.
@@ -318,40 +361,7 @@ public class GenCausesTestData {
      * Then asks ollama what is caused by that process.
      */
     public static void main(String[] args) throws Exception {
-        // parse input variables
-        if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h"))
-            System.out.println("Usage: GenCausesTestData <file prefix> <num to generate> <ollama port number> <optional: -e (for equivalence mappings only)");
-        outputFileEnglish = args[0] + "-eng.txt";
-        outputFileLogic = args[0] + "-log.txt";
-        int numToGenerate = Integer.parseInt(args[1]);
-        if (args.length == 4 && args[3].equals("-e")) {
-            EQUIVALENCE_MAPPINGS = true;
-            System.out.println("Using ONLY equivalence mappings");
-        }
-        else {
-            System.out.println("Drawing from equivalence and subsuming mappings.");
-        }
-
-        // connect to Ollama
-        String host = "http://localhost:" + args[2] + "/";
-        System.out.println("Connecting to " + host);
-        OllamaAPI ollamaAPI = new OllamaAPI(host);
-        ollamaAPI.setVerbose(false);
-        options = new OptionsBuilder().setTemperature(1.0f).build();
-
-        // load the knowledge base
-        KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        System.out.println("Finished loading KBs");
-        Set<String> allSUMOTermsSet = kb.kbCache.getChildClasses("Process");
-        RandSet allSUMOTermsRandSet = RandSet.listToEqualPairs(allSUMOTermsSet);
-
-        // create output files
-        createFileIfDoesNotExists(outputFileEnglish);
-        createFileIfDoesNotExists(outputFileLogic);
-        Random random = new Random();
-        String englishSentence;
-
+        init(args);
         int sentenceGeneratedCounter = 0;
         while (sentenceGeneratedCounter < numToGenerate) {
             // get a random SUMO Process
@@ -407,7 +417,6 @@ public class GenCausesTestData {
                 char firstChar = Character.toUpperCase(englishSentence.charAt(0));
                 String remainingChars = englishSentence.substring(1).toLowerCase();
                 englishSentence = firstChar + remainingChars;
-                String logicPhrase = "";
                 logicPhrase = "(causesSubclass " + causingProcessLog + " " + resultProcessLog + ")";
                 if (negation) {
                     logicPhrase = "(not " + logicPhrase + " )";
