@@ -110,6 +110,51 @@ public class GenCausesTestData {
             " cannot be traced back to "
     };
 
+    public static String[] QuestionPhrasesTermCauses = {
+            "What does <TERM> <NOT> cause?",
+            "What does <TERM> <NOT> lead to?",
+            "What does <TERM <NOT> result in?",
+            "What does <TERM> <NOT> bring about?",
+            "What does <TERM> <NOT> trigger?",
+            "What does <TERM> <NOT> provoke?",
+            "What does <TERM> <NOT> induce?",
+            "What does <TERM> <NOT> produce?",
+            "What does <TERM> <NOT> prompt? ",
+            "What does <TERM> <NOT> give rise to?",
+            "What is <TERM> <NOT> responsible for?"
+            "What is <NOT> caused by <TERM>?",
+            "What is <NOT> due to <TERM>?",
+            "What is <NOT> a result of <TERM>?",
+            "What is <NOT> because of <TERM>?",
+            "What is <NOT> brought about by <TERM>?",
+            "What is <NOT> triggered by <TERM>?",
+            "What is <NOT> provoked by <TERM>?",
+            "What is <NOT> induced by <TERM>?",
+            "What is <NOT> produced by <TERM>?",
+            "What is <NOT> prompted by <TERM>?",
+            "What <DOES NOT> stem<S> from <TERM>?",
+            "What <DOES NOT> arise<S> from <TERM>?",
+            "What <DOES NOT> originate<S> from <TERM>?",
+            "What is <NOT> driven by <TERM>?",
+            "What is <NOT> attributable to <TERM>?",
+            "What can be traced back to <TERM>?"
+    };
+
+    public static String[] phrasesQuestionCausesTerm = {
+            "What <DOES NOT> cause<S> <TERM>?",
+            "What <DOES NOT> lead<S> to <TERM>?",
+            "What <DOES NOT> result<S> in <TERM>?",
+            "What <DOES NOT> bring<S> about <TERM>?",
+            "What <DOES NOT> trigger<S> <TERM>?",
+            "What <DOES NOT> provoke<S> <TERM>?",
+            "What <DOES NOT> induce<S> <TERM>?",
+            "What <DOES NOT> produce<S> <TERM>?",
+            "What <DOES NOT> prompt<S> <TERM>?",
+            "What <DOES NOT> give<S> rise to <TERM>?",
+            "What is <NOT> responsible for <TERM>?",
+    };
+
+
     public static void init(String[] args) {
         // parse input variables
         if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h")) {
