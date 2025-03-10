@@ -431,7 +431,7 @@ public class GenCausesTestData {
                         resultingVariableName = resultingVariableName.replaceAll("\\s+", "");
 
                         if (negation) {
-                            logicPhrase = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (not (causes ?"+causingVariableName+" ?"+resultingVariableName+"))))";
+                            logicPhrase = "(not (exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+"))))";
                         }
                         else {
                             logicPhrase = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+")))";
