@@ -137,7 +137,7 @@ public class GenCausesTestData {
             "What <DOES NOT> originate<S> from <TERM>?",
             "What is <NOT> driven by <TERM>?",
             "What is <NOT> attributable to <TERM>?",
-            "What can be traced back to <TERM>?"
+            "What can<NOT> be traced back to <TERM>?"
     };
 
     public static String[] phrasesQuestionCausesTerm = {
@@ -152,6 +152,22 @@ public class GenCausesTestData {
             "What <DOES NOT> prompt<S> <TERM>?",
             "What <DOES NOT> give<S> rise to <TERM>?",
             "What is <NOT> responsible for <TERM>?",
+            "What is <NOT> caused by <TERM>?",
+            "What is <NOT> due to <TERM>?",
+            "What is <NOT> a result of <TERM>?",
+            "What is <NOT> because of <TERM>?",
+            "What is <NOT> brought about by <TERM>?",
+            "What is <NOT> triggered by <TERM>?",
+            "What is <NOT> provoked by <TERM>?",
+            "What is <NOT> induced by <TERM>?",
+            "What is <NOT> produced by <TERM>?",
+            "What is <NOT> prompted by <TERM>?",
+            "What <DOES NOT> stem<S> from <TERM>?",
+            "What <DOES NOT> arise<S> from <TERM>?",
+            "What <DOES NOT> originate<S> from <TERM>?",
+            "What is <NOT> driven by <TERM>?",
+            "What is <NOT> attributable to <TERM>?",
+            "What can be traced back to <TERM>?"
     };
 
 
