@@ -30,7 +30,7 @@ import com.articulate.sigma.wordNet.WSD;
 
 public class GenCausesTestData {
 
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static KB kb;
     public static String outputFileEnglish = "causes-eng.txt";
     public static String outputFileLogic = "causes-log.txt";
@@ -43,140 +43,73 @@ public class GenCausesTestData {
     public static RandSet allSUMOTermsRandSet;
     public static Random random;
     public static int numToGenerate;
+    public static int sentenceGeneratedCounter;
 
     public static String[] phrasesCauses = {
-            " causes ",
-            " leads to ",
-            " results in ",
-            " brings about ",
-            " triggers ",
-            " provokes ",
-            " induces ",
-            " produces ",
-            " prompts ",
-            " gives rise to ",
-            " is responsible for "
+            " causes ",             " leads to ",         " results in ",         " brings about ",
+            " triggers ",           " provokes ",         " induces ",            " produces ",
+            " prompts ",            " gives rise to ",    " is responsible for "
     };
 
     public static String[] phrasesNotCauses = {
-            " does not cause ",
-            " does not lead to ",
-            " does not result in ",
-            " does not bring about ",
-            " does not trigger ",
-            " does not provoke ",
-            " does not induce ",
-            " does not produce ",
-            " does not prompt ",
-            " does not give rise to ",
-            " is not responsible for "
+            " does not cause ",            " does not lead to ",           " does not result in ",
+            " does not bring about ",      " does not trigger ",           " does not provoke ",
+            " does not induce ",           " does not produce ",           " does not prompt ",
+            " does not give rise to ",     " is not responsible for "
     };
 
     public static String[] phrasesCausedBy = {
-            " is caused by ",
-            " is due to ",
-            " is a result of ",
-            " is because of ",
-            " is brought about by ",
-            " is triggered by ",
-            " is provoked by ",
-            " is induced by ",
-            " is produced by ",
-            " is prompted by ",
-            " stems from ",
-            " arises from ",
-            " originates from ",
-            " is driven by ",
-            " is attributable to ",
-            " can be traced back to "
+            " is caused by ",        " is due to ",          " is a result of ",      " is because of ",
+            " is brought about by ", " is triggered by ",    " is provoked by ",      " is induced by ",
+            " is produced by ",      " is prompted by ",     " stems from ",          " arises from ",
+            " originates from ",     " is driven by ",       " is attributable to ",  " can be traced back to "
     };
 
     public static String[] phrasesNotCausedBy = {
-            " is not caused by ",
-            " is not due to ",
-            " is not a result of ",
-            " is not because of ",
-            " is not brought about by ",
-            " is not triggered by ",
-            " is not provoked by ",
-            " is not induced by ",
-            " is not produced by ",
-            " is not prompted by ",
-            " does not stem from ",
-            " does not arise from ",
-            " does not originate from ",
-            " is not driven by ",
-            " is not attributable to ",
+            " is not caused by ",            " is not due to ",           " is not a result of ",
+            " is not because of ",           " is not brought about by ", " is not triggered by ",
+            " is not provoked by ",          " is not induced by ",       " is not produced by ",
+            " is not prompted by ",          " does not stem from ",      " does not arise from ",
+            " does not originate from ",     " is not driven by ",        " is not attributable to ",
             " cannot be traced back to "
     };
 
     public static String[] phrasesQuestionTermCauses = {
-            "What does <TERM> <NOT> cause?",
-            "What does <TERM> <NOT> lead to?",
-            "What does <TERM <NOT> result in?",
-            "What does <TERM> <NOT> bring about?",
-            "What does <TERM> <NOT> trigger?",
-            "What does <TERM> <NOT> provoke?",
-            "What does <TERM> <NOT> induce?",
-            "What does <TERM> <NOT> produce?",
-            "What does <TERM> <NOT> prompt? ",
-            "What does <TERM> <NOT> give rise to?",
-            "What is <TERM> <NOT> responsible for?"
-            "What is <NOT> caused by <TERM>?",
-            "What is <NOT> due to <TERM>?",
-            "What is <NOT> a result of <TERM>?",
-            "What is <NOT> because of <TERM>?",
-            "What is <NOT> brought about by <TERM>?",
-            "What is <NOT> triggered by <TERM>?",
-            "What is <NOT> provoked by <TERM>?",
-            "What is <NOT> induced by <TERM>?",
-            "What is <NOT> produced by <TERM>?",
-            "What is <NOT> prompted by <TERM>?",
-            "What <DOES NOT> stem<S> from <TERM>?",
-            "What <DOES NOT> arise<S> from <TERM>?",
-            "What <DOES NOT> originate<S> from <TERM>?",
-            "What is <NOT> driven by <TERM>?",
-            "What is <NOT> attributable to <TERM>?",
-            "What can<NOT> be traced back to <TERM>?"
+            "What does <TERM> <NOT> cause?",            "What does <TERM> <NOT> lead to?",
+            "What does <TERM> <NOT> result in?",        "What does <TERM> <NOT> bring about?",
+            "What does <TERM> <NOT> trigger?",          "What does <TERM> <NOT> provoke?",
+            "What does <TERM> <NOT> induce?",           "What does <TERM> <NOT> produce?",
+            "What does <TERM> <NOT> prompt? ",          "What does <TERM> <NOT> give rise to?",
+            "What is <TERM> <NOT> responsible for?",    "What is <NOT> caused by <TERM>?",
+            "What is <NOT> due to <TERM>?",             "What is <NOT> a result of <TERM>?",
+            "What is <NOT> because of <TERM>?",         "What is <NOT> brought about by <TERM>?",
+            "What is <NOT> triggered by <TERM>?",       "What is <NOT> provoked by <TERM>?",
+            "What is <NOT> induced by <TERM>?",         "What is <NOT> produced by <TERM>?",
+            "What is <NOT> prompted by <TERM>?",        "What <DOES NOT> stem<S> from <TERM>?",
+            "What <DOES NOT> arise<S> from <TERM>?",    "What <DOES NOT> originate<S> from <TERM>?",
+            "What is <NOT> driven by <TERM>?",          "What is <NOT> attributable to <TERM>?",
+            "What can<NOT>  be traced back to <TERM>?"
     };
 
     public static String[] phrasesQuestionCausesTerm = {
-            "Why does <TERM> <NOT> occur?",
-            "What causes <TERM> to <NOT> occur?",
-            "What is <NOT> the cause of <TERM>?",
-            "Where does <TERM> <NOT> come from?",
-            "What is <NOT> the source of <TERM>?",
-            "How does <TERM> <NOT> occur?",
-            "How does <TERM> <NOT> happen?",
-            "How is <TERM> <NOT> caused?",
-            "How does <TERM> <NOT> come about?"
-            "What <DOES NOT> cause<S> <TERM>?",
-            "What <DOES NOT> lead<S> to <TERM>?",
-            "What <DOES NOT> result<S> in <TERM>?",
-            "What <DOES NOT> bring<S> about <TERM>?",
-            "What <DOES NOT> trigger<S> <TERM>?",
-            "What <DOES NOT> provoke<S> <TERM>?",
-            "What <DOES NOT> induce<S> <TERM>?",
-            "What <DOES NOT> produce<S> <TERM>?",
-            "What <DOES NOT> prompt<S> <TERM>?",
-            "What <DOES NOT> give<S> rise to <TERM>?",
-            "What is <NOT> responsible for <TERM>?",
-            "What is <TERM> <NOT> caused by?",
-            "What is <TERM> <NOT> due to?",
-            "What is <TERM> <NOT> a result of?",
-            "What is <TERM> <NOT> because of?",
-            "What is <TERM> <NOT> brought about by?",
-            "What is <TERM> <NOT> triggered by?",
-            "What is <TERM> <NOT> provoked by?",
-            "What is <TERM> <NOT> induced by?",
-            "What is <TERM> <NOT> produced by?",
-            "What is <TERM> <NOT> prompted by?",
-            "What does <TERM> <NOT> stem<S> from?",
-            "What does <TERM> <NOT> arise<S> from?",
-            "What does <TERM> <NOT> originate<S> from?",
-            "What is <TERM> <NOT> driven by?",
-            "What is <TERM> <NOT> attributable to?",
-            "What can <TERM> <NOT> be traced back to?"
+            "Why does <TERM> <NOT> occur?",            "What causes <TERM> to <NOT> occur?",
+            "What is <NOT> the cause of <TERM>?",      "Where does <TERM> <NOT> come from?",
+            "What is <NOT> the source of <TERM>?",     "How does <TERM> <NOT> occur?",
+            "How does <TERM> <NOT> happen?",           "How is <TERM> <NOT> caused?",
+            "How does <TERM> <NOT> come about?",       "What <DOES NOT> cause<S> <TERM>?",
+            "What <DOES NOT> lead<S> to <TERM>?",      "What <DOES NOT> result<S> in <TERM>?",
+            "What <DOES NOT> bring<S> about <TERM>?",  "What <DOES NOT> trigger<S> <TERM>?",
+            "What <DOES NOT> provoke<S> <TERM>?",      "What <DOES NOT> induce<S> <TERM>?",
+            "What <DOES NOT> produce<S> <TERM>?",      "What <DOES NOT> prompt<S> <TERM>?",
+            "What <DOES NOT> give<S> rise to <TERM>?", "What is <NOT> responsible for <TERM>?",
+            "What is <TERM> <NOT> caused by?",         "What is <TERM> <NOT> due to?",
+            "What is <TERM> <NOT> a result of?",       "What is <TERM> <NOT> because of?",
+            "What is <TERM> <NOT> brought about by?",  "What is <TERM> <NOT> triggered by?",
+            "What is <TERM> <NOT> provoked by?",       "What is <TERM> <NOT> induced by?",
+            "What is <TERM> <NOT> produced by?",       "What is <TERM> <NOT> prompted by?",
+            "What does <TERM> <NOT> stem<S> from?",    "What does <TERM> <NOT> arise<S> from?",
+            "What does <TERM> <NOT> originate<S> from?","What is <TERM> <NOT> driven by?",
+            "What is <TERM> <NOT> attributable to?",   "What can <TERM> <NOT> be traced back to?"
     };
 
     public static String[] phrasesQuestionTermCausesTerm = {
@@ -194,22 +127,14 @@ public class GenCausesTestData {
     };
 
     public static String[] phrasesQuestionTermCausedByTerm = {
-            "Is <RESULT> <NOT> caused by <TERM>?",
-            "Is <RESULT> <NOT> due to <TERM>?",
-            "Is <RESULT> <NOT> a result of <TERM>?",
-            "Is <RESULT> <NOT> because of <TERM>?",
-            "Is <RESULT> <NOT> brought about by <TERM>?",
-            "Is <RESULT> <NOT> triggered by <TERM>?",
-            "Is <RESULT> <NOT> provoked by <TERM>?",
-            "Is <RESULT> <NOT> induced by <TERM>?",
-            "Is <RESULT> <NOT> produced by <TERM>?",
-            "Is <RESULT> <NOT> prompted by <TERM>?",
-            "Does <RESULT> <NOT> stem from <TERM>?",
-            "Does <RESULT> <NOT> arise from <TERM>?",
-            "Does <RESULT> <NOT> originate from <TERM>?",
-            "Is <RESULT> <NOT> driven by <TERM>?",
-            "Is <RESULT> <NOT> attributable to <TERM>?",
-            "Can <RESULT> <NOT> be traced back to <TERM>?"
+            "Is <RESULT> <NOT> caused by <TERM>?",            "Is <RESULT> <NOT> due to <TERM>?",
+            "Is <RESULT> <NOT> a result of <TERM>?",          "Is <RESULT> <NOT> because of <TERM>?",
+            "Is <RESULT> <NOT> brought about by <TERM>?",     "Is <RESULT> <NOT> triggered by <TERM>?",
+            "Is <RESULT> <NOT> provoked by <TERM>?",          "Is <RESULT> <NOT> induced by <TERM>?",
+            "Is <RESULT> <NOT> produced by <TERM>?",          "Is <RESULT> <NOT> prompted by <TERM>?",
+            "Does <RESULT> <NOT> stem from <TERM>?",          "Does <RESULT> <NOT> arise from <TERM>?",
+            "Does <RESULT> <NOT> originate from <TERM>?",     "Is <RESULT> <NOT> driven by <TERM>?",
+            "Is <RESULT> <NOT> attributable to <TERM>?",      "Can <RESULT> <NOT> be traced back to <TERM>?"
     };
 
     /** ***************************************************************
@@ -309,6 +234,9 @@ public class GenCausesTestData {
         }
     }
 
+    /** ***********************************************************************
+     *   Ask Ollama if articles are valid in a particular sentence.
+     */
     public static boolean areArticlesValidOllama(String englishSentenceWithArticles) throws Exception {
         String prompt = "Just the response. In a single word, are the grammer articles in this sentence used correctly: '" + englishSentenceWithArticles + "'";
         if (debug) System.out.println("Articles Valid Prompt: " + prompt);
@@ -330,7 +258,7 @@ public class GenCausesTestData {
     /** ***********************************************************************
      *   Ask Ollama for a random process. Prompt changes based on input paramters.
      */
-    public static String askOllamaForProcess(OllamaAPI ollamaAPI, String process, boolean negation, boolean SUMOProcessFirst) throws Exception {
+    public static String askOllamaForProcess(String process, boolean negation, boolean SUMOProcessFirst) throws Exception {
         String prompt = "";
         if (negation) {
             if (!SUMOProcessFirst) {
@@ -435,10 +363,14 @@ public class GenCausesTestData {
         return null;
     }
 
+    /** ***********************************************************************
+     *   Adds articles to the front of processes, to essentially "instantiate"
+     *   them.
+     */
     public static String addArticlesToSentence(String sentence, String [] processes) {
         sentence = sentence.substring(0, 1).toLowerCase() + sentence.substring(1);
         for (String process : processes) {
-            System.out.println("Process in add article: " + process);
+            if (debug) System.out.println("Process in add article: " + process);
             char firstChar = Character.toLowerCase(process.charAt(0));
             if (GenSimpTestData.biasedBoolean(1, 2)) {
                 sentence = sentence.replace(process, "the " + process);
@@ -477,6 +409,7 @@ public class GenCausesTestData {
                 }
             }
         }
+        return responseInSumo;
     }
 
 
@@ -494,12 +427,12 @@ public class GenCausesTestData {
         if (SUMOProcessFirst) { // Questions of the form "What does <TERM> <NOT> cause?"
             int randomIndex = random.nextInt(phrasesQuestionTermCauses.length);
             englishSentence = phrasesQuestionTermCauses[randomIndex];
-            logicPhrase = "(subclassCauses " + randomSumoProcess + " ?X)";
+            logicPhrase = "(causesSubclass " + randomSumoProcess + " ?X)";
         }
         else { // Questions of the form: "What <DOES NOT> cause<S> <TERM>?"
             int randomIndex = random.nextInt(phrasesQuestionCausesTerm.length);
             englishSentence = phrasesQuestionCausesTerm[randomIndex];
-            logicPhrase = "(subclassCauses ?X " + randomSumoProcess + ")";
+            logicPhrase = "(causesSubclass ?X " + randomSumoProcess + ")";
         }
         englishSentence = englishSentence
                 .replace("<TERM>", randomSumoProcessEnglish)
@@ -507,25 +440,25 @@ public class GenCausesTestData {
                 .replace("<NOT> ", notPhrase)
                 .replace("<S>", sPhrase);
         if (negation) {
-            logicPhrase = "(not " + logicSentence + ")";
+            logicPhrase = "(not " + logicPhrase + ")";
         }
         writeEnglishLogicPairToFile(englishSentence, logicPhrase);
+        sentenceGeneratedCounter++;
 
         // Add question with articles
         String[] processes = {randomSumoProcessEnglish};
         englishSentence = addArticlesToSentence(englishSentence, processes);
-        if(areArticlesValidOllama(englishSentence)) {
-            if (SUMOProcessFirst) {
-                logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess ") (causes ?X1 ?X2)))";
-            }
-            else {
-                logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess ") (causes ?X2 ?X1)))";
-            }
-            if (negation) {
-                logicPhrase = "(not " + logicPhrase + ")";
-            }
+        if (SUMOProcessFirst) {
+            logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess + ") (causes ?X1 ?X2)))";
+        }
+        else {
+            logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess + ") (causes ?X2 ?X1)))";
+        }
+        if (negation) {
+            logicPhrase = "(not " + logicPhrase + ")";
         }
         writeEnglishLogicPairToFile(englishSentence, logicPhrase);
+        sentenceGeneratedCounter++;
     }
 
 
@@ -542,7 +475,8 @@ public class GenCausesTestData {
      */
     public static void main(String[] args) throws Exception {
         init(args);
-        int sentenceGeneratedCounter = 0;
+        System.out.println("Finished initialization, beginning sentence generation.");
+        sentenceGeneratedCounter = 0;
         while (sentenceGeneratedCounter < numToGenerate) {
             // get a random SUMO Process
             if (debug) System.out.println("\n");
@@ -554,17 +488,16 @@ public class GenCausesTestData {
             if (debug) System.out.println("Random SUMO Process: " + randomSumoProcess);
             boolean negation = GenSimpTestData.biasedBoolean(1, 2);
             boolean SUMOProcessFirst = GenSimpTestData.biasedBoolean(1, 2);
-            boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 10);
-            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 10);
+            boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 15);
+            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 15);
 
             if (generateQuestionTermCauses && sentenceGeneratedCounter < numToGenerate+2) {
-                generateQuestionTermCauses(negation, SUMOProcessFirst, randomSUMOProcess, randomSumoProcessEnglish);
-                sentenceGeneratedCounter = sentenceGeneratedCounter+2;
+                generateQuestionTermCauses(negation, SUMOProcessFirst, randomSumoProcess, randomSumoProcessEnglish);
             }
 
             // Get a related process from Ollama
-            String responseOllamaEnglish = askOllamaForProcess(ollamaAPI, randomSumoProcessEnglish, negation, SUMOProcessFirst);
-            responseInSUMO = mapResponseToSUMOTerm(responseOllamaEnglish, randomSumoProcessEnglish);
+            String responseOllamaEnglish = askOllamaForProcess(randomSumoProcessEnglish, negation, SUMOProcessFirst);
+            String responseInSumo = mapResponseToSUMOTerm(responseOllamaEnglish, randomSumoProcessEnglish);
 
 
             if (responseInSumo != null) {
@@ -601,7 +534,7 @@ public class GenCausesTestData {
                 if (sentenceGeneratedCounter < numToGenerate) {
                     String[] processes = {causingProcess, resultProcess};
                     String englishSentenceWithArticles = addArticlesToSentence(englishSentence, processes);
-                    boolean articlesAreValid = askOllamaIfArticlesAreValid(ollamaAPI, englishSentenceWithArticles);
+                    boolean articlesAreValid = areArticlesValidOllama(englishSentenceWithArticles);
                     if (articlesAreValid) {
                         // Convert to uppercase
                         String causingVariableName = causingProcessLog.toUpperCase();
