@@ -110,7 +110,7 @@ public class GenCausesTestData {
             " cannot be traced back to "
     };
 
-    public static String[] QuestionPhrasesTermCauses = {
+    public static String[] phrasesQuestionTermCauses = {
             "What does <TERM> <NOT> cause?",
             "What does <TERM> <NOT> lead to?",
             "What does <TERM <NOT> result in?",
@@ -309,7 +309,7 @@ public class GenCausesTestData {
         }
     }
 
-    public static boolean askOllamaIfArticlesAreValid(OllamaAPI ollamaAPI, String englishSentenceWithArticles) throws Exception {
+    public static boolean areArticlesValidOllama(String englishSentenceWithArticles) throws Exception {
         String prompt = "Just the response. In a single word, are the grammer articles in this sentence used correctly: '" + englishSentenceWithArticles + "'";
         if (debug) System.out.println("Articles Valid Prompt: " + prompt);
         OllamaResult result =
@@ -479,6 +479,56 @@ public class GenCausesTestData {
         }
     }
 
+
+    /** *********************************************************************
+     *   Generate a question with a SUMOProcess of the form:
+     *      "What does <TERM> <NOT> cause?"
+     *      "What <DOES NOT> cause<S> <TERM>?"
+     *         also
+     *      "What does <ARTICLE> <TERM> <NOT> cause?
+     */
+    public static void generateQuestionTermCauses(boolean negation, boolean SUMOProcessFirst, String randomSumoProcess, String randomSumoProcessEnglish) throws Exception {
+        String notPhrase = negation ? "not " : "";
+        String doesNotPhrase = negation ? "does not " : "";
+        String sPhrase = negation ? "" : "s";
+        if (SUMOProcessFirst) { // Questions of the form "What does <TERM> <NOT> cause?"
+            int randomIndex = random.nextInt(phrasesQuestionTermCauses.length);
+            englishSentence = phrasesQuestionTermCauses[randomIndex];
+            logicPhrase = "(subclassCauses " + randomSumoProcess + " ?X)";
+        }
+        else { // Questions of the form: "What <DOES NOT> cause<S> <TERM>?"
+            int randomIndex = random.nextInt(phrasesQuestionCausesTerm.length);
+            englishSentence = phrasesQuestionCausesTerm[randomIndex];
+            logicPhrase = "(subclassCauses ?X " + randomSumoProcess + ")";
+        }
+        englishSentence = englishSentence
+                .replace("<TERM>", randomSumoProcessEnglish)
+                .replace("<DOES NOT> ", doesNotPhrase)
+                .replace("<NOT> ", notPhrase)
+                .replace("<S>", sPhrase);
+        if (negation) {
+            logicPhrase = "(not " + logicSentence + ")";
+        }
+        writeEnglishLogicPairToFile(englishSentence, logicPhrase);
+
+        // Add question with articles
+        String[] processes = {randomSumoProcessEnglish};
+        englishSentence = addArticlesToSentence(englishSentence, processes);
+        if(areArticlesValidOllama(englishSentence)) {
+            if (SUMOProcessFirst) {
+                logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess ") (causes ?X1 ?X2)))";
+            }
+            else {
+                logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess ") (causes ?X2 ?X1)))";
+            }
+            if (negation) {
+                logicPhrase = "(not " + logicPhrase + ")";
+            }
+        }
+        writeEnglishLogicPairToFile(englishSentence, logicPhrase);
+    }
+
+
     /** *********************************************************************
      * Main method. Builds a test set of the form
      *   "<term> causes <term>"
@@ -507,8 +557,9 @@ public class GenCausesTestData {
             boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 10);
             boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 10);
 
-            if (generateQuestionTermCauses) {
-                ;
+            if (generateQuestionTermCauses && sentenceGeneratedCounter < numToGenerate+2) {
+                generateQuestionTermCauses(negation, SUMOProcessFirst, randomSUMOProcess, randomSumoProcessEnglish);
+                sentenceGeneratedCounter = sentenceGeneratedCounter+2;
             }
 
             // Get a related process from Ollama
