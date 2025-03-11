@@ -148,6 +148,8 @@ public class GenCausesTestData {
             "What is <NOT> the source of <TERM>?",
             "How does <TERM> <NOT> occur?",
             "How does <TERM> <NOT> happen?",
+            "How is <TERM> <NOT> caused?",
+            "How does <TERM> <NOT> come about?"
             "What <DOES NOT> cause<S> <TERM>?",
             "What <DOES NOT> lead<S> to <TERM>?",
             "What <DOES NOT> result<S> in <TERM>?",
@@ -177,7 +179,43 @@ public class GenCausesTestData {
             "What can <TERM> <NOT> be traced back to?"
     };
 
+    public static String[] phrasesQuestionTermCausesTerm = {
+            "Does <TERM> <NOT> cause <RESULT>?", "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?",
+            "Does <TERM> <NOT> lead to <RESULT>?", "Is it true that <TERM> <DOES NOT> lead<S> to <RESULT>?",
+            "Does <TERM> <NOT> result in <RESULT>?", "Is it true that <TERM> <DOES NOT> result<S> in <RESULT>?",
+            "Does <TERM> <NOT> bring about <RESULT>?", "Is it true that <TERM> <DOES NOT> bring<S> about <RESULT>?",
+            "Does <TERM> <NOT> trigger <RESULT>?", "Is it true that <TERM> <DOES NOT> trigger<S> <RESULT>?",
+            "Does <TERM> <NOT> provoke <RESULT>?", "Is it true that <TERM> <DOES NOT> provoke<S> <RESULT>?",
+            "Does <TERM> <NOT> induce <RESULT>?", "Is it true that <TERM> <DOES NOT> induce<S> <RESULT>?",
+            "Does <TERM> <NOT> produce <RESULT>?", "Is it true that <TERM> <DOES NOT> produce<S> <RESULT>?",
+            "Does <TERM> <NOT> prompt <RESULT>?", "Is it true that <TERM> <DOES NOT> prompt<S> <RESULT>?",
+            "Does <TERM> <NOT> give rise to <RESULT>?", "Is it true that <TERM> <DOES NOT> give<S> rise to <RESULT>?",
+            "Is <TERM> <NOT> responsible for <RESULT>?", "Is it true that <TERM> is <NOT> responsible for <RESULT>?"
+    };
 
+    public static String[] phrasesQuestionTermCausedByTerm = {
+            "Is <RESULT> <NOT> caused by <TERM>?",
+            "Is <RESULT> <NOT> due to <TERM>?",
+            "Is <RESULT> <NOT> a result of <TERM>?",
+            "Is <RESULT> <NOT> because of <TERM>?",
+            "Is <RESULT> <NOT> brought about by <TERM>?",
+            "Is <RESULT> <NOT> triggered by <TERM>?",
+            "Is <RESULT> <NOT> provoked by <TERM>?",
+            "Is <RESULT> <NOT> induced by <TERM>?",
+            "Is <RESULT> <NOT> produced by <TERM>?",
+            "Is <RESULT> <NOT> prompted by <TERM>?",
+            "Does <RESULT> <NOT> stem from <TERM>?",
+            "Does <RESULT> <NOT> arise from <TERM>?",
+            "Does <RESULT> <NOT> originate from <TERM>?",
+            "Is <RESULT> <NOT> driven by <TERM>?",
+            "Is <RESULT> <NOT> attributable to <TERM>?",
+            "Can <RESULT> <NOT> be traced back to <TERM>?"
+    };
+
+    /** ***************************************************************
+     *   Initiates important variables and objects needed
+     *   for cause generation.
+     */
     public static void init(String[] args) {
         // parse input variables
         if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h")) {
@@ -418,6 +456,30 @@ public class GenCausesTestData {
     }
 
     /** *********************************************************************
+     *   Takes an ollama response, and sees if there is a good mapping
+     *   for the term in SUMO.
+     */
+    public static String mapResponseToSUMOTerm(String responseOllamaEnglish, String randomSumoProcessEnglish) {
+        // Find the word sense disambibuation, aka, the closest mapping to the Ollama response in SUMO.
+        String[] arr = randomSumoProcessEnglish.split("\\s+"); // Splitting by one or more whitespace characters
+        ArrayList<String> processSplitIntoWords = new ArrayList<>(Arrays.asList(arr));
+        processSplitIntoWords.add("causes");
+        String responseOllamaWNSynset = WSD.findWordSenseInContext(responseOllamaEnglish, processSplitIntoWords);
+
+        String responseInSumo = null;
+        if (responseOllamaWNSynset != null) {
+            responseInSumo = WordNet.wn.getSUMOMapping(responseOllamaWNSynset);
+            if (responseInSumo != null) {
+                responseInSumo = responseInSumo.substring(2, responseInSumo.length() - 1);
+                // The resulting term must be a process. If its not, then just choose a random process that maps to the term.
+                if (!kb.kbCache.subclassOf(responseInSumo, "Process")) {
+                    responseInSumo = getRandomSUMOMapping(responseOllamaEnglish);
+                }
+            }
+        }
+    }
+
+    /** *********************************************************************
      * Main method. Builds a test set of the form
      *   "<term> causes <term>"
      *   "<term> does not cause <term>"
@@ -442,27 +504,17 @@ public class GenCausesTestData {
             if (debug) System.out.println("Random SUMO Process: " + randomSumoProcess);
             boolean negation = GenSimpTestData.biasedBoolean(1, 2);
             boolean SUMOProcessFirst = GenSimpTestData.biasedBoolean(1, 2);
+            boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 10);
+            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 10);
+
+            if (generateQuestionTermCauses) {
+                ;
+            }
 
             // Get a related process from Ollama
             String responseOllamaEnglish = askOllamaForProcess(ollamaAPI, randomSumoProcessEnglish, negation, SUMOProcessFirst);
+            responseInSUMO = mapResponseToSUMOTerm(responseOllamaEnglish, randomSumoProcessEnglish);
 
-            // Find the word sense disambibuation, aka, the closest mapping to the Ollama response in SUMO.
-            String[] arr = randomSumoProcessEnglish.split("\\s+"); // Splitting by one or more whitespace characters
-            ArrayList<String> processSplitIntoWords = new ArrayList<>(Arrays.asList(arr));
-            processSplitIntoWords.add("causes");
-            String responseOllamaWNSynset = WSD.findWordSenseInContext(responseOllamaEnglish, processSplitIntoWords);
-
-            String responseInSumo = null;
-            if (responseOllamaWNSynset != null) {
-                responseInSumo = WordNet.wn.getSUMOMapping(responseOllamaWNSynset);
-                if (responseInSumo != null) {
-                    responseInSumo = responseInSumo.substring(2, responseInSumo.length() - 1);
-                    // The resulting term must be a process. If its not, then just choose a random process that maps to the term.
-                    if (!kb.kbCache.subclassOf(responseInSumo, "Process")) {
-                        responseInSumo = getRandomSUMOMapping(responseOllamaEnglish);
-                    }
-                }
-            }
 
             if (responseInSumo != null) {
                 String causingProcess = (SUMOProcessFirst) ? randomSumoProcessEnglish : responseOllamaEnglish.toLowerCase();
