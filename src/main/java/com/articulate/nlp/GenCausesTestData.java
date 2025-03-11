@@ -141,6 +141,13 @@ public class GenCausesTestData {
     };
 
     public static String[] phrasesQuestionCausesTerm = {
+            "Why does <TERM> <NOT> occur?",
+            "What causes <TERM> to <NOT> occur?",
+            "What is <NOT> the cause of <TERM>?",
+            "Where does <TERM> <NOT> come from?",
+            "What is <NOT> the source of <TERM>?",
+            "How does <TERM> <NOT> occur?",
+            "How does <TERM> <NOT> happen?",
             "What <DOES NOT> cause<S> <TERM>?",
             "What <DOES NOT> lead<S> to <TERM>?",
             "What <DOES NOT> result<S> in <TERM>?",
@@ -152,22 +159,22 @@ public class GenCausesTestData {
             "What <DOES NOT> prompt<S> <TERM>?",
             "What <DOES NOT> give<S> rise to <TERM>?",
             "What is <NOT> responsible for <TERM>?",
-            "What is <NOT> caused by <TERM>?",
-            "What is <NOT> due to <TERM>?",
-            "What is <NOT> a result of <TERM>?",
-            "What is <NOT> because of <TERM>?",
-            "What is <NOT> brought about by <TERM>?",
-            "What is <NOT> triggered by <TERM>?",
-            "What is <NOT> provoked by <TERM>?",
-            "What is <NOT> induced by <TERM>?",
-            "What is <NOT> produced by <TERM>?",
-            "What is <NOT> prompted by <TERM>?",
-            "What <DOES NOT> stem<S> from <TERM>?",
-            "What <DOES NOT> arise<S> from <TERM>?",
-            "What <DOES NOT> originate<S> from <TERM>?",
-            "What is <NOT> driven by <TERM>?",
-            "What is <NOT> attributable to <TERM>?",
-            "What can be traced back to <TERM>?"
+            "What is <TERM> <NOT> caused by?",
+            "What is <TERM> <NOT> due to?",
+            "What is <TERM> <NOT> a result of?",
+            "What is <TERM> <NOT> because of?",
+            "What is <TERM> <NOT> brought about by?",
+            "What is <TERM> <NOT> triggered by?",
+            "What is <TERM> <NOT> provoked by?",
+            "What is <TERM> <NOT> induced by?",
+            "What is <TERM> <NOT> produced by?",
+            "What is <TERM> <NOT> prompted by?",
+            "What does <TERM> <NOT> stem<S> from?",
+            "What does <TERM> <NOT> arise<S> from?",
+            "What does <TERM> <NOT> originate<S> from?",
+            "What is <TERM> <NOT> driven by?",
+            "What is <TERM> <NOT> attributable to?",
+            "What can <TERM> <NOT> be traced back to?"
     };
 
 
