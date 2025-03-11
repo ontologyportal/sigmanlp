@@ -38,12 +38,15 @@ public class GenCausesTestData {
     public static boolean RAW_PROMPT = false;
     public static Options options;
     public static String englishSentence;
-    public static String logicPhrase = "";
+    public static String englishSentenceWithArticles;
+    public static String logicPhrase;
+    public static String logicPhraseWithArticles;
     public static OllamaAPI ollamaAPI;
     public static RandSet allSUMOTermsRandSet;
     public static Random random;
     public static int numToGenerate;
     public static int sentenceGeneratedCounter;
+    public static boolean articlesAreValid;
 
     public static String[] phrasesCauses = {
             " causes ",             " leads to ",         " results in ",         " brings about ",
@@ -113,16 +116,16 @@ public class GenCausesTestData {
     };
 
     public static String[] phrasesQuestionTermCausesTerm = {
-            "Does <TERM> <NOT> cause <RESULT>?", "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?",
-            "Does <TERM> <NOT> lead to <RESULT>?", "Is it true that <TERM> <DOES NOT> lead<S> to <RESULT>?",
-            "Does <TERM> <NOT> result in <RESULT>?", "Is it true that <TERM> <DOES NOT> result<S> in <RESULT>?",
-            "Does <TERM> <NOT> bring about <RESULT>?", "Is it true that <TERM> <DOES NOT> bring<S> about <RESULT>?",
-            "Does <TERM> <NOT> trigger <RESULT>?", "Is it true that <TERM> <DOES NOT> trigger<S> <RESULT>?",
-            "Does <TERM> <NOT> provoke <RESULT>?", "Is it true that <TERM> <DOES NOT> provoke<S> <RESULT>?",
-            "Does <TERM> <NOT> induce <RESULT>?", "Is it true that <TERM> <DOES NOT> induce<S> <RESULT>?",
-            "Does <TERM> <NOT> produce <RESULT>?", "Is it true that <TERM> <DOES NOT> produce<S> <RESULT>?",
-            "Does <TERM> <NOT> prompt <RESULT>?", "Is it true that <TERM> <DOES NOT> prompt<S> <RESULT>?",
-            "Does <TERM> <NOT> give rise to <RESULT>?", "Is it true that <TERM> <DOES NOT> give<S> rise to <RESULT>?",
+            "Does <TERM> <NOT> cause <RESULT>?",      "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?",
+            "Does <TERM> <NOT> lead to <RESULT>?",    "Is it true that <TERM> <DOES NOT> lead<S> to <RESULT>?",
+            "Does <TERM> <NOT> result in <RESULT>?",  "Is it true that <TERM> <DOES NOT> result<S> in <RESULT>?",
+            "Does <TERM> <NOT> bring about <RESULT>?","Is it true that <TERM> <DOES NOT> bring<S> about <RESULT>?",
+            "Does <TERM> <NOT> trigger <RESULT>?",    "Is it true that <TERM> <DOES NOT> trigger<S> <RESULT>?",
+            "Does <TERM> <NOT> provoke <RESULT>?",    "Is it true that <TERM> <DOES NOT> provoke<S> <RESULT>?",
+            "Does <TERM> <NOT> induce <RESULT>?",     "Is it true that <TERM> <DOES NOT> induce<S> <RESULT>?",
+            "Does <TERM> <NOT> produce <RESULT>?",    "Is it true that <TERM> <DOES NOT> produce<S> <RESULT>?",
+            "Does <TERM> <NOT> prompt <RESULT>?",     "Is it true that <TERM> <DOES NOT> prompt<S> <RESULT>?",
+            "Does <TERM> <NOT> give rise to <RESULT>?","Is it true that <TERM> <DOES NOT> give<S> rise to <RESULT>?",
             "Is <TERM> <NOT> responsible for <RESULT>?", "Is it true that <TERM> is <NOT> responsible for <RESULT>?"
     };
 
@@ -232,6 +235,7 @@ public class GenCausesTestData {
                 e.printStackTrace();
             }
         }
+        sentenceGeneratedCounter++;
     }
 
     /** ***********************************************************************
@@ -443,7 +447,6 @@ public class GenCausesTestData {
             logicPhrase = "(not " + logicPhrase + ")";
         }
         writeEnglishLogicPairToFile(englishSentence, logicPhrase);
-        sentenceGeneratedCounter++;
 
         // Add question with articles
         String[] processes = {randomSumoProcessEnglish};
@@ -458,7 +461,6 @@ public class GenCausesTestData {
             logicPhrase = "(not " + logicPhrase + ")";
         }
         writeEnglishLogicPairToFile(englishSentence, logicPhrase);
-        sentenceGeneratedCounter++;
     }
 
 
@@ -528,13 +530,13 @@ public class GenCausesTestData {
                 if (debug) System.out.println("Resulting English sentence: '" + englishSentence + "'");
                 if (debug) System.out.println("Resulting logic: '" + logicPhrase + "'");
                 writeEnglishLogicPairToFile(englishSentence, logicPhrase);
-                sentenceGeneratedCounter++;
 
                 // Add articles to the sentence
                 if (sentenceGeneratedCounter < numToGenerate) {
                     String[] processes = {causingProcess, resultProcess};
-                    String englishSentenceWithArticles = addArticlesToSentence(englishSentence, processes);
-                    boolean articlesAreValid = areArticlesValidOllama(englishSentenceWithArticles);
+                    englishSentenceWithArticles = addArticlesToSentence(englishSentence, processes);
+
+                    articlesAreValid = areArticlesValidOllama(englishSentenceWithArticles);
                     if (articlesAreValid) {
                         // Convert to uppercase
                         String causingVariableName = causingProcessLog.toUpperCase();
@@ -543,18 +545,29 @@ public class GenCausesTestData {
                         causingVariableName = causingVariableName.replaceAll("\\s+", "");
                         resultingVariableName = resultingVariableName.replaceAll("\\s+", "");
 
+                        logicPhraseWithArticles = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+")))";
                         if (negation) {
-                            logicPhrase = "(not (exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+"))))";
-                        }
-                        else {
-                            logicPhrase = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+")))";
+                            logicPhraseWithArticles = "(not " + logicPhraseWithArticles + ")";
                         }
                         writeEnglishLogicPairToFile(englishSentenceWithArticles, logicPhrase);
-                        sentenceGeneratedCounter++;
                     }
                 }
-                if (sentenceGeneratedCounter % 1000 == 0) {
-                    System.out.println("...." + sentenceGeneratedCounter);
+                // Form question of form "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?" or "Does <TERM> <NOT> cause <RESULT>?"
+                if (generateQuestionTermCausesTerm && sentenceGeneratedCounter < numToGenerate) {
+                    if (GenSimpTestData.biasedBoolean(1, 2)) {
+                        int randomIndex = random.nextInt(phrasesQuestionTermCausesTerm.length);
+                        englishSentence = phrasesQuestionTermCausesTerm[randomIndex];
+                    }
+                    else {
+                        int randomIndex = random.nextInt(phrasesQuestionTermCausedByTerm);
+                        englishSentence = phrasesQuestionTermCausedByTerm[randomIndex];
+                    }
+                    englishSentence = englishSentence.replace("<TERM>", causingProcess)
+                            .replace("<DOES NOT> ", (negation) ? "does not " : "")
+                            .replace("<NOT> ", (negation) ? "not " : "")
+                            .replace("<S>", (negation) ? "" : "s")
+                            .replace("<RESULT>", resultProcess);
+                    writeEnglishLogicPairToFile(englishSentence, logicPhrase);
                 }
             }
             else {
