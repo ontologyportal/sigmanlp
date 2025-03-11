@@ -30,79 +30,153 @@ import com.articulate.sigma.wordNet.WSD;
 
 public class GenCausesTestData {
 
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static KB kb;
     public static String outputFileEnglish = "causes-eng.txt";
     public static String outputFileLogic = "causes-log.txt";
     public static boolean EQUIVALENCE_MAPPINGS = false;
     public static boolean RAW_PROMPT = false;
     public static Options options;
+    public static String englishSentence;
+    public static String logicPhrase = "";
+    public static OllamaAPI ollamaAPI;
+    public static RandSet allSUMOTermsRandSet;
+    public static Random random;
+    public static int numToGenerate;
+    public static int sentenceGeneratedCounter;
 
     public static String[] phrasesCauses = {
-            " causes ",
-            " leads to ",
-            " results in ",
-            " brings about ",
-            " triggers ",
-            " provokes ",
-            " induces ",
-            " produces ",
-            " prompts ",
-            " gives rise to ",
-            " is responsible for "
+            " causes ",             " leads to ",         " results in ",         " brings about ",
+            " triggers ",           " provokes ",         " induces ",            " produces ",
+            " prompts ",            " gives rise to ",    " is responsible for "
     };
 
     public static String[] phrasesNotCauses = {
-            " does not cause ",
-            " does not lead to ",
-            " does not result in ",
-            " does not bring about ",
-            " does not trigger ",
-            " does not provoke ",
-            " does not induce ",
-            " does not produce ",
-            " does not prompt ",
-            " does not give rise to ",
-            " is not responsible for "
+            " does not cause ",            " does not lead to ",           " does not result in ",
+            " does not bring about ",      " does not trigger ",           " does not provoke ",
+            " does not induce ",           " does not produce ",           " does not prompt ",
+            " does not give rise to ",     " is not responsible for "
     };
 
     public static String[] phrasesCausedBy = {
-            " is caused by ",
-            " is due to ",
-            " is a result of ",
-            " is because of ",
-            " is brought about by ",
-            " is triggered by ",
-            " is provoked by ",
-            " is induced by ",
-            " is produced by ",
-            " is prompted by ",
-            " stems from ",
-            " arises from ",
-            " originates from ",
-            " is driven by ",
-            " is attributable to ",
-            " can be traced back to "
+            " is caused by ",        " is due to ",          " is a result of ",      " is because of ",
+            " is brought about by ", " is triggered by ",    " is provoked by ",      " is induced by ",
+            " is produced by ",      " is prompted by ",     " stems from ",          " arises from ",
+            " originates from ",     " is driven by ",       " is attributable to ",  " can be traced back to "
     };
 
     public static String[] phrasesNotCausedBy = {
-            " is not caused by ",
-            " is not due to ",
-            " is not a result of ",
-            " is not because of ",
-            " is not brought about by ",
-            " is not triggered by ",
-            " is not provoked by ",
-            " is not induced by ",
-            " is not produced by ",
-            " is not prompted by ",
-            " does not stem from ",
-            " does not arise from ",
-            " does not originate from ",
-            " is not driven by ",
-            " is not attributable to ",
+            " is not caused by ",            " is not due to ",           " is not a result of ",
+            " is not because of ",           " is not brought about by ", " is not triggered by ",
+            " is not provoked by ",          " is not induced by ",       " is not produced by ",
+            " is not prompted by ",          " does not stem from ",      " does not arise from ",
+            " does not originate from ",     " is not driven by ",        " is not attributable to ",
             " cannot be traced back to "
     };
+
+    public static String[] phrasesQuestionTermCauses = {
+            "What does <TERM> <NOT> cause?",            "What does <TERM> <NOT> lead to?",
+            "What does <TERM> <NOT> result in?",        "What does <TERM> <NOT> bring about?",
+            "What does <TERM> <NOT> trigger?",          "What does <TERM> <NOT> provoke?",
+            "What does <TERM> <NOT> induce?",           "What does <TERM> <NOT> produce?",
+            "What does <TERM> <NOT> prompt? ",          "What does <TERM> <NOT> give rise to?",
+            "What is <TERM> <NOT> responsible for?",    "What is <NOT> caused by <TERM>?",
+            "What is <NOT> due to <TERM>?",             "What is <NOT> a result of <TERM>?",
+            "What is <NOT> because of <TERM>?",         "What is <NOT> brought about by <TERM>?",
+            "What is <NOT> triggered by <TERM>?",       "What is <NOT> provoked by <TERM>?",
+            "What is <NOT> induced by <TERM>?",         "What is <NOT> produced by <TERM>?",
+            "What is <NOT> prompted by <TERM>?",        "What <DOES NOT> stem<S> from <TERM>?",
+            "What <DOES NOT> arise<S> from <TERM>?",    "What <DOES NOT> originate<S> from <TERM>?",
+            "What is <NOT> driven by <TERM>?",          "What is <NOT> attributable to <TERM>?",
+            "What can<NOT>  be traced back to <TERM>?"
+    };
+
+    public static String[] phrasesQuestionCausesTerm = {
+            "Why does <TERM> <NOT> occur?",            "What causes <TERM> to <NOT> occur?",
+            "What is <NOT> the cause of <TERM>?",      "Where does <TERM> <NOT> come from?",
+            "What is <NOT> the source of <TERM>?",     "How does <TERM> <NOT> occur?",
+            "How does <TERM> <NOT> happen?",           "How is <TERM> <NOT> caused?",
+            "How does <TERM> <NOT> come about?",       "What <DOES NOT> cause<S> <TERM>?",
+            "What <DOES NOT> lead<S> to <TERM>?",      "What <DOES NOT> result<S> in <TERM>?",
+            "What <DOES NOT> bring<S> about <TERM>?",  "What <DOES NOT> trigger<S> <TERM>?",
+            "What <DOES NOT> provoke<S> <TERM>?",      "What <DOES NOT> induce<S> <TERM>?",
+            "What <DOES NOT> produce<S> <TERM>?",      "What <DOES NOT> prompt<S> <TERM>?",
+            "What <DOES NOT> give<S> rise to <TERM>?", "What is <NOT> responsible for <TERM>?",
+            "What is <TERM> <NOT> caused by?",         "What is <TERM> <NOT> due to?",
+            "What is <TERM> <NOT> a result of?",       "What is <TERM> <NOT> because of?",
+            "What is <TERM> <NOT> brought about by?",  "What is <TERM> <NOT> triggered by?",
+            "What is <TERM> <NOT> provoked by?",       "What is <TERM> <NOT> induced by?",
+            "What is <TERM> <NOT> produced by?",       "What is <TERM> <NOT> prompted by?",
+            "What does <TERM> <NOT> stem<S> from?",    "What does <TERM> <NOT> arise<S> from?",
+            "What does <TERM> <NOT> originate<S> from?","What is <TERM> <NOT> driven by?",
+            "What is <TERM> <NOT> attributable to?",   "What can <TERM> <NOT> be traced back to?"
+    };
+
+    public static String[] phrasesQuestionTermCausesTerm = {
+            "Does <TERM> <NOT> cause <RESULT>?", "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?",
+            "Does <TERM> <NOT> lead to <RESULT>?", "Is it true that <TERM> <DOES NOT> lead<S> to <RESULT>?",
+            "Does <TERM> <NOT> result in <RESULT>?", "Is it true that <TERM> <DOES NOT> result<S> in <RESULT>?",
+            "Does <TERM> <NOT> bring about <RESULT>?", "Is it true that <TERM> <DOES NOT> bring<S> about <RESULT>?",
+            "Does <TERM> <NOT> trigger <RESULT>?", "Is it true that <TERM> <DOES NOT> trigger<S> <RESULT>?",
+            "Does <TERM> <NOT> provoke <RESULT>?", "Is it true that <TERM> <DOES NOT> provoke<S> <RESULT>?",
+            "Does <TERM> <NOT> induce <RESULT>?", "Is it true that <TERM> <DOES NOT> induce<S> <RESULT>?",
+            "Does <TERM> <NOT> produce <RESULT>?", "Is it true that <TERM> <DOES NOT> produce<S> <RESULT>?",
+            "Does <TERM> <NOT> prompt <RESULT>?", "Is it true that <TERM> <DOES NOT> prompt<S> <RESULT>?",
+            "Does <TERM> <NOT> give rise to <RESULT>?", "Is it true that <TERM> <DOES NOT> give<S> rise to <RESULT>?",
+            "Is <TERM> <NOT> responsible for <RESULT>?", "Is it true that <TERM> is <NOT> responsible for <RESULT>?"
+    };
+
+    public static String[] phrasesQuestionTermCausedByTerm = {
+            "Is <RESULT> <NOT> caused by <TERM>?",            "Is <RESULT> <NOT> due to <TERM>?",
+            "Is <RESULT> <NOT> a result of <TERM>?",          "Is <RESULT> <NOT> because of <TERM>?",
+            "Is <RESULT> <NOT> brought about by <TERM>?",     "Is <RESULT> <NOT> triggered by <TERM>?",
+            "Is <RESULT> <NOT> provoked by <TERM>?",          "Is <RESULT> <NOT> induced by <TERM>?",
+            "Is <RESULT> <NOT> produced by <TERM>?",          "Is <RESULT> <NOT> prompted by <TERM>?",
+            "Does <RESULT> <NOT> stem from <TERM>?",          "Does <RESULT> <NOT> arise from <TERM>?",
+            "Does <RESULT> <NOT> originate from <TERM>?",     "Is <RESULT> <NOT> driven by <TERM>?",
+            "Is <RESULT> <NOT> attributable to <TERM>?",      "Can <RESULT> <NOT> be traced back to <TERM>?"
+    };
+
+    /** ***************************************************************
+     *   Initiates important variables and objects needed
+     *   for cause generation.
+     */
+    public static void init(String[] args) {
+        // parse input variables
+        if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h")) {
+            System.out.println("Usage: GenCausesTestData <file prefix> <num to generate> <ollama port number> <optional: -e (for equivalence mappings only)");
+            System.exit(0);
+        }
+        outputFileEnglish = args[0] + "-eng.txt";
+        outputFileLogic = args[0] + "-log.txt";
+        numToGenerate = Integer.parseInt(args[1]);
+        if (args.length == 4 && args[3].equals("-e")) {
+            EQUIVALENCE_MAPPINGS = true;
+            System.out.println("Using ONLY equivalence mappings");
+        }
+        else {
+            System.out.println("Drawing from equivalence and subsuming mappings.");
+        }
+
+        // connect to Ollama
+        String host = "http://localhost:" + args[2] + "/";
+        System.out.println("Connecting to " + host);
+        ollamaAPI = new OllamaAPI(host);
+        ollamaAPI.setVerbose(false);
+        options = new OptionsBuilder().setTemperature(1.0f).build();
+
+        // load the knowledge base
+        KBmanager.getMgr().initializeOnce();
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        System.out.println("Finished loading KBs");
+        Set<String> allSUMOTermsSet = kb.kbCache.getChildClasses("Process");
+        allSUMOTermsRandSet = RandSet.listToEqualPairs(allSUMOTermsSet);
+        random = new Random();
+
+        // create output files
+        createFileIfDoesNotExists(outputFileEnglish);
+        createFileIfDoesNotExists(outputFileLogic);
+    }
 
     /** ***************************************************************
      *   Creates a file if one doesn't exist already.
@@ -160,7 +234,10 @@ public class GenCausesTestData {
         }
     }
 
-    public static boolean askOllamaIfArticlesAreValid(OllamaAPI ollamaAPI, String englishSentenceWithArticles) throws Exception {
+    /** ***********************************************************************
+     *   Ask Ollama if articles are valid in a particular sentence.
+     */
+    public static boolean areArticlesValidOllama(String englishSentenceWithArticles) throws Exception {
         String prompt = "Just the response. In a single word, are the grammer articles in this sentence used correctly: '" + englishSentenceWithArticles + "'";
         if (debug) System.out.println("Articles Valid Prompt: " + prompt);
         OllamaResult result =
@@ -181,7 +258,7 @@ public class GenCausesTestData {
     /** ***********************************************************************
      *   Ask Ollama for a random process. Prompt changes based on input paramters.
      */
-    public static String askOllamaForProcess(OllamaAPI ollamaAPI, String process, boolean negation, boolean SUMOProcessFirst) throws Exception {
+    public static String askOllamaForProcess(String process, boolean negation, boolean SUMOProcessFirst) throws Exception {
         String prompt = "";
         if (negation) {
             if (!SUMOProcessFirst) {
@@ -286,10 +363,14 @@ public class GenCausesTestData {
         return null;
     }
 
+    /** ***********************************************************************
+     *   Adds articles to the front of processes, to essentially "instantiate"
+     *   them.
+     */
     public static String addArticlesToSentence(String sentence, String [] processes) {
         sentence = sentence.substring(0, 1).toLowerCase() + sentence.substring(1);
         for (String process : processes) {
-            System.out.println("Process in add article: " + process);
+            if (debug) System.out.println("Process in add article: " + process);
             char firstChar = Character.toLowerCase(process.charAt(0));
             if (GenSimpTestData.biasedBoolean(1, 2)) {
                 sentence = sentence.replace(process, "the " + process);
@@ -307,6 +388,81 @@ public class GenCausesTestData {
     }
 
     /** *********************************************************************
+     *   Takes an ollama response, and sees if there is a good mapping
+     *   for the term in SUMO.
+     */
+    public static String mapResponseToSUMOTerm(String responseOllamaEnglish, String randomSumoProcessEnglish) {
+        // Find the word sense disambibuation, aka, the closest mapping to the Ollama response in SUMO.
+        String[] arr = randomSumoProcessEnglish.split("\\s+"); // Splitting by one or more whitespace characters
+        ArrayList<String> processSplitIntoWords = new ArrayList<>(Arrays.asList(arr));
+        processSplitIntoWords.add("causes");
+        String responseOllamaWNSynset = WSD.findWordSenseInContext(responseOllamaEnglish, processSplitIntoWords);
+
+        String responseInSumo = null;
+        if (responseOllamaWNSynset != null) {
+            responseInSumo = WordNet.wn.getSUMOMapping(responseOllamaWNSynset);
+            if (responseInSumo != null) {
+                responseInSumo = responseInSumo.substring(2, responseInSumo.length() - 1);
+                // The resulting term must be a process. If its not, then just choose a random process that maps to the term.
+                if (!kb.kbCache.subclassOf(responseInSumo, "Process")) {
+                    responseInSumo = getRandomSUMOMapping(responseOllamaEnglish);
+                }
+            }
+        }
+        return responseInSumo;
+    }
+
+
+    /** *********************************************************************
+     *   Generate a question with a SUMOProcess of the form:
+     *      "What does <TERM> <NOT> cause?"
+     *      "What <DOES NOT> cause<S> <TERM>?"
+     *         also
+     *      "What does <ARTICLE> <TERM> <NOT> cause?
+     */
+    public static void generateQuestionTermCauses(boolean negation, boolean SUMOProcessFirst, String randomSumoProcess, String randomSumoProcessEnglish) throws Exception {
+        String notPhrase = negation ? "not " : "";
+        String doesNotPhrase = negation ? "does not " : "";
+        String sPhrase = negation ? "" : "s";
+        if (SUMOProcessFirst) { // Questions of the form "What does <TERM> <NOT> cause?"
+            int randomIndex = random.nextInt(phrasesQuestionTermCauses.length);
+            englishSentence = phrasesQuestionTermCauses[randomIndex];
+            logicPhrase = "(causesSubclass " + randomSumoProcess + " ?X)";
+        }
+        else { // Questions of the form: "What <DOES NOT> cause<S> <TERM>?"
+            int randomIndex = random.nextInt(phrasesQuestionCausesTerm.length);
+            englishSentence = phrasesQuestionCausesTerm[randomIndex];
+            logicPhrase = "(causesSubclass ?X " + randomSumoProcess + ")";
+        }
+        englishSentence = englishSentence
+                .replace("<TERM>", randomSumoProcessEnglish)
+                .replace("<DOES NOT> ", doesNotPhrase)
+                .replace("<NOT> ", notPhrase)
+                .replace("<S>", sPhrase);
+        if (negation) {
+            logicPhrase = "(not " + logicPhrase + ")";
+        }
+        writeEnglishLogicPairToFile(englishSentence, logicPhrase);
+        sentenceGeneratedCounter++;
+
+        // Add question with articles
+        String[] processes = {randomSumoProcessEnglish};
+        englishSentence = addArticlesToSentence(englishSentence, processes);
+        if (SUMOProcessFirst) {
+            logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess + ") (causes ?X1 ?X2)))";
+        }
+        else {
+            logicPhrase = "(exists (?X1 ?X2) (and (instance ?X1 " + randomSumoProcess + ") (causes ?X2 ?X1)))";
+        }
+        if (negation) {
+            logicPhrase = "(not " + logicPhrase + ")";
+        }
+        writeEnglishLogicPairToFile(englishSentence, logicPhrase);
+        sentenceGeneratedCounter++;
+    }
+
+
+    /** *********************************************************************
      * Main method. Builds a test set of the form
      *   "<term> causes <term>"
      *   "<term> does not cause <term>"
@@ -318,41 +474,9 @@ public class GenCausesTestData {
      * Then asks ollama what is caused by that process.
      */
     public static void main(String[] args) throws Exception {
-        // parse input variables
-        if (args == null || args.length < 3 || args.length > 4 || args[0].equals("-h"))
-            System.out.println("Usage: GenCausesTestData <file prefix> <num to generate> <ollama port number> <optional: -e (for equivalence mappings only)");
-        outputFileEnglish = args[0] + "-eng.txt";
-        outputFileLogic = args[0] + "-log.txt";
-        int numToGenerate = Integer.parseInt(args[1]);
-        if (args.length == 4 && args[3].equals("-e")) {
-            EQUIVALENCE_MAPPINGS = true;
-            System.out.println("Using ONLY equivalence mappings");
-        }
-        else {
-            System.out.println("Drawing from equivalence and subsuming mappings.");
-        }
-
-        // connect to Ollama
-        String host = "http://localhost:" + args[2] + "/";
-        System.out.println("Connecting to " + host);
-        OllamaAPI ollamaAPI = new OllamaAPI(host);
-        ollamaAPI.setVerbose(false);
-        options = new OptionsBuilder().setTemperature(1.0f).build();
-
-        // load the knowledge base
-        KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        System.out.println("Finished loading KBs");
-        Set<String> allSUMOTermsSet = kb.kbCache.getChildClasses("Process");
-        RandSet allSUMOTermsRandSet = RandSet.listToEqualPairs(allSUMOTermsSet);
-
-        // create output files
-        createFileIfDoesNotExists(outputFileEnglish);
-        createFileIfDoesNotExists(outputFileLogic);
-        Random random = new Random();
-        String englishSentence;
-
-        int sentenceGeneratedCounter = 0;
+        init(args);
+        System.out.println("Finished initialization, beginning sentence generation.");
+        sentenceGeneratedCounter = 0;
         while (sentenceGeneratedCounter < numToGenerate) {
             // get a random SUMO Process
             if (debug) System.out.println("\n");
@@ -364,27 +488,17 @@ public class GenCausesTestData {
             if (debug) System.out.println("Random SUMO Process: " + randomSumoProcess);
             boolean negation = GenSimpTestData.biasedBoolean(1, 2);
             boolean SUMOProcessFirst = GenSimpTestData.biasedBoolean(1, 2);
+            boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 15);
+            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 15);
+
+            if (generateQuestionTermCauses && sentenceGeneratedCounter < numToGenerate+2) {
+                generateQuestionTermCauses(negation, SUMOProcessFirst, randomSumoProcess, randomSumoProcessEnglish);
+            }
 
             // Get a related process from Ollama
-            String responseOllamaEnglish = askOllamaForProcess(ollamaAPI, randomSumoProcessEnglish, negation, SUMOProcessFirst);
+            String responseOllamaEnglish = askOllamaForProcess(randomSumoProcessEnglish, negation, SUMOProcessFirst);
+            String responseInSumo = mapResponseToSUMOTerm(responseOllamaEnglish, randomSumoProcessEnglish);
 
-            // Find the word sense disambibuation, aka, the closest mapping to the Ollama response in SUMO.
-            String[] arr = randomSumoProcessEnglish.split("\\s+"); // Splitting by one or more whitespace characters
-            ArrayList<String> processSplitIntoWords = new ArrayList<>(Arrays.asList(arr));
-            processSplitIntoWords.add("causes");
-            String responseOllamaWNSynset = WSD.findWordSenseInContext(responseOllamaEnglish, processSplitIntoWords);
-
-            String responseInSumo = null;
-            if (responseOllamaWNSynset != null) {
-                responseInSumo = WordNet.wn.getSUMOMapping(responseOllamaWNSynset);
-                if (responseInSumo != null) {
-                    responseInSumo = responseInSumo.substring(2, responseInSumo.length() - 1);
-                    // The resulting term must be a process. If its not, then just choose a random process that maps to the term.
-                    if (!kb.kbCache.subclassOf(responseInSumo, "Process")) {
-                        responseInSumo = getRandomSUMOMapping(responseOllamaEnglish);
-                    }
-                }
-            }
 
             if (responseInSumo != null) {
                 String causingProcess = (SUMOProcessFirst) ? randomSumoProcessEnglish : responseOllamaEnglish.toLowerCase();
@@ -407,7 +521,6 @@ public class GenCausesTestData {
                 char firstChar = Character.toUpperCase(englishSentence.charAt(0));
                 String remainingChars = englishSentence.substring(1).toLowerCase();
                 englishSentence = firstChar + remainingChars;
-                String logicPhrase = "";
                 logicPhrase = "(causesSubclass " + causingProcessLog + " " + resultProcessLog + ")";
                 if (negation) {
                     logicPhrase = "(not " + logicPhrase + " )";
@@ -421,7 +534,7 @@ public class GenCausesTestData {
                 if (sentenceGeneratedCounter < numToGenerate) {
                     String[] processes = {causingProcess, resultProcess};
                     String englishSentenceWithArticles = addArticlesToSentence(englishSentence, processes);
-                    boolean articlesAreValid = askOllamaIfArticlesAreValid(ollamaAPI, englishSentenceWithArticles);
+                    boolean articlesAreValid = areArticlesValidOllama(englishSentenceWithArticles);
                     if (articlesAreValid) {
                         // Convert to uppercase
                         String causingVariableName = causingProcessLog.toUpperCase();
@@ -431,7 +544,7 @@ public class GenCausesTestData {
                         resultingVariableName = resultingVariableName.replaceAll("\\s+", "");
 
                         if (negation) {
-                            logicPhrase = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (not (causes ?"+causingVariableName+" ?"+resultingVariableName+"))))";
+                            logicPhrase = "(not (exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+"))))";
                         }
                         else {
                             logicPhrase = "(exists (?"+causingVariableName+" ?"+resultingVariableName+") (and (instance ?"+causingVariableName+" "+ causingProcessLog+") (instance ?"+resultingVariableName+" " + resultProcessLog + ") (causes ?"+causingVariableName+" ?"+resultingVariableName+")))";
