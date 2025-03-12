@@ -38,6 +38,7 @@ public class GenCausesTestData {
     public static boolean RAW_PROMPT = false;
     public static Options options;
     public static String englishSentence;
+    public static String englishSentenceQuestion;
     public static String englishSentenceWithArticles;
     public static String logicPhrase;
     public static String logicPhraseWithArticles;
@@ -491,7 +492,7 @@ public class GenCausesTestData {
             boolean negation = GenSimpTestData.biasedBoolean(1, 2);
             boolean SUMOProcessFirst = GenSimpTestData.biasedBoolean(1, 2);
             boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 15);
-            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 15);
+            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 1);
 
             if (generateQuestionTermCauses && sentenceGeneratedCounter < numToGenerate+2) {
                 generateQuestionTermCauses(negation, SUMOProcessFirst, randomSumoProcess, randomSumoProcessEnglish);
@@ -525,11 +526,29 @@ public class GenCausesTestData {
                 englishSentence = firstChar + remainingChars;
                 logicPhrase = "(causesSubclass " + causingProcessLog + " " + resultProcessLog + ")";
                 if (negation) {
-                    logicPhrase = "(not " + logicPhrase + " )";
+                    logicPhrase = "(not " + logicPhrase + ")";
                 }
                 if (debug) System.out.println("Resulting English sentence: '" + englishSentence + "'");
                 if (debug) System.out.println("Resulting logic: '" + logicPhrase + "'");
                 writeEnglishLogicPairToFile(englishSentence, logicPhrase);
+
+                // Form question of form "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?" or "Does <TERM> <NOT> cause <RESULT>?"
+                if (generateQuestionTermCausesTerm && sentenceGeneratedCounter < numToGenerate) {
+                    if (GenSimpTestData.biasedBoolean(1, 2)) {
+                        int randomIndex = random.nextInt(phrasesQuestionTermCausesTerm.length);
+                        englishSentenceQuestion = phrasesQuestionTermCausesTerm[randomIndex];
+                    }
+                    else {
+                        int randomIndex = random.nextInt(phrasesQuestionTermCausedByTerm.length);
+                        englishSentenceQuestion = phrasesQuestionTermCausedByTerm[randomIndex];
+                    }
+                    englishSentenceQuestion = englishSentenceQuestion.replace("<TERM>", causingProcess)
+                            .replace("<DOES NOT> ", (negation) ? "does not " : "")
+                            .replace("<NOT> ", (negation) ? "not " : "")
+                            .replace("<S>", (negation) ? "" : "s")
+                            .replace("<RESULT>", resultProcess);
+                    writeEnglishLogicPairToFile(englishSentenceQuestion, logicPhrase);
+                }
 
                 // Add articles to the sentence
                 if (sentenceGeneratedCounter < numToGenerate) {
@@ -549,26 +568,16 @@ public class GenCausesTestData {
                         if (negation) {
                             logicPhraseWithArticles = "(not " + logicPhraseWithArticles + ")";
                         }
-                        writeEnglishLogicPairToFile(englishSentenceWithArticles, logicPhrase);
+                        writeEnglishLogicPairToFile(englishSentenceWithArticles, logicPhraseWithArticles);
+
+                        // generate Question with articles.
+                        if (generateQuestionTermCausesTerm && sentenceGeneratedCounter < numToGenerate) {
+                            englishSentenceWithArticles = addArticlesToSentence(englishSentenceQuestion, processes);
+                            writeEnglishLogicPairToFile(englishSentenceWithArticles, logicPhraseWithArticles);
+                        }
                     }
                 }
-                // Form question of form "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?" or "Does <TERM> <NOT> cause <RESULT>?"
-                if (generateQuestionTermCausesTerm && sentenceGeneratedCounter < numToGenerate) {
-                    if (GenSimpTestData.biasedBoolean(1, 2)) {
-                        int randomIndex = random.nextInt(phrasesQuestionTermCausesTerm.length);
-                        englishSentence = phrasesQuestionTermCausesTerm[randomIndex];
-                    }
-                    else {
-                        int randomIndex = random.nextInt(phrasesQuestionTermCausedByTerm);
-                        englishSentence = phrasesQuestionTermCausedByTerm[randomIndex];
-                    }
-                    englishSentence = englishSentence.replace("<TERM>", causingProcess)
-                            .replace("<DOES NOT> ", (negation) ? "does not " : "")
-                            .replace("<NOT> ", (negation) ? "not " : "")
-                            .replace("<S>", (negation) ? "" : "s")
-                            .replace("<RESULT>", resultProcess);
-                    writeEnglishLogicPairToFile(englishSentence, logicPhrase);
-                }
+
             }
             else {
                 if (debug) System.out.println("No related process for: " + responseOllamaEnglish);
