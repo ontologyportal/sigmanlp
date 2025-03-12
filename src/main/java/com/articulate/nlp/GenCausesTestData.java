@@ -492,7 +492,7 @@ public class GenCausesTestData {
             boolean negation = GenSimpTestData.biasedBoolean(1, 2);
             boolean SUMOProcessFirst = GenSimpTestData.biasedBoolean(1, 2);
             boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 15);
-            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 1);
+            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 15);
 
             if (generateQuestionTermCauses && sentenceGeneratedCounter < numToGenerate+2) {
                 generateQuestionTermCauses(negation, SUMOProcessFirst, randomSumoProcess, randomSumoProcessEnglish);
