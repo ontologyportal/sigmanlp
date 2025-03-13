@@ -10,5 +10,8 @@
     <orderEntry type="module" module-name="unit" />
     <orderEntry type="module" module-name="main" />
     <orderEntry type="module" module-name="integration" />
+    <orderEntry type="library" name="sigmakee" level="project" />
+    <orderEntry type="library" name="sigmaUtils" level="project" />
+    <orderEntry type="library" name="stanford-corenlp-4.5.0" level="project" />
   </component>
 </module>
