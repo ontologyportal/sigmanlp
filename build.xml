@@ -239,7 +239,8 @@
         <war destfile="${dist.war}"
              webxml="${web.dir}/web.xml"
              manifest="${manifest.mf}">
-            <metainf file="LICENSE"/>
+          <metainf file="LICENSE"/>
+          <metainf file="${web.dir}/context.xml"/>
           <zipfileset dir="${build.home}/jsp"/>
           <zipfileset dir="${build.home}/brat"/>
           <zipfileset dir="${build.home}/js"/>
