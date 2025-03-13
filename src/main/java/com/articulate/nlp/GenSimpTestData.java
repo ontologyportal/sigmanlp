@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 
 public class GenSimpTestData {
 
-    public static boolean debug = false;
+    public static boolean debug = true;
     public static KB kb;
     public static boolean skip = false;
     public static boolean printFrame = false;
@@ -1863,8 +1863,12 @@ public class GenSimpTestData {
 
             if (plural.attribute.equals("true"))
                 addSUMOplural(prop,lfeat.indirectType,plural,"?IO");
-            else
-                prop.append("(instance ?IO ").append(lfeat.indirectType).append(") ");
+            else {
+                if (kb.isInstanceOf(lfeat.indirectType,"SocialRole"))
+                    prop.append("(attribute ?IO ").append(lfeat.indirectType).append(") ");
+                else
+                    prop.append("(instance ?IO ").append(lfeat.indirectType).append(") ");
+            }
             if (lfeat.framePart.contains("somebody"))
                 prop.append(genSUMOForHuman(lfeat,lfeat.indirectName,"?IO"));
             else
