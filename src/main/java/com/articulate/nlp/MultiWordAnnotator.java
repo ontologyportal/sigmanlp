@@ -1,20 +1,17 @@
 package com.articulate.nlp;
 
-import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.MultiWords;
-import com.articulate.sigma.wordNet.WSD;
-import com.articulate.sigma.wordNet.WordNet;
-import com.articulate.sigma.wordNet.WordNetUtilities;
+
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.CoreAnnotations.SpanAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import edu.stanford.nlp.util.ArraySet;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.IntPair;
+import edu.stanford.nlp.util.TypesafeMap.Key;
 
 import java.util.*;
 
@@ -34,12 +31,12 @@ public abstract class MultiWordAnnotator implements Annotator {
     // Some annotators may not have synsets
     public Class multiWordAnno;
 
-    public Class sumoAnno;
+    public Class<? extends Key<String>> sumoAnno;
 
     //spans are set to token numbers not array position index
     public Class spanAnno;
 
-    public Class tokenAnno;
+    public Class<? extends Key<String>> tokenAnno;
 
     public static boolean debug = false;
 
@@ -76,7 +73,7 @@ public abstract class MultiWordAnnotator implements Annotator {
      */
     public static String multiWordToKey(List<CoreLabel> tokens, char delimit) {
 
-        if (tokens == null || tokens.size() == 0)
+        if (tokens == null || tokens.isEmpty())
             return "";
         StringBuilder result = new StringBuilder();
         for (CoreLabel cl : tokens) {
@@ -119,9 +116,9 @@ public abstract class MultiWordAnnotator implements Annotator {
                                                 Collection<String> candidates) {
 
         //if (debug) System.out.println("findMultiWord(1): " + head + " : " + rest);
-        if (rest.size() == 0)
+        if (rest.isEmpty())
             return null;
-        List<CoreLabel> result = new ArrayList<>();
+        List<CoreLabel> result = new ArrayList<>(), newResult;
         String headString = multiWordToKey(head,'_');
         CoreLabel token = new CoreLabel(rest.get(0));
         List<CoreLabel> newRest = labelListCopy(rest.subList(1,rest.size()));
@@ -133,9 +130,9 @@ public abstract class MultiWordAnnotator implements Annotator {
         String lemmalower = null;
         if (!StringUtil.emptyString(token.lemma()))
             lemmalower = token.lemma().toLowerCase();
-        String bestMatch = "";
+        String bestMatch = "", newString;
         for (String s : candidates) {
-            String newString = headString + "_" + orig;
+            newString = headString + "_" + orig;
             //if (debug) System.out.println("findMultiWord(1): s, newString " + s + ", " + newString);
             if (s.equals(newString)) {
                 if (newString.length() > bestMatch.length()) {
@@ -147,7 +144,7 @@ public abstract class MultiWordAnnotator implements Annotator {
             }
             else if (s.startsWith(newString)) {
                 token.set(MultiWordFormAnnotation.class,orig);
-                List<CoreLabel> newResult = findMultiWord(newHead,newRest,candidates);
+                newResult = findMultiWord(newHead,newRest,candidates);
                 newString = multiWordToKey(newResult,'_');
                 if (newString.length() > bestMatch.length()) {
                     result = newResult;
@@ -166,7 +163,7 @@ public abstract class MultiWordAnnotator implements Annotator {
             }
             else if (s.startsWith(newString)) {
                 token.set(MultiWordFormAnnotation.class,lemma);
-                List<CoreLabel> newResult = findMultiWord(newHead,newRest,candidates);
+                newResult = findMultiWord(newHead,newRest,candidates);
                 newString = multiWordToKey(newResult,'_');
                 if (newString.length() > bestMatch.length()) {
                     result = newResult;
@@ -185,7 +182,7 @@ public abstract class MultiWordAnnotator implements Annotator {
             }
             else if (s.startsWith(newString)) {
                 token.set(MultiWordFormAnnotation.class,lower);
-                List<CoreLabel> newResult = findMultiWord(newHead,newRest,candidates);
+                newResult = findMultiWord(newHead,newRest,candidates);
                 newString = multiWordToKey(newResult,'_');
                 if (newString.length() > bestMatch.length()) {
                     result = newResult;
@@ -204,7 +201,7 @@ public abstract class MultiWordAnnotator implements Annotator {
             }
             else if (s.startsWith(newString)) {
                 token.set(MultiWordFormAnnotation.class,lemmalower);
-                List<CoreLabel> newResult = findMultiWord(newHead,newRest,candidates);
+                newResult = findMultiWord(newHead,newRest,candidates);
                 newString = multiWordToKey(newResult,'_');
                 if (newString.length() > bestMatch.length()) {
                     result = newResult;
@@ -282,21 +279,27 @@ public abstract class MultiWordAnnotator implements Annotator {
         if (debug) System.out.println("annotateSentence(): " + tokens);
         if (tokens.size() < 2)
             return;
+
+        List<CoreLabel> rest, multiWord;
+        CoreLabel token, tok;
+        String key, sumo;
+        int end;
+        IntPair ip;
         for (int i = 0; i < tokens.size() - 1; i++) { // don't try just the last token since one token can't be multiword
-            List<CoreLabel> rest = tokens.subList(i+1,tokens.size());
-            CoreLabel token = tokens.get(i);
+            rest = tokens.subList(i+1,tokens.size());
+            token = tokens.get(i);
             if (debug) System.out.println("annotateSentence(): token: " + token);
-            List<CoreLabel> multiWord = findMultiWord(token, rest);
+            multiWord = findMultiWord(token, rest);
             if (debug) System.out.println("annotateSentence(): multiword: " + multiWord);
-            if (multiWord.size() > 0) {
-                String key = multiWordToKey(multiWord,'_');
-                int end = i + multiWord.size();
+            if (!multiWord.isEmpty()) {
+                key = multiWordToKey(multiWord,'_');
+                end = i + multiWord.size();
                 for (int index = i; index < end; index++) {
-                    CoreLabel tok = tokens.get(index);  // note that token index is token number -1
+                    tok = tokens.get(index);  // note that token index is token number -1
                     tok.set(multiWordAnno,findSynset(key));
-                    IntPair ip = new IntPair(i+1,end); // spans are set to token numbers
+                    ip = new IntPair(i+1,end); // spans are set to token numbers
                     tok.set(spanAnno,ip);
-                    String sumo = findSUMO(key);
+                    sumo = findSUMO(key);
                     if (!StringUtil.emptyString(sumo)) {
                         tok.set(sumoAnno, sumo);
                         if (debug) System.out.println("annotateSentence(): sumo: " + sumo);
@@ -327,8 +330,9 @@ public abstract class MultiWordAnnotator implements Annotator {
             throw new RuntimeException("Unable to find sentences in " + annotation);
 
         List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
+        List<CoreLabel> tokens;
         for (CoreMap sentence : sentences) {
-            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             annotateSentence(tokens);
         }
     }
