@@ -230,8 +230,8 @@ public abstract class MultiWordAnnotator implements Annotator {
             lemmalower = token.lemma().toLowerCase();
         //if (debug) System.out.println("findMultiWord(2): " + orig + " : " + lemma);
         //if (debug) System.out.println("findMultiWord(2): matches: " + mw.multiWord.get(orig).size());
-        if (mw.multiWord.containsKey(orig)) {
-            Collection<String> candidates = mw.multiWord.get(orig);
+        if (mw.multiWordSerialized.containsKey(orig)) {
+            Collection<String> candidates = mw.multiWordSerialized.get(orig);
             List<CoreLabel> head = new ArrayList<>();
             head.add(new CoreLabel(token));
             head.get(0).set(MultiWordFormAnnotation.class,orig);
@@ -240,8 +240,8 @@ public abstract class MultiWordAnnotator implements Annotator {
                 result = newres;
             }
         }
-        if (mw.multiWord.containsKey(lower)) {
-            Collection<String> candidates = mw.multiWord.get(lower);
+        if (mw.multiWordSerialized.containsKey(lower)) {
+            Collection<String> candidates = mw.multiWordSerialized.get(lower);
             List<CoreLabel> head = new ArrayList<>();
             head.add(new CoreLabel(token));
             head.get(0).set(MultiWordFormAnnotation.class,lower);
@@ -250,8 +250,8 @@ public abstract class MultiWordAnnotator implements Annotator {
                 result = newres;
             }
         }
-        if (mw.multiWord.containsKey(lemma)) {
-            Collection<String> candidates = mw.multiWord.get(lemma);
+        if (mw.multiWordSerialized.containsKey(lemma)) {
+            Collection<String> candidates = mw.multiWordSerialized.get(lemma);
             List<CoreLabel> head = new ArrayList<>();
             head.add(new CoreLabel(token));
             head.get(0).set(MultiWordFormAnnotation.class,lemma);
@@ -260,8 +260,8 @@ public abstract class MultiWordAnnotator implements Annotator {
                 result = newres;
             }
         }
-        if (mw.multiWord.containsKey(lemmalower)) {
-            Collection<String> candidates = mw.multiWord.get(lemmalower);
+        if (mw.multiWordSerialized.containsKey(lemmalower)) {
+            Collection<String> candidates = mw.multiWordSerialized.get(lemmalower);
             List<CoreLabel> head = new ArrayList<>();
             head.add(new CoreLabel(token));
             head.get(0).set(MultiWordFormAnnotation.class,lemmalower);
