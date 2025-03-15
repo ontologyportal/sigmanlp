@@ -20,10 +20,10 @@
 This software is released under the GNU Public License <http://www.gnu.org/copyleft/gpl.html>.
 Users of this code also consent, by use of this code, to credit Articulate Software
 in any writings, briefings, publications, presentations, or
-other representations of any software which incorporates, builds on, or uses this 
+other representations of any software which incorporates, builds on, or uses this
 code.  Please cite the following article in any publication with references:
 
-Pease, A., (2003). The Sigma Ontology Development Environment, 
+Pease, A., (2003). The Sigma Ontology Development Environment,
 in Working Notes of the IJCAI-2003 Workshop on Ontology and Distributed Systems,
 August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
 
@@ -76,7 +76,7 @@ Authors:
 
     System.out.println("NLP.jsp: Running language to logic");
     List<String> forms = interp.interpret(theText);
-    ArrayList<CNF> inputs = new ArrayList<>();
+    List<CNF> inputs = new ArrayList<>();
     //System.out.println("NLP.jsp: Running relation extraction");
     //ArrayList<RHS> kifClauses = RelExtract.sentenceExtract(theText);
 %>
@@ -115,30 +115,32 @@ Authors:
         out.println("<h2>Tokens</h2>\n"); // -------------------------------------------------------------
         List<String> senses = new ArrayList<String>();
         List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
+        List<CoreLabel> tokens;
+        String orig, lemma, pos, poslink, sense, sumo, multi, keylink, SUMOlink;
         for (CoreMap sentence : sentences) {
-            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             for (CoreLabel token : tokens) {
-                String orig = token.originalText();
-                String lemma = token.lemma();
-                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
-                String poslink = "<a href=\"https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html\">" +
+                orig = token.originalText();
+                lemma = token.lemma();
+                pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                poslink = "<a href=\"https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html\">" +
                     pos + "</a>";
-                String sense = token.get(WSDAnnotator.WSDAnnotation.class);
+                sense = token.get(WSDAnnotator.WSDAnnotation.class);
                 if (!StringUtil.emptyString(sense))
                     senses.add(sense);
-                String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
-                String multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
+                sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
                 out.print(orig);
                 if (!StringUtil.emptyString(lemma))
                     out.print("/" + lemma);
                 if (!StringUtil.emptyString(pos))
                     out.print("/" + poslink);
                 if (!StringUtil.emptyString(sense)) {
-                    String keylink = "<a href=\"" + wnHref + "&synset=" + sense + "\">" + sense + "</a>";
+                    keylink = "<a href=\"" + wnHref + "&synset=" + sense + "\">" + sense + "</a>";
                     out.print("/" + keylink);
                 }
                 if (!StringUtil.emptyString(sumo)) {
-                    String SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
+                    SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
                     out.print("/" + SUMOlink);
                 }
                 if (!StringUtil.emptyString(multi))
@@ -150,13 +152,15 @@ Authors:
 
         Iterator<String> it = senses.iterator();
         out.println("<table>");
+        String key, SUMO, wordstr;
+        List<String> words;
         while (it.hasNext()) {
-            String key = it.next();
-            String keylink = "<a href=\"" + wnHref + "&synset=" + key + "\">" + key + "</a>";
-            String SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(key));
-            String SUMOlink = "<a href=\"" + kbHref + "&term=" + SUMO + "\">" + SUMO + "</a>";
-            ArrayList<String> words = WordNet.wn.synsetsToWords.get(key);
-            String wordstr = "";
+            key = it.next();
+            keylink = "<a href=\"" + wnHref + "&synset=" + key + "\">" + key + "</a>";
+            SUMO = WordNetUtilities.getBareSUMOTerm(WordNet.wn.getSUMOMapping(key));
+            SUMOlink = "<a href=\"" + kbHref + "&term=" + SUMO + "\">" + SUMO + "</a>";
+            words = WordNet.wn.synsetsToWords.get(key);
+            wordstr = "";
             if (words != null)
                 wordstr = words.toString();
             out.println("<tr><td>" + keylink + "</td><td>" +
@@ -166,12 +170,13 @@ Authors:
 
         out.println("<h2>Visualization</h2>\n"); // ------------------------------------------------------
         out.println("<div id=\"bratVizDiv\" style=\"\"></div><P>\n");
-        
+
         out.println("<h2>Dependencies</h2>\n"); // -------------------------------------------------------
         out.println("<table><tr><th>original</th><th>augmented</th><th>substitutors</th></tr><tr><td>\n");
+        List<Literal> dependencies;
         for (CoreMap sentence : sentences) {
             out.println("<pre>");
-            List<Literal> dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
+            dependencies = SentenceUtil.toDependenciesList(ImmutableList.of(sentence));
             for (Literal l : dependencies)
                 out.println(l);
             out.println("</pre><P>");
@@ -205,21 +210,23 @@ Authors:
             </form><p>
         <%
         if (forms != null) {
+            Formula theForm;
             for (String s : forms) {
-                Formula theForm = new Formula(s);
+                theForm = new Formula(s);
                 out.println(theForm.htmlFormat(kb,HTMLformatter.createHrefStart()) + "<P>");
             }
         }
 
         out.println("<h2>Sentiment</h2>\n"); // ----------------------------------------------------------
         out.println("<table>");
+        String sentiment;
         for (CoreMap sentence : sentences) {
-            String sentiment = sentence.get(SentimentCoreAnnotations.SentimentClass.class);
-            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            sentiment = sentence.get(SentimentCoreAnnotations.SentimentClass.class);
+            tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             for (CoreLabel token : tokens) {
-                String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
                 if (!StringUtil.emptyString(sumo)) {
-                    String SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
+                    SUMOlink = "<a href=\"" + kbHref + "&term=" + sumo + "\">" + sumo + "</a>";
                     out.println("<tr><td>" + SUMOlink + "</td><td>" + sentiment + "</td></tr><P>\n");
                 }
             }

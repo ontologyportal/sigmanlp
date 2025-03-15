@@ -1,11 +1,12 @@
 package com.articulate.nlp.semconcor;
 
 import com.articulate.nlp.semRewrite.*;
-import com.articulate.nlp.semconcor.Indexer;
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.utils.StringUtil;
+
 import com.google.common.base.Strings;
+import java.io.IOException;
 
 import java.sql.*;
 import java.util.*;
@@ -75,7 +76,7 @@ public class Searcher {
                 if (result.length() > 0)
                     result.append(", ");
                 if (l.bound) {
-                    result.append("<b>" + l.toString().substring(1) + "</b>"); // don't print the 'X' bound flag
+                    result.append("<b>").append(l.toString().substring(1)).append("</b>"); // don't print the 'X' bound flag
                 }
                 else {
                     result.append(l);
@@ -92,7 +93,7 @@ public class Searcher {
     public static void showTable(Connection conn, String tableName) {
 
         System.out.println("showTable(): for " + tableName);
-        Statement stmt = null;
+        Statement stmt;
         try {
             stmt = conn.createStatement();
             ResultSet res = stmt.executeQuery("show columns from " + tableName + ";");
@@ -100,7 +101,7 @@ public class Searcher {
                 System.out.println(res.getString("FIELD"));
         }
         catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -110,7 +111,7 @@ public class Searcher {
      */
     public static String fetchSentenceFromKey(Connection conn, String key) {
 
-        Statement stmt = null;
+        Statement stmt;
         String result = null;
         try {
             String[] sar = key.split("#");
@@ -125,7 +126,7 @@ public class Searcher {
             return result;
         }
         catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -136,7 +137,7 @@ public class Searcher {
      */
     public static String fetchDepFromKey(Connection conn, String key) {
 
-        Statement stmt = null;
+        Statement stmt;
         String result = null;
         try {
             String[] sar = key.split("#");
@@ -151,7 +152,7 @@ public class Searcher {
             return result;
         }
         catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -160,19 +161,22 @@ public class Searcher {
     /***************************************************************
      * @param keys a set of keys of the form filename#sentencenum#linenum
      */
-    public static void fetchResultStrings(Connection conn, HashSet<String> keys,
-                                                     ArrayList<String> sentences,
-                                                     ArrayList<String> dependencies) {
+    public static void fetchResultStrings(Connection conn, Set<String> keys,
+                                                     List<String> sentences,
+                                                     List<String> dependencies) {
 
-        Statement stmt = null;
+        Statement stmt;
+        String[] sar;
+        String query;
+        ResultSet rs;
         try {
             for (String s : keys) {
-                String[] sar = s.split("#");
-                String query = "select cont,dependency from content where file='" + sar[0] +
+                sar = s.split("#");
+                query = "select cont,dependency from content where file='" + sar[0] +
                         "' and sentnum=" + sar[1] + " and linenum=" + sar[2] + ";";
                 if (debug) System.out.println("Searcher.fetchResultStrings(): query: " + query);
                 stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(query);
+                rs = stmt.executeQuery(query);
                 while (rs.next()) {
                     sentences.add(rs.getString("CONT"));
                     dependencies.add(rs.getString("DEPENDENCY"));
@@ -180,7 +184,7 @@ public class Searcher {
             }
         }
         catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -191,29 +195,34 @@ public class Searcher {
      * must be padded with 0's to maintain their order.  Use 10 digits
      * so we can handle billions of terms.
      */
-    public static TreeSet<AVPair> makeCountIndex(Connection conn,
-                                                 ArrayList<String> tokens) {
+    public static Set<AVPair> makeCountIndex(Connection conn,
+                                                 List<String> tokens) {
 
-        TreeSet<AVPair> countIndex = new TreeSet<AVPair>();
-        Statement stmt = null;
+        Set<AVPair> countIndex = new TreeSet<>();
+        Statement stmt;
         try {
             if (debug) System.out.println("Searcher.makeCountIndex(): " + conn.getCatalog());
+            String query;
+            ResultSet rs;
+            int count;
+            String countString;
+            AVPair avp;
             for (String s : tokens) {
-                String query = "select * from counts where token='" + s + "';";
+                query = "select * from counts where token='" + s + "';";
                 if (debug) System.out.println("Searcher.fetchFromIndex(): query: " + query);
                 stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(query);
+                rs = stmt.executeQuery(query);
                 while (rs.next()) {
-                    int count = rs.getInt("COUNT");
-                    String countString = Integer.toString(count);
+                    count = rs.getInt("COUNT");
+                    countString = Integer.toString(count);
                     countString = StringUtil.fillString(countString,'0',10,true);
-                    AVPair avp = new AVPair(countString,s);
+                    avp = new AVPair(countString,s);
                     countIndex.add(avp);
                 }
             }
         }
         catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         return countIndex;
@@ -227,35 +236,39 @@ public class Searcher {
      * will be more expensive than just searching for the token in the
      * result set.
      */
-    public static HashSet<String> fetchFromSortedIndex(Connection conn, String indexName,
-                                                 ArrayList<String> tokens) {
+    public static Set<String> fetchFromSortedIndex(Connection conn, String indexName,
+                                                        List<String> tokens) {
 
-        TreeSet<AVPair> sortedCounts = makeCountIndex(conn,tokens);
+        Set<AVPair> sortedCounts = makeCountIndex(conn,tokens);
 
         if (debug) System.out.println("Searcher.fetchFromSortedIndex(): " + indexName + "\n" + tokens);
         if (debug) System.out.println("Searcher.fetchFromSortedIndex(): sorted counts: " + sortedCounts);
-        HashSet<String> result = new HashSet<>();
+        Set<String> result = new HashSet<>();
         if (!indexName.equalsIgnoreCase("INDEX") && !indexName.equalsIgnoreCase("DEPINDEX")) {
             System.out.println("Error in Searcher.fetchFromSortedIndex(): bad table name " + indexName);
             return result;
         }
-        Statement stmt = null;
+        Statement stmt;
+        String s, query, filename;
+        int termCount, sentNum, lineNum;
+        ResultSet rs;
+        Set<String> newresult = new HashSet<>();
         try {
             for (AVPair avp : sortedCounts) {
-                String s = avp.value;
+                s = avp.value;
                 if (debug) System.out.println("Searcher.fetchFromSortedIndex(): term count: " + avp.attribute);
-                int termCount = Integer.parseInt(avp.attribute);
-                if (result.size() > 0 && termCount > countSize * result.size())
+                termCount = Integer.parseInt(avp.attribute);
+                if (!result.isEmpty() && termCount > countSize * result.size())
                     return result; // don't try to union really big indexes
-                String query = "select * from " + indexName + " where token='" + s + "';";
+                query = "select * from " + indexName + " where token='" + s + "';";
                 if (debug) System.out.println("Searcher.fetchFromSortedIndex(): query: " + query);
                 stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(query);
-                HashSet<String> newresult = new HashSet<>();
+                rs = stmt.executeQuery(query);
+                newresult.clear();
                 while (rs.next()) {
-                    String filename = rs.getString("FILE");
-                    int sentNum = rs.getInt("SENTNUM");
-                    int lineNum = rs.getInt("LINENUM");
+                    filename = rs.getString("FILE");
+                    sentNum = rs.getInt("SENTNUM");
+                    lineNum = rs.getInt("LINENUM");
                     newresult.add(filename + "#" + Integer.toString(sentNum) + "#" + Integer.toString(lineNum));
                 }
                 if (result.isEmpty())
@@ -266,7 +279,7 @@ public class Searcher {
             }
         }
         catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         if (debug) System.out.println("Searcher.fetchFromSortedIndex(): result size: " + result.size());
@@ -278,27 +291,32 @@ public class Searcher {
      * @return a set of keys of the form filename#sentencenum#linenum
      * for sentences that contain the given tokens in the given index
      */
-    public static HashSet<String> fetchFromIndex(Connection conn, String indexName,
-                                                 ArrayList<String> tokens) {
+    public static Set<String> fetchFromIndex(Connection conn, String indexName,
+                                                 List<String> tokens) {
 
         if (debug) System.out.println("Searcher.fetchFromIndex(): " + indexName + "\n" + tokens);
-        HashSet<String> result = new HashSet<>();
+        Set<String> result = new HashSet<>();
         if (!indexName.equalsIgnoreCase("INDEX") && !indexName.equalsIgnoreCase("DEPINDEX")) {
             System.out.println("Error in Searcher.fetchFromIndex(): bad table name " + indexName);
             return result;
         }
-        Statement stmt = null;
+        Statement stmt;
+        ResultSet rs;
+        Set<String> newresult = new HashSet<>();
+        String filename;
+        int sentNum, lineNum;
         try {
+            String query;
             for (String s : tokens) {
-                String query = "select * from " + indexName + " where token='" + s + "';";
+                query = "select * from " + indexName + " where token='" + s + "';";
                 if (debug) System.out.println("Searcher.fetchFromIndex(): query: " + query);
                 stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(query);
-                HashSet<String> newresult = new HashSet<>();
+                rs = stmt.executeQuery(query);
+                newresult.clear();
                 while (rs.next()) {
-                    String filename = rs.getString("FILE");
-                    int sentNum = rs.getInt("SENTNUM");
-                    int lineNum = rs.getInt("LINENUM");
+                    filename = rs.getString("FILE");
+                    sentNum = rs.getInt("SENTNUM");
+                    lineNum = rs.getInt("LINENUM");
                     newresult.add(filename + "#" + Integer.toString(sentNum) + "#" + Integer.toString(lineNum));
                 }
                 if (result.isEmpty())
@@ -309,7 +327,7 @@ public class Searcher {
             }
         }
         catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         if (debug) System.out.println("Searcher.fetchFromIndex(): result size: " + result.size());
@@ -359,18 +377,19 @@ public class Searcher {
      * @param dependencies the dependency parses of sentences to check for a match
      * @return a list of integer indexes to items that don't match the pattern
      */
-    public static ArrayList<Integer> matchDependencies(String dep,
-                                     ArrayList<String> dependencies) {
+    public static List<Integer> matchDependencies(String dep,
+                                     List<String> dependencies) {
 
         if (debug) System.out.println("Searcher.matchDependencies(): " + dep);
         if (debug) System.out.println("dependencies size: " + dependencies.size());
-        ArrayList<Integer> result = new ArrayList<Integer>();
+        List<Integer> result = new ArrayList<>();
         if (Strings.isNullOrEmpty(dep) || dep.equals("null"))
             return result;
         Lexer lex = new Lexer(dep);
         CNF smallcnf = CNF.parseSimple(lex);
+        String onedep;
         for (int i = 0; i < dependencies.size(); i++) {
-            String onedep = dependencies.get(i);
+            onedep = dependencies.get(i);
             if (!matchDep(smallcnf,onedep))
                 result.add(i);
         }
@@ -384,16 +403,17 @@ public class Searcher {
      * @param sentences the sentences to check for a match
      * @return a list of integer indexes to items that don't match
      */
-    public static ArrayList<Integer> matchSentences(String phrase,
-                                     ArrayList<String> sentences) {
+    public static List<Integer> matchSentences(String phrase,
+                                     List<String> sentences) {
 
         if (debug) System.out.println("Searcher.matchSentences(): " + phrase);
         if (debug) System.out.println("sentences size: " + sentences.size());
-        ArrayList<Integer> result = new ArrayList<Integer>();
+        List<Integer> result = new ArrayList<>();
         if (Strings.isNullOrEmpty(phrase))
             return result;
+        String onesent;
         for (int i = 0; i < sentences.size(); i++) {
-            String onesent = sentences.get(i);
+            onesent = sentences.get(i);
             if (!onesent.contains(phrase))
                 result.add(i);
         }
@@ -404,17 +424,17 @@ public class Searcher {
      * @return a set of keys of the form filename#sentencenum#linenum
      * for sentences that contain the given tokens in the two indexes
      */
-    public static HashSet<String> fetchIndexes(Connection conn,
-                                               ArrayList<String> sentTokens,
-                                               ArrayList<String> depTokens) {
+    public static Set<String> fetchIndexes(Connection conn,
+                                               List<String> sentTokens,
+                                               List<String> depTokens) {
 
         if (debug) System.out.println("fetchIndexes():" + sentTokens + "\n" + depTokens);
-        HashSet<String> result = new HashSet<String>();
-        if (sentTokens != null && sentTokens.size() > 0)
+        Set<String> result = new HashSet<>();
+        if (sentTokens != null && !sentTokens.isEmpty())
             result = fetchFromSortedIndex(conn,"index",sentTokens);
-        if (result.size() == 0)
+        if (result.isEmpty())
             result = fetchFromSortedIndex(conn,"depindex",depTokens);
-        else if (depTokens != null && depTokens.size() > 0)
+        else if (depTokens != null && !depTokens.isEmpty())
             result.retainAll(fetchFromSortedIndex(conn,"depindex",depTokens));
         return result;
     }
@@ -424,10 +444,10 @@ public class Searcher {
      * to a list of tokens found in the dependency
      * @return a list of string tokens
      */
-    public static ArrayList<String> depToTokens(String dep) {
+    public static List<String> depToTokens(String dep) {
 
         if (debug) System.out.println("Searcher.depToTokens(): " + dep);
-        ArrayList<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         if (dep == null)
             return result;
         Lexer lex = new Lexer(dep);
@@ -451,57 +471,57 @@ public class Searcher {
      * dbFilepath is assumed to be under CORPORA directory
      */
     public static void search(String dbFilepath, String phrase, String dep,
-                              ArrayList<String> sentences,
-                              ArrayList<String> dependencies) throws Exception {
+                              List<String> sentences,
+                              List<String> dependencies) throws Exception {
 
         if (debug) System.out.println("Searcher.search(): " + phrase + "\n" + dep);
         String searchString = phrase;
         String[] ar = searchString.split(" ");
-        ArrayList<String> sentTokens = new ArrayList<>();
+        List<String> sentTokens = new ArrayList<>();
         sentTokens.addAll(Arrays.asList(ar));
 
-        ArrayList<String> depTokens = new ArrayList<>();
+        List<String> depTokens = new ArrayList<>();
         depTokens = depToTokens(dep);
 
-        Class.forName("org.h2.Driver");
+//        Class.forName("org.h2.Driver");
         String corporaDir = System.getenv("CORPORA");
-        Connection conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "");
-        if (debug) System.out.println("main(): Opened DB " + dbFilepath);
+        try (Connection conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "")) {
+            if (debug) System.out.println("main(): Opened DB " + dbFilepath);
+            Statement stmt = null;
+            Set<String> result;
+            try {
+                if (debug) showTable(conn, "index");
+                if (debug) showTable(conn, "counts");
+                result = fetchIndexes(conn,sentTokens, depTokens);
+                if (debug) System.out.println("search(): indexes size: " + result.size());
+                List<String> tempSentences = new ArrayList<>();
+                List<String> tempDependencies = new ArrayList<>();
+                fetchResultStrings(conn,result,tempSentences,tempDependencies); // results returned in tempSentences and tempDependencies
 
-        Statement stmt = null;
-        HashSet<String> result = new HashSet<>();
-        try {
-            if (debug) showTable(conn, "index");
-            if (debug) showTable(conn, "counts");
-            result = fetchIndexes(conn,sentTokens, depTokens);
-            if (debug) System.out.println("search(): indexes size: " + result.size());
-            ArrayList<String> tempSentences = new ArrayList<>();
-            ArrayList<String> tempDependencies = new ArrayList<>();
-            fetchResultStrings(conn,result,tempSentences,tempDependencies); // results returned in tempSentences and tempDependencies
+                List<Integer> removeList = matchDependencies(dep,tempDependencies);
+                removeList.addAll(matchSentences(phrase,tempSentences));
 
-            ArrayList<Integer> removeList = matchDependencies(dep,tempDependencies);
-            removeList.addAll(matchSentences(phrase,tempSentences));
-
-            ArrayList<String> newsent = new ArrayList<>();
-            ArrayList<String> newdep = new ArrayList<>();
-            for (int i = 0; i < tempDependencies.size(); i++) {
-                if (!removeList.contains(i)) {
-                    newsent.add(tempSentences.get(i));
-                    newdep.add(tempDependencies.get(i));
+                List<String> newsent = new ArrayList<>();
+                List<String> newdep = new ArrayList<>();
+                for (int i = 0; i < tempDependencies.size(); i++) {
+                    if (!removeList.contains(i)) {
+                        newsent.add(tempSentences.get(i));
+                        newdep.add(tempDependencies.get(i));
+                    }
                 }
+                sentences.addAll(newsent);
+                dependencies.addAll(newdep);
             }
-            sentences.addAll(newsent);
-            dependencies.addAll(newdep);
+            catch (Exception e) {
+                System.err.println(e.getMessage());
+                e.printStackTrace();
+            }
+            finally {
+                if (stmt != null)
+                    stmt.close();
+            }
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-        }
-        finally {
-            if (stmt != null)
-                stmt.close();
-        }
-        conn.close();
+
     }
 
     /***************************************************************
@@ -511,18 +531,19 @@ public class Searcher {
         System.out.println("Searcher.printSearchResults(): " + phrase + "\n" + dep);
 
         try {
-            ArrayList<String> sentences = new ArrayList<>();
-            ArrayList<String> dependencies = new ArrayList<>();
+            List<String> sentences = new ArrayList<>();
+            List<String> dependencies = new ArrayList<>();
             search(dbFilepath, phrase, dep,sentences, dependencies);
+            String s, d;
             for (int i = 0; i < sentences.size(); i++) {
-                String s = sentences.get(i);
-                String d = dependencies.get(i);
+                s = sentences.get(i);
+                d = dependencies.get(i);
                 System.out.println("Sentence: " + s);
                 System.out.println("Dependency: " + d);
             }
         }
         catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -545,13 +566,12 @@ public class Searcher {
         try {
             interp.initialize();
         }
-        catch (Exception e) {
-            System.out.println("Error in Searcher.interactive(): " + e.getMessage());
+        catch (IOException e) {
+            System.err.println("Error in Searcher.interactive(): " + e.getMessage());
             e.printStackTrace();
             return;
         }
-        String input = "";
-        String deps = "";
+        String input, deps;
         Scanner scanner = new Scanner(System.in);
         do {
             System.out.print("Enter word or phrase: ");
@@ -566,7 +586,7 @@ public class Searcher {
                         printSearchResults(dbFilepath, input, deps);
                     }
                     catch (Exception e) {
-                        System.out.println(e.getMessage());
+                        System.err.println(e.getMessage());
                         e.printStackTrace();
                     }
                 }
@@ -605,25 +625,25 @@ public class Searcher {
             //System.out.println("main(): Opened DB " + Indexer.JDBCString);
             //showTable(conn,"index");
             //showTable(conn,"counts");
-            String searchString = "in";
+            String searchString;
             Interpreter interp = new Interpreter();
             KBmanager.getMgr().initializeOnce();
             try {
                 interp.initialize();
             }
-            catch (Exception e) {
-                System.out.println("Error in Indexer.storeWikiText(): " + e.getMessage());
+            catch (IOException e) {
+                System.err.println("Error in Indexer.storeWikiText(): " + e.getMessage());
                 e.printStackTrace();
                 return;
             }
-            if (args != null && args.length > 1)
+            if (args.length > 1)
                 searchString = StringUtil.removeEnclosingQuotes(args[1]);
             else
                 searchString = "";
             String depString = "";
-            if (searchString == "")
+            if ("".equals(searchString))
                  depString = "sumo(FinancialTransaction,?X)";
-            if (args != null && args.length > 1)
+            if (args.length > 1)
                 depString = args[1];
             printSearchResults("FCE",searchString,depString);
         }

@@ -92,7 +92,7 @@ public class WNMWAnnotatorTest extends IntegrationTestBase {
     public void testHyundai() {
 
         System.out.println("has Hyundai term " + kb.containsTerm("HyundaiAutomobile"));
-        System.out.println("has Hyundai word " + WordNet.wn.multiWords.multiWord.containsKey("Hyundai"));
+        System.out.println("has Hyundai word " + WordNet.wn.multiWords.multiWordSerialized.containsKey("Hyundai"));
         String text = "I like my Hyundai Equus.";
         Annotation wholeDocument = interp.userInputs.annotateDocument(text);
         CoreMap lastSentence = SentenceUtil.getLastSentence(wholeDocument);
