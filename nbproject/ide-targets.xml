@@ -40,7 +40,7 @@
     ====
     -->
 
-    <target name="init">
+    <target name="init" depends="init-ivy">
         <echo message="Welcome to the ${product.Name} v${product.Version}"/>
         <echo message="Specification Vendor:     ${spec.vendor}"/>
         <echo message=""/>
@@ -58,13 +58,13 @@
             <format property="TODAY_US" pattern="EEE, d MMM yyyy HHmm Z" locale="en,US"/>
         </tstamp>
 
+        <mkdir dir="${build.classes.dir}"/>
+    </target>
+    <target name="build.sigmakee" depends="init">
+
         <ant antfile="../sigmakee/nbproject/ide-targets.xml" inheritAll="false" target="all" />
         <copy todir="${basedir}/lib" file="../sigmakee/build/sigmakee.jar" />
         <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
-
-        <mkdir dir="${build.home}"/>
-        <mkdir dir="${build.classes.dir}"/>
-        <mkdir dir="${build.lib}"/>
     </target>
 
     <!--
@@ -336,7 +336,7 @@
         <nbjpdastart addressproperty="jpda.address" name="${impl.title}" transport="${debug.transport}">
             <classpath refid="dcp"/>
         </nbjpdastart>
-        <java classname="${main.class}"
+        <java classname="${run.class}"
               classpathref="dcp"
               fork="true">
             <jvmarg value="-agentlib:jdwp=transport=${debug.transport},address=${jpda.address}"/>
@@ -346,7 +346,7 @@
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
             <env key="CORPORA" value="${basedir}/corpora"/>
-            <arg line="-c Object Transaction"/>
+            <arg line="${run.args}"/>
         </java>
     </target>
     <target name="debug-selected-file-in-java" depends="clean,compile">
@@ -522,11 +522,11 @@
              manifest="${manifest.mf}">
           <metainf file="LICENSE"/>
           <metainf file="${web.dir}/context.xml"/>
-          <zipfileset dir="${build.home}/jsp"/>
-          <zipfileset dir="${build.home}/brat"/>
-          <zipfileset dir="${build.home}/js"/>
-          <zipfileset dir="${build.home}/pixmaps" prefix="pixmaps"/>
-          <lib dir="${build.lib}">
+          <zipfileset dir="${web.dir}/jsp"/>
+          <zipfileset dir="${web.dir}/brat"/>
+          <zipfileset dir="${web.dir}/js"/>
+          <zipfileset dir="${web.dir}/pixmaps" prefix="pixmaps"/>
+          <lib dir="${basedir}/lib">
               <exclude name="junit*"/>
               <exclude name="hamcrest*"/>
               <exclude name="tomcat-servlet-api*"/>
