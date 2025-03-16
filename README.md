@@ -1,3 +1,11 @@
+# Build status
+
+![badge](https://github.com/ontologyportal/sigmanlp/actions/workflows/ant.yml/badge.svg)
+
+# Test status
+
+![badge](https://github.com/ontologyportal/sigmanlp/actions/workflows/test-report.yml/badge.svg)
+
 Installation
 ============
 
