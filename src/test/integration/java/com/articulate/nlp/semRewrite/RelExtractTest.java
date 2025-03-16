@@ -35,6 +35,12 @@ along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA
 */
+
+/**
+ * NOTE: If this test fails, you need to load Mid-level-ontology.kif. One way to do this would be to edit
+ * your config.xml file by putting this line under "<kb name="SUMO" >":
+ *    <constituent filename=".../Mid-level-ontology.kif" />
+ */
 public class RelExtractTest extends IntegrationTestBase {
 
     private static Interpreter interpreter;
@@ -45,7 +51,7 @@ public class RelExtractTest extends IntegrationTestBase {
     public void setUpInterpreter() throws IOException {
 
         interpreter = new Interpreter();
-        interpreter.inference = false;
+        Interpreter.inference = false;
         //Interpreter.debug = true;
         Interpreter.replaceInstances = false;
         //CNF.debug = true;
@@ -68,8 +74,7 @@ public class RelExtractTest extends IntegrationTestBase {
         Lexer lex = new Lexer(input);
         CNF cnfInput = CNF.parseSimple(lex);
 
-        Rule r = new Rule();
-        r = Rule.parseString(rule);
+        Rule r = Rule.parseString(rule);
         r.cnf = Clausifier.clausify(r.lhs);
         System.out.println();
         System.out.println("INFO in RelExtractTest.doRuleTest(): CNF Input: " + cnfInput);
@@ -90,7 +95,6 @@ public class RelExtractTest extends IntegrationTestBase {
         System.out.println("bindings: " + bindings);
         RHS res = r.rhs.applyBindings(bindings);
 
-
         String resultString = StringUtil.removeEnclosingCharPair(res.toString(),1,'{','}');
 
         System.out.println("result: " + resultString);
@@ -98,7 +102,7 @@ public class RelExtractTest extends IntegrationTestBase {
         if (resultString.equals(expectedOutput))
             System.out.println("RelExtractTest.doRuleTest(): pass");
         else
-            System.out.println("RelExtractTest.doRuleTest(): fail");
+            System.err.println("RelExtractTest.doRuleTest(): fail");
         assertEquals(expectedOutput, resultString);
         System.out.println("-------------------");
     }
@@ -114,14 +118,14 @@ public class RelExtractTest extends IntegrationTestBase {
         ArrayList<RHS> kifClauses = RelExtract.sentenceExtract(input);
         //String result = StringUtil.removeEnclosingCharPair(kifClauses.toString(),0,'[',']');
         String result = "";
-        if (kifClauses != null && kifClauses.size() > 0)
+        if (kifClauses != null && !kifClauses.isEmpty())
             result = kifClauses.get(0).toString();
         System.out.println("INFO in RelExtractTest.doOneResultTest(): result: " + result);
         System.out.println("INFO in RelExtractTest.doOneResultTest(): expected: " + expectedOutput);
         if (result.equals(expectedOutput))
             System.out.println("RelExtractTest.doOneResultTest(): pass");
         else
-            System.out.println("RelExtractTest.doOneResultTest(): fail");
+            System.err.println("RelExtractTest.doOneResultTest(): fail");
         assertEquals(expectedOutput,result);
         System.out.println("-------------------");
     }
@@ -158,12 +162,12 @@ public class RelExtractTest extends IntegrationTestBase {
         System.out.println("INFO in RelExtractTest.doAllRuleTest(): expected: " + expectedOutput);
         //String result = StringUtil.removeEnclosingCharPair(kifClauses.toString(),0,'[',']');
         String result = "";
-        if (kifClauses != null && kifClauses.size() > 0)
+        if (kifClauses != null && !kifClauses.isEmpty())
             result = kifClauses.get(0).toString();
         if (result.equals(expectedOutput))
             System.out.println("RelExtractTest.doAllRuleTest(): pass");
         else
-            System.out.println("RelExtractTest.doAllRuleTest(): fail");
+            System.err.println("RelExtractTest.doAllRuleTest(): fail");
         assertEquals(expectedOutput,result);
         System.out.println("-------------------");
     }
@@ -215,7 +219,7 @@ public class RelExtractTest extends IntegrationTestBase {
      * Robert wears a shirt
      */
     @Test
-    @Ignore // TODO: Fails
+//    @Ignore // TODO: Fails
     public void testSimpleSent1() {
 
         //Interpreter.debug = true;
