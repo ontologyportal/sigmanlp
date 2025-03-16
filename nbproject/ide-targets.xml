@@ -552,7 +552,7 @@
     <target name="prep.integration.config">
         <copy tofile="${sigma_home}/KBs/config.xml" file="${integration.config}" overwrite="true"/>
     </target>
-    <target name="thorough.clean" depends="clean,prep.main.config">
+    <target name="thorough.clean" depends="clean">
         <delete includeemptydirs="true" failonerror="false">
             <!-- Delete the old web code -->
             <fileset dir="${deploy_home}"/>
@@ -577,7 +577,7 @@
         <delete file="${dist_war}"/>
         <antcall target="delete.catalina.logs"/>
     </target>
-    <target name="delete.catalina.logs" depends="init">
+    <target name="delete.catalina.logs">
         <delete>
             <fileset dir="${catalina.logs.dir}">
                 <include name="*.*"/>
