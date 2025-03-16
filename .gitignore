@@ -57,3 +57,4 @@ out-log.txt
 
 # COCA
 /corpora/COCA/*
+/.ivy/

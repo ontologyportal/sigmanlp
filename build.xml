@@ -1,8 +1,66 @@
-<project name="SigmaNLP" default="all" basedir=".">
+<project xmlns:ivy="antlib:org.apache.ivy.ant"
+         name="SigmaNLP" default="all" basedir=".">
     <description>
         This build file is meant to be invoked only from the command line. It's
         purpose is for building/testing in a CI/CD environment
     </description>
+
+    <!--
+    ===
+    IVY
+    ===
+    -->
+
+    <property name="ivy.install.version" value="2.5.1"/>
+    <property name="ivy.home" value="${basedir}/.ivy"/>
+    <property name="ivy.jar.dir" value="${ivy.home}/lib"/>
+    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
+
+    <target name="check.for.ivy.jar">
+        <available file="${ivy.jar.file}" property="ivy.present"/>
+    </target>
+
+    <target name="download-ivy" depends="check.for.ivy.jar" unless="ivy.present">
+        <mkdir dir="${ivy.jar.dir}"/>
+        <!-- download Ivy from web site so that it can be used even without any special installation -->
+        <get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+             dest="${ivy.jar.file}" usetimestamp="true"/>
+    </target>
+
+    <target name="init-ivy" depends="download-ivy">
+        <!-- try to load Ivy here from Ivy home, in case the user has not already dropped
+             it into Ant's lib dir (note that the latter copy will always take precedence).
+             We will not fail as long as local lib dir exists (it may be empty) and
+             Ivy is in at least one of Ant's lib dir or the local lib dir. -->
+        <path id="ivy.lib.path">
+            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+        </path>
+        <taskdef resource="org/apache/ivy/ant/antlib.xml"
+                 uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+            <ivy:retrieve/>
+
+        <path id="compile.classpath">
+            <fileset dir="${basedir}/lib">
+                <include name="*.jar"/>
+                <exclude name="junit*.jar"/>
+                <exclude name="hamcrest*.jar"/>
+            </fileset>
+        </path>
+        <path id="compile.test.classpath">
+            <path refid="compile.classpath"/>
+            <pathelement location="${build.classes.dir}"/>
+            <pathelement location="${build.test.classes.dir}"/>
+            <pathelement path="${basedir}/lib/hamcrest-core-1.3.jar:${basedir}/lib/junit-4.13.2.jar"/>
+        </path>
+        <path id="run.classpath">
+            <path refid="compile.classpath"/>
+            <pathelement location="${build.classes.dir}"/>
+        </path>
+        <path id="run.test.classpath">
+            <path refid="compile.test.classpath"/>
+            <pathelement location="${build.test.classes.dir}"/>
+        </path>
+    </target>
 
     <!--
     ====
@@ -28,13 +86,13 @@
     <property name="web.app.name" value="${app.name}nlp"/>
     <property name="build.home" value="build"/>
     <property name="build.classes.dir" value="${build.home}/classes"/>
-    <property name="build.lib" value="${build.home}/lib"/>
     <property name="build.test.classes.dir" value="${build.home}/test/classes"/>
     <property name="dist.dir" value="dist"/>
     <property name="dist.jar" value="${dist.dir}/${web.app.name}.jar"/>
     <property name="dist.javadoc.dir" value="doc"/>
     <property name="web.dir" value="web"/>
     <property name="reports.dir" value="${build.home}/test/results"/>
+    <property name="programs.dir" value="${user.home}/Programs"/>
     <property name="unit.test.suite" value="com.articulate.nlp.UnitTestSuite"/>
     <property name="integration.test.suite" value="com.articulate.nlp.IntegrationTestSuite"/>
     <property name="report.html" value="file:${basedir}/${reports.dir}/html/index.html"/>
@@ -46,11 +104,10 @@
     <property name="deploy.home" value="${dist.home}/${web.app.name}"/>
     <property name="git.home" value="${env.ONTOLOGYPORTAL_GIT}"/>
     <property name="sigmakee.home" value="${env.SIGMA_SRC}" />
-    <property name="deploy.classes" value="${build.home}/WEB-INF/classes"/>
-    <property name="deploy.lib" value="${build.home}/WEB-INF/lib"/>
 
     <property name="javac.release" value="11"/>
     <property name="run.jvmargs" value="-Xmx10g -Xss1m"/>
+    <property name="corenlp.version" value="4.5.7"/>
 
     <condition property="isUnixNotMac">
         <and>
@@ -62,34 +119,6 @@
         </and>
     </condition>
 
-    <path id="compile.classpath">
-        <fileset dir="${basedir}/lib">
-            <include name="*.jar"/>
-            <exclude name="junit*.jar"/>
-            <exclude name="hamcrest*.jar"/>
-        </fileset>
-        <fileset dir="${sigmakee.home}/lib">
-            <include name="*.jar"/>
-            <exclude name="junit*.jar"/>
-            <exclude name="hamcrest*.jar"/>
-        </fileset>
-    </path>
-    <path id="compile.test.classpath">
-        <path refid="compile.classpath"/>
-        <pathelement location="${build.classes.dir}"/>
-        <pathelement location="${build.test.classes.dir}"/>
-        <pathelement path="${basedir}/lib/hamcrest-core-1.3.jar:${basedir}/lib/junit-4.13.2.jar"/>
-    </path>
-    <path id="run.classpath">
-        <pathelement location="${build.classes.dir}"/>
-        <fileset dir="${build.lib}">
-            <include name="*.jar"/>
-        </fileset>
-    </path>
-    <path id="run.test.classpath">
-        <path refid="compile.test.classpath"/>
-        <pathelement location="${build.test.classes.dir}"/>
-    </path>
     <path id="sourcepath">
         <dirset dir="${basedir}">
             <include name="src/main/java"/>
@@ -101,7 +130,7 @@
         </dirset>
     </path>
 
-    <target name="init">
+    <target name="init" depends="init-ivy">
         <condition property="jdk21+">
             <javaversion atleast="21"/>
         </condition>
@@ -125,39 +154,6 @@
         <tstamp>
             <format property="TODAY_US" pattern="EEE, d MMM yyyy HHmm Z" locale="en,US"/>
         </tstamp>
-
-        <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
-        <copy todir="${basedir}/lib" file="${sigmakee.home}/build/sigmakee.jar" />
-        <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
-
-        <mkdir dir="${build.classes.dir}"/>
-        <mkdir dir="${build.lib}"/>
-    </target>
-
-    <target name="deploy.prepare" depends="init" description="deploy code to sigmanlp.war">
-
-        <!-- Copy all the *.jsp, *.xsl, *.html, pixmaps, etc. -->
-        <copy todir="${build.home}/jsp">
-            <fileset dir="${web.dir}/jsp"/>
-        </copy>
-
-        <copy todir="${build.home}/brat">
-            <fileset dir="${web.dir}/brat">
-              <exclude name="static/example-READMEs/**"/>
-            </fileset>
-        </copy>
-
-        <copy todir="${build.home}/js">
-            <fileset dir="${web.dir}/js"/>
-        </copy>
-
-        <copy todir="${build.home}/pixmaps">
-            <fileset dir="${web.dir}/pixmaps"/>
-        </copy>
-
-        <copy todir="${build.home}/WEB-INF">
-            <fileset file="${web.dir}/web.xml"/>
-        </copy>
     </target>
 
     <!--
@@ -166,7 +162,14 @@
     ============
     -->
 
-    <target name="compile" depends="deploy.prepare" description="Compile sigmanlp">
+    <target name="build.sigmakee" depends="init">
+        <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
+        <copy todir="${basedir}/lib" file="../sigmakee/build/sigmakee.jar" />
+        <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
+    </target>
+
+    <target name="compile" depends="build.sigmakee" description="Compile sigmanlp">
+        <mkdir dir="${build.classes.dir}"/>
         <javac destdir="${build.classes.dir}"
                debug="on"
                optimize="on"
@@ -178,20 +181,6 @@
             <src refid="sourcepath"/>
         </javac>
 
-        <copy todir="${build.lib}">
-            <path refid="compile.classpath"/>
-        </copy>
-
-        <mkdir dir="${deploy.lib}"/>
-        <copy todir="${deploy.lib}">
-            <fileset file="${build.lib}/*.jar" />
-        </copy>
-
-        <!-- Create WEB-INF/classes/ and copy all the loose classes to it. -->
-        <mkdir dir="${deploy.classes}"/>
-        <copy todir="${deploy.classes}">
-            <fileset dir="${build.classes.dir}"/>
-        </copy>
     </target>
 
     <target name="compile.test" depends="compile" description="Compile the project's test classes.">
@@ -214,7 +203,7 @@
         <mkdir dir="${reports.dir}"/>
     </target>
 
-    <target name="dist" depends="compile,compile.test" description="Create the *.war file and place in $CATALINA_HOME/webapps.">
+    <target name="dist" depends="compile.test" description="Create the *.war file and place in $CATALINA_HOME/webapps.">
         <manifest file="${manifest.mf}">
             <attribute name="Built-By" value="${user.name}"/>
             <attribute name="Specification-Title"
@@ -241,11 +230,11 @@
              manifest="${manifest.mf}">
           <metainf file="LICENSE"/>
           <metainf file="${web.dir}/context.xml"/>
-          <zipfileset dir="${build.home}/jsp"/>
-          <zipfileset dir="${build.home}/brat"/>
-          <zipfileset dir="${build.home}/js"/>
-          <zipfileset dir="${build.home}/pixmaps" prefix="pixmaps"/>
-          <lib dir="${build.lib}">
+          <zipfileset dir="${web.dir}/jsp"/>
+          <zipfileset dir="${web.dir}/brat"/>
+          <zipfileset dir="${web.dir}/js"/>
+          <zipfileset dir="${web.dir}/pixmaps" prefix="pixmaps"/>
+          <lib dir="${basedir}/lib">
               <exclude name="junit*"/>
               <exclude name="hamcrest*"/>
               <exclude name="tomcat-servlet-api*"/>
@@ -253,9 +242,9 @@
           <classes dir="${build.classes.dir}"/>
         </war>
         <jar destfile="${build.home}/${web.app.name}.jar"
+             basedir="${build.classes.dir}"
              manifest="${manifest.mf}">
             <metainf file="LICENSE"/>
-            <fileset dir="${build.classes.dir}"/>
         </jar>
     </target>
 
@@ -264,6 +253,13 @@
     ADMIN
     =====
     -->
+
+    <target name="get.stanford.corenlp.models">
+<!--        <get src="https://downloads.cs.stanford.edu/nlp/software/stanford-corenlp-4.5.7.zip" dest="${programs.dir}" tryGzipEncoding="true"/>
+        <unzip src="${programs.dir}/stanford-corenlp-${corenlp.version}.zip" dest="${programs.dir}"/>
+        <delete file="${programs.dir}/stanford-corenlp-${corenlp.version}.zip"/>-->
+        <copy todir="lib" file="${programs.dir}/stanford-corenlp-${corenlp.version}/stanford-corenlp-${corenlp.version}-models.jar"/>
+    </target>
 
     <target name="update.sigmanlp">
         <git command="pull" dir="${user.dir}">
@@ -296,6 +292,11 @@
             <!-- Delete the old web code -->
             <fileset dir="${deploy.home}"/>
             <fileset dir="${tomcat.home}/work/Catalina/localhost/${web.app.name}"/>
+            <!-- Prune out of date dependencies -->
+            <fileset dir="${basedir}/lib">   <!-- keep ./lib -->
+                <include name="*.jar"/>
+                <exclude name="stanford-corenlp-4.5.7-models.jar"/>
+            </fileset>
         </delete>
         <delete file="${dist.war}"/>
     </target>
