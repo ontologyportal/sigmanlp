@@ -7,9 +7,9 @@
     ========
     -->
 
-    <property file="nbproject/private/private.properties"/>
     <import   file="../build.xml"/>
-    <property file="nbproject/build.properties"/>
+    <property file="nbproject/private/private.properties"/>
+    <property file="nbproject/project.properties"/>
     <import   file="${catalina.base}/bin/catalina-tasks.xml"/>
 
     <path id="compile.classpath">
@@ -128,7 +128,7 @@
         </junit>
         <antcall target="junit.report"/>
     </target>
-    <target name="test.integration" depends="clean,compile.test" description="Runs the IntegrationTestSuite">
+    <target name="test.integration" depends="clean,prep.integration.config,compile.test" description="Runs the IntegrationTestSuite">
         <junit printsummary="yes"
                showoutput="yes"
                fork="yes">
@@ -169,7 +169,7 @@
             </test>
         </junit>
     </target>
-    <target name="run-selected-test-in-integration" depends="clean,compile.test">
+    <target name="run-selected-test-in-integration" depends="clean,prep.integration.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <junit printsummary="yes"
                showoutput="yes"
@@ -209,7 +209,7 @@
             </test>
         </junit>
     </target>
-    <target name="run-single-test-method-in-integration" depends="clean,compile.test">
+    <target name="run-single-test-method-in-integration" depends="clean,prep.integration.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <junit printsummary="yes"
                showoutput="yes"
@@ -391,7 +391,7 @@
     =====================
     -->
 
-    <target name="debug-selected-test-in-integration" depends="clean,compile.test">
+    <target name="debug-selected-test-in-integration" depends="clean,prep.integration.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <nbjpdastart addressproperty="jpda.address" name="${impl.title}" transport="${debug.transport}">
             <classpath refid="tcp"/>
@@ -440,7 +440,7 @@
             </test>
         </junit>
     </target>
-    <target name="debug-single-test-method-in-integration" depends="clean,compile.test">
+    <target name="debug-single-test-method-in-integration" depends="clean,prep.integration.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <nbjpdastart addressproperty="jpda.address" name="${impl.title}" transport="${debug.transport}">
             <classpath refid="tcp"/>
@@ -541,16 +541,18 @@
         <copy todir="${build.home}" file="${dist.jar}"/>
     </target>
 
-    <!-- Copy customized config files to their respective directories -->
-    <target name="prep.main.config" depends="init">
+    <!-- Copy customized config files for testing -->
+    <target name="prep.main.config">
         <!-- Restore main config post integration testing -->
-        <copy todir="${sigma_home}/KBs" file="${main.config}" overwrite="true"/>
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.main.config"/>
     </target>
-    <target name="prep.unit.config">
-        <copy todir="${test.unit.resources.dir}" file="${unit.config}" overwrite="true"/>
-    </target>
+    <!-- SUMO, MILO and domain only -->
     <target name="prep.integration.config">
-        <copy tofile="${sigma_home}/KBs/config.xml" file="${integration.config}" overwrite="true"/>
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.integration.config"/>
+    </target>
+    <!-- SUMO and domain only -->
+    <target name="prep.unit.config">
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.unit.config"/>
     </target>
     <target name="thorough.clean" depends="clean">
         <delete includeemptydirs="true" failonerror="false">
