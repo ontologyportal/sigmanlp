@@ -14,7 +14,9 @@ For macOS, replace .bashrc with .zshrc
 
 ```sh
 cd ~
-echo "export CORPORA=$ONTOLOGYPORTAL_GIT/sigmanlp/corpora" >> .bashrc
+echo "## SigmaNLP" >> .bashrc
+echo "export CORPORA=\$ONTOLOGYPORTAL_GIT/sigmanlp/corpora" >> .bashrc
+echo "export SIGMANLP_CP=\$ONTOLOGYPORTAL_GIT/sigmanlp/build/sigmanlp.jar:$ONTOLOGYPORTAL_GIT/sigmanlp/lib/*" >> .bashrc
 source ~/.bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
