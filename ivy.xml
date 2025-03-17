@@ -57,7 +57,8 @@
         <!--<dependency org="org.apache.httpcomponents" name="httpclient" rev="4.5.2" conf="api->default"/>-->
         <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpcore -->
         <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.4.4" conf="api->default"/>
-
+        <!-- https://mvnrepository.com/artifact/org.apache.tomcat/tomcat-servlet-api -->
+        <dependency org="org.apache.tomcat" name="tomcat-servlet-api" rev="9.0.97" transitive="false" conf="api->default"/>
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
         <dependency org="org.slf4j" name="slf4j-simple" rev="2.0.9" conf="api->default"/>
         <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->

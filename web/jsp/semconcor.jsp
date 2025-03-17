@@ -80,18 +80,21 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
 <p>
 <%
     if (!StringUtil.emptyString(theText) || !StringUtil.emptyString(dep)) {
-        ArrayList<String> sentences = new ArrayList<>();
-        ArrayList<String> dependencies = new ArrayList<>();
+        List<String> sentences = new ArrayList<>();
+        List<String> dependencies = new ArrayList<>();
         Searcher.search(dbFilepath,theText,dep,sentences,dependencies);
-        HashSet<String> printed = new HashSet<>();
+        Set<String> printed = new HashSet<>();
 
         out.println("<P>");
+        String s, highlightSent, d;
+        BratAnnotationUtil bratAnnotationUtil;
+        List<Literal> literals;
         for (int i = 0; i < dependencies.size(); i++) {
-            String s = sentences.get(i);
+            s = sentences.get(i);
             if (!printed.contains(s)) {
-                String highlightSent = Searcher.highlightSent(s,theText);
+                highlightSent = Searcher.highlightSent(s,theText);
                 out.println(highlightSent + "<p>");
-                String d = dependencies.get(i);
+                d = dependencies.get(i);
                 d = Searcher.highlightDep(dep,d); // dep is the pattern, d is the full dependency
                 out.println("<font size=-1 style=bold face=courier>");
                 out.println(d);
@@ -99,9 +102,9 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
                 if (depGraph != null && depGraph.equals("checked")) {
                     out.println("<div id=\"bratVizDiv\" style=\"\"></div><P>\n");
                     //Get data in brat format
-                    BratAnnotationUtil bratAnnotationUtil = new BratAnnotationUtil();
+                    bratAnnotationUtil = new BratAnnotationUtil();
                     out.println("<script type=\"text/javascript\">");
-                    ArrayList<Literal> literals = Literal.stringToLiteralList(dependencies.get(i));
+                    literals = Literal.stringToLiteralList(dependencies.get(i));
                     out.println("var docData=" + bratAnnotationUtil.getBratAnnotations(literals) + ";</script>");
                     //Brat integration script
                     out.println("<script type=\"text/javascript\" src=\"js/sigmanlpViz.js\"></script>");

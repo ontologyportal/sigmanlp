@@ -52,3 +52,4 @@ out-log.txt
 # COCA
 /corpora/COCA/*
 /.ivy/
+/corpora/FCE.mv.db
