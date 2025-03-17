@@ -142,7 +142,7 @@ public class Searcher implements ServletContextListener {
     }
 
     /***************************************************************
-     * @param key a  key of the form filename#sentencenum#linenum
+     * @param key a key of the form filename#sentencenum#linenum
      */
     public static String fetchSentenceFromKey(Connection conn, String key) {
 

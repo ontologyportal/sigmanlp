@@ -41,6 +41,7 @@ import java.text.ParseException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -224,7 +225,7 @@ public class Lexer {
      * Take a list of expected token types.
      * @return True if the next token is expected, False otherwise.
      */
-    public boolean testTok(ArrayList<String> tokens) throws ParseException {
+    public boolean testTok(List<String> tokens) throws ParseException {
 
         look();
         for (int i = 0; i < tokens.size(); i++) {
@@ -242,7 +243,7 @@ public class Lexer {
      */
     public boolean testTok(String tok) throws ParseException {
 
-        ArrayList<String> tokens = new ArrayList<>();
+        List<String> tokens = new ArrayList<>();
         tokens.add(tok);
         return testTok(tokens);
     }
@@ -254,7 +255,7 @@ public class Lexer {
      */
     public void checkTok(String tok) throws ParseException {
 
-        ArrayList<String> tokens = new ArrayList<>();
+        List<String> tokens = new ArrayList<>();
         tokens.add(tok);
         checkTok(tokens);
     }
@@ -264,7 +265,7 @@ public class Lexer {
      * not among the expected ones, exit with an error. Otherwise do
      * nothing.
      */
-    public void checkTok(ArrayList<String> tokens) throws ParseException {
+    public void checkTok(List<String> tokens) throws ParseException {
 
         look();
         for (int i = 0; i < tokens.size(); i++) {
@@ -282,7 +283,7 @@ public class Lexer {
      */
     public String acceptTok(String token) throws ParseException {
 
-        ArrayList<String> tokens = new ArrayList<>();
+        List<String> tokens = new ArrayList<>();
         tokens.add(token);
         checkTok(tokens);
         return next();
@@ -294,7 +295,7 @@ public class Lexer {
      * with an error.
      * @return the token matching one of the types in the inputs
      */
-    public String acceptTok(ArrayList<String> tokens) throws ParseException {
+    public String acceptTok(List<String> tokens) throws ParseException {
 
         checkTok(tokens);
         return next();
@@ -307,7 +308,7 @@ public class Lexer {
      */
     public boolean testLit(String litval) throws ParseException {
 
-        ArrayList<String> litvals = new ArrayList<>();
+        List<String> litvals = new ArrayList<>();
         litvals.add(litval);
         return testLit(litvals);
     }
@@ -317,7 +318,7 @@ public class Lexer {
      * @return True if the next token's string value is among the input
      * string and false otherwise.
      */
-    public boolean testLit(ArrayList<String> litvals) throws ParseException {
+    public boolean testLit(List<String> litvals) throws ParseException {
 
         lookLit();
         for (int i = 0; i < litvals.size(); i++) {
@@ -334,7 +335,7 @@ public class Lexer {
      */
     private void checkLit(String litval) throws ParseException {
 
-        ArrayList<String> litvals = new ArrayList<>();
+        List<String> litvals = new ArrayList<>();
         litvals.add(litval);
         checkLit(litvals);
     }
@@ -344,7 +345,7 @@ public class Lexer {
      * literal is not among the expected ones, exit with an
      * error. Otherwise do nothing.
      */
-    private void checkLit(ArrayList<String> litvals) throws ParseException {
+    private void checkLit(List<String> litvals) throws ParseException {
 
         if (!testLit(litvals)) {
             look();
@@ -357,7 +358,7 @@ public class Lexer {
      * literal is among the expected ones, consume and return the
      * literal. Otherwise, exit with an error.
      */
-    public String acceptLit(ArrayList<String> litvals) throws ParseException {
+    public String acceptLit(List<String> litvals) throws ParseException {
 
         checkLit(litvals);
         return next();
@@ -370,7 +371,7 @@ public class Lexer {
      */
     public String acceptLit(String litval) throws ParseException {
 
-        ArrayList<String> litvals = new ArrayList<>();
+        List<String> litvals = new ArrayList<>();
         litvals.add(litval);
         checkLit(litvals);
         return next();
@@ -456,9 +457,9 @@ public class Lexer {
     /** ***************************************************************
      * Return a list of all tokens in the source.
      */
-    public ArrayList<String> lex() throws ParseException {
+    public List<String> lex() throws ParseException {
 
-        ArrayList<String> res = new ArrayList<>();
+        List<String> res = new ArrayList<>();
         while (!testTok(EOFToken)) {
             String tok = next();
             //System.out.println("INFO in Lexer.lex(): " + tok);
@@ -470,9 +471,9 @@ public class Lexer {
     /** ***************************************************************
      * Return a list of all tokens in the source.
      */
-    public ArrayList<String> lexTypes() throws ParseException {
+    public List<String> lexTypes() throws ParseException {
 
-        ArrayList<String> res = new ArrayList<>();
+        List<String> res = new ArrayList<>();
         String type, tok;
         while (!testTok(EOFToken)) {
             type = lookType();
@@ -510,7 +511,7 @@ public class Lexer {
         System.out.println("INFO in Lexer.testLex(): example6: " + example6);
         Lexer lex1 = new Lexer(example6);
         try {
-            ArrayList<String> res1 = lex1.lex();
+            List<String> res1 = lex1.lex();
             System.out.println("INFO in Lexer.testLex(): completed parsing example 6: " + example6);
             System.out.println("INFO in Lexer.testLex(): completed parsing example 6: " + res1);
 

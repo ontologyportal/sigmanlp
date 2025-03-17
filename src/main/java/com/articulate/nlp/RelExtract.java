@@ -839,8 +839,8 @@ public class RelExtract {
         CNF input = interp.interpretGenCNF(sent);
         CNF newInput = input.deepCopy();
         System.out.println("RelExtract.sentenceExtract(): input: " + newInput);
-        HashSet<String> preds = newInput.getPreds();
-        HashSet<String> terms = newInput.getTerms();
+        Set<String> preds = newInput.getPreds();
+        Set<String> terms = newInput.getTerms();
         for (int i = 0; i < rs.rules.size(); i++) {
             if (!interp.termCoverage(preds, terms, rs.rules.get(i)))
                 continue;

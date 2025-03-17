@@ -41,18 +41,19 @@ import java.util.*;
  */
 public class CommonCNFUtil {
 
-    private int varCounter = 0;
-    private static List<String> ignorePreds = Arrays.asList(new String[]{"number", "tense"/**, "root", "names"**/});
+//    private int varCounter = 0;
+//    private static List<String> ignorePreds = Arrays.asList(new String[]{"number", "tense"/**, "root", "names"**/});
     public KB kb;
 
     /***********************************************************
      */
     private class Substitution {
 
-        public HashMap<String,String> substMap = new HashMap<>();
-        public HashSet<Literal> targetLiterals = new HashSet<>();
-        public HashSet<Literal> sourceLiterals = new HashSet<>();
+        public Map<String,String> substMap = new HashMap<>();
+        public Set<Literal> targetLiterals = new HashSet<>();
+        public Set<Literal> sourceLiterals = new HashSet<>();
 
+        @Override
         public String toString() {
             return substMap.toString() + "\n" + sourceLiterals.toString() + "\n" + targetLiterals.toString();
         }
@@ -63,10 +64,11 @@ public class CommonCNFUtil {
      */
     public static String[] loadSentencesFromTxt(String path) {
 
-        ArrayList<String> res = new ArrayList<String>();
+        List<String> res = new ArrayList<>();
         try (Scanner in = new Scanner(new FileReader(path))) {
+            String line;
             while (in.hasNextLine()) {
-                String line = in.nextLine();
+                line = in.nextLine();
                 if (StringUtil.emptyString(line))
                     continue;
                 res.add(line);
@@ -84,11 +86,12 @@ public class CommonCNFUtil {
      */
     public static Map<Integer, String> loadSentencesMap(String path) {
 
-        Map<Integer, String> res = new HashMap<Integer, String>();
+        Map<Integer, String> res = new HashMap<>();
         try (Scanner in = new Scanner(new FileReader(path))) {
             int index = 0;
+            String line;
             while (in.hasNextLine()) {
-                String line = in.nextLine();
+                line = in.nextLine();
                 res.put(index++, line);
             }
         }
@@ -102,22 +105,24 @@ public class CommonCNFUtil {
      */
     public static Map<Integer, CNF> generateCNFForStringSet(Map<Integer, String> sentences) {
 
-        Map<Integer, CNF> res = new HashMap<Integer, CNF>();
+        Map<Integer, CNF> res = new HashMap<>();
         Interpreter inter = new Interpreter();
         KBmanager.getMgr().initializeOnce();
         try {
             inter.initialize();
+            String q;
+            CNF cnf;
             for (Integer index : sentences.keySet()) {
-                String q = sentences.get(index);
-                CNF cnf = inter.interpretGenCNF(q);
+                q = sentences.get(index);
+                cnf = inter.interpretGenCNF(q);
                 System.out.println("generateCNFForStringSet(): before preprocess: " + cnf);
                 //cnf = preProcessCNF(cnf);
                 System.out.println("generateCNFForStringSet(): " + cnf);
                 res.put(index, cnf);
             }
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
+        catch (IOException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
         return res;
@@ -195,12 +200,12 @@ public class CommonCNFUtil {
             System.out.println(cnfMap.get(i));
         }
         Collection<CNF> cnfList = new ArrayList<>();
+        CNF cnf;
         for (int i : cnfMap.keySet()) {
-            CNF cnf = cnfMap.get(i);
+            cnf = cnfMap.get(i);
             tokensToVars(cnf);
         }
-        CNF cnf = findOneCommonCNF(cnfMap.values());
-        return cnf;
+        return findOneCommonCNF(cnfMap.values());
     }
 
     /***********************************************************
@@ -216,15 +221,14 @@ public class CommonCNFUtil {
             System.out.println(strs.get(i));
             System.out.println(cnfMap.get(i));
         }
-        CNF cnf = findOneCommonCNF(cnfMap.values());
-        return cnf;
+        return findOneCommonCNF(cnfMap.values());
     }
 
     /***********************************************************
      */
-    public HashMap<String,String> unify(String l1, String l2, String pred) {
+    public Map<String,String> unify(String l1, String l2, String pred) {
 
-        HashMap<String,String> theta = new HashMap<>();
+        Map<String,String> theta = new HashMap<>();
         //System.out.println("unify(Str,Str): " + l1 + "\n" + l2);
         //System.out.println("unify(Str,Str): theta: " + theta);
         if (Literal.isVariable(l1)) {
@@ -255,9 +259,9 @@ public class CommonCNFUtil {
 
     /***********************************************************
      */
-    public HashMap<String,String> unify(Literal l1, Literal l2) {
+    public Map<String,String> unify(Literal l1, Literal l2) {
 
-        HashMap<String,String> theta = new HashMap<>();
+        Map<String,String> theta = new HashMap<>();
         //System.out.println("unify(Lit,Lit): " + l1 + "\n" + l2);
         //System.out.println("unify(Lit,Lit): theta: " + theta);
         if (!l1.pred.equals(l2.pred))
@@ -265,7 +269,7 @@ public class CommonCNFUtil {
         theta = unify(l1.arg1,l2.arg1,l1.pred);
         if (theta == null)
             return null;
-        HashMap<String,String> theta2 = unify(l1.arg2,l2.arg2,l1.pred);
+        Map<String,String> theta2 = unify(l1.arg2,l2.arg2,l1.pred);
         if (theta2 == null)
             return null;
         theta.putAll(theta2);
@@ -277,13 +281,14 @@ public class CommonCNFUtil {
 
     /***********************************************************
      */
-    public CNF applyBindings(CNF c1, HashMap<String,String> subst) {
+    public CNF applyBindings(CNF c1, Map<String,String> subst) {
 
         CNF result = new CNF();
         for (Clause c : c1.clauses) {
             Clause newc = new Clause();
+            Literal newd;
             for (Literal d : c.disjuncts) {
-                Literal newd = new Literal();
+                newd = new Literal();
                 newd.pred = d.pred;
                 if (subst.containsKey(d.arg1))
                     newd.arg1 = subst.get(d.arg1);
@@ -306,16 +311,17 @@ public class CommonCNFUtil {
     public CNF mostSpecificForm(Collection<CNF> cnfs) {
 
         //System.out.println("mostSpecificForm(): ");
-        if (cnfs == null || cnfs.size() == 0)
+        if (cnfs == null || cnfs.isEmpty())
             return null;
         Iterator<CNF> it = cnfs.iterator();
         CNF first = it.next();
         //System.out.println("mostSpecificForm(): first: " + first);
-        CNF best = first;
+        CNF best = first, next;
+        int nextBigger;
         while (it.hasNext()) {
-            CNF next = it.next();
+            next = it.next();
             //System.out.println("mostSpecificForm(): next: " + next);
-            int nextBigger = next.compareTo(best);
+            nextBigger = next.compareTo(best);
             //System.out.println("mostSpecificForm(): nextBigger: " + nextBigger);
             if (nextBigger > 0) {
                 //System.out.println("mostSpecificForm(): replacing best");
@@ -332,8 +338,9 @@ public class CommonCNFUtil {
     public Collection<Literal> substitute(Substitution subst, Collection<Literal> lits) {
 
         Collection<Literal> result = new HashSet<>();
+        Literal newLit;
         for (Literal d1 : lits) {
-            Literal newLit = new Literal();
+            newLit = new Literal();
             newLit.pred = d1.pred;
             if (subst.substMap.containsKey(d1.arg1))
                 newLit.arg1 = subst.substMap.get(d1.arg1);
@@ -356,8 +363,9 @@ public class CommonCNFUtil {
         CNF result = new CNF();
         for (Clause clause1 : cnf.clauses) {
             Clause newClause = new Clause();
+            Literal newLit;
             for (Literal d1 : clause1.disjuncts) {
-                Literal newLit = new Literal();
+                newLit = new Literal();
                 newLit.pred = d1.pred;
                 if (subst.substMap.containsKey(d1.arg1))
                     newLit.arg1 = subst.substMap.get(d1.arg1);
@@ -384,14 +392,15 @@ public class CommonCNFUtil {
         //System.out.println("composeBindings(): new: " + newSubst);
         //System.out.println("composeBindings(): old: " + oldSubst);
         if (newSubst.targetLiterals.size() > 1)
-            System.out.println("Error: composeBindings(): target literals size unexpectedly greater than one: " + newSubst);
+            System.err.println("Error: composeBindings(): target literals size unexpectedly greater than one: " + newSubst);
         if (oldSubst.targetLiterals.contains(newSubst.targetLiterals.iterator().next())) {
-            System.out.println("Error: composeBindings(): target literal already bound: " + newSubst.targetLiterals);
+            System.err.println("Error: composeBindings(): target literal already bound: " + newSubst.targetLiterals);
             return null;
         }
         Substitution result = new Substitution();
+        String oldVal;
         for (String oldKey : oldSubst.substMap.keySet()) {
-            String oldVal = oldSubst.substMap.get(oldKey);
+            oldVal = oldSubst.substMap.get(oldKey);
             if (newSubst.substMap.containsKey(oldVal)) {
                 result.substMap.put(oldKey, newSubst.substMap.get(oldVal));
             }
@@ -420,18 +429,18 @@ public class CommonCNFUtil {
         c2 = c2.renameVariables();
         System.out.println("mostSpecificUnifier(): find unifer for " + c1 + " and " + c2);
           // all options for unifying the two forms
-        List<Substitution> substList = new ArrayList<>();
-        Substitution substInitial = new Substitution(); // initially create an empty substitution to add to
+        List<Substitution> substList = new ArrayList<>(), newSubstList = new ArrayList<>(), tempSubstList = new ArrayList<>();
+        Substitution substInitial = new Substitution(), sub, newSubst; // initially create an empty substitution to add to
         substList.add(substInitial);
+        Map<String,String> substTemp;
         for (Clause clause1 : c1.clauses) {
             for (Literal d1 : clause1.disjuncts) { // try to match each literal in c1 to one in c2
-                List<Substitution> newSubstList = new ArrayList<>();
+                newSubstList.clear();
                 for (Clause clause2 : c2.clauses) {
                     for (Literal d2 : clause2.disjuncts) {
-                        HashMap<String,String> substTemp = new HashMap<>();
                         substTemp = unify(d1,d2);
-                        if (substTemp != null && substTemp.size() > 0) {// if two literals unify, add their substitutions
-                            Substitution sub = new Substitution();
+                        if (substTemp != null && !substTemp.isEmpty()) {// if two literals unify, add their substitutions
+                            sub = new Substitution();
                             sub.substMap = substTemp;
                             sub.sourceLiterals.add(d1);
                             sub.targetLiterals.add(d2);
@@ -441,15 +450,15 @@ public class CommonCNFUtil {
                 }
                 //System.out.println("mostSpecificUnifier(): subst for Literal: " + d1 + " is " + newSubstList);
                 //System.out.println("mostSpecificUnifier(): old subst: " + substList);
-                if (substList.size() == 0) // if no unification was found previously, just add the new one
+                if (substList.isEmpty()) // if no unification was found previously, just add the new one
                     substList.addAll(newSubstList);
                 else { // if there was a previous unification for these forms, compose the cross product of new and existing substitutions
-                    List<Substitution> tempSubstList = new ArrayList<>();
-                    if (newSubstList.size() == 0)
+                    tempSubstList.clear();
+                    if (newSubstList.isEmpty())
                         tempSubstList.addAll(substList);
                     for (Substitution subst : newSubstList) {
                         for (Substitution oldSubst : substList) {
-                            Substitution newSubst = composeBindings(subst, oldSubst);
+                            newSubst = composeBindings(subst, oldSubst);
                             if (newSubst != null)
                                 tempSubstList.add(newSubst);
                             else
@@ -463,9 +472,9 @@ public class CommonCNFUtil {
         }
         System.out.println("mostSpecificUnifier(): final: " + substList);
         Set<CNF> results = new HashSet<>();
-        for (Substitution sub : substList) {
-            results.add(CNF.fromLiterals(substitute(sub,sub.sourceLiterals)));
-            System.out.println("mostSpecificUnifier(): literals: " + substitute(sub,sub.sourceLiterals));
+        for (Substitution subst : substList) {
+            results.add(CNF.fromLiterals(substitute(subst,subst.sourceLiterals)));
+            System.out.println("mostSpecificUnifier(): literals: " + substitute(subst,subst.sourceLiterals));
         }
 
         return mostSpecificForm(results);
@@ -477,9 +486,10 @@ public class CommonCNFUtil {
      */
     public static void renameTokens(String var, String token, CNF cnf) {
 
+        Literal newLit;
         for (Clause c : cnf.clauses) {
             for (Literal d : c.disjuncts) {
-                Literal newLit = new Literal();
+                newLit = new Literal();
                 newLit.pred = d.pred;
                 if (d.arg1.equals(token))
                     d.arg1 = var;
@@ -578,15 +588,15 @@ public class CommonCNFUtil {
         if (result.equals(expected))
             System.out.println("CommonCNFUtil.test(): pass");
         else
-            System.out.println("CommonCNFUtil.test(): fail");
+            System.err.println("CommonCNFUtil.test(): fail");
     }
 
     /***********************************************************
      */
     public static void test() {
 
-        String s1 = null;
-        String s2 = null;
+        String s1;
+        String s2;
         s1 = "names(John-1,\"John\")";
         s2 = "names(Susan-1,\"Susan\")";
         System.out.println("CommonCNFUtil.test(): " );

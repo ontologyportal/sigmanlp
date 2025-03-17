@@ -55,7 +55,7 @@ public class SentenceUtil {
      */
     public static List<String> restoreSentences(Annotation document) {
 
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
         for (CoreMap sentence : sentences) {
             result.add(sentence.toString());
@@ -116,20 +116,19 @@ public class SentenceUtil {
      * head.  For example "I went to New York." would return
      * "NewYork-4".
      */
-    public static ArrayList<String> getFullNamedEntities (CoreMap sentence) {
+    public static List<String> getFullNamedEntities (CoreMap sentence) {
 
-        ArrayList<String> nes = new ArrayList<String>();
+        List<String> nes = new ArrayList<>();
         StringBuilder ne = new StringBuilder();
-        String neType = "";
-        int count = 1;
-        int wordCount = 0; // number of words packed into a given ne
+        String neType = "", word, type;
+        int count = 1, wordCount = 0; // number of words packed into a given ne
         for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
             // this is the text of the token
-            String word = token.get(TextAnnotation.class);
+            word = token.get(TextAnnotation.class);
             System.out.println(word);
             // this is the NER label of the token
-            String type = token.get(NamedEntityTagAnnotation.class);
-            if (neType == "") {
+            type = token.get(NamedEntityTagAnnotation.class);
+            if ("".equals(neType)) {
                 neType = type;
                 if (!type.equals("O"))
                     ne.append(word);
@@ -138,7 +137,7 @@ public class SentenceUtil {
             else if (!neType.equals(type)) {
                 if (!neType.equals("O"))
                     nes.add(ne.toString() + "-" + (count-wordCount));
-                ne = new StringBuilder();
+                ne.setLength(count); // reset
                 if (!type.equals("O")) {
                     ne.append(word);
                     wordCount = 1;
@@ -170,8 +169,9 @@ public class SentenceUtil {
         Map<Integer, CorefChain> graph = document.get(CorefCoreAnnotations.CorefChainAnnotation.class);
         if (graph == null)
             return;
+        List<CorefChain.CorefMention> mentions;
         for (CorefChain cc : graph.values()) {
-            List<CorefChain.CorefMention> mentions = cc.getMentionsInTextualOrder();
+            mentions = cc.getMentionsInTextualOrder();
             if (mentions.size() > 1) {
                 for (CorefChain.CorefMention ment : mentions) {
                     System.out.println(ment.sentNum + " : " + ment.headIndex + " : " + ment.mentionSpan);
@@ -209,9 +209,9 @@ public class SentenceUtil {
 
     /** *************************************************************
      */
-    public static ArrayList<String> toArrayStrings(List<CoreLabel> tokens) {
+    public static List<String> toArrayStrings(List<CoreLabel> tokens) {
 
-        ArrayList<String> result = new ArrayList<>();
+        List<String> result = new ArrayList<>();
         for (CoreLabel cl : tokens)
             result.add(cl.originalText());
         return result;
@@ -226,9 +226,13 @@ public class SentenceUtil {
     public static List<Literal> findPOSInformation(List<CoreLabel> tokens, List<Literal> dependenciesList) {
 
         List<Literal> posInformation = Lists.newArrayList();
+        boolean isAux, progressive, perfect;
+        String pos;
+        Pattern reverseAuxPattern;
+        CoreLabel t;
         for (CoreLabel label : tokens) {
             //Pattern auxPattern = Pattern.compile("aux\\(.*, " + label.toString() + "\\)");
-            boolean isAux = false;
+            isAux = false;
             for (Literal l : dependenciesList) {
                 //if (auxPattern.matcher(dep).find()) {
                 if (l.pred.equals("aux") && l.arg2.equals(label.toString())) {
@@ -237,52 +241,63 @@ public class SentenceUtil {
                 }
             }
             if (!isAux) {
-                boolean progressive = false;
-                boolean perfect = false;
-                String pos = label.get(PartOfSpeechAnnotation.class);
-                if (LangLib.POS_VBD.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
-                }
-                else if (LangLib.POS_VBP.equals(pos) || LangLib.POS_VBZ.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
-                }
-                else if (LangLib.POS_VBG.equals(pos) || LangLib.POS_VB.equals(pos) || LangLib.POS_VBN.equals(pos)) {
-                    Pattern reverseAuxPattern = Pattern.compile("aux\\(" + label.toString() + ", .*-(\\d+)\\)");
-                    for (Literal l : dependenciesList) {
-                        //Matcher auxMatcher = reverseAuxPattern.matcher(dep);
-                        if (l.pred.equals("aux") && l.arg1.equals(label.toString())) {
-                            //int i = Integer.parseInt(auxMatcher.group(1));
-                            int i = l.clArg2.index();
-                            CoreLabel t = tokens.get(i-1);
-                            if (t.get(LemmaAnnotation.class).equals("be")) {
-                                if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBP) || t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBZ)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
+                progressive = false;
+                perfect = false;
+                pos = label.get(PartOfSpeechAnnotation.class);
+                if (null != pos) switch (pos) {
+                    case LangLib.POS_VBD:
+                        posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
+                        break;
+                    case LangLib.POS_VBP:
+                    case LangLib.POS_VBZ:
+                        posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
+                        break;
+                    case LangLib.POS_VBG:
+                    case LangLib.POS_VB:
+                    case LangLib.POS_VBN:
+                        reverseAuxPattern = Pattern.compile("aux\\(" + label.toString() + ", .*-(\\d+)\\)");
+                        for (Literal l : dependenciesList) {
+                            //Matcher auxMatcher = reverseAuxPattern.matcher(dep);
+                            if (l.pred.equals("aux") && l.arg1.equals(label.toString())) {
+                                //int i = Integer.parseInt(auxMatcher.group(1));
+                                int i = l.clArg2.index();
+                                t = tokens.get(i-1);
+                                switch (t.get(LemmaAnnotation.class)) {
+                                    case "be":
+                                        if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBP) || t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBZ)) {
+                                            posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
+                                        }
+                                        else if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBD)) {
+                                            posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
+                                        }   progressive = true;
+                                        break;
+                                    case "will":
+                                        posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_FUTURE, label));
+                                        break;
+                                    case "have":
+                                        if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBP) || t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBZ)) {
+                                            posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
+                                        }
+                                        else if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBD)) {
+                                            posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
+                                        }   perfect = true;
+                                        break;
+                                    default:
+                                        break;
                                 }
-                                else if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBD)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
-                                }
-                                progressive = true;
-                            }
-                            else if (t.get(LemmaAnnotation.class).equals("will")) {
-                                posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_FUTURE, label));
-                            }
-                            else if (t.get(LemmaAnnotation.class).equals("have")) {
-                                if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBP) || t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBZ)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PRESENT, label));
-                                }
-                                else if (t.get(PartOfSpeechAnnotation.class).equals(LangLib.POS_VBD)) {
-                                    posInformation.add(makeBinaryRelationship("tense", LangLib.TENSE_PAST, label));
-                                }
-                                perfect = true;
                             }
                         }
-                    }
-                }
-                else if (LangLib.POS_NN.equals(pos) || LangLib.POS_NNP.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_SINGULAR, label));
-                }
-                else if (LangLib.POS_NNS.equals(pos) || LangLib.POS_NNPS.equals(pos)) {
-                    posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_PLURAL, label));
+                        break;
+                    case LangLib.POS_NN:
+                    case LangLib.POS_NNP:
+                        posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_SINGULAR, label));
+                        break;
+                    case LangLib.POS_NNS:
+                    case LangLib.POS_NNPS:
+                        posInformation.add(makeBinaryRelationship("number", LangLib.NUMBER_PLURAL, label));
+                        break;
+                    default:
+                        break;
                 }
 
                 // if false then Interpreter.lemmatizeResults() is called instead

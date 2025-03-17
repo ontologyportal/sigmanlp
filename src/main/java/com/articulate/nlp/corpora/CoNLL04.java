@@ -44,7 +44,7 @@ public class CoNLL04 {
     public static final List<String> relTypes =
             Arrays.asList("Located_In", "OrgBased_In", "Live_In", "Work_For", "Kill");
 
-    public HashMap<Integer,Sent> sentIndex = new HashMap<>();
+    public Map<Integer,Sent> sentIndex = new HashMap<>();
 
     /***************************************************************
      * A CoNLL relation between two tokens.  Must be one of
@@ -113,12 +113,12 @@ public class CoNLL04 {
      */
     public class Sent {
 
-        public ArrayList<Token> tokens = new ArrayList<>();
+        public List<Token> tokens = new ArrayList<>();
         public String sentString = "";
         public Set<Relation> relations = new HashSet<>();
 
         // a mapping of real token numbers to CoNLL collapsed NER token numbers
-        public HashMap<Integer,Integer> tokMap = new HashMap<>();
+        public Map<Integer,Integer> tokMap = new HashMap<>();
 
         @Override
         public String toString() {
@@ -156,7 +156,7 @@ public class CoNLL04 {
 
     /***************************************************************
      */
-    public static ArrayList<Sent> sentences = new ArrayList<>();
+    public static List<Sent> sentences = new ArrayList<>();
 
     /***************************************************************
      * see https://en.wikipedia.org/wiki/F1_score for explanation
@@ -212,14 +212,15 @@ public class CoNLL04 {
      * Note that tokParse() will remove slashes, denoting a
      * multi-word, in the token string
      * so we have to look at the part of speech element.
-     * @return is a side effect on sent, setting its tokMap
+     * There is a side effect on sent, setting its tokMap
      */
     public void makeTokenMap(Sent sent) {
 
         int coreNLPnum = 0;
+        String[] parts;
         for (Token tok : sent.tokens) {
             if (tok.POS.contains("/")) {
-                String[] parts = tok.POS.split("/");
+                parts = tok.POS.split("/");
                 for (int i = coreNLPnum; i < coreNLPnum + parts.length; i++) {
                     sent.tokMap.put(i, tok.tokNum);
                     //System.out.println("makeTokenMap(): putting: " + i + "," + tok.tokNum);
@@ -259,7 +260,7 @@ public class CoNLL04 {
 
         String filename = System.getenv("CORPORA") + File.separator + "conll04.corp";
         System.out.println("CoNLL04.parse(): reading corpus from " + filename);
-        ArrayList<String> lines = CorpusReader.readFile(filename);
+        List<String> lines = CorpusReader.readFile(filename);
         boolean inSent = true; // in the sentence or in the relation list
         Sent sent = new Sent();
         int sentnum = 0;
@@ -325,14 +326,15 @@ public class CoNLL04 {
      */
     public String relsToString(Set<Relation> rels, Sent s) {
 
-        if (rels == null && rels.size() == 0)
+        if (rels == null && rels.isEmpty())
             return "";
         StringBuilder sb = new StringBuilder();
+        Token t1, t2;
         for (Relation r : rels) {
-            Token t1 = s.tokens.get(r.first);
+            t1 = s.tokens.get(r.first);
             sb.append(t1.tokString).append(" ");
             sb.append(r.relName).append(" ");
-            Token t2 = s.tokens.get(r.second);
+            t2 = s.tokens.get(r.second);
             sb.append(t2.tokString);
             sb.append(", ");
         }
@@ -366,7 +368,7 @@ public class CoNLL04 {
 
     /***************************************************************
      */
-    public Set<Relation> toCoNLLRels(ArrayList<RHS> kifClauses, Sent s) {
+    public Set<Relation> toCoNLLRels(List<RHS> kifClauses, Sent s) {
 
         if (debug) System.out.println("toCoNLLRels(): tok map: " + s.tokMap);
         Set<Relation> rels = new HashSet<>();
@@ -429,9 +431,9 @@ public class CoNLL04 {
      * entities, for which we approximate that NER have initial
      * capital letters.
      */
-    public static ArrayList<RHS> pruneNonNER(ArrayList<RHS> kifClauses) {
+    public static List<RHS> pruneNonNER(List<RHS> kifClauses) {
 
-        ArrayList<RHS> result = new ArrayList<>();
+        List<RHS> result = new ArrayList<>();
         CNF cnf;
         Collection<Literal> lits;
         Literal lit;
@@ -458,7 +460,8 @@ public class CoNLL04 {
         long startTime = System.currentTimeMillis();
         int totalGroundTruth = 0;
         int totalExtracted = 0, sentNum;
-        ArrayList<RHS> kifClauses;
+        List<RHS> kifClauses;
+        Set<Relation> rels;
         for (Sent s : sentences) {
             if (!s.relations.isEmpty()) { // test only sentences with marked relations
                 sentNum = s.tokens.get(0).sentNum;
@@ -469,7 +472,7 @@ public class CoNLL04 {
                     if (!kifClauses.isEmpty())
                         totalExtracted++;
                     System.out.println("CoNLL: generated relations: " + kifClauses);
-                    Set<Relation> rels = toCoNLLRels(kifClauses,s);
+                    rels = toCoNLLRels(kifClauses,s);
                     F1Matrix mat = score(rels,s.relations);
                     System.out.println("CoNLL: score: " + mat);
 

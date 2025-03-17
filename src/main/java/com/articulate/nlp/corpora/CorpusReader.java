@@ -12,6 +12,8 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /** This code is copyright Teknowledge (c) 2003, Articulate Software (c) 2003-2017,
@@ -30,7 +32,7 @@ public class CorpusReader {
 
     // Key is filename, value is a list of lines of text.  Sentences
     // must not cross a line.
-    public HashMap<String,ArrayList<String>> docs = new HashMap<>();
+    public Map<String,List<String>> docs = new HashMap<>();
     public String fileExt = ".xml";
     public String regExGoodLine = "<p>.+</p>";
     public String regExRemove = "<c>[^<]+</c>";
@@ -44,9 +46,9 @@ public class CorpusReader {
     /***************************************************************
      * Find all corpus databases under the corpora directory
      */
-    public static ArrayList<String> findCorporaDBs() {
+    public static List<String> findCorporaDBs() {
 
-        ArrayList<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         try {
             Path p = Paths.get(corpora);
             final int maxDepth = 10;
@@ -54,9 +56,8 @@ public class CorpusReader {
                     String.valueOf(path).endsWith(".mv.db"));
             matches.map(path -> path.toString().substring(corpora.length()+1,path.toString().length()-6)).forEach(result::add);
         }
-        catch(Exception e) {
+        catch(IOException e) {
             e.printStackTrace();
-            return result;
         }
         return result;
     }
@@ -66,15 +67,14 @@ public class CorpusReader {
      */
     public void processFileByLine(Connection conn, String file) {
 
-        try {
-            Interpreter interp = new Interpreter();
-            interp.initialize();
-            InputStream in = new FileInputStream(file);
+        Interpreter interp = new Interpreter();
+        try (InputStream in = new FileInputStream(file);
             Reader reader = new InputStreamReader(in);
-            LineNumberReader lnr = new LineNumberReader(reader);
+            LineNumberReader lnr = new LineNumberReader(reader)) {
             KBmanager.getMgr().initializeOnce();
+            interp.initialize();
             System.out.println("Info in CorpusReader.processFileByLine(): " + file);
-            String line = "";
+            String line;
             while ((line = lnr.readLine()) != null) {
                 if (StringUtil.emptyString(regExGoodLine) || line.matches(regExGoodLine)) {
                     if (!StringUtil.emptyString(regExRemove))
@@ -86,8 +86,8 @@ public class CorpusReader {
                 }
             }
         }
-        catch (Exception e) {
-            System.out.println("Error in CorpusReader.processFileByLine(): " + e.getMessage());
+        catch (IOException e) {
+            System.err.println("Error in CorpusReader.processFileByLine(): " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -95,10 +95,10 @@ public class CorpusReader {
     /***************************************************************
      * store in docs a list of lines of text with markup removed
      */
-    private void processFile(ArrayList<String> doc, String filename) {
+    private void processFile(List<String> doc, String filename) {
 
         System.out.println("Info in CorpusReader.processFile(): " + filename);
-        ArrayList<String> result = new ArrayList<>();
+        List<String> result = new ArrayList<>();
         for (String s : doc) {
             if (StringUtil.emptyString(regExGoodLine) || s.matches(regExGoodLine)) {
                 if (!StringUtil.emptyString(regExRemove))
@@ -117,24 +117,24 @@ public class CorpusReader {
     public static int countLines(File file) throws IOException {
 
         int lines = 0;
-        FileInputStream fis = new FileInputStream(file);
-        byte[] buffer = new byte[8 * 1024]; // BUFFER_SIZE = 8 * 1024
-        int read;
-        while ((read = fis.read(buffer)) != -1) {
-            for (int i = 0; i < read; i++) {
-                if (buffer[i] == '\n') lines++;
+        try (InputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[8 * 1024]; // BUFFER_SIZE = 8 * 1024
+            int read;
+            while ((read = fis.read(buffer)) != -1) {
+                for (int i = 0; i < read; i++) {
+                    if (buffer[i] == '\n') lines++;
+                }
             }
-        }
-        fis.close();
+        } // BUFFER_SIZE = 8 * 1024
         return lines;
     }
 
     /***************************************************************
      * Read a text file into lines
      */
-    public static ArrayList<String> readFile(String filename) {
+    public static List<String> readFile(String filename) {
 
-        ArrayList<String> result = new ArrayList<>();
+        List<String> result = new ArrayList<>();
         try {
             File f = new File(filename);
             long len = f.length();
@@ -142,24 +142,25 @@ public class CorpusReader {
             if (len > 1000000) {
                 lines = countLines(f);
             }
-            FileReader r = new FileReader(filename);
-            LineNumberReader lr = new LineNumberReader(r);
-            String line;
-            long counter = 0;
-            while ((line = lr.readLine()) != null) {
-                result.add(line);
-                counter++;
-                if (counter % 10000 == 0) {
-                    if (lines == 0)
-                        System.out.print(".");
-                    else
-                        System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+            try (Reader r = new FileReader(filename);
+                LineNumberReader lr = new LineNumberReader(r)) {
+                String line;
+                long counter = 0;
+                while ((line = lr.readLine()) != null) {
+                    result.add(line);
+                    counter++;
+                    if (counter % 10000 == 0) {
+                        if (lines == 0)
+                            System.out.print(".");
+                        else
+                            System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+                    }
                 }
             }
             System.out.println();
         }
         catch (IOException i) {
-            System.out.println("Error in CorpusReader.readFile() reading file " + filename + ": " + i.getMessage());
+            System.err.println("Error in CorpusReader.readFile() reading file " + filename + ": " + i.getMessage());
             i.printStackTrace();
         }
         return result;
@@ -171,21 +172,21 @@ public class CorpusReader {
 
         try {
             if (oneFile) {
-                ArrayList<String> doc = readFile(dir);
+                List<String> doc = readFile(dir);
                 processFile(doc, dir);
             }
             else {
                 Files.walk(Paths.get(dir)).forEach(filePath -> {
                     if (Files.isRegularFile(filePath) &&
                             filePath.toString().endsWith(fileExt)) {
-                        ArrayList<String> doc = readFile(filePath.toString());
+                        List<String> doc = readFile(filePath.toString());
                         processFile(doc, filePath.getFileName().toString());
                     }
                 });
             }
         }
         catch (IOException ioe) {
-            System.out.println("Error in CorpusReader.readFiles(): " + ioe.getMessage());
+            System.err.println("Error in CorpusReader.readFiles(): " + ioe.getMessage());
             ioe.printStackTrace();
         }
     }

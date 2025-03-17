@@ -24,8 +24,8 @@ public class Analyze {
 
     public static KB kb = null;
 
-    public static HashMap<String,String> nps = new HashMap<>();
-    public static HashSet<String> newNps = new HashSet<>();
+    public static Map<String,String> nps = new HashMap<>();
+    public static Set<String> newNps = new HashSet<>();
     //public static Map<String,Integer> sumo = new HashMap<>();
     public static Map<Integer,Set<String>> freqMapSUMO = new HashMap<>();
 
@@ -42,11 +42,12 @@ public class Analyze {
     /** ***************************************************************
      * collect noun phrase co-occurrences from a file
      */
-    public static HashSet<String> elimKnownNPs(HashMap<String,String> nps) {
+    public static Set<String> elimKnownNPs(Map<String,String> nps) {
 
-        HashSet<String> result = new HashSet<>();
+        Set<String> result = new HashSet<>();
+        String lemma;
         for (String s : nps.keySet()) {
-            String lemma = nps.get(s);
+            lemma = nps.get(s);
             if (NPtype.evaluateNP(s,lemma))
                 result.add(s);
         }
@@ -89,19 +90,21 @@ public class Analyze {
     /** ***************************************************************
      */
     public static Map<String,Integer> genFreqMaps(Interpreter interp, Map<String,Integer> sumo,
-                                   HashMap<String,String> nps, String l) {
+                                   Map<String,String> nps, String l) {
 
         nps.putAll(NPtype.findNPs(l,false));
         //System.out.println("genFreqMaps(): nps: " + nps);
         //System.out.println("genFreqMaps(): new nps: " + newNps);
         sumo = MapUtils.mergeToFreqMap(sumo,WSD.collectSUMOFromString(l));
         if (debug) System.out.println("genFreqMaps(): sumo: " + sumo);
+        List<Literal> lits;
+        String arg1;
         for (CoreMap cm : NPtype.sentences) {
             System.out.println(interp.interpretGenCNF(cm));
-            List<Literal> lits = Interpreter.findWSD(cm);
+            lits = Interpreter.findWSD(cm);
             if (debug) System.out.println("genFreqMaps(): lits: " + lits);
             for (Literal lit : lits) {
-                String arg1 = lit.arg1;
+                arg1 = lit.arg1;
                 MapUtils.addToFreqMap(sumo,arg1,1);
             }
         }
@@ -114,13 +117,12 @@ public class Analyze {
      * @param categories reports on concepts that are subclasses or instances
      *                   of any of the provided terms, if present
      */
-    public static void processFile(String fname, HashSet<String> categories) {
+    public static void processFile(String fname, Set<String> categories) {
 
         Interpreter interp = new Interpreter();
 
         Map<String,Integer> sumo = new HashMap<>();
-        HashSet<String> sumoCat = new HashSet<>();
-        ArrayList<String> lines = CorpusReader.readFile(fname);
+        List<String> lines = CorpusReader.readFile(fname);
         for (String l : lines) {
             //System.out.println("\n------------------------------\nprocessFile(): line: " + l + "\n");
             if (StringUtil.emptyString(l))
@@ -159,7 +161,7 @@ public class Analyze {
             String rel = null;
             if (args.length> 2)
                 rel = args[2];
-            HashSet<String> cats = new HashSet<>();
+            Set<String> cats = new HashSet<>();
             if (args.length > 3) {
                 for (int i = 3; i <= args.length; i++) {
                     cats.add(args[i]);

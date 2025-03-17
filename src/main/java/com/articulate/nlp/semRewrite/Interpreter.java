@@ -958,7 +958,7 @@ public class Interpreter {
             tfidf.addInput(input);
 
         Graph g = null;
-        ArrayList<CNF> inputs = Lists.newArrayList(interpretGenCNF(input));
+        List<CNF> inputs = Lists.newArrayList(interpretGenCNF(input));
         if (simFlood) {
             inputs = Lists.newArrayList(interpretGenCNFBasic(input));
             for (CNF cnf : inputs) {
@@ -968,7 +968,7 @@ public class Interpreter {
                     userGraphs.add(g);
             }
         }
-        ArrayList<String> kifClauses = interpretCNF(inputs);
+        List<String> kifClauses = interpretCNF(inputs);
         String result = fromKIFClauses(kifClauses);
         System.out.println("INFO in Interpreter.interpretSingle(): Theorem proving result: '" + result + "'\n");
 
@@ -1229,7 +1229,7 @@ public class Interpreter {
 
     /** *************************************************************
      */
-    public static void addUnprocessed(ArrayList<String> kifoutput, CNF cnf) {
+    public static void addUnprocessed(List<String> kifoutput, CNF cnf) {
 
         StringBuilder sb = new StringBuilder();
         for (Clause d : cnf.clauses) {
@@ -1249,7 +1249,7 @@ public class Interpreter {
      * for a rule to fire are present in the input CNF.  This can fail
      * quickly without attempting full unification
      */
-    public boolean termCoverage(HashSet<String> inputPreds, HashSet<String> inputTerms, Rule r) {
+    public boolean termCoverage(Set<String> inputPreds, Set<String> inputTerms, Rule r) {
 
         //System.out.println("Interpreter.termCoverage(): input preds: " + inputPreds);
         //System.out.println("Interpreter.termCoverage(): input terms: " + inputTerms);
@@ -1272,7 +1272,7 @@ public class Interpreter {
      * Apply all the rules in the RuleSet to the input CNF form,
      * matching left hand sides and generating the right hand side.
      */
-    public ArrayList<String> interpretCNF(ArrayList<CNF> inputs) {
+    public List<String> interpretCNF(List<CNF> inputs) {
 
         if (inputs == null || inputs.isEmpty() || inputs.contains(null))
             return null;
@@ -1280,14 +1280,14 @@ public class Interpreter {
             System.err.println("Error in Interpreter.interpretCNF(): multiple clauses");
             return null;
         }
-        ArrayList<String> kifoutput = new ArrayList<>();
+        List<String> kifoutput = new ArrayList<>();
         System.out.println("INFO in Interpreter.interpretCNF(): inputs: " + inputs);
         System.out.println("INFO in Interpreter.interpretCNF(): sorted inputs: " + CNF.toSortedString(inputs));
         boolean bindingFound = true;
         int counter = 0;
         CNF newInput, bindingsRemoved;
-        ArrayList<CNF> newinputs;
-        HashSet<String> preds, terms;
+        List<CNF> newinputs;
+        Set<String> preds, terms;
         Rule r;
         Subst bindings;
         RHS rhs;
@@ -2322,9 +2322,10 @@ public class Interpreter {
     public static void main(String[] args) throws IOException {
 
         System.out.println("INFO in Interpreter.main()");
-        Interpreter interp = new Interpreter();
+        Interpreter interp = null;
         if (args != null && args.length > 0 && (args[0].equals("-s") || args[0].equals("-i"))) {
             KBmanager.getMgr().initializeOnce();
+            interp = new Interpreter();
             interp.initialize();
         }
         if (args != null && args.length > 1 && args[0].equals("-x")) {
