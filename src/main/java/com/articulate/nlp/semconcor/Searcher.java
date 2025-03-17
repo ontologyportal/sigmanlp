@@ -521,6 +521,8 @@ public class Searcher implements ServletContextListener {
 
         String corporaDir = System.getenv("CORPORA");
         conn = DriverManager.getConnection("jdbc:h2:" + corporaDir + "/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "");
+        if (!Indexer.checkForTable(conn, "COUNTS"))
+            Indexer.createDB(conn);
         if (debug) System.out.println("main(): Opened DB " + dbFilepath);
         Set<String> result;
         try {
