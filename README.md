@@ -14,7 +14,7 @@ For macOS, replace .bashrc with .zshrc
 
 ```sh
 cd ~
-echo "export CORPORA=$HOME/corpora" >> .bashrc
+echo "export CORPORA=$HOME/.corpora" >> .bashrc
 source ~/.bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
