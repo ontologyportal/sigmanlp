@@ -415,7 +415,7 @@ public class Indexer {
     }
 
     /***************************************************************
-     * clear all the database content
+     * create the database content
      */
     public static void createDB(Connection conn) throws Exception {
 
@@ -441,6 +441,28 @@ public class Indexer {
         } finally {
             stmt.close();
         }
+    }
+
+    /***************************************************************
+     * Checks the database content for a particular table before
+     * writing to it
+     * @conn the DB connection for checking
+     * @param table the table to check for
+     * @return true if table is found
+     */
+    public static boolean checkForTable(Connection conn, String table) {
+
+        boolean retVal = false;
+        try {
+            DatabaseMetaData dbm = conn.getMetaData();
+            try (ResultSet tables = dbm.getTables(null, null, table, null)) {
+                retVal = tables.next();
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
+        return retVal;
     }
 
     /***************************************************************
@@ -483,14 +505,10 @@ public class Indexer {
                 dbFilename = args[1];
             try {
                 conn = DriverManager.getConnection("jdbc:h2:" + corporaDir + File.separator + dbFilename, UserName, "");
-                DatabaseMetaData dbm = conn.getMetaData();
-                // check if "INDEX" table is there
-                try (ResultSet tables = dbm.getTables(null, null, "INDEX", null)) {
-                    if (tables.next())
-                        clearDB(conn);
-                    else
-                        createDB(conn);
-                }
+                if (checkForTable(conn, "INDEX"))
+                    clearDB(conn);
+                else
+                    createDB(conn);
             }
             catch (SQLException e ) {
                 System.err.println(e.getMessage());
