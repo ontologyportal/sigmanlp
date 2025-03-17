@@ -446,7 +446,7 @@ public class Indexer {
     /***************************************************************
      * Checks the database content for a particular table before
      * writing to it
-     * @conn the DB connection for checking
+     * @param conn the DB connection for checking
      * @param table the table to check for
      * @return true if table is found
      */
