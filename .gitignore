@@ -53,3 +53,4 @@ out-log.txt
 /corpora/COCA/*
 /.ivy/
 /corpora/FCE.mv.db
+/corpora/wikipedia/
