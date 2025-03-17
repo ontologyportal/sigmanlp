@@ -1,6 +1,8 @@
 <!--https://ant.apache.org/ivy/history/2.5.1/tutorial/conf.html-->
-<ivy-module version="2.0">
-    <info organisation="org.ontologyportal" module="SigmaKEE"/>
+<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd"
+       xmlns:m="http://ant.apache.org/ivy/maven">
+    <info organisation="org.ontologyportal" module="SigmaNLP"/>
     <configurations>
         <conf name="api" description="Provide API"/>
         <conf name="test" extends="api" visibility="private" description="For testing our API"/>
