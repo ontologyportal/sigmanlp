@@ -130,7 +130,7 @@
         </dirset>
     </path>
 
-    <target name="init" depends="init-ivy">
+    <target name="init" depends="init-ivy,get.stanford.corenlp.models">
         <condition property="jdk21+">
             <javaversion atleast="21"/>
         </condition>
@@ -256,9 +256,9 @@
     -->
 
     <target name="get.stanford.corenlp.models">
-<!--        <get src="https://downloads.cs.stanford.edu/nlp/software/stanford-corenlp-4.5.7.zip" dest="${programs.dir}" tryGzipEncoding="true"/>
+        <get src="https://downloads.cs.stanford.edu/nlp/software/stanford-corenlp-4.5.7.zip" dest="${programs.dir}" tryGzipEncoding="true"/>
         <unzip src="${programs.dir}/stanford-corenlp-${corenlp.version}.zip" dest="${programs.dir}"/>
-        <delete file="${programs.dir}/stanford-corenlp-${corenlp.version}.zip"/>-->
+        <delete file="${programs.dir}/stanford-corenlp-${corenlp.version}.zip"/>
         <copy todir="lib" file="${programs.dir}/stanford-corenlp-${corenlp.version}/stanford-corenlp-${corenlp.version}-models.jar"/>
     </target>
 
