@@ -20,8 +20,8 @@ permissions:
   checks: write
 
 jobs:
-  build:
-
+  build-test-upload:
+    name: Built, Test & Upload
     runs-on: ubuntu-latest
 
     steps:
@@ -53,7 +53,6 @@ jobs:
         with:
           repository: 'ontologyportal/sumo'
           path: sumo
-
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
@@ -119,8 +118,7 @@ jobs:
           SIGMA_SRC: ${{ github.workspace }}/sigmakee
           CORPORA: ${{ github.workspace }}/sigmanlp/corpora
         working-directory: ./sigmanlp
-        run: |
-          ant test.unit
+        run: ant test.unit
 
       - name: Setup SIGMA_HOME for integration tests
         env:
@@ -163,3 +161,9 @@ jobs:
         working-directory: ./sigmanlp
         run: |
           ant test.integration
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./sigmanlp/build/test/results/*
