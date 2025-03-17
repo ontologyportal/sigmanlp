@@ -45,11 +45,11 @@
         <echo message="Specification Vendor:     ${spec.vendor}"/>
         <echo message=""/>
         <echo message="CATALINA_HOME is set to:  ${catalina.base}"/>
+        <echo message="CORPORA is set to:        ${corpora.dir}"/>
         <echo message="SIGMA_HOME    is set to:  ${sigma_home}"/>
         <echo message="SIGMA_SRC     is set to:  ${sigma_src}"/>
         <echo message="KBs_HOME      is set to:  ${kbs_home}"/>
         <echo message="Git dir       is set to:  ${ontologyportal.git}"/>
-        <echo message="basedir       is set to:  ${basedir}"/>
         <echo message="classpath:                ${run.classpath}"/>
         <echo message="Java Version via Ant:     ${ant.java.version}"/>
         <echo message="Java Version System Prop: ${java.version}"/>
