@@ -1,5 +1,6 @@
 package com.articulate.nlp;
 
+import com.articulate.nlp.corpora.IntegrationCorporaTestSuite;
 import com.articulate.nlp.inference.IntegrationInferenceTestSuite;
 import com.articulate.nlp.semRewrite.IntegrationSemRewriteTestSuite;
 import com.articulate.nlp.semRewrite.datesandnumber.IntegrationDateAndNumberTestSuite;
@@ -14,6 +15,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     IntegrationNlpTestSuite.class,
+    IntegrationCorporaTestSuite.class,
     IntegrationInferenceTestSuite.class,
     IntegrationSemRewriteTestSuite.class,
     IntegrationDateAndNumberTestSuite.class,

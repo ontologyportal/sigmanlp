@@ -4,6 +4,7 @@ import com.articulate.nlp.corpora.UnitCorporaTestSuite;
 import com.articulate.nlp.imsclient.UnitImsclientTestSuite;
 import com.articulate.nlp.pipeline.UnitPiplineTestSuite;
 import com.articulate.nlp.semRewrite.UnitSemRewriteTestSuite;
+import com.articulate.nlp.semconcor.UnitSemconcorTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -17,7 +18,8 @@ import org.junit.runners.Suite;
     UnitCorporaTestSuite.class,
     UnitImsclientTestSuite.class,
     UnitPiplineTestSuite.class,
-    UnitSemRewriteTestSuite.class
+    UnitSemRewriteTestSuite.class,
+    UnitSemconcorTestSuite.class
 })
 public class UnitTestSuite extends UnitTestBase {
 

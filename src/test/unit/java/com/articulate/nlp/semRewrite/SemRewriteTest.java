@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,9 +38,9 @@ public class SemRewriteTest extends UnitTestBase {
     private void doTest(String sent, String input, String[] expectedOutput) {
 
         System.out.println("\n\nSemRewriteTest: sentence: " + sent);
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
 
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         System.out.println("SemRewriteTest: input: " + input);
         System.out.println("SemRewriteTest: actual: " + kifClauses);

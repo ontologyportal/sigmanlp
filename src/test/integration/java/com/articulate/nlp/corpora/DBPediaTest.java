@@ -1,6 +1,9 @@
-package com.articulate.nlp;
+package com.articulate.nlp.corpora;
 
-import com.articulate.nlp.corpora.DBPedia;
+import com.articulate.nlp.DBPMultiWordAnnotator;
+import com.articulate.nlp.IntegrationTestBase;
+import com.articulate.nlp.MultiWordAnnotator;
+import com.articulate.nlp.WNMultiWordAnnotator;
 import com.articulate.nlp.pipeline.SentenceUtil;
 import com.articulate.nlp.semRewrite.Interpreter;
 import com.articulate.sigma.KBmanager;

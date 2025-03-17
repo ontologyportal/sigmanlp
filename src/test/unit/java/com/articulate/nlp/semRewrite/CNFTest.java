@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -391,17 +392,17 @@ public class CNFTest extends UnitTestBase {
         CNF cnf5 = new CNF(cnfstr5);
         System.out.println("INFO in CNFTest.testUnify10(): cnf " + cnf4);
         System.out.println("INFO in CNFTest.testUnify10(): cnf1 " + cnf5);
-        HashSet<Unification> res = cnf4.unifyNew(cnf5);
+        Set<Unification> res = cnf4.unifyNew(cnf5);
         String result = res.toString();
         String expected = "{?T=Human, ?X=John-1}";
         System.out.println("result: " + res);
         System.out.println("expected: " + expected);
         System.out.println("bound content: " + cnf5);
-        if (result.indexOf(expected) == -1)
-            System.out.println("INFO in CNFTest.testUnify10(): fail");
+        if (!result.contains(expected))
+            System.err.println("INFO in CNFTest.testUnify10(): fail");
         else
             System.out.println("INFO in CNFTest.testUnify10(): success");
-        assertTrue(result.indexOf(expected) != -1);
+        assertTrue(result.contains(expected));
     }
 
     /** ***************************************************************

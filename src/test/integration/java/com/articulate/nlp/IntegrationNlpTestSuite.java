@@ -9,7 +9,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    DBPediaTest.class,
     DocumentTest.class,
     // TODO: Need corpora/COCA files (tdn) 11/8/24
 //    GenSimpTestDataTest.class,

@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -81,8 +82,8 @@ public class RelExtractTest extends IntegrationTestBase {
         System.out.println("INFO in RelExtractTest.doRuleTest(): rule: " + rule);
         System.out.println("INFO in RelExtractTest.doRuleTest(): CNF rule antecedent: " + r.cnf);
 
-        HashSet<String> preds = cnfInput.getPreds();
-        HashSet<String> terms = cnfInput.getTerms();
+        Set<String> preds = cnfInput.getPreds();
+        Set<String> terms = cnfInput.getTerms();
         System.out.println("RelExtractTest.doRuleTest(): input preds: " + preds);
         System.out.println("RelExtractTest.doRuleTest(): input terms: " + terms);
 
@@ -144,8 +145,8 @@ public class RelExtractTest extends IntegrationTestBase {
         System.out.println("INFO in RelExtractTest.doAllRuleTest(): Input: " + input);
         System.out.println("INFO in RelExtractTest.doAllRuleTest(): CNF input: " + inputs);
         ArrayList<RHS> kifClauses = new ArrayList<>();
-        HashSet<String> preds = cnfInput.getPreds();
-        HashSet<String> terms = cnfInput.getTerms();
+        Set<String> preds = cnfInput.getPreds();
+        Set<String> terms = cnfInput.getTerms();
         for (Rule r : RelExtract.rs.rules) {
             if (!interpreter.termCoverage(preds, terms, r))
                 continue;
