@@ -82,7 +82,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${run.args}"/>
         </java>
     </target>
@@ -96,7 +96,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${run.args}"/>
         </java>
     </target>
@@ -131,7 +131,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -151,7 +151,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -173,7 +173,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -193,7 +193,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -213,7 +213,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -233,7 +233,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -253,7 +253,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -291,7 +291,7 @@
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_OPS" value="${catalina.ops}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg value="-c"/>
             <arg value="'${catalina.base}/bin/${startup}'"/>
         </exec>
@@ -359,7 +359,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${run.args}"/>
         </java>
     </target>
@@ -377,7 +377,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${run.args}"/>
         </java>
     </target>
@@ -394,7 +394,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${pword.props}"/>
         </java>
     </target>
@@ -419,8 +419,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -444,7 +443,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -468,7 +467,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -492,7 +491,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
