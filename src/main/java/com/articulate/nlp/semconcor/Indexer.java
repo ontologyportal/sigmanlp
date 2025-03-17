@@ -72,8 +72,8 @@ DB schema created in createDB() is
 public class Indexer {
 
     public static final int tokensMax = 25;
-    //public static final String JDBCString = "jdbc:h2:~/corpora/transJudge";
-    public static final String JDBCString = "jdbc:h2:~/corpora/FCE";
+    //public static final String JDBC_STRING = "jdbc:h2: + System.getenv("CORPORA") + "/transJudge";
+    public static final String JDBC_STRING = "jdbc:h2:" + System.getenv("CORPORA") + "/FCE";
     public static String UserName = "sa";
     public static int startline = 0;
 
