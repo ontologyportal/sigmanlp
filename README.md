@@ -9,7 +9,7 @@
 Installation
 ============
 
-First follow the instructions to install sigmakee at https://github.com/ontologyportal/sigmakee.\
+First, follow the instructions to install [sigmakee](https://github.com/ontologyportal/sigmakee)\
 For macOS, replace .bashrc with .zshrc
 
 ```sh
@@ -29,21 +29,24 @@ To keep this repository updated
 ant update.sigmanlp
 ```
 
-Then follow the steps in "Account Management" below before proceeding
+# Test SigmaNLP on the command line
+```sh
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP com.articulate.nlp.semRewrite.Interpreter -i
+```
 
 Account Management
 ==================
 
-Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
-and "latest" with you're version of stanford-corenlp:
+Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace\
+/home/theuser with your info:
 
 ```xml
-<preference name="englishPCFG" value="~/Programs/stanford-corenlp-latest/stanford-corenlp-latest-models.jar"/>
+<preference name="englishPCFG" value="/home/theuser/Programs/stanford-corenlp-latest/stanford-corenlp-4.5.7-models.jar"/>
 ```
 
-** NOTE: If you see a java.io.StreamCorruptedException being thrown in the
-   output console, then comment out the above "preference" element from your
-   $SIGMA_HOME/KBs/config.xml file. SigmaNLP will work without that particular
+** NOTE: If you see a java.io.StreamCorruptedException being thrown in the\
+   console, then comment out the above "preference" element from your\
+   $SIGMA_HOME/KBs/config.xml. SigmaNLP will work without that particular\
    element
 
 If you want to run sigmanlp's web interface then:
@@ -51,22 +54,25 @@ If you want to run sigmanlp's web interface then:
 ant dist
 ```
 
-Start Tomcat with:
+# Start Tomcat with:
 ```sh
 $CATALINA_HOME/bin/startup.sh
 ```
+Open a browser with:
+```url
 http://localhost:8080/sigmanlp/NLP.jsp
-
-If you want to make a link to the NLP tools available from Sigma's various jsp pages then include
-the following in your config.xml
-
-```xml
-<preference name="nlpTools" value="yes" />
+admin/admin
+```
+# Stop Tomcat with:
+```sh
+$CATALINA_HOME/bin/shutdown.sh
 ```
 
-To test SigmaNLP on the command line, try
-```sh
-java -Xmx10g -Xss1m -cp $SIGMANLP_CP com.articulate.nlp.semRewrite.Interpreter -i
+If you want to make a link to the NLP tools available from Sigma's various jsp\
+pages then include the following in your $SIGMA_HOME/KBs/config.xml
+
+```xml
+<preference name="nlpTools" value="yes"/>
 ```
 
 jUnit ANT
@@ -78,10 +84,10 @@ ant test
 jUnit CLI
 =========
 ```sh
-java -Xmx10g -Xss1m -cp $SIGMANLP_CP\
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllUnitSemRewrite
 
-java -Xmx10g -Xss1m -cp $SIGMANLP_CP\
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllSemRewriteIntegTest
 ```
 
