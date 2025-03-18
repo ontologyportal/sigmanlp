@@ -33,6 +33,8 @@
         <dependency org="com.h2database" name="h2" rev="2.3.232" transitive="false" conf="api->default"/>
         <dependency org="com.servlets" name="cos" rev="09May2002" transitive="false" conf="api->default"/>
         <dependency org="edu.stanford.nlp" name="stanford-corenlp" rev="4.5.7" conf="api->default">
+            <artifact name="stanford-corenlp"/>
+            <artifact name="stanford-corenlp" m:classifier="models"/>
             <exclude name="AppleJavaExtensions"/>
             <exclude name="apiguardian"/>
             <exclude name="ejml-cdense"/>
