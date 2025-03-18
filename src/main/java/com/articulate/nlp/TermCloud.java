@@ -26,25 +26,25 @@ public class TermCloud {
 
 
     //terms sorted by frequency
-    public TreeMap<Integer,HashSet<String>> termFreq = new TreeMap<>();
+    public Map<Integer,Set<String>> termFreq = new TreeMap<>();
 
     // frequency of a given term in a corpus
-    public HashMap<String,Integer> freqTerm = new HashMap<>();
+    public Map<String,Integer> freqTerm = new HashMap<>();
 
     // the cooc string is two terms joined by a tab
-    public TreeMap<Integer,HashSet<String>> coocFreq = new TreeMap<>();
+    public Map<Integer,Set<String>> coocFreq = new TreeMap<>();
 
     // the cooc string is two terms joined by a tab
-    public HashMap<String, Integer> freqCooc = new HashMap<>();
+    public Map<String, Integer> freqCooc = new HashMap<>();
 
     // term keys and the terms they cooccur with
-    public HashMap<String,HashSet<String>> terms = new HashMap<>();
+    public Map<String,Set<String>> terms = new HashMap<>();
 
     /** ***************************************************************
      */
     public void addToCoocFreq(Integer freq, String combined) {
 
-        HashSet<String> coocs = new HashSet<>();
+        Set<String> coocs = new HashSet<>();
         if (coocFreq.containsKey(freq)) {
             coocs = coocFreq.get(freq);
         }
@@ -84,16 +84,17 @@ public class TermCloud {
     /** ***************************************************************
      * collect noun phrase co-occurrences from a line
      */
-    public void processLine(HashSet<String> nps) {
+    public void processLine(Set<String> nps) {
 
+        Integer freq;
         for (String s : nps) {
-            Integer freq = freqTerm.get(s);
+            freq = freqTerm.get(s);
             if (freq == null)
                 freq = 0;
             freq++;
             freqTerm.put(s,freq);
 
-            HashSet<String> coocs = terms.get(s);
+            Set<String> coocs = terms.get(s);
             if (coocs == null)
                 coocs = new HashSet<>();
             for (String c : nps) {
@@ -111,19 +112,22 @@ public class TermCloud {
      */
     public void collectNPcoocs(String fname) {
 
-        ArrayList<String> lines = CorpusReader.readFile(fname);
+        List<String> lines = CorpusReader.readFile(fname);
+        Map<String,String> nps;
         for (String l : lines) {
             if (StringUtil.emptyString(l))
                 continue;
             System.out.println("\ncollectNPcoocs(): line: " + l);
-            HashMap<String,String> nps = NPtype.findNPs(l,true);
+            nps = NPtype.findNPs(l,true);
             System.out.println("collectNPcoocs(): NPs: " + nps);
-            if (nps.size() > 0)
+            if (!nps.isEmpty())
                 processLine((HashSet<String>) nps.keySet());
         }
+        int freq;
+        Set<String> tset;
         for (String s : freqTerm.keySet()) {
-            int freq = freqTerm.get(s);
-            HashSet<String> tset = termFreq.get(freq);
+            freq = freqTerm.get(s);
+            tset = termFreq.get(freq);
             if (tset == null)
                 tset = new HashSet<>();
             tset.add(s);
@@ -145,12 +149,13 @@ public class TermCloud {
 
     /** ***************************************************************
      */
-    public static void printTopNFreqMap(TreeMap<Integer,HashSet<String>> freqMap,
+    public static void printTopNFreqMap(Map<Integer,Set<String>> freqMap,
                                         int n) {
         int count = 0;
-        Iterator<Integer> it = freqMap.descendingKeySet().iterator();
+        Iterator<Integer> it = ((TreeMap<Integer, Set<String>>)freqMap).descendingKeySet().iterator();
+        Set<String> termSet;
         while (it.hasNext() && count < n) {
-            HashSet<String> termSet = freqMap.get(it.next());
+            termSet = freqMap.get(it.next());
             count = count + termSet.size();
             for (String s : termSet) {
                 System.out.println(s);
@@ -162,10 +167,10 @@ public class TermCloud {
      * get the top co-occurring terms for a given term.  Collect co-occurrences
      * that appear in both orders
      */
-    public static void addToFreqMap(TreeMap<Integer,HashSet<String>> freqMap,
+    public static void addToFreqMap(Map<Integer,Set<String>> freqMap,
                              Integer freq, String s) {
 
-        HashSet<String> termSet = new HashSet<>();
+        Set<String> termSet = new HashSet<>();
         if (freqMap.containsKey(freq))
             termSet = freqMap.get(freq);
         else
@@ -179,12 +184,14 @@ public class TermCloud {
      */
     public void showTopCooc(String s) {
 
-        TreeMap<Integer,HashSet<String>> localCoocFreq = new TreeMap<>();
-        HashSet<String> coocTerms = terms.get(s);
+        Map<Integer,Set<String>> localCoocFreq = new TreeMap<>();
+        Set<String> coocTerms = terms.get(s);
+        String cooc, coocRev;
+        Integer freq;
         for (String c : coocTerms) {
-            String cooc = makeCooc(s,c);
-            String coocRev = makeCooc(c,s); // reverse order of above variable
-            Integer freq = freqCooc.get(cooc);
+            cooc = makeCooc(s,c);
+            coocRev = makeCooc(c,s); // reverse order of above variable
+            freq = freqCooc.get(cooc);
             addToFreqMap(localCoocFreq,freq,cooc);
             addToFreqMap(localCoocFreq,freq,coocRev);
         }
@@ -198,13 +205,14 @@ public class TermCloud {
         int countMax = 10; // how many terms to display
         System.out.println("printTopResults(): Show top " + countMax +
                 " most frequent terms and the top 10 most frequently co-occurring terms for that term.");
-        Iterator<Integer> it = termFreq.descendingKeySet().iterator();
+        Iterator<Integer> it = ((TreeMap<Integer, Set<String>>)termFreq).descendingKeySet().iterator();
         int count = 0;
+        Set<String> termSet;
         while (it.hasNext() && count < countMax) {
             int freq = it.next();
             System.out.println("freq: " + freq);
             System.out.println("count: " + count);
-            HashSet<String> termSet = termFreq.get(freq);
+            termSet = termFreq.get(freq);
             for (String s : termSet) {
                 System.out.println("\n========= " + s + " =========");
                 showTopCooc(s);

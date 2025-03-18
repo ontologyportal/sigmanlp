@@ -30,7 +30,7 @@ public class UnificationTest extends IntegrationTestBase {
     private void doTest(String sent, String input, Set<String> expectedOutput) {
 
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
         System.out.println("\n\nUnificationTest: sentence: " + sent);

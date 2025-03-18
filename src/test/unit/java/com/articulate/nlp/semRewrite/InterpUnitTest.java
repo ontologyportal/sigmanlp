@@ -2,6 +2,7 @@ package com.articulate.nlp.semRewrite;
 
 import com.articulate.nlp.UnitTestBase;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
@@ -36,7 +37,7 @@ public class InterpUnitTest extends UnitTestBase {
                 "names(Mary-1,\"Mary\"), nsubj(walk-3,Mary-1), " +
                 "number(SINGULAR,Mary-1), root(ROOT-0,walk-3), sumo(Human,Mary-1), " +
                 "sumo(Walking,walk-3).";
-        ArrayList<CNF> clauses = new ArrayList<>();
+        List<CNF> clauses = new ArrayList<>();
         clauses.add(new CNF(input));
         Rule r = Rule.parseString("aux(?V,might*) ==> (possible(?V,DUMMY)).");
         RuleSet rs = new RuleSet();
@@ -44,7 +45,7 @@ public class InterpUnitTest extends UnitTestBase {
         r = Rule.parseString("possible(?X,DUMMY) ==> {(possible ?X DUMMY)}.");
         rs.rules.add(r);
         Interpreter interp = new Interpreter(rs);
-        ArrayList<String> result = interp.interpretCNF(clauses);
+        List<String> result = interp.interpretCNF(clauses);
         String expected = "(possible walk-3 DUMMY)";
         System.out.println("testInterpCNF(): result" + result);
         System.out.println("testInterpCNF(): expected" + expected);

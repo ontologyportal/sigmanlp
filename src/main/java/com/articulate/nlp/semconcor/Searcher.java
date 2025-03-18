@@ -3,13 +3,19 @@ package com.articulate.nlp.semconcor;
 import com.articulate.nlp.semRewrite.*;
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.KBmanager;
+import com.articulate.sigma.KButilities;
+import com.articulate.sigma.PasswordService;
 import com.articulate.sigma.utils.StringUtil;
 
 import com.google.common.base.Strings;
-import java.io.IOException;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.*;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.annotation.WebListener;
 
 /*
 Copyright 2017 Articulate software
@@ -32,10 +38,39 @@ along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA
 */
-public class Searcher {
+@WebListener
+public class Searcher implements ServletContextListener {
+
+    private static final String H2_DRIVER = "org.h2.Driver";
+    private static Connection conn = null;
 
     public static int countSize = 100; // parameter to optimize searching
     public static boolean debug = false;
+
+    @Override
+    public void contextInitialized(ServletContextEvent servletContextEvent) {
+        KButilities.getInstance().contextInitialized(servletContextEvent);
+        System.out.println("Starting " + Searcher.class.getName() + " Service...");
+    }
+
+    // H2 shutdown guidance from: https://github.com/spring-projects/spring-boot/issues/21221
+    //                       and: https://stackoverflow.com/questions/9972372/what-is-the-proper-way-to-close-h2
+    // Fix for issue #135
+    @Override
+    public void contextDestroyed(ServletContextEvent servletContextEvent) {
+        PasswordService pws = PasswordService.getInstance();
+        pws.contextDestroyed(servletContextEvent);
+        KButilities.getInstance().contextDestroyed(servletContextEvent);
+        System.out.println("Shutting down " + Searcher.class.getName() + " Service...");
+        org.h2.Driver.unload();
+        System.out.println("Deregistering and shutting down: " + H2_DRIVER);
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("SHUTDOWN");
+        }
+        catch (SQLException e) {
+            System.err.println(H2_DRIVER + " shutdown issues: " + e.getLocalizedMessage());
+        }
+    }
 
     /***************************************************************
      * Add HTML markup highlighting the matching phrase
@@ -107,7 +142,7 @@ public class Searcher {
     }
 
     /***************************************************************
-     * @param key a  key of the form filename#sentencenum#linenum
+     * @param key a key of the form filename#sentencenum#linenum
      */
     public static String fetchSentenceFromKey(Connection conn, String key) {
 
@@ -199,8 +234,8 @@ public class Searcher {
                                                  List<String> tokens) {
 
         Set<AVPair> countIndex = new TreeSet<>();
-        Statement stmt;
         try {
+            Statement stmt = conn.createStatement();
             if (debug) System.out.println("Searcher.makeCountIndex(): " + conn.getCatalog());
             String query;
             ResultSet rs;
@@ -210,7 +245,6 @@ public class Searcher {
             for (String s : tokens) {
                 query = "select * from counts where token='" + s + "';";
                 if (debug) System.out.println("Searcher.fetchFromIndex(): query: " + query);
-                stmt = conn.createStatement();
                 rs = stmt.executeQuery(query);
                 while (rs.next()) {
                     count = rs.getInt("COUNT");
@@ -220,6 +254,8 @@ public class Searcher {
                     countIndex.add(avp);
                 }
             }
+            if (stmt != null)
+                stmt.close(); // closes the rs
         }
         catch (SQLException e) {
             System.err.println(e.getMessage());
@@ -483,45 +519,39 @@ public class Searcher {
         List<String> depTokens = new ArrayList<>();
         depTokens = depToTokens(dep);
 
-//        Class.forName("org.h2.Driver");
         String corporaDir = System.getenv("CORPORA");
-        try (Connection conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "")) {
-            if (debug) System.out.println("main(): Opened DB " + dbFilepath);
-            Statement stmt = null;
-            Set<String> result;
-            try {
-                if (debug) showTable(conn, "index");
-                if (debug) showTable(conn, "counts");
-                result = fetchIndexes(conn,sentTokens, depTokens);
-                if (debug) System.out.println("search(): indexes size: " + result.size());
-                List<String> tempSentences = new ArrayList<>();
-                List<String> tempDependencies = new ArrayList<>();
-                fetchResultStrings(conn,result,tempSentences,tempDependencies); // results returned in tempSentences and tempDependencies
+        conn = DriverManager.getConnection("jdbc:h2:" + corporaDir + "/" + dbFilepath + ";AUTO_SERVER=TRUE", Indexer.UserName, "");
+        if (!Indexer.checkForTable(conn, "COUNTS"))
+            Indexer.createDB(conn);
+        if (debug) System.out.println("main(): Opened DB " + dbFilepath);
+        Set<String> result;
+        try {
+            if (debug) showTable(conn, "index");
+            if (debug) showTable(conn, "counts");
+            result = fetchIndexes(conn,sentTokens, depTokens);
+            if (debug) System.out.println("search(): indexes size: " + result.size());
+            List<String> tempSentences = new ArrayList<>();
+            List<String> tempDependencies = new ArrayList<>();
+            fetchResultStrings(conn,result,tempSentences,tempDependencies); // results returned in tempSentences and tempDependencies
 
-                List<Integer> removeList = matchDependencies(dep,tempDependencies);
-                removeList.addAll(matchSentences(phrase,tempSentences));
+            List<Integer> removeList = matchDependencies(dep,tempDependencies);
+            removeList.addAll(matchSentences(phrase,tempSentences));
 
-                List<String> newsent = new ArrayList<>();
-                List<String> newdep = new ArrayList<>();
-                for (int i = 0; i < tempDependencies.size(); i++) {
-                    if (!removeList.contains(i)) {
-                        newsent.add(tempSentences.get(i));
-                        newdep.add(tempDependencies.get(i));
-                    }
+            List<String> newsent = new ArrayList<>();
+            List<String> newdep = new ArrayList<>();
+            for (int i = 0; i < tempDependencies.size(); i++) {
+                if (!removeList.contains(i)) {
+                    newsent.add(tempSentences.get(i));
+                    newdep.add(tempDependencies.get(i));
                 }
-                sentences.addAll(newsent);
-                dependencies.addAll(newdep);
             }
-            catch (Exception e) {
-                System.err.println(e.getMessage());
-                e.printStackTrace();
-            }
-            finally {
-                if (stmt != null)
-                    stmt.close();
-            }
+            sentences.addAll(newsent);
+            dependencies.addAll(newdep);
         }
-
+        catch (Exception e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /***************************************************************
@@ -551,7 +581,7 @@ public class Searcher {
     /** ***************************************************************
      */
     public static void interactive() {
-        interactive(Indexer.JDBCString);
+        interactive(Indexer.JDBC_STRING);
     }
 
     /** ***************************************************************
@@ -611,7 +641,6 @@ public class Searcher {
      */
     public static void main(String[] args) throws Exception {
 
-        Class.forName("org.h2.Driver");
         if (args != null && args.length > 0 && args[0].equals("-i")) {
             if (args.length > 1 && !StringUtil.emptyString(args[1])) {
                 interactive(args[1]);
@@ -626,8 +655,8 @@ public class Searcher {
             //showTable(conn,"index");
             //showTable(conn,"counts");
             String searchString;
-            Interpreter interp = new Interpreter();
             KBmanager.getMgr().initializeOnce();
+            Interpreter interp = new Interpreter();
             try {
                 interp.initialize();
             }

@@ -102,11 +102,14 @@ Authors:
         List<CoreMap> timexAnnsAll = wholeDocument.get(TimeAnnotations.TimexAnnotations.class);
         if (timexAnnsAll != null && timexAnnsAll.size() > 0) {
             out.println("<h2>Time</h2>\n"); // -----------------------------------------------------------
+            Timex time;
+            String tsumo;
+            Formula tf;
             for (CoreMap token : timexAnnsAll) {
-                Timex time = token.get(TimeAnnotations.TimexAnnotation.class);
+                time = token.get(TimeAnnotations.TimexAnnotation.class);
                 out.println("time token and value: <pre>" + token + ":" + time.value() + "</pre>\n");
-                String tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
-                Formula tf = new Formula(tsumo);
+                tsumo = token.get(TimeSUMOAnnotator.TimeSUMOAnnotation.class);
+                tf = new Formula(tsumo);
                 out.println(tf.htmlFormat(kb,HTMLformatter.createHrefStart()) + "<P>\n");
             }
         }

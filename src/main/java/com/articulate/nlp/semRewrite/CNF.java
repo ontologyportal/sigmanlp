@@ -26,6 +26,7 @@ MA  02111-1307 USA
 import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
 import com.google.common.collect.Lists;
+import java.text.ParseException;
 
 import java.util.*;
 
@@ -34,7 +35,7 @@ import java.util.*;
  */
 public class CNF implements Comparable {
 
-    public ArrayList<Clause> clauses = new ArrayList<Clause>();
+    public List<Clause> clauses = new ArrayList<>();
     public static boolean debug = false;
     public static int varnum = 0; // to ensure unique variable renaming
 
@@ -56,8 +57,9 @@ public class CNF implements Comparable {
     public static CNF fromLiterals(Collection<Literal> lits) {
 
         CNF result = new CNF();
+        Clause c;
         for (Literal lit : lits) {
-            Clause c = new Clause();
+            c = new Clause();
             c.disjuncts.add(lit);
             result.clauses.add(c);
         }
@@ -68,9 +70,9 @@ public class CNF implements Comparable {
      * Get all predicate names that aren't procedure calls or generated
      * automatically to augment the dependency parse tags
      */
-    public HashSet<String> getPreds() {
+    public Set<String> getPreds() {
 
-        HashSet<String> result = new HashSet<>();
+        Set<String> result = new HashSet<>();
         for (Clause c : clauses) {
             for (Literal l : c.disjuncts) {
                 if (!Procedures.isProcPred(l.pred) && !Interpreter.addedTags.contains(l.pred))
@@ -87,9 +89,9 @@ public class CNF implements Comparable {
      * the token number suffix. For use in pruning application rules, this
      * routine assumes that procedures and sumo clauses are not considered.
      */
-    public HashSet<String> getTerms() {
+    public Set<String> getTerms() {
 
-        HashSet<String> result = new HashSet<>();
+        Set<String> result = new HashSet<>();
         for (Clause c : clauses) {
             for (Literal l : c.disjuncts) {
                 if (!Procedures.isProcPred(l.pred) && !Interpreter.addedTags.contains(l.pred)) {
@@ -162,12 +164,14 @@ public class CNF implements Comparable {
      */
     public CNF renameVariables() {
 
-        HashMap<String,String> varmap = new HashMap<>();
+        Map<String,String> varmap = new HashMap<>();
         CNF result = new CNF();
+        Clause newC;
+        Literal newL;
         for (Clause c : clauses) {
-            Clause newC = new Clause();
+            newC = new Clause();
             for (Literal l : c.disjuncts) {
-                Literal newL = new Literal();
+                newL = new Literal();
                 newL.pred = l.pred;
                 if (Literal.isVariable(l.arg1)) {
                     if (varmap.containsKey(l.arg1))
@@ -200,9 +204,9 @@ public class CNF implements Comparable {
 
     /** ***************************************************************
      */
-    private HashSet<Literal> getSUMOLiterals(CNF cnf) {
+    private Set<Literal> getSUMOLiterals(CNF cnf) {
 
-        HashSet<Literal> result = new HashSet<>();
+        Set<Literal> result = new HashSet<>();
         for (Clause clause1 : cnf.clauses) {
             for (Literal d1 : clause1.disjuncts) {
                 if (d1.pred.equals("sumo"))
@@ -222,9 +226,9 @@ public class CNF implements Comparable {
         //System.out.println("CNF.compareSUMOLiterals(): this: " + this);
         //System.out.println("CNF.compareSUMOLiterals(): cnf: " + cnf);
         KB kb = KBmanager.getMgr().getKB("SUMO");
-        HashSet<Literal> thisSUMO = getSUMOLiterals(this);
-        HashSet<Literal> cnfSUMO = getSUMOLiterals(cnf);
-        if (thisSUMO.size() == 0 && cnfSUMO.size() == 0)
+        Set<Literal> thisSUMO = getSUMOLiterals(this);
+        Set<Literal> cnfSUMO = getSUMOLiterals(cnf);
+        if (thisSUMO.isEmpty() && cnfSUMO.isEmpty())
             return 0;
         if (thisSUMO.size() > cnfSUMO.size())
             return 1;
@@ -232,15 +236,16 @@ public class CNF implements Comparable {
             return -1;
         int thisScore = 0;
         int cnfScore = 0;
+        int depth;
         for (Literal l : thisSUMO) {
-            int depth = kb.termDepth(l.arg1);
+            depth = kb.termDepth(l.arg1);
             //System.out.println("CNF.compareSUMOLiterals(): depth of: " + l.arg1 + "=" + depth);
             thisScore = thisScore + depth;
         }
         System.out.println("CNF.compareSUMOLiterals(): this score: " + thisScore);
 
         for (Literal l : cnfSUMO) {
-            int depth = kb.termDepth(l.arg1);
+            depth = kb.termDepth(l.arg1);
             //System.out.println("CNF.compareSUMOLiterals(): depth of: " + l.arg1 + "=" + depth);
             cnfScore = cnfScore + depth;
         }
@@ -262,8 +267,8 @@ public class CNF implements Comparable {
      */
     public int lexicalOrder(CNF cnf) {
 
-        TreeSet<String> thisSet = new TreeSet<>();
-        TreeSet<String> cnfSet = new TreeSet<>();
+        Set<String> thisSet = new TreeSet<>();
+        Set<String> cnfSet = new TreeSet<>();
         for (Clause clause1 : cnf.clauses) {
             for (Literal d1 : clause1.disjuncts)
                 cnfSet.add(d1.toString());
@@ -279,9 +284,9 @@ public class CNF implements Comparable {
     /** ***************************************************************
      * sort clauses alphabetically then compare as strings
      */
-    public TreeSet<String> toSortedLiterals() {
+    public Set<String> toSortedLiterals() {
 
-        TreeSet<String> thisSet = new TreeSet<>();
+        Set<String> thisSet = new TreeSet<>();
         for (Clause clause1 : this.clauses) {
             for (Literal d1 : clause1.disjuncts)
                 thisSet.add(d1.toString());
@@ -294,6 +299,7 @@ public class CNF implements Comparable {
      * and if those conditions aren't different, just choose lexical
      * order
      */
+    @Override
     public int compareTo(Object o) {
 
         if (!(o instanceof CNF))
@@ -321,8 +327,9 @@ public class CNF implements Comparable {
 
         StringBuilder sb = new StringBuilder();
         //sb.append("[");
+        Clause d;
         for (int i = 0; i < clauses.size(); i++) {
-            Clause d = clauses.get(i);
+            d = clauses.get(i);
             sb.append(d.toString());
             if (clauses.size() > 1 && i < clauses.size() - 1)
                 sb.append(", ");
@@ -343,9 +350,9 @@ public class CNF implements Comparable {
 
     /** ***************************************************************
      */
-    public static String toSortedString(ArrayList<CNF> cnfs) {
+    public static String toSortedString(List<CNF> cnfs) {
 
-        ArrayList<CNF> newcnfs = new ArrayList();
+        List<CNF> newcnfs = new ArrayList();
         newcnfs.addAll(cnfs);
         Collections.sort(newcnfs);
         StringBuilder sb = new StringBuilder();
@@ -396,8 +403,9 @@ public class CNF implements Comparable {
 
         System.out.println("CNF.fromListString(): " + liststring);
         CNF cnf = new CNF();
+        Literal l;
         for (String s : liststring)   {
-            Literal l = new Literal(s);
+            l = new Literal(s);
             cnf.append(l);
         }
         return cnf;
@@ -466,13 +474,14 @@ public class CNF implements Comparable {
     public CNF rest(Literal d) {
 
         CNF result = new CNF();
+        Clause newClause;
         for (Clause c : clauses) {
-            Clause newClause = new Clause();
+            newClause = new Clause();
             for (Literal d2 : c.disjuncts) {
                 if (!d2.equals(d))
                     newClause.disjuncts.add(d2);
             }
-            if (newClause.disjuncts.size() > 0)
+            if (!newClause.disjuncts.isEmpty())
                 result.clauses.add(newClause);
         }
         return result;
@@ -493,7 +502,7 @@ public class CNF implements Comparable {
      */
     public boolean empty() {
 
-        return clauses.size() == 0;
+        return clauses.isEmpty();
     }
 
     /** *************************************************************
@@ -509,9 +518,10 @@ public class CNF implements Comparable {
     public void clearBound() {
 
         //System.out.println("INFO in CNF.clearBound(): before " + this);
-        ArrayList<Clause> newclauses = new ArrayList<Clause>();
+        List<Clause> newclauses = new ArrayList<>();
+        Clause d;
         for (int i = 0; i < clauses.size(); i++) {
-            Clause d = clauses.get(i);
+            d = clauses.get(i);
             d.clearBound();
             if (!d.empty())
                 newclauses.add(d);
@@ -524,9 +534,10 @@ public class CNF implements Comparable {
     public void clearPreserve() {
 
         //System.out.println("INFO in CNF.clearBound(): before " + this);
-        ArrayList<Clause> newclauses = new ArrayList<Clause>();
+        List<Clause> newclauses = new ArrayList<>();
+        Clause d;
         for (int i = 0; i < clauses.size(); i++) {
-            Clause d = clauses.get(i);
+            d = clauses.get(i);
             d.clearPreserve();
             if (!d.empty())
                 newclauses.add(d);
@@ -553,8 +564,9 @@ public class CNF implements Comparable {
 
         if (debug) System.out.println("INFO in CNF.removeBound(): before " + this);
         CNF newCNF = new CNF();
+        Clause d;
         for (int i = 0; i < clauses.size(); i++) {
-            Clause d = clauses.get(i);
+            d = clauses.get(i);
             d.removeBound();
             if (!d.empty())
                 newCNF.clauses.add(d);
@@ -572,13 +584,15 @@ public class CNF implements Comparable {
         CNF cnf = new CNF();
         String token = "";
         try {
-            ArrayList<String> tokens = new ArrayList<String>();
+            List<String> tokens = new ArrayList<String>();
             tokens.add(Lexer.EOFToken);
             tokens.add(Lexer.ClosePar);
             tokens.add(Lexer.FullStop);
+            Clause d;
+            Literal c;
             while (!lex.testTok(tokens)) {
-                Clause d = new Clause();
-                Literal c = Literal.parse(lex, 0);
+                d = new Clause();
+                c = Literal.parse(lex, 0);
                 //if (debug) System.out.println("INFO in CNF.parseSimple(): " + c);
                 d.disjuncts.add(c);
                 cnf.clauses.add(d);
@@ -595,9 +609,9 @@ public class CNF implements Comparable {
                         System.out.println("Error in CNF.parseSimple(): Bad token: " + lex.look());
             }
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in CNF.parse(): " + message);
+            System.err.println("Error in CNF.parse(): " + message);
             ex.printStackTrace();
         }
         //if (debug) System.out.println("INFO in CNF.parseSimple(): returning: " + cnf);
@@ -610,13 +624,15 @@ public class CNF implements Comparable {
     public CNF applyBindings(Subst bindings) {
 
         CNF cnf = new CNF();
+        Clause d, dnew;
+        Literal c, c2;
         for (int i = 0; i < clauses.size(); i++) {
-            Clause d = clauses.get(i);
-            Clause dnew = new Clause();
+            d = clauses.get(i);
+            dnew = new Clause();
             for (int j = 0; j < d.disjuncts.size(); j++) {
-                Literal c = d.disjuncts.get(j);
+                c = d.disjuncts.get(j);
                 //System.out.println("INFO in CNF.applySubst(): 1 " + c);
-                Literal c2 = c.applySubst(bindings);
+                c2 = c.applySubst(bindings);
                 //System.out.println("INFO in CNF.applySubst(): 1.5 " + c2);
                 dnew.disjuncts.add(c2);
                 //System.out.println("INFO in CNF.applySubst(): 2 " + dnew);
@@ -647,7 +663,7 @@ public class CNF implements Comparable {
      * Copy bound flags to this set of clauses, overwriting existing
      * bound flags
      */
-    public void copyBoundFlags(HashSet<Clause> clauseSet) {
+    public void copyBoundFlags(Set<Clause> clauseSet) {
 
         for (int i = 0; i < clauses.size(); i++) {
             clauses.get(i);
@@ -664,8 +680,9 @@ public class CNF implements Comparable {
         if (bindnew == null)
             return bindold;
         Subst result = new Subst();
+        String oldVal;
         for (String oldKey : bindold.keySet()) {
-            String oldVal = bindold.get(oldKey);
+            oldVal = bindold.get(oldKey);
             if (bindnew.containsKey(oldVal)) {
                 result.put(oldKey, bindnew.get(oldVal));
             }
@@ -699,15 +716,16 @@ public class CNF implements Comparable {
     /** *************************************************************
      * add the "local" unifications to each of the global ones
      */
-    public HashSet<Unification> composeUnifications(HashSet<Unification> local,
-                                                    HashSet<Unification> global) {
+    public Set<Unification> composeUnifications(Set<Unification> local,
+                                                    Set<Unification> global) {
 
         if (debug) System.out.println("INFO in CNF.composeUnifications(): local subs: " + local);
         if (debug) System.out.println("INFO in CNF.composeUnifications(): global subs: " + global);
-        HashSet<Unification> result = new HashSet<>();
+        Set<Unification> result = new HashSet<>();
+        Unification u;
         if (global.isEmpty()) {
             for (Unification lu : local) {
-                Unification u = new Unification();
+                u = new Unification();
                 u.sub.putAll(lu.sub);
                 u.bound.addAll(lu.bound);
                 result.add(u);
@@ -717,7 +735,7 @@ public class CNF implements Comparable {
         }
         for (Unification gu : global) {
             for (Unification lu : local) {
-                Unification u = new Unification();
+                u = new Unification();
                 u.sub.putAll(gu.sub);
                 u.sub.putAll(lu.sub);
                 u.bound.addAll(gu.bound);
@@ -736,27 +754,33 @@ public class CNF implements Comparable {
      * consistently with some clause in cnf or the routine will return
      * null. This is the rule and argument is the sentence to match
      */
-    public HashSet<Unification> unifyNew(CNF cnf) {
+    public Set<Unification> unifyNew(CNF cnf) {
 
-        ArrayList<Subst> result = new ArrayList<>();
+        List<Subst> result = new ArrayList<>();
         Integer globalCount = 0;
-        HashSet<Unification> unis = new HashSet(); // Subst> globalSubs = new HashMap<>(); // values for variables
+        Set<Unification> unis = new HashSet(); // Subst> globalSubs = new HashMap<>(); // values for variables
+        Set<Unification> localUnis = new HashSet<>();
+        Set<String> bindFound = new HashSet<>();
+        Set<Unification> newUnis = new HashSet<>();
         //HashMap<Integer,HashSet<Clause>> globalBindings = new HashMap<>(); // bound clauses from sentence
+        Clause rcCopy, scCopy;
+        Subst sub;
+        Unification u;
         for (Clause rc : this.clauses) {
             if (debug) System.out.println("INFO in CNF.unifyNew(): check rule clause: " + rc);
-            HashSet<Unification> localUnis = new HashSet<>();
-            HashSet<String> bindFound = new HashSet<>(); // was a binding found in the argument for this global substitution value
+            localUnis.clear();
+            bindFound.clear(); // was a binding found in the argument for this global substitution value
             for (Clause sc : cnf.clauses) {
                 if (unis.isEmpty()) {
                     if (debug) System.out.println("INFO in CNF.unifyNew(): empty substitution list so far ");
-                    Clause rcCopy = rc.deepCopy();
-                    Clause scCopy = sc.deepCopy();
+                    rcCopy = rc.deepCopy();
+                    scCopy = sc.deepCopy();
                     if (debug) System.out.println("INFO in CNF.unifyNew(): check rule clause: " +
                             rcCopy + " against: " + scCopy);
-                    Subst sub = rcCopy.unify(scCopy);
+                    sub = rcCopy.unify(scCopy);
                     if (debug) System.out.println("INFO in CNF.unifyNew(): result: " + sub);
                     if (sub != null) {
-                        Unification u = new Unification();
+                        u = new Unification();
                         u.sub = sub;
                         u.bound = new HashSet<>();
                         u.bound.add(scCopy);
@@ -766,15 +790,15 @@ public class CNF implements Comparable {
                 }
                 for (Unification oneUni : unis) { // try unifying with each substitution candidate
                     if (debug) System.out.println("INFO in CNF.unifyNew(): checking with substitution: " + oneUni);
-                    Clause rcCopy = rc.deepCopy();
-                    Clause scCopy = sc.deepCopy();
+                    rcCopy = rc.deepCopy();
+                    scCopy = sc.deepCopy();
                     rcCopy = rcCopy.applyBindings(oneUni.sub); // note this is actually applying substitutions (variable bindings)
                     if (debug) System.out.println("INFO in CNF.unifyNew(): check rule clause: " +
                             rcCopy + " against: " + scCopy);
-                    Subst sub = rcCopy.unify(scCopy);
+                    sub = rcCopy.unify(scCopy);
                     if (debug) System.out.println("INFO in CNF.unifyNew(): result: " + sub);
                     if (sub != null) {
-                        Unification u = new Unification();
+                        u = new Unification();
                         u.sub = sub;
                         u.bound = new HashSet<>();
                         u.bound.add(scCopy);
@@ -784,12 +808,12 @@ public class CNF implements Comparable {
                     }
                 }
             }
-            HashSet<Unification> newUnis = new HashSet<>(); // values for variables and bindings
-            for (Unification u : unis)
-                if (bindFound.contains(u.bound.toString())) {
+            newUnis.clear(); // values for variables and bindings
+            for (Unification un : unis)
+                if (bindFound.contains(un.bound.toString())) {
                     //System.out.println("INFO in CNF.unifyNew(): keeping candidate: " + u.bound +
                     //        " with bind list " + bindFound);
-                    newUnis.add(u.deepCopy());
+                    newUnis.add(un.deepCopy());
                 }
                 //else
                 //    System.out.println("INFO in CNF.unifyNew(): no binding found for candidate: " + u.bound +
@@ -831,7 +855,7 @@ public class CNF implements Comparable {
         if (debug) System.out.println("INFO in CNF.unify(): cnf source sorted 'rule': " + this);
         if (debug) System.out.println("INFO in CNF.unify(): cnf content (argument): " + cnf);
         // HashSet<Subst> substList = this.unifyRecurse(cnf);
-        HashSet<Unification> substList = this.unifyNew(cnf);
+        Set<Unification> substList = this.unifyNew(cnf);
         if (debug) System.out.println("INFO in CNF.unifyNew(): substList: " + substList);
         if (substList == null)
             return null;

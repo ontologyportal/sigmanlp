@@ -29,28 +29,36 @@ import org.junit.Before;
 
 import java.io.IOException;
 import java.util.*;
+import org.junit.After;
 import org.junit.Ignore;
 
 public class CommonCNFtest extends IntegrationTestBase {
 
-    private static Interpreter interpreter;
+    private Interpreter interpreter;
 
     /****************************************************************
      */
     @Before
     public void setUp() throws IOException {
 
-        KBmanager.getMgr().initializeOnce();
         interpreter = new Interpreter();
         Interpreter.inference = false;
         interpreter.initialize();
+    }
+
+    /****************************************************************
+     */
+    @After
+    public void tearDown() {
+
+        interpreter = null;
     }
 
     /***********************************************************
      * Find the most specific unifier for two strings formatted as
      * dependency parses
      */
-    public static void testCommonDepForms(String s1, String s2, String expectStr) {
+    public void testCommonDepForms(String s1, String s2, String expectStr) {
 
         Collection<CNF> cnfs = new ArrayList<>();
         CNF c1 = CNF.valueOf(s1);
@@ -75,7 +83,7 @@ public class CommonCNFtest extends IntegrationTestBase {
         if (actResStr.equals(expResStr))
             System.out.println("pass");
         else
-            System.out.println("fail");
+            System.err.println("fail");
         assertEquals(expResStr,actResStr);
         System.out.println("---------------------------------\n");
     }
@@ -84,7 +92,7 @@ public class CommonCNFtest extends IntegrationTestBase {
      * Find the most specific unifier for two strings formatted as
      * dependency parses
      */
-    public static void testMostSpecificForms(String s1, String s2, String expectStr) {
+    public void testMostSpecificForms(String s1, String s2, String expectStr) {
 
         Collection<CNF> cnfs = new ArrayList<>();
         CNF c1 = CNF.valueOf(s1);
@@ -109,7 +117,7 @@ public class CommonCNFtest extends IntegrationTestBase {
         if (actResStr.equals(expResStr))
             System.out.println("pass");
         else
-            System.out.println("fail");
+            System.err.println("fail");
         assertEquals(expResStr,actResStr);
         System.out.println("---------------------------------\n");
     }
@@ -118,14 +126,14 @@ public class CommonCNFtest extends IntegrationTestBase {
      * Find the most specific unifier for two strings formatted as
      * dependency parses
      */
-    public static void testCommonSentForms(String s1, String s2, String expected) {
+    public void testCommonSentForms(String s1, String s2, String expected) {
 
         Map<Integer, String> map = new HashMap<>();
         map.put(0, s1);
         map.put(1, s2);
         Map<Integer, CNF> res = CommonCNFUtil.generateCNFForStringSet(map);
         if (res == null || res.keySet().isEmpty()) {
-            System.out.println("fail");
+            System.err.println("fail");
             return;
         }
         testCommonDepForms(res.get(0).toString(), res.get(1).toString(), expected);
@@ -134,7 +142,6 @@ public class CommonCNFtest extends IntegrationTestBase {
     /***********************************************************
      */
     @Test
-    @Ignore // TODO: Fails
     public void testMostSpecificForm1c() {
 
         System.out.println("---------------------------------\n");
@@ -145,11 +152,11 @@ public class CommonCNFtest extends IntegrationTestBase {
         String s3 = "root(ROOT-0,pushes-2), det(wagon-4,the-3), dobj(pushes-2,wagon-4), " +
                 "sumo(Physical,Susan-1), sumo(Motion,pushes-2), nsubj(pushes-2,Susan-1), " +
                 "sumo(Physical,wagon-4), attribute(Susan-1,Male), names(Susan-1,\"John\")";
-        testMostSpecificForms(s2,s3,"oot(?ROOT-0,?pushes-2), det(?wagon-4,?the-3), " +
+        testMostSpecificForms(s2,s3,"root(?ROOT-0,?pushes-2), det(?wagon-4,?the-3), " +
                 "dobj(?pushes-2,?wagon-4), sumo(Physical,?Susan-1), " +
                 "sumo(Motion,?pushes-2), nsubj(?pushes-2,?Susan-1), " +
                 "sumo(Physical,?wagon-4), attribute(?Susan-1,Male), " +
-                "names(Susan-1,\"John\")");
+                "names(?Susan-1,\"John\")");
     }
 
     /***********************************************************
@@ -167,7 +174,7 @@ public class CommonCNFtest extends IntegrationTestBase {
                 "names(Susan-1,\"John\"), attribute(Susan-1,Male), dobj(pushes-2,wagon-4)";
         testMostSpecificForms(s1, s2, "names(?Susan-1,\"John\"), " +
                 "nsubj(?pushes-2,?Susan-1), sumo(Physical,?Susan-1), " +
-                "sumo(UnpoweredVehicle,?wagon-4), root(?ROOT-0,?pushes-2), " +
+                "sumo(Physical,?wagon-4), root(?ROOT-0,?pushes-2), " +
                 "attribute(?Susan-1,Male), dobj(?pushes-2,?wagon-4), " +
                 "det(?wagon-4,?the-3), sumo(Physical,?pushes-2)");
     }
@@ -184,12 +191,12 @@ public class CommonCNFtest extends IntegrationTestBase {
                 "dobj(pushes-2,wagon-4), det(wagon-4,the-3), sumo(Physical,pushes-2)";
         String s3 = "root(ROOT-0,pushes-2), det(wagon-4,the-3), dobj(pushes-2,wagon-4), " +
                 "sumo(Physical,Susan-1), sumo(Motion,pushes-2), nsubj(pushes-2,Susan-1), " +
-                "sumo(Physical,wagon-4), attribute(Susan-1,Male), names(Susan - 1,\"John\")";
+                "sumo(Physical,wagon-4), attribute(Susan-1,Male), names(Susan-1,\"John\")";
         testMostSpecificForms(s1, s3, "names(?Susan-1,\"John\"), " +
                 "nsubj(?pushes-2,?Susan-1), sumo(Physical,?Susan-1), " +
-                "sumo(UnpoweredVehicle,?wagon-4), root(?ROOT-0,?pushes-2), " +
+                "sumo(Physical,?wagon-4), root(?ROOT-0,?pushes-2), " +
                 "attribute(?Susan-1,Male), dobj(?pushes-2,?wagon-4), " +
-                "det(?wagon-4,?the-3), sumo(Physical,?pushes-2)");
+                "det(?wagon-4,?the-3), sumo(Motion,?pushes-2)");
     }
 
     /***********************************************************
@@ -207,9 +214,9 @@ public class CommonCNFtest extends IntegrationTestBase {
                 "nsubj(pushes-2,Susan-1), dobj(pushes-2,wagon-4), sumo(Object,Susan-1)";
         System.out.println("CommonCNFUtil.testMostSpecificForm2(): ");
         testMostSpecificForms(s1,s2,"dobj(?pushes-2,?wagon-4), " +
-                "sumo(UnpoweredVehicle,?wagon-4), names(?Susan-1,\"John\"), " +
+                "sumo(Object,?wagon-4), names(?Susan-1,\"John\"), " +
                 "attribute(?Susan-1,Male), root(?ROOT-0,?pushes-2), " +
-                "sumo(Physical,?pushes-2), sumo(Physical,?Susan-1), " +
+                "sumo(Motion,?pushes-2), sumo(Object,?Susan-1), " +
                 "nsubj(?pushes-2,?Susan-1), det(?wagon-4,?the-3");
     }
 

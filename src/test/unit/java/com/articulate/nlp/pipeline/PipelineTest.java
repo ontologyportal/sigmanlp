@@ -23,6 +23,7 @@ MA  02111-1307 USA
 
 import com.articulate.nlp.UnitTestBase;
 import edu.stanford.nlp.pipeline.Annotation;
+import static org.junit.Assert.assertFalse;
 import org.junit.Test;
 
 public class PipelineTest extends UnitTestBase {
@@ -32,6 +33,8 @@ public class PipelineTest extends UnitTestBase {
 
         String text = "John kicked the cart to East New Britain. He went there too.";
         Annotation document = Pipeline.toAnnotation(text);
+
+        assertFalse(document.keySet().isEmpty());
 
         SentenceUtil.printSentences(document);
         SentenceUtil.printCorefChain(document);

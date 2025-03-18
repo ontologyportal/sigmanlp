@@ -1,25 +1,25 @@
+# Build status
+
+![badge](https://github.com/ontologyportal/sigmanlp/actions/workflows/ant.yml/badge.svg)
+
+# Test status
+
+![badge](https://github.com/ontologyportal/sigmanlp/actions/workflows/test-report.yml/badge.svg)
+
 Installation
 ============
 
-First follow the instructions to install sigmakee at https://github.com/ontologyportal/sigmakee.\
-Check the version number of the CoreNLP zip that you download and unzip and modify paths\
-accordingly. For macOS, replace .bashrc with .zshrc
+First, follow the instructions to install [sigmakee](https://github.com/ontologyportal/sigmakee)\
+For macOS, replace .bashrc with .zshrc
 
-In your .bashrc/.zshrc you'll need to have a greater heap space allocation than for sigmakee alone
 ```sh
 cd ~
-echo "export CORPORA=$ONTOLOGYPORTAL_GIT/sigmanlp/corpora" >> .bashrc
-export CATALINA_OPTS="$CATALINA_OPTS -Xmx10g -Xss1m" >> .bashrc
+echo "## SigmaNLP" >> .bashrc
+echo "export CORPORA=\"\$ONTOLOGYPORTAL_GIT/sigmanlp/corpora\"" >> .bashrc
+echo "export SIGMANLP_CP=\"\$ONTOLOGYPORTAL_GIT/sigmanlp/build/sigmanlp.jar:$ONTOLOGYPORTAL_GIT/sigmanlp/lib/*\"" >> .bashrc
 source ~/.bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
-cd ~/Programs
-wget 'https://nlp.stanford.edu/software/stanford-corenlp-4.5.7.zip'
-unzip stanford-corenlp-4.5.7.zip
-rm stanford-corenlp-4.5.7.zip
-cd ~/Programs/stanford-corenlp-full-4.5.7/
-cp ~/Programs/stanford-corenlp-4.5.7/stanford-corenlp-4.5.7.jar ~/workspace/sigmanlp/lib
-cp ~/Programs/stanford-corenlp-4.5.7/stanford-corenlp-4.5.7-models.jar ~/workspace/sigmanlp/lib
 cd ~/workspace/sigmanlp
 ant
 ```
@@ -29,22 +29,24 @@ To keep this repository updated
 ant update.sigmanlp
 ```
 
-Then follow the steps in "Account Management" below before proceeding
+# Test SigmaNLP on the command line
+```sh
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP com.articulate.nlp.semRewrite.Interpreter -i
+```
 
 Account Management
 ==================
 
-Add the following to your $CATALINA_HOME/conf/context.xml
-<Context crossContext="true">
+Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace\
+/home/theuser with your info:
 
-Add the following line to your $SIGMA_HOME/KBs/config.xml file, but replace '~' with the full path
-and "latest" with you're version of stanford-corenlp:
+```xml
+<preference name="englishPCFG" value="/home/theuser/Programs/stanford-corenlp-latest/stanford-corenlp-4.5.7-models.jar"/>
+```
 
-  <preference name="englishPCFG" value="~/Programs/stanford-corenlp-latest/stanford-corenlp-latest-models.jar"/>
-
-** NOTE: If you see a java.io.StreamCorruptedException being thrown in the
-   output console, then comment out the above "preference" element from your
-   $SIGMA_HOME/KBs/config.xml file. SigmaNLP will work without that particular
+** NOTE: If you see a java.io.StreamCorruptedException being thrown in the\
+   console, then comment out the above "preference" element from your\
+   $SIGMA_HOME/KBs/config.xml. SigmaNLP will work without that particular\
    element
 
 If you want to run sigmanlp's web interface then:
@@ -52,31 +54,40 @@ If you want to run sigmanlp's web interface then:
 ant dist
 ```
 
-Start Tomcat with:
+# Start Tomcat with:
 ```sh
 $CATALINA_HOME/bin/startup.sh
 ```
+Open a browser with:
+```url
 http://localhost:8080/sigmanlp/NLP.jsp
-
-If you want to make a link to the NLP tools available from Sigma's various jsp pages then include
-the following in your config.xml
-
-  <preference name="nlpTools" value="yes" />
-
-To run on the command line, try
+admin/admin
+```
+# Stop Tomcat with:
 ```sh
-java -Xmx10g -Xss1m -cp $ONTOLOGYPORTAL_GIT/sigmanlp/build/classes:$ONTOLOGYPORTAL_GIT/sigmanlp/lib/* com.articulate.nlp.semRewrite.Interpreter -i
+$CATALINA_HOME/bin/shutdown.sh
 ```
 
-jUnit
-=====
+If you want to make a link to the NLP tools available from Sigma's various jsp\
+pages then include the following in your $SIGMA_HOME/KBs/config.xml
+
+```xml
+<preference name="nlpTools" value="yes"/>
+```
+
+jUnit ANT
+=========
 ```sh
-java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
-/home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
+ant test
+```
+
+jUnit CLI
+=========
+```sh
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllUnitSemRewrite
 
-java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
-/home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllSemRewriteIntegTest
 ```
 

@@ -1,0 +1,72 @@
+<!--https://ant.apache.org/ivy/history/2.5.1/tutorial/conf.html-->
+<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd"
+       xmlns:m="http://ant.apache.org/ivy/maven">
+    <info organisation="org.ontologyportal" module="SigmaNLP"/>
+    <configurations>
+        <conf name="api" description="Provide API"/>
+        <conf name="test" extends="api" visibility="private" description="For testing our API"/>
+    </configurations>
+    <publications>
+        <artifact name="filter-api" type="jar" conf="api" ext="jar"/>
+    </publications>
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk -->
+        <!--<dependency org="com.amazonaws" name="aws-java-sdk-core" rev="1.11.83" conf="api->default"/>-->
+        <dependency org="com.amazonaws" name="aws-java-sdk-kms" rev="1.11.83" conf="api->default">
+            <exclude name="jmespath-java"/>
+        </dependency>
+        <dependency org="com.esotericsoftware" name="kryo" rev="5.6.2" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/com.googlecode.efficient-java-matrix-library/ejml -->
+        <dependency org="com.googlecode.efficient-java-matrix-library" name="ejml" rev="0.23" conf="api->default"/>
+        <dependency org="com.google.guava" name="guava" rev="19.0" transitive="false" conf="api->default"/>
+        <dependency org="com.googlecode.json-simple" name="json-simple" rev="1.1.1" transitive="false" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
+        <dependency org="com.opencsv" name="opencsv" rev="3.8" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-impl -->
+        <dependency org="com.sun.xml.bind" name="jaxb-impl" rev="2.4.0-b180830.0438" conf="api->default"/>
+        <dependency org="commons-beanutils" name="commons-beanutils" rev="1.9.2" conf="api->default"/>
+        <dependency org="commons-codec" name="commons-codec" rev="1.9" conf="api->default"/>
+        <dependency org="commons-collections" name="commons-collections" rev="3.2.1" conf="api->default"/>
+        <dependency org="commons-io" name="commons-io" rev="2.5" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
+        <dependency org="com.h2database" name="h2" rev="2.3.232" transitive="false" conf="api->default"/>
+        <dependency org="com.servlets" name="cos" rev="09May2002" transitive="false" conf="api->default"/>
+        <dependency org="edu.stanford.nlp" name="stanford-corenlp" rev="4.5.7" conf="api->default">
+            <artifact name="stanford-corenlp"/>
+            <artifact name="stanford-corenlp" m:classifier="models"/>
+            <exclude name="AppleJavaExtensions"/>
+            <exclude name="apiguardian"/>
+            <exclude name="ejml-cdense"/>
+            <exclude name="ejml-dsparse"/>
+            <exclude name="ejml-fdense"/>
+            <exclude name="ejml-fsparse"/>
+            <exclude name="ejml-zdense"/>
+            <exclude name="jakarta.servlet-api"/>
+            <exclude name="jsr305"/>
+            <exclude name="lucene-queries"/>
+            <exclude name="lucene-sandbox"/>
+            <exclude name="xalan"/>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/io.github.ollama4j/ollama4j -->
+        <dependency org="io.github.ollama4j" name="ollama4j" rev="1.0.93" conf="api->default">
+            <exclude name="jsoup"/>
+        </dependency>
+        <dependency org="javax.mail" name="mail" rev="1.4.7" transitive="false" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api -->
+        <dependency org="javax.xml.bind" name="jaxb-api" rev="2.4.0-b180830.0359" conf="api->default"/>
+        <dependency org="org.antlr" name="antlr4-runtime" rev="4.9.3" transitive="false" conf="api->default"/>
+        <dependency org="org.apache.commons" name="commons-lang3" rev="3.12.0" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient -->
+        <!--<dependency org="org.apache.httpcomponents" name="httpclient" rev="4.5.2" conf="api->default"/>-->
+        <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpcore -->
+        <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.4.4" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/org.apache.tomcat/tomcat-servlet-api -->
+        <dependency org="org.apache.tomcat" name="tomcat-servlet-api" rev="9.0.97" transitive="false" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
+        <dependency org="org.slf4j" name="slf4j-simple" rev="2.0.9" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
+        <dependency org="org.xerial" name="sqlite-jdbc" rev="3.47.2.0" conf="api->default"/>
+        <dependency org="junit" name="junit" rev="4.13.2" conf="test->default"/>
+    </dependencies>
+</ivy-module>

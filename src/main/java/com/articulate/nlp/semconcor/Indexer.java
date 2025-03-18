@@ -1,32 +1,26 @@
 package com.articulate.nlp.semconcor;
 
+import com.articulate.nlp.corpora.CorpusReader;
+import com.articulate.nlp.corpora.OntoNotes;
+import com.articulate.nlp.semRewrite.*;
+import com.articulate.sigma.KBmanager;
+import com.articulate.sigma.utils.StringUtil;
+
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.articulate.nlp.TFIDF;
-import com.articulate.nlp.corpora.CorpusReader;
-import com.articulate.nlp.corpora.OntoNotes;
-import com.articulate.nlp.corpora.CLCFCE;
-import com.articulate.nlp.pipeline.Pipeline;
-import com.articulate.nlp.pipeline.SentenceUtil;
-import com.articulate.nlp.semRewrite.*;
-import com.articulate.sigma.KBmanager;
-import com.articulate.sigma.utils.StringUtil;
-import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.util.CoreMap;
-
-import com.articulate.nlp.pipeline.Pipeline;
-import com.articulate.nlp.corpora.wikipedia.SimpleSentenceExtractor;
 /*
 Author: Adam Pease apease@articulatesoftware.com
 
@@ -78,8 +72,8 @@ DB schema created in createDB() is
 public class Indexer {
 
     public static final int tokensMax = 25;
-    //public static final String JDBCString = "jdbc:h2:~/corpora/transJudge";
-    public static final String JDBCString = "jdbc:h2:~/corpora/FCE";
+    //public static final String JDBC_STRING = "jdbc:h2: + System.getenv("CORPORA") + "/transJudge";
+    public static final String JDBC_STRING = "jdbc:h2:" + System.getenv("CORPORA") + "/FCE";
     public static String UserName = "sa";
     public static int startline = 0;
 
@@ -114,7 +108,7 @@ public class Indexer {
             for (Literal l : c.disjuncts) {
                 if (!Procedures.isProcPred(l.pred)) {
                     if (Literal.tokenNum(l.arg1) != -1 && Literal.tokenNum(l.arg2) != -1) {
-                        if (result.toString() == "")
+                        if ("".equals(result.toString()))
                             result.append(",");
                         result.append(l.toString());
                     }
@@ -146,8 +140,8 @@ public class Indexer {
                 stmt.execute(str);
             }
         }
-        catch(Exception e) {
-            System.out.println(e.getMessage());
+        catch(SQLException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -165,8 +159,8 @@ public class Indexer {
                     file + "', '" + sentnum + "', '" + linenum + "');");
             storeCount(conn, token);
         }
-        catch(Exception e) {
-            System.out.println(e.getMessage());
+        catch(SQLException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -184,8 +178,8 @@ public class Indexer {
                     file + "', '" + sentnum + "', '" + linenum + "');");
             storeCount(conn, token);
         }
-        catch(Exception e) {
-            System.out.println(e.getMessage());
+        catch(SQLException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -196,10 +190,7 @@ public class Indexer {
 
         Pattern p = Pattern.compile("(\\d,\\d\\d\\d[^\\d])");
         Matcher m = p.matcher(s);
-        if (m.find())
-            return true;
-        else
-            return false;
+        return m.find();
     }
 
     /****************************************************************
@@ -235,25 +226,28 @@ public class Indexer {
             sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
         }
         catch (Exception e) {
-            System.out.println("Error in extractOneAugmentLine(): " + e.getMessage());
+            System.err.println("Error in extractOneAugmentLine(): " + e.getMessage());
             e.printStackTrace();
             return;
         }
         int sentnum = 0;
+        List<CoreLabel> tokens;
+        CNF cnf;
+        List<String> dependenciesList;
+        String str, sent, dep;
         for (CoreMap sentence : sentences) {
             System.out.println("extractOneAugmentLine(): sentence: " + sentence);
             sentnum++;
-            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             if (tokens.size() > 2 && tokens.size() < limit &&
                     initialCapital(tokens) && endPunctuation(tokens)) {
-                CNF cnf = interp.interpretGenCNF(sentence);
-                List<String> dependenciesList = cnf.toListString();
-                try {
-                    String str = "insert into content (cont,dependency,file,sentnum,linenum) values ";
-                    Statement stmt = conn.createStatement();
-                    String sent = sentence.toString();
+                cnf = interp.interpretGenCNF(sentence);
+                dependenciesList = cnf.toListString();
+                try (Statement stmt = conn.createStatement()) {
+                    str = "insert into content (cont,dependency,file,sentnum,linenum) values ";
+                    sent = sentence.toString();
                     sent = sent.replaceAll("'","''");
-                    String dep = dependenciesList.toString();
+                    dep = dependenciesList.toString();
                     dep = dep.replaceAll("'","''");
                     str = str + "('" + sent + "', '" +
                             dep + "', '" + file + "', '" +
@@ -271,8 +265,8 @@ public class Indexer {
                         storeDependency(conn,file,sentnum,linenum,l.pred);
                     }
                 }
-                catch(Exception e) {
-                    System.out.println(e.getMessage());
+                catch(SQLException e) {
+                    System.err.println(e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -288,8 +282,8 @@ public class Indexer {
         try {
             interp.initialize();
         }
-        catch (Exception e) {
-            System.out.println("Error in Indexer.storeCorpusText(): " + e.getMessage());
+        catch (IOException e) {
+            System.err.println("Error in Indexer.storeCorpusText(): " + e.getMessage());
             e.printStackTrace();
             return;
         }
@@ -299,18 +293,19 @@ public class Indexer {
             Files.walk(Paths.get(dir)).forEach(filePath -> {
                 if (Files.isRegularFile(filePath) &&
                         filePath.toString().endsWith(".txt")) {
-                    ArrayList<String> doc = OntoNotes.readFile(filePath.toString());
+                    List<String> doc = OntoNotes.readFile(filePath.toString());
                     System.out.println("storeCorpusText(): " + filePath.toString());
+                    String line;
                     for (int i = 0; i < doc.size(); i++) {
-                        String line = doc.get(i);
+                        line = doc.get(i);
                         if (line.matches("\\d*[\\.\\)] .*"))
                             extractOneAugmentLine(interp,conn,line,tokensMax,filePath.getFileName().toString(),i);
                     }
                 }
             });
         }
-        catch(Exception e) {
-            System.out.println(e.getMessage());
+        catch(IOException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -326,23 +321,25 @@ public class Indexer {
         try {
             interp.initialize();
         }
-        catch (Exception e) {
-            System.out.println("Error in Indexer.storeDocCorpusText(): " + e.getMessage());
+        catch (IOException e) {
+            System.err.println("Error in Indexer.storeDocCorpusText(): " + e.getMessage());
             e.printStackTrace();
             return;
         }
         try {
+            List<String> doc;
+            String line;
             for (String fname : docs.keySet()) {
-                ArrayList<String> doc = docs.get(fname);
+                doc = docs.get(fname);
                 System.out.println("Info in storeDocCorpusText(): processing file: " + fname);
                 for (int i = 0; i < doc.size(); i++) {
-                    String line = doc.get(i);
+                    line = doc.get(i);
                     extractOneAugmentLine(interp,conn,line,tokensMax,fname,i);
                 }
             }
         }
-        catch(Exception e) {
-            System.out.println(e.getMessage());
+        catch (Exception e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -359,19 +356,18 @@ public class Indexer {
         try {
             interp.initialize();
         }
-        catch (Exception e) {
-            System.out.println("Error in Indexer.storeWikiText(): " + e.getMessage());
+        catch (IOException e) {
+            System.err.println("Error in Indexer.storeWikiText(): " + e.getMessage());
             e.printStackTrace();
             return;
         }
-        int count = 0;
         try {
             String corporaDir = System.getenv("CORPORA");
             String file = "wikipedia2text-extracted.txt";
             InputStream in = new FileInputStream(corporaDir + "/wikipedia/" + file);
             Reader reader = new InputStreamReader(in);
             LineNumberReader lnr = new LineNumberReader(reader);
-            String line = null;
+            String line;
             if (startline > 0) {
                 while ((line = lnr.readLine()) != null && lnr.getLineNumber() < startline);
             }
@@ -385,8 +381,8 @@ public class Indexer {
             System.out.println("time to process: " + seconds + " seconds");
             System.out.println("time to process: " + (seconds / maxSent) + " seconds per sentence");
         }
-        catch(Exception e) {
-            System.out.println(e.getMessage());
+        catch (IOException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -396,8 +392,8 @@ public class Indexer {
      */
     public static void clearDB(Connection conn) throws Exception {
 
-        Statement stmt = null;
-        ArrayList<String> commands = new ArrayList<>();
+        Statement stmt = conn.createStatement();
+        List<String> commands = new ArrayList<>();
         String query = "delete from index";
         commands.add(query);
         query = "delete from depindex";
@@ -406,20 +402,26 @@ public class Indexer {
         commands.add(query);
         query = "delete from content";
         commands.add(query);
-        for (String s : commands) {
-            stmt = conn.createStatement();
-            boolean res = stmt.execute(s);
+        try {
+            for (String s : commands) {
+                stmt.execute(s);
+            }
+        } catch (SQLException e ) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        } finally {
+            stmt.close();
         }
     }
 
     /***************************************************************
-     * clear all the database content
+     * create the database content
      */
     public static void createDB(Connection conn) throws Exception {
 
         System.out.println("createDB()");
-        Statement stmt = null;
-        ArrayList<String> commands = new ArrayList<>();
+        Statement stmt = conn.createStatement();
+        List<String> commands = new ArrayList<>();
         String command = "CREATE TABLE COUNTS(TOKEN VARCHAR(50), COUNT INT);";
         commands.add(command);
         command = "CREATE TABLE DEPINDEX(TOKEN VARCHAR(50),FILE VARCHAR(100),SENTNUM INT,LINENUM INTEGER);";
@@ -430,14 +432,37 @@ public class Indexer {
         commands.add(command);
         try {
             for (String s : commands) {
-                stmt = conn.createStatement();
-                boolean res = stmt.execute(s);
+                stmt.execute(s);
             }
         }
         catch (SQLException e ) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        } finally {
+            stmt.close();
+        }
+    }
+
+    /***************************************************************
+     * Checks the database content for a particular table before
+     * writing to it
+     * @param conn the DB connection for checking
+     * @param table the table to check for
+     * @return true if table is found
+     */
+    public static boolean checkForTable(Connection conn, String table) {
+
+        boolean retVal = false;
+        try {
+            DatabaseMetaData dbm = conn.getMetaData();
+            try (ResultSet tables = dbm.getTables(null, null, table, null)) {
+                retVal = tables.next();
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
+        return retVal;
     }
 
     /***************************************************************
@@ -457,11 +482,10 @@ public class Indexer {
 
         System.out.println();
         KBmanager.getMgr().initializeOnce();
-        Class.forName("org.h2.Driver");
         Connection conn = null;
         String corporaDir = System.getenv("CORPORA");
         if (args != null && args.length > 1 && args[0].equals("-i")) {
-            conn = DriverManager.getConnection("jdbc:h2:~/corpora/" + args[1], UserName, "");
+            conn = DriverManager.getConnection("jdbc:h2:" + corporaDir + args[1], UserName, "");
             storeCorpusText(conn);
         }
         else if (args != null && args.length > 2 && args[0].equals("-w")) {
@@ -481,18 +505,19 @@ public class Indexer {
                 dbFilename = args[1];
             try {
                 conn = DriverManager.getConnection("jdbc:h2:" + corporaDir + File.separator + dbFilename, UserName, "");
-                clearDB(conn);
+                if (checkForTable(conn, "INDEX"))
+                    clearDB(conn);
+                else
+                    createDB(conn);
             }
             catch (SQLException e ) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
                 e.printStackTrace();
-                createDB(conn);
             }
             System.out.println("cleared/created db");
         }
-        else {
+        else
             help();
-        }
         conn.close();
     }
 }

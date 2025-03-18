@@ -23,6 +23,7 @@ MA  02111-1307 USA
 
 import java.text.ParseException;
 import java.util.HashSet;
+import java.util.Set;
 
 /** *************************************************************
  * Rule ::= LHS ==> RHS.     Obligatory rewrite
@@ -43,8 +44,8 @@ public class Rule {
     public RHS rhs;
     public Literal clause;
     public int startLine = -1;
-    public HashSet<String> preds = new HashSet<>(); // all non-procedure predicates in cnf
-    public HashSet<String> terms = new HashSet<>(); // all non-variable terms in non-procedure predicates in cnf
+    public Set<String> preds = new HashSet<>(); // all non-procedure predicates in cnf
+    public Set<String> terms = new HashSet<>(); // all non-variable terms in non-procedure predicates in cnf
 
     /** ***************************************************************
      */
@@ -150,11 +151,12 @@ public class Rule {
                 r.clause = Literal.parse(lex,r.startLine);
             }
             else {
+                LHS newlhs;
                 do {
                     r.lhs = LHS.parse(lex,r.startLine);
                     if (lex.testTok(Lexer.Comma)) {
                         lex.next();
-                        LHS newlhs = new LHS();
+                        newlhs = new LHS();
                         newlhs.lhs1 = r.lhs;
                         newlhs.operator = LHS.LHSop.AND;
                         newlhs.lhs2 = LHS.parse(lex, r.startLine);
@@ -183,7 +185,7 @@ public class Rule {
         }
         catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in RULE.parse(): " + message);
+            System.err.println("Error in RULE.parse(): " + message);
             ex.printStackTrace();
         }
         r.cnf = Clausifier.clausify(r.lhs);

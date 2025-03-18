@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307 USA 
+MA  02111-1307 USA
 */
 
 import com.articulate.nlp.RelExtract;
@@ -32,14 +32,13 @@ import edu.stanford.nlp.trees.Dependency;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** *************************************************************
- * pred(arg1,arg2).  
- * arg1 and/or arg2 can be variables which are denoted by a 
+ * pred(arg1,arg2).
+ * arg1 and/or arg2 can be variables which are denoted by a
  * leading '?'
  * The literal can be negated.  It also has flags for whether it
  * needs to be preserved, rather than consumed, during unification,
@@ -150,9 +149,9 @@ public class Literal implements Comparable {
             if (isVariable(arg2))
                 clArg2.set(LanguageFormatter.VariableAnnotation.class,arg2);
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Literal() " + message);
+            System.err.println("Error in Literal() " + message);
             ex.printStackTrace();
         }
     }
@@ -249,7 +248,7 @@ public class Literal implements Comparable {
      */
     public static ArrayList<String> stringToStringLiteralList(String depParse) {
 
-        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> result = new ArrayList<>();
         Lexer lex = new Lexer(StringUtil.removeEnclosingCharPair(depParse, 1, '[', ']'));
         CNF depcnf = CNF.parseSimple(lex);
 
@@ -263,9 +262,9 @@ public class Literal implements Comparable {
 
     /****************************************************************
      */
-    public static ArrayList<Literal> stringToLiteralList(String depParse) {
+    public static List<Literal> stringToLiteralList(String depParse) {
 
-        ArrayList<Literal> result = new ArrayList<Literal>();
+        List<Literal> result = new ArrayList<>();
         Lexer lex = new Lexer(StringUtil.removeEnclosingCharPair(depParse, 1, '[', ']'));
         CNF depcnf = CNF.parseSimple(lex);
 
@@ -423,7 +422,7 @@ public class Literal implements Comparable {
     /** ***************************************************************
      */
     public String toString() {
-        
+
         StringBuilder sb = new StringBuilder();
         if (bound)
             sb.append("X");
@@ -431,7 +430,7 @@ public class Literal implements Comparable {
             sb.append("~");
         if (preserve)
             sb.append("+");
-        sb.append(pred + "(" + arg1 + "," + arg2 + ")");
+        sb.append(pred).append("(").append(arg1).append(",").append(arg2).append(")");
         return sb.toString();
     }
 
@@ -452,7 +451,7 @@ public class Literal implements Comparable {
         String secondArg = arg2;
         if (!StringUtil.emptyString(clArg2.getString(LanguageFormatter.VariableAnnotation.class)))
             secondArg = clArg2.getString(LanguageFormatter.VariableAnnotation.class);
-        sb.append(pred + "(" + firstArg + "," + secondArg + ")");
+        sb.append(pred).append("(").append(firstArg).append(",").append(secondArg).append(")");
         RelExtract.printCoreLabel(clArg1);
         RelExtract.printCoreLabel(clArg2);
 
@@ -469,7 +468,7 @@ public class Literal implements Comparable {
     /** ***************************************************************
      */
     public Literal deepCopy() {
-        
+
         Literal newc = new Literal();
         newc.negated = negated;
         newc.preserve = preserve;
@@ -479,12 +478,12 @@ public class Literal implements Comparable {
         newc.arg2 = arg2;
         return newc;
     }
-    
+
     /** ***************************************************************
      */
     @Override
     public boolean equals(Object o) {
-    
+
         if (!(o instanceof Literal))
             return false;
         Literal c = (Literal) o;
@@ -494,11 +493,9 @@ public class Literal implements Comparable {
             return false;
         if (!arg1.equals(c.arg1))
             return false;
-        if (!arg2.equals(c.arg2))
-            return false;
-        return true;
+        return arg2.equals(c.arg2);
     }
-    
+
     /** ***************************************************************
      * @return true if the clause does not contain any variables
      */
@@ -506,12 +503,9 @@ public class Literal implements Comparable {
 
         if (arg1 == null || arg2 == null)
             System.out.println("Error in Literal.isGround(): null argument in : " + this);
-        if (arg1 != null && !arg1.startsWith("?") && arg2 != null && !arg2.startsWith("?"))
-            return true;
-        else
-            return false;
+        return arg1 != null && !arg1.startsWith("?") && arg2 != null && !arg2.startsWith("?");
     }
-    
+
     /** *************************************************************
      * If the tokens in the literal are derived from words parsed
      * from the Stanford dependency parser, and therefore in the form
@@ -519,7 +513,7 @@ public class Literal implements Comparable {
      * it's a variable.
      */
     public void preProcessQuestionWords(List<String> qwords) {
-        
+
         for (String s: qwords) {
             System.out.println("INFO in Literal.preProcessQuestionWords(): " + s + " " + arg1 + " " + arg2);
             if (arg1.toLowerCase().matches(s.toLowerCase() + "-\\d+"))
@@ -528,12 +522,12 @@ public class Literal implements Comparable {
                 arg2 = "?" + arg2;
         }
     }
-    
+
     /** ***************************************************************
-     * Apply variable substitutions to a literal  
+     * Apply variable substitutions to a literal
      */
     public void applyBindingSelf(Subst bindings) {
-        
+
         if (arg1.startsWith("?")) {
             if (bindings.containsKey(arg1))
                 arg1 = bindings.get(arg1);
@@ -543,12 +537,12 @@ public class Literal implements Comparable {
                 arg2 = bindings.get(arg2);
         }
     }
-    
+
     /** ***************************************************************
-     * @return a literal after applying variable substitutions to a literal  
+     * @return a literal after applying variable substitutions to a literal
      */
     public Literal applySubst(Subst bindings) {
-        
+
         //System.out.println("INFO in Literal.applySubst(): this: " + this);
         //System.out.println("INFO in Literal.applySubst(): bindings: " + bindings);
         Literal c = new Literal();
@@ -580,36 +574,33 @@ public class Literal implements Comparable {
         //System.out.println("INFO in Literal.applySubst(): returning this: " + c);
         return c;
     }
-    
+
     /** ***************************************************************
      * @return a boolean indicating whether a variable occurs in a literal.
      * This is a degenerate case of general case of occurs check during
-     * unification, since we have no functions and argument lists are 
+     * unification, since we have no functions and argument lists are
      * always of length 2.
      */
     private static boolean occursCheck(String t, Literal c) {
-        
-        if (t.equals(c.arg1) || t.equals(c.arg2))
-            return true;
-        else
-            return false;
+
+        return t.equals(c.arg1) || t.equals(c.arg2);
     }
-    
+
     /** ***************************************************************
-     * @return false if there are wildcards and they don't match (or 
+     * @return false if there are wildcards and they don't match (or
      * there's an error) and true if there are no wildcards.  Match
      * is case-insensitive.  Wildcards only allow for ignoring the
      * word-number suffix as in wildcard-5 would match wildcard*.
      */
     private static boolean wildcardMatch(String t1, String t2) {
-        
+
         //System.out.println("INFO in Literal.wildcardMatch(): attempting to match: " + t1 + " " + t2);
         String s1 = t1;
         String s2 = t2;
         if (!t1.contains("*") && !t2.contains("*")) // no wildcards case should fall through
             return true;
         if (t1.contains("*") && t2.contains("*")) {
-            System.out.println("Error in Literal.wildcardMatch(): both arguments have wildcards: " + t1 + " " + t2);
+            System.err.println("Error in Literal.wildcardMatch(): both arguments have wildcards: " + t1 + " " + t2);
             return false;
         }
         if (t2.contains("*")) {
@@ -623,7 +614,7 @@ public class Literal implements Comparable {
         }
         return true;
     }
-        
+
     /** ***************************************************************
      * Unify all terms in this with the corresponding terms in l2 with a
      * common substitution. Note that unlike general unification, we have
@@ -642,11 +633,11 @@ public class Literal implements Comparable {
         if (!pred.equals(l2.pred))
             if (!pred.equals("dep") && !l2.pred.equals("dep")) // allow a "dep" to match anything
                 return null;
-        for (int arg = 1; arg < 3; arg++) {           
-            String t1 = arg1; // Pop the first term pair to unify off the lists            
+        for (int arg = 1; arg < 3; arg++) {
+            String t1 = arg1; // Pop the first term pair to unify off the lists
             String t2 = l2.arg1; // (removes and returns the denoted elements).
             if (arg == 2) {
-                t1 = arg2;            
+                t1 = arg2;
                 t2 = l2.arg2;
             }
             if (debug) System.out.println("INFO in Literal.mguTermList(): attempting to unify arguments " + t1 + " and " + t2);
@@ -654,9 +645,9 @@ public class Literal implements Comparable {
                 if (debug) System.out.println("INFO in Literal.mguTermList(): here 1");
                 if (t1.equals(t2))
                     // We could always test this upfront, but that would
-                    // require an expensive check every time. 
+                    // require an expensive check every time.
                     // We descend recursively anyway, so we only check this on
-                    // the terminal case.  
+                    // the terminal case.
                     continue;
                 if (occursCheck(t1,l2))
                     return null;
@@ -666,9 +657,9 @@ public class Literal implements Comparable {
                 // we eliminate all occurrences of it in this step - remember
                 // that by the failed occurs-check, t2 cannot contain t1.
                 Subst newBinding = new Subst();
-                if (!wildcardMatch(t1,t2)) 
+                if (!wildcardMatch(t1,t2))
                     return null;
-                newBinding.put(t1,t2);                
+                newBinding.put(t1,t2);
                 applyBindingSelf(newBinding);
                 l2 = l2.applySubst(newBinding);
                 subst.put(t1, t2);
@@ -679,9 +670,9 @@ public class Literal implements Comparable {
                 if (occursCheck(t2, this))
                     return null;
                 Subst newBinding = new Subst();
-                if (!wildcardMatch(t1,t2)) 
+                if (!wildcardMatch(t1,t2))
                     return null;
-                newBinding.put(t2, t1);          
+                newBinding.put(t2, t1);
                 applyBindingSelf(newBinding);
                 l2 = l2.applySubst(newBinding);
                 subst.put(t2, t1);
@@ -709,9 +700,9 @@ public class Literal implements Comparable {
         if (debug) System.out.println("INFO in Literal.mguTermList(): subst on exit: " + subst);
         return subst;
     }
-    
+
     /** ***************************************************************
-     * @param lex is a Lexer which has been initialized with the 
+     * @param lex is a Lexer which has been initialized with the
      * textual version of the Literal
      * @param startLine is the line in the text file at which the
      * literal appears.  If it is in a large rule the start line
@@ -719,7 +710,7 @@ public class Literal implements Comparable {
      * If the literal is just from a string rather than directly from
      * a text file then the startLine will be 0.
      * @return a Literal corresponding to the input text passed to the
-     * Lexer.  Note that the predicate in this literal must already 
+     * Lexer.  Note that the predicate in this literal must already
      * have been read
      */
     public static Literal parse(Lexer lex, int startLine) {
@@ -762,14 +753,14 @@ public class Literal implements Comparable {
             if (!lex.testTok(Lexer.ClosePar)) {
                 errStr = (errStart + ": Invalid token '" + lex.look() + "' near line " + startLine + " on input " + lex.line);
                 throw new ParseException(errStr, startLine);
-            } 
+            }
             lex.next();
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Literal.parse(8) " + message);
+            System.err.println("Error in Literal.parse(8) " + message);
             ex.printStackTrace();
-        }    
+        }
         //System.out.println("INFO in Literal.parse(9): returning " + cl);
         return cl;
     }
@@ -806,7 +797,7 @@ public class Literal implements Comparable {
      * A test method for unification
      */
     public static void testUnify() {
-        
+
         String s1 = "sumo(Human,Mary-1)";
         String s2 = "sumo(?O,Mary-1)";
         Literal c1 = null;
@@ -819,20 +810,20 @@ public class Literal implements Comparable {
             lex = new Lexer(s2);
             c2 = Literal.parse(lex, 0);
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Clause.parse() " + message);
+            System.err.println("Error in Clause.parse() " + message);
             ex.printStackTrace();
-        }   
+        }
         System.out.println("INFO in Literal.testUnify(): " + c1.mguTermList(c2));
         System.out.println("INFO in Literal.testUnify(): " + c2.mguTermList(c1));
     }
-    
+
     /** *************************************************************
      * A test method for wildcard unification
      */
     public static void testRegexUnify() {
-        
+
         String s1 = "pobj(at-1,Mary-1).";
         String s2 = "pobj(at*,?M).";
         String s3 = "pobj(boo-3,?M).";
@@ -853,16 +844,16 @@ public class Literal implements Comparable {
             c3 = Literal.parse(lex, 0);
             System.out.println("INFO in Clause.testRegexUnify(): parsed " + c3);
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Literal.parse() " + message);
+            System.err.println("Error in Literal.parse() " + message);
             ex.printStackTrace();
-        }   
+        }
         System.out.println("INFO in Literal.testRegexUnify(): " + c1.mguTermList(c2));
         System.out.println("INFO in Literal.testRegexUnify(): " + c2.mguTermList(c1));
         System.out.println("INFO in Literal.testRegexUnify(): should fail: " + c2.mguTermList(c3));
     }
-    
+
     /** *************************************************************
      * A test method for parsing a Literal
      */
@@ -895,11 +886,11 @@ public class Literal implements Comparable {
             System.out.println("Literal.testParse(): input: " + input);
             System.out.println("Literal.testParse(): parse: " + new Literal(input));
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Literal.parse() " + message);
+            System.err.println("Error in Literal.parse() " + message);
             ex.printStackTrace();
-        }   
+        }
     }
 
     /** *************************************************************
@@ -934,9 +925,9 @@ public class Literal implements Comparable {
             System.out.println("Literal.testParse(): input: " + input);
             System.out.println("Literal.testParse(): result: " + removeNumberWithComma(input));
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             String message = ex.getMessage();
-            System.out.println("Error in Literal.parse() " + message);
+            System.err.println("Error in Literal.parse() " + message);
             ex.printStackTrace();
         }
     }

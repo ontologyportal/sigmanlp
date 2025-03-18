@@ -7,8 +7,11 @@ import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.wordNet.WordNetUtilities;
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,18 +64,18 @@ surfaceForms-fromOccs.count.txt - pick the highest count mapping for each string
 public class DBPedia {
 
     // strings to URLs from thresh.out
-    public static HashMap<String, String> stringToPage = new HashMap<>();
+    public static Map<String, String> stringToPage = new HashMap<>();
 
-    public static HashMap<String, String> pageToString = new HashMap<>();
+    public static Map<String, String> pageToString = new HashMap<>();
 
     // String to DBPedia ontology types
-    public static HashMap<String, String> stringToDBPOnto = new HashMap<>();
+    public static Map<String, String> stringToDBPOnto = new HashMap<>();
 
     // String to SUMO types
-    public static HashMap<String, String> stringToSUMO = new HashMap<>();
+    public static Map<String, String> stringToSUMO = new HashMap<>();
 
     // a mapping from a DBPedia/WN 2.0 pseudo-sense-key to SUMO
-    public static HashMap<String, String> wnToOnto = new HashMap<>();
+    public static Map<String, String> wnToOnto = new HashMap<>();
 
     // the sense index from WordNet 2.0
     public static Map<String, String> senseIndex20 = new HashMap<>();
@@ -84,7 +87,7 @@ public class DBPedia {
     // DBPedia ontology term is the key and SUMO term is the value.
     // SUMO terms have appended '=' or '+' depending on whether the
     // DBPedia term is equivalent or more specific than SUMO.
-    public static HashMap<String,String> DBP2SUMO = new HashMap<>();
+    public static Map<String,String> DBP2SUMO = new HashMap<>();
 
     /***************************************************************
      * read a tab-delimited file of strings and their Wikipedia page IDs and
@@ -96,17 +99,20 @@ public class DBPedia {
     public static void readStringToPageCount(String path) {
 
         System.out.println("DBPedia.readStringToPageCount()");
-        ArrayList<String> lines = CorpusReader.readFile(path + "surfaceForms-fromOccs.count.txt");
-        int bestCount = 0;
+        List<String> lines = CorpusReader.readFile(path + "surfaceForms-fromOccs.count.txt");
+        int bestCount = 0, count;
         String bestPage = "";
+        Pattern p;
+        Matcher m;
+        String countStr, str, page;
         for (String s : lines) {
-            Pattern p = Pattern.compile("[ ]+(\\d+)[^\\d]([^\\t]+)\\t(.*)");
-            Matcher m = p.matcher(s);
+            p = Pattern.compile("[ ]+(\\d+)[^\\d]([^\\t]+)\\t(.*)");
+            m = p.matcher(s);
             if (m.matches()) {
-                String countStr = m.group(1);
-                String str = m.group(2);
-                String page = m.group(3);
-                int count = 0;
+                countStr = m.group(1);
+                str = m.group(2);
+                page = m.group(3);
+                count = 0;
                 if (!StringUtil.emptyString(countStr))
                     count = Integer.parseInt(countStr);
                 if (str.equals(bestPage) || bestPage == "") {
@@ -144,34 +150,36 @@ public class DBPedia {
             int lines = 0;
             if (len > 1000000)
                 lines = CorpusReader.countLines(f);
-            FileReader r = new FileReader(filename);
-            LineNumberReader lr = new LineNumberReader(r);
-            String line;
-            long counter = 0;
-            while ((line = lr.readLine()) != null) {
-                String[] pair = line.split("\t");
-                String st = pair[0];
-                st = st.trim();
-                String page = pair[1].trim();
-                if (!pageToString.containsKey(page))
-                    pageToString.put(page,st);
-                if (!stringToPage.containsKey(st)) {
-                    stringToPage.put(st, pair[1]);
-                    if (st.indexOf(" ") > 0)
-                        multiWords.addMultiWord(st, ' ');
-                }
-                counter++;
-                if (counter % 10000 == 0) {
-                    if (lines == 0)
-                        System.out.print(".");
-                    else
-                        System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+            try (Reader r = new FileReader(filename);
+                LineNumberReader lr = new LineNumberReader(r)) {
+                String line, st, page;
+                long counter = 0;
+                String[] pair;
+                while ((line = lr.readLine()) != null) {
+                    pair = line.split("\t");
+                    st = pair[0];
+                    st = st.trim();
+                    page = pair[1].trim();
+                    if (!pageToString.containsKey(page))
+                        pageToString.put(page,st);
+                    if (!stringToPage.containsKey(st)) {
+                        stringToPage.put(st, pair[1]);
+                        if (st.indexOf(" ") > 0)
+                            multiWords.addMultiWord(st, ' ');
+                    }
+                    counter++;
+                    if (counter % 10000 == 0) {
+                        if (lines == 0)
+                            System.out.print(".");
+                        else
+                            System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+                    }
                 }
             }
             System.out.println();
         }
         catch (IOException i) {
-            System.out.println("Error in CorpusReader.readFile() reading file " + filename + ": " + i.getMessage());
+            System.err.println("Error in CorpusReader.readFile() reading file " + filename + ": " + i.getMessage());
             i.printStackTrace();
         }
         System.out.println();
@@ -184,19 +192,21 @@ public class DBPedia {
     public static void readDBP2SUMO(String path) {
 
         System.out.println("DBPedia.readDBP2SUMO()");
-        //ArrayList<String> thresh = CorpusReader.readFile(path + "thresh-reduced.out");
-        ArrayList<String> thresh = CorpusReader.readFile(path + File.separator + "DBpediaMapping.ttl");
+        //List<String> thresh = CorpusReader.readFile(path + "thresh-reduced.out");
+        String[] pair;
+        String dbp, map, sumo;
+        List<String> thresh = CorpusReader.readFile(path + File.separator + "DBpediaMapping.ttl");
         for (String s : thresh) {
             if (s.indexOf('\t') < 0)
                 continue;
-            String[] pair = s.split("\t");
-            String dbp = pair[0].split(":")[1];
-            String map = pair[1].split(":")[1];
+            pair = s.split("\t");
+            dbp = pair[0].split(":")[1];
+            map = pair[1].split(":")[1];
             if (map.equals("equivalentClass"))
                 map = "=";
             if (map.equals("subClassOf"))
                 map = "+";
-            String sumo = pair[2].split(":")[1];
+            sumo = pair[2].split(":")[1];
             sumo = sumo.substring(0,sumo.length()-2);
             DBP2SUMO.put(dbp, sumo + map);
         }
@@ -219,14 +229,16 @@ public class DBPedia {
     public static void readString2SUMO(String path) {
 
         System.out.println("DBPedia.readString2SUMO()");
-        ///ArrayList<String> map = CorpusReader.readFile(path + File.separator + "SUMOtypes.txt");
-        ArrayList<String> map = CorpusReader.readFile(path + File.separator + "DBPout.txt");
+        //List<String> map = CorpusReader.readFile(path + File.separator + "SUMOtypes.txt");
+        List<String> map = CorpusReader.readFile(path + File.separator + "DBPout.txt");
+        String[] pair;
+        String str, sumo;
         for (String s : map) {
             if (s.indexOf('\t') < 0)
                 continue;
-            String[] pair = s.split("\t");
-            String str = pair[0].trim();
-            String sumo = pair[1].trim();
+            pair = s.split("\t");
+            str = pair[0].trim();
+            sumo = pair[1].trim();
             addString2SUMO(str,sumo);
         }
     }
@@ -247,33 +259,34 @@ public class DBPedia {
             int lines = 0;
             if (len > 1000000)
                 lines = CorpusReader.countLines(f);
-            InputStream in = new FileInputStream(f);
-            Reader reader = new InputStreamReader(in);
-            LineNumberReader lnr = new LineNumberReader(reader);
-            //System.out.println("Info in DBPedia.readStringToDBPOnto(): " + file);
-            long counter = 0;
-            String line = "";
-            while ((line = lnr.readLine()) != null) {
-                if (line.startsWith("<http://dbpedia.org/resource/")) {
-                    //System.out.println("Info in CorpusReader.processFileByLine(): line: " + line);
-                    String page = line.substring(29, line.indexOf(">"));
-                    if (pageToString.containsKey(page)) {
-                        String onto = line.substring(line.lastIndexOf("/") + 1, line.lastIndexOf(">"));
-                        stringToDBPOnto.put(pageToString.get(page), onto);
+            try (InputStream in = new FileInputStream(f);
+                Reader reader = new InputStreamReader(in);
+                LineNumberReader lnr = new LineNumberReader(reader)) {
+                //System.out.println("Info in DBPedia.readStringToDBPOnto(): " + file);
+                long counter = 0;
+                String line, page;
+                while ((line = lnr.readLine()) != null) {
+                    if (line.startsWith("<http://dbpedia.org/resource/")) {
+                        //System.out.println("Info in CorpusReader.processFileByLine(): line: " + line);
+                        page = line.substring(29, line.indexOf(">"));
+                        if (pageToString.containsKey(page)) {
+                            String onto = line.substring(line.lastIndexOf("/") + 1, line.lastIndexOf(">"));
+                            stringToDBPOnto.put(pageToString.get(page), onto);
+                        }
                     }
-                }
-                counter++;
-                if (counter % 10000 == 0) {
-                    if (lines == 0)
-                        System.out.print(".");
-                    else
-                        System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+                    counter++;
+                    if (counter % 10000 == 0) {
+                        if (lines == 0)
+                            System.out.print(".");
+                        else
+                            System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+                    }
                 }
             }
         }
-        catch (Exception e) {
+        catch (IOException e) {
             if (!suppressErrors) {
-                System.out.println("; Error in DBPedia.readStringToDBPOnto(): " + e.getMessage());
+                System.err.println("Error in DBPedia.readStringToDBPOnto(): " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -297,33 +310,34 @@ public class DBPedia {
             int lines = 0;
             if (len > 1000000)
                 lines = CorpusReader.countLines(f);
-            InputStream in = new FileInputStream(f);
-            Reader reader = new InputStreamReader(in);
-            LineNumberReader lnr = new LineNumberReader(reader);
-            //System.out.println("Info in DBPedia.readStringToDBPOnto(): " + file);
-            long counter = 0;
-            String line = "";
-            while ((line = lnr.readLine()) != null) {
-                if (line.startsWith("<http://dbpedia.org/resource/")) {
-                    //System.out.println("Info in CorpusReader.processFileByLine(): line: " + line);
-                    String page = line.substring(29, line.indexOf(">"));
-                    if (pageToString.containsKey(page)) {
-                        String onto = line.substring(line.lastIndexOf("/") + 1, line.lastIndexOf(">"));
-                        stringToDBPOnto.put(pageToString.get(page), onto);
+            try (InputStream in = new FileInputStream(f);
+                Reader reader = new InputStreamReader(in);
+                LineNumberReader lnr = new LineNumberReader(reader)) {
+                //System.out.println("Info in DBPedia.readStringToDBPOnto(): " + file);
+                long counter = 0;
+                String line, page;
+                while ((line = lnr.readLine()) != null) {
+                    if (line.startsWith("<http://dbpedia.org/resource/")) {
+                        //System.out.println("Info in CorpusReader.processFileByLine(): line: " + line);
+                        page = line.substring(29, line.indexOf(">"));
+                        if (pageToString.containsKey(page)) {
+                            String onto = line.substring(line.lastIndexOf("/") + 1, line.lastIndexOf(">"));
+                            stringToDBPOnto.put(pageToString.get(page), onto);
+                        }
                     }
-                }
-                counter++;
-                if (counter % 10000 == 0) {
-                    if (lines == 0)
-                        System.out.print(".");
-                    else
-                        System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+                    counter++;
+                    if (counter % 10000 == 0) {
+                        if (lines == 0)
+                            System.out.print(".");
+                        else
+                            System.out.print("\b\b\b\b" + (counter * 100) / lines + "%");
+                    }
                 }
             }
         }
-        catch (Exception e) {
+        catch (IOException e) {
             if (!suppressErrors) {
-                System.out.println("; Error in DBPedia.readStringToDBPOnto(): " + e.getMessage());
+                System.err.println("Error in DBPedia.readStringToDBPOnto(): " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -363,48 +377,47 @@ public class DBPedia {
 
         System.out.println("DBPedia.readWordNetMapping()");
         File file = new File(path + "wordnet_links.nt");
-        try {
-            InputStream in = new FileInputStream(file);
+        try (InputStream in = new FileInputStream(file);
             Reader reader = new InputStreamReader(in);
-            LineNumberReader lnr = new LineNumberReader(reader);
+            LineNumberReader lnr = new LineNumberReader(reader)) {
             //System.out.println("Info in DBPedia.readWordNetMapping(): " + file);
-            String line = "";
+            String line, page, wn, standardWNkey, str, onto;
             while ((line = lnr.readLine()) != null) {
                 if (line.startsWith("<http://dbpedia.org/resource/")) {
                     //System.out.println("Info in DBPedia.readWordNetMapping(): line: " + line);
-                    String page = line.substring(29,line.indexOf(">"));
+                    page = line.substring(29,line.indexOf(">"));
                     //System.out.println("Info in DBPedia.readWordNetMapping(): page: " + page);
                     if (pageToString.containsKey(page)) {
-                        String wn = line.substring(line.lastIndexOf("/")+8,line.lastIndexOf(">")); // remove leading "synset-"
-                        String standardWNkey = wordPOSKeytoWNKey(wn);
+                        wn = line.substring(line.lastIndexOf("/")+8,line.lastIndexOf(">")); // remove leading "synset-"
+                        standardWNkey = wordPOSKeytoWNKey(wn);
                         if (wnToOnto.keySet().contains(standardWNkey)) {
-                            String str = pageToString.get(page);
-                            String onto = wnToOnto.get(standardWNkey);
+                            str = pageToString.get(page);
+                            onto = wnToOnto.get(standardWNkey);
                             addString2SUMO(str, onto);
                             System.out.println("Info in DBPedia.readWordNetMapping(): str, onto " + str + ", "  + onto);
                         }
                         else
-                            if (!suppressErrors) System.out.println("; Error in DBPedia.readWordNetMapping(): no ontology mapping for " + standardWNkey);
+                            if (!suppressErrors) System.err.println("Error in DBPedia.readWordNetMapping(): no ontology mapping for " + standardWNkey);
                     }
                     else {
                         if (!suppressErrors)
-                            System.out.println("; Error in DBPedia.readWordNetMapping(): no page to string for " + page);
-                        String wn = line.substring(line.lastIndexOf("/")+8,line.lastIndexOf(">")); // remove leading "synset-"
-                        String standardWNkey = wordPOSKeytoWNKey(wn);
+                            System.err.println("Error in DBPedia.readWordNetMapping(): no page to string for " + page);
+                        wn = line.substring(line.lastIndexOf("/")+8,line.lastIndexOf(">")); // remove leading "synset-"
+                        standardWNkey = wordPOSKeytoWNKey(wn);
                         if (wnToOnto.keySet().contains(standardWNkey)) {
-                            String str = page.replace('_',' ');
-                            String onto = wnToOnto.get(standardWNkey);
+                            str = page.replace('_',' ');
+                            onto = wnToOnto.get(standardWNkey);
                             addString2SUMO(str, onto);
                             if (!suppressErrors) System.out.println("Info in DBPedia.readWordNetMapping(): made new str, onto " + str + ", "  + onto);
                         }
                         else
-                            if (!suppressErrors) System.out.println("; Error in DBPedia.readWordNetMapping(2): no ontology mapping for " + standardWNkey);
+                            if (!suppressErrors) System.err.println("Error in DBPedia.readWordNetMapping(2): no ontology mapping for " + standardWNkey);
                     }
                 }
             }
         }
         catch (Exception e) {
-            if (!suppressErrors) System.out.println("; Error in DBPedia.readWordNetMapping(): " + e.getMessage());
+            if (!suppressErrors) System.err.println("Error in DBPedia.readWordNetMapping(): " + e.getMessage());
             if (!suppressErrors) e.printStackTrace();
         }
     }
@@ -417,15 +430,16 @@ public class DBPedia {
     public static void makeWnToOnto() {
 
         System.out.println("DBPedia.makeWnToOnto()");
+        String POS, oldSynset, posNum, newSynset, sumo;
         for (String s : DBPedia.senseIndex20.keySet()) {
             // alpha POS - NN,VB etc
             //String key = word + "_" + posString + "_" + sensenum;
             //System.out.println("makeWnToOnto(): key " + key);
             //System.out.println("makeWnToOnto(): s " + s);
-            String POS = WordNetUtilities.getPOSfromKey(s);
-            String oldSynset = DBPedia.senseIndex20.get(s);
-            String posNum = WordNetUtilities.posLettersToNumber(POS);
-            String newSynset = WordNetUtilities.mappings.get(posNum + oldSynset);
+            POS = WordNetUtilities.getPOSfromKey(s);
+            oldSynset = DBPedia.senseIndex20.get(s);
+            posNum = WordNetUtilities.posLettersToNumber(POS);
+            newSynset = WordNetUtilities.mappings.get(posNum + oldSynset);
             //System.out.println("makeWnToOnto(): oldSynset " + oldSynset);
             //System.out.println("makeWnToOnto(): newSynset " + newSynset);
             if (newSynset == null) {
@@ -433,18 +447,18 @@ public class DBPedia {
                     newSynset = posNum + oldSynset;
                 else {
                     if (!suppressErrors)
-                        System.out.println("; Error DBPedia.makeWnToOnto(): null synset for " + s + " and old synset " + oldSynset);
+                        System.err.println("Error DBPedia.makeWnToOnto(): null synset for " + s + " and old synset " + oldSynset);
                     continue;
                 }
             }
-            String sumo = WordNet.wn.getSUMOMapping(newSynset);
+            sumo = WordNet.wn.getSUMOMapping(newSynset);
             if (!StringUtil.emptyString(sumo)) {
                 sumo = WordNetUtilities.getBareSUMOTerm(sumo);
                 wnToOnto.put(s, sumo);
                 //System.out.println("DBPedia.makeWnToOnto(): s, sumo: " + s + ", " + sumo);
             }
             else {
-                if (!suppressErrors) System.out.println("; Error in DBPedia.makeWnToOnto(): null sumo for "  + s + " and old synset " + oldSynset);
+                if (!suppressErrors) System.err.println("Error in DBPedia.makeWnToOnto(): null sumo for "  + s + " and old synset " + oldSynset);
             }
             //System.out.println();
         }
@@ -457,9 +471,10 @@ public class DBPedia {
         System.out.println("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n" +
                 "@prefix dbp:  <http://dbpedia.org/resource/> .\n" +
                 "@prefix sumo: <https://github.com/ontologyportal/sumo#> .");
+        String s, sumo;
         for (String p : pageToString.keySet()) {
-            String s = pageToString.get(p);
-            String sumo = stringToSUMO.get(s);
+            s = pageToString.get(p);
+            sumo = stringToSUMO.get(s);
             if (sumo != null)
                 System.out.println("dbp:" + p + "\t" + "rdf:type" + "\tsumo:" + sumo + " .");
         }
@@ -469,8 +484,9 @@ public class DBPedia {
      */
     public static void printStringToSUMO() {
 
+        String sumo;
         for (String s : stringToSUMO.keySet()) {
-            String sumo = stringToSUMO.get(s);
+            sumo = stringToSUMO.get(s);
             if (!sumo.endsWith("=") && !sumo.endsWith("+"))
                 sumo = sumo + "=";
             if (sumo != null && !sumo.startsWith("Article") &&
@@ -486,9 +502,10 @@ public class DBPedia {
         System.out.println("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n" +
                 "@prefix dbp:  <http://dbpedia.org/resource/> .\n" +
                 "@prefix sumo: <https://github.com/ontologyportal/sumo#> .");
+        String s, sumo;
         for (String p : pageToString.keySet()) {
-            String s = pageToString.get(p);
-            String sumo = stringToSUMO.get(s);
+            s = pageToString.get(p);
+            sumo = stringToSUMO.get(s);
             if (sumo != null)
                 System.out.println("dbp:" + p + "\trdfs:label\t\"" + s + "\" .");
         }
@@ -503,11 +520,12 @@ public class DBPedia {
     public static void combine() {
 
         System.out.println("DBPedia.combine()");
+        String DBPonto, SUMO;
         for (String s : stringToDBPOnto.keySet()) {
             if (!stringToSUMO.containsKey(s)) {
-                String DBPonto = stringToDBPOnto.get(s);
+                DBPonto = stringToDBPOnto.get(s);
                 if (DBP2SUMO.containsKey(DBPonto)) {
-                    String SUMO = DBP2SUMO.get(DBPonto);
+                    SUMO = DBP2SUMO.get(DBPonto);
                     addString2SUMO(s,SUMO);
                 }
             }
@@ -522,10 +540,14 @@ public class DBPedia {
         String sep = File.separator;
         String path = System.getenv("CORPORA") + sep + "DBPedia" + sep;
         WordNet.wn.compileRegexPatterns();
-        WordNet.wn.readSenseIndex(System.getenv("CORPORA") + sep + "WordNet-2.0" + sep + "dict" + sep + "index.sense");
-        DBPedia.senseIndex20 = WordNet.wn.senseIndex;
+        Path pth = Paths.get(System.getenv("CORPORA") + sep + "WordNet-2.0" + sep + "dict" + sep + "index.sense");
+        if (pth.toFile().exists()) {
+            WordNet.wn.readSenseIndex(pth.toFile().getPath());
+            DBPedia.senseIndex20 = WordNet.wn.senseIndex;
+        }
         WordNet.wn.senseIndex = new HashMap<>();
-        WordNet.wn.readSenseIndex(System.getenv("CORPORA") + sep + "WordNet-3.0" + sep + "dict" + sep + "index.sense");
+        pth = Paths.get(System.getenv("CORPORA") + sep + "WordNet-3.0" + sep + "dict" + sep + "index.sense");
+        WordNet.wn.readSenseIndex(pth.toFile().getPath());
         String mapPath = System.getenv("ONTOLOGYPORTAL_GIT") + sep + "sumo" + sep + "mappings";
         readDBP2SUMO(mapPath);
         readStringToPageCount(path);
@@ -539,8 +561,8 @@ public class DBPedia {
         try {
             WordNetUtilities.updateWNversionReading(wnPath, "20-30");
         }
-        catch (Exception e) {
-            if (!suppressErrors) System.out.println("; Error in DBPedia.main(): " + e.getMessage());
+        catch (IOException e) {
+            if (!suppressErrors) System.err.println("Error in DBPedia.main(): " + e.getMessage());
             if (!suppressErrors) e.printStackTrace();
         }
         makeWnToOnto();

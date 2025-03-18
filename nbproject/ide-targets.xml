@@ -7,9 +7,9 @@
     ========
     -->
 
-    <property file="nbproject/private/private.properties"/>
     <import   file="../build.xml"/>
-    <property file="nbproject/build.properties"/>
+    <property file="nbproject/private/private.properties"/>
+    <property file="nbproject/project.properties"/>
     <import   file="${catalina.base}/bin/catalina-tasks.xml"/>
 
     <path id="compile.classpath">
@@ -40,16 +40,16 @@
     ====
     -->
 
-    <target name="init">
+    <target name="init" depends="init-ivy">
         <echo message="Welcome to the ${product.Name} v${product.Version}"/>
         <echo message="Specification Vendor:     ${spec.vendor}"/>
         <echo message=""/>
         <echo message="CATALINA_HOME is set to:  ${catalina.base}"/>
+        <echo message="CORPORA is set to:        ${corpora.dir}"/>
         <echo message="SIGMA_HOME    is set to:  ${sigma_home}"/>
         <echo message="SIGMA_SRC     is set to:  ${sigma_src}"/>
         <echo message="KBs_HOME      is set to:  ${kbs_home}"/>
         <echo message="Git dir       is set to:  ${ontologyportal.git}"/>
-        <echo message="basedir       is set to:  ${basedir}"/>
         <echo message="classpath:                ${run.classpath}"/>
         <echo message="Java Version via Ant:     ${ant.java.version}"/>
         <echo message="Java Version System Prop: ${java.version}"/>
@@ -58,13 +58,13 @@
             <format property="TODAY_US" pattern="EEE, d MMM yyyy HHmm Z" locale="en,US"/>
         </tstamp>
 
+        <mkdir dir="${build.classes.dir}"/>
+    </target>
+    <target name="build.sigmakee" depends="init">
+
         <ant antfile="../sigmakee/nbproject/ide-targets.xml" inheritAll="false" target="all" />
         <copy todir="${basedir}/lib" file="../sigmakee/build/sigmakee.jar" />
         <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
-
-        <mkdir dir="${build.home}"/>
-        <mkdir dir="${build.classes.dir}"/>
-        <mkdir dir="${build.lib}"/>
     </target>
 
     <!--
@@ -82,7 +82,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${run.args}"/>
         </java>
     </target>
@@ -96,7 +96,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${run.args}"/>
         </java>
     </target>
@@ -106,6 +106,20 @@
     RUN TASKS FOR TESTS
     ===================
     -->
+
+    <!-- Load top, MILO and ENG KBs for integration tests -->
+    <target name="check.config" depends="get.length,copy.milo.config"/>
+    <target name="get.length">
+        <condition property="is.milo">
+            <length mode="all" when="eq" length="2543">
+                <fileset file="${kbs.dir}/config.xml"/>
+            </length>
+        </condition>
+        <echo message="confix.xml size is 2.543KB: ${is.milo}"/>
+    </target>
+    <target name="copy.milo.config" unless="is.milo">
+        <antcall target="prep.integration.config"/>
+    </target>
 
     <target name="test" depends="test.unit,test.integration"/>
     <target name="test.unit" depends="clean,compile.test" description="Runs the UnitTestSuite">
@@ -117,7 +131,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -128,7 +142,7 @@
         </junit>
         <antcall target="junit.report"/>
     </target>
-    <target name="test.integration" depends="clean,compile.test" description="Runs the IntegrationTestSuite">
+    <target name="test.integration" depends="clean,check.config,compile.test" description="Runs the IntegrationTestSuite">
         <junit printsummary="yes"
                showoutput="yes"
                fork="yes">
@@ -137,7 +151,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -159,7 +173,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -169,7 +183,7 @@
             </test>
         </junit>
     </target>
-    <target name="run-selected-test-in-integration" depends="clean,compile.test">
+    <target name="run-selected-test-in-integration" depends="clean,check.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <junit printsummary="yes"
                showoutput="yes"
@@ -179,7 +193,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -199,7 +213,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -209,7 +223,7 @@
             </test>
         </junit>
     </target>
-    <target name="run-single-test-method-in-integration" depends="clean,compile.test">
+    <target name="run-single-test-method-in-integration" depends="clean,check.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <junit printsummary="yes"
                showoutput="yes"
@@ -219,7 +233,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -239,7 +253,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -277,7 +291,7 @@
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_OPS" value="${catalina.ops}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg value="-c"/>
             <arg value="'${catalina.base}/bin/${startup}'"/>
         </exec>
@@ -336,7 +350,7 @@
         <nbjpdastart addressproperty="jpda.address" name="${impl.title}" transport="${debug.transport}">
             <classpath refid="dcp"/>
         </nbjpdastart>
-        <java classname="${main.class}"
+        <java classname="${run.class}"
               classpathref="dcp"
               fork="true">
             <jvmarg value="-agentlib:jdwp=transport=${debug.transport},address=${jpda.address}"/>
@@ -345,8 +359,8 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
-            <arg line="-c Object Transaction"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
+            <arg line="${run.args}"/>
         </java>
     </target>
     <target name="debug-selected-file-in-java" depends="clean,compile">
@@ -363,7 +377,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${run.args}"/>
         </java>
     </target>
@@ -380,7 +394,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <arg line="${pword.props}"/>
         </java>
     </target>
@@ -391,7 +405,7 @@
     =====================
     -->
 
-    <target name="debug-selected-test-in-integration" depends="clean,compile.test">
+    <target name="debug-selected-test-in-integration" depends="clean,check.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <nbjpdastart addressproperty="jpda.address" name="${impl.title}" transport="${debug.transport}">
             <classpath refid="tcp"/>
@@ -405,8 +419,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -430,7 +443,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -440,7 +453,7 @@
             </test>
         </junit>
     </target>
-    <target name="debug-single-test-method-in-integration" depends="clean,compile.test">
+    <target name="debug-single-test-method-in-integration" depends="clean,check.config,compile.test">
         <fail unless="test.class">Must set property 'test.class'</fail>
         <nbjpdastart addressproperty="jpda.address" name="${impl.title}" transport="${debug.transport}">
             <classpath refid="tcp"/>
@@ -454,7 +467,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -478,7 +491,7 @@
             <env key="ONTOLOGYPORTAL_GIT" value="${ontologyportal.git}"/>
             <env key="SIGMA_SRC" value="${sigma_src}"/>
             <env key="CATALINA_HOME" value="${catalina.base}"/>
-            <env key="CORPORA" value="${basedir}/corpora"/>
+            <env key="CORPORA" value="${corpora.dir}"/>
             <formatter type="plain" usefile="false"/>
             <classpath>
                 <path refid="tcp"/>
@@ -522,11 +535,11 @@
              manifest="${manifest.mf}">
           <metainf file="LICENSE"/>
           <metainf file="${web.dir}/context.xml"/>
-          <zipfileset dir="${build.home}/jsp"/>
-          <zipfileset dir="${build.home}/brat"/>
-          <zipfileset dir="${build.home}/js"/>
-          <zipfileset dir="${build.home}/pixmaps" prefix="pixmaps"/>
-          <lib dir="${build.lib}">
+          <zipfileset dir="${web.dir}/jsp"/>
+          <zipfileset dir="${web.dir}/brat"/>
+          <zipfileset dir="${web.dir}/js"/>
+          <zipfileset dir="${web.dir}/pixmaps" prefix="pixmaps"/>
+          <lib dir="${basedir}/lib">
               <exclude name="junit*"/>
               <exclude name="hamcrest*"/>
               <exclude name="tomcat-servlet-api*"/>
@@ -541,18 +554,20 @@
         <copy todir="${build.home}" file="${dist.jar}"/>
     </target>
 
-    <!-- Copy customized config files to their respective directories -->
-    <target name="prep.main.config" depends="init">
+    <!-- Copy customized config files for testing -->
+    <target name="prep.main.config">
         <!-- Restore main config post integration testing -->
-        <copy todir="${sigma_home}/KBs" file="${main.config}" overwrite="true"/>
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.main.config"/>
     </target>
-    <target name="prep.unit.config">
-        <copy todir="${test.unit.resources.dir}" file="${unit.config}" overwrite="true"/>
-    </target>
+    <!-- SUMO, MILO and domain only -->
     <target name="prep.integration.config">
-        <copy tofile="${sigma_home}/KBs/config.xml" file="${integration.config}" overwrite="true"/>
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.integration.config"/>
     </target>
-    <target name="thorough.clean" depends="clean,prep.main.config">
+    <!-- SUMO and domain only -->
+    <target name="prep.unit.config">
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.unit.config"/>
+    </target>
+    <target name="thorough.clean" depends="clean">
         <delete includeemptydirs="true" failonerror="false">
             <!-- Delete the old web code -->
             <fileset dir="${deploy_home}"/>
@@ -577,7 +592,7 @@
         <delete file="${dist_war}"/>
         <antcall target="delete.catalina.logs"/>
     </target>
-    <target name="delete.catalina.logs" depends="init">
+    <target name="delete.catalina.logs">
         <delete>
             <fileset dir="${catalina.logs.dir}">
                 <include name="*.*"/>

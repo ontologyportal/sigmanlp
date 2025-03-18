@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,8 +39,8 @@ public class SemRewriteToFormulaTest extends UnitTestBase {
     private void doTest(String input, String expectedOutput, boolean isQuestion) {
 
         interpreter.question = isQuestion;
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         String actual = interpreter.fromKIFClauses(kifClauses);
 
         Formula actualFormula = new Formula(actual);

@@ -10,7 +10,9 @@ import com.articulate.sigma.KB;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WordNet;
+
 import com.google.common.base.Strings;
+
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -21,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 public class TermExtractor {
 
@@ -33,9 +36,9 @@ public class TermExtractor {
     /** ***************************************************************
      * collect terms from a string
      */
-    public static HashSet<String> findTerms(String s) {
+    public static Set<String> findTerms(String s) {
 
-        HashSet<String> result = new HashSet<>();
+        Set<String> result = new HashSet<>();
         Annotation wholeDocument = null;
         try {
             wholeDocument = new Annotation(s);
@@ -45,18 +48,16 @@ public class TermExtractor {
             System.out.println(e.getMessage());
         }
         List<CoreMap> sentences = wholeDocument.get(CoreAnnotations.SentencesAnnotation.class);
-        String lastPOS = "";
-        String lastLemma = "";
-        int tokCount = 0;
+        String orig, lemma, pos, sense, sumo, multi;
         for (CoreMap sentence : sentences) {
             List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             for (CoreLabel token : tokens) {
-                String orig = token.originalText();
-                String lemma = token.lemma();
-                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
-                String sense = token.get(WSDAnnotator.WSDAnnotation.class);
-                String sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
-                String multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
+                orig = token.originalText();
+                lemma = token.lemma();
+                pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                sense = token.get(WSDAnnotator.WSDAnnotation.class);
+                sumo = token.get(WSDAnnotator.SUMOAnnotation.class);
+                multi = token.get(WNMultiWordAnnotator.WNMultiWordAnnotation.class);
                 System.out.print(orig);
                 if (!StringUtil.emptyString(lemma))
                     System.out.print("|" + lemma);
@@ -83,13 +84,14 @@ public class TermExtractor {
     /** ***************************************************************
      * collect noun phrases from a file
      */
-    public static HashSet<String> collectTerms(String fname) {
+    public static Set<String> collectTerms(String fname) {
 
-        HashSet<String> result = new HashSet<>();
-        ArrayList<String> lines = CorpusReader.readFile(fname);
+        Set<String> result = new HashSet<>();
+        List<String> lines = CorpusReader.readFile(fname);
+        Set<String> nps;
         for (String l : lines) {
-            HashSet<String> nps = findTerms(l);
-            if (nps.size() > 0)
+            nps = findTerms(l);
+            if (!nps.isEmpty())
                 result.addAll(nps);
         }
         return result;

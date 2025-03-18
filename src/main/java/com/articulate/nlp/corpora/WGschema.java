@@ -1,19 +1,17 @@
 package com.articulate.nlp.corpora;
 
-import com.articulate.nlp.RelExtract;
 import com.articulate.nlp.semRewrite.CNF;
 import com.articulate.nlp.semRewrite.Interpreter;
-import com.articulate.nlp.semRewrite.Literal;
-import com.articulate.nlp.semRewrite.RHS;
 import com.articulate.nlp.semRewrite.substitutor.CoreLabelSequence;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.SimpleDOMParser;
 import com.articulate.sigma.SimpleElement;
-import com.articulate.sigma.utils.StringUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
 
 /**
@@ -42,7 +40,7 @@ public class WGschema {
         public String pronAgain;
         public String quote2;
         public String sentence;
-        public ArrayList<String> answers = new ArrayList<String>();
+        public List<String> answers = new ArrayList<>();
         public String correctAnswer;
         public String source;
 
@@ -88,6 +86,7 @@ public class WGschema {
             return result;
         }
 
+        @Override
         public String toString() {
             return ("fn: " + falseNegatives + " tp: " + truePositives + " tn: " + trueNegatives + " fp: " + falsePositives);
         }
@@ -97,7 +96,7 @@ public class WGschema {
      */
     private void parseText(SimpleElement text, Sent s) {
 
-        ArrayList<SimpleElement> children = text.getChildElements();
+        List<SimpleElement> children = text.getChildElements();
         if (children.size() != 3) {
             System.out.println("Error in WGschema.parseText(): wrong number of elements in " + children);
             return;
@@ -163,7 +162,7 @@ public class WGschema {
     public void parseTest(SimpleElement sec) {
 
         Sent s = new Sent();
-        ArrayList<SimpleElement> children = sec.getChildElements();
+        List<SimpleElement> children = sec.getChildElements();
         if (children.size() != 5) {
             System.out.println("Error in WGschema.parseTest(): wrong number of elements in " + children);
             return;
@@ -220,13 +219,14 @@ public class WGschema {
             File f = new File(filename);
             if (!f.exists())
                 return;
-            BufferedReader br = new BufferedReader(new FileReader(filename));
-            se = sdp.parse(br);
+            try (Reader br = new BufferedReader(new FileReader(filename))) {
+                se = sdp.parse(br);
+            }
             //System.out.println(se.toString());
         }
-        catch (java.io.IOException e) {
-            System.out.println("Error in main(): IO exception parsing file " + filename);
-            System.out.println(e.getMessage());
+        catch (IOException e) {
+            System.err.println("Error in main(): IO exception parsing file " + filename);
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
 
@@ -246,6 +246,7 @@ public class WGschema {
 
     /***************************************************************
      */
+    @Override
     public String toString() {
 
         StringBuilder sb = new StringBuilder();
@@ -276,8 +277,7 @@ public class WGschema {
         String clKeyString = clKey.toString();
         CoreLabelSequence clValue = subst.get(clKey);
         String clValueString = clValue.toString();
-        String answer = null;
-        answer = s.getAnswerText(s.correctAnswer);
+        String answer = s.getAnswerText(s.correctAnswer);
         if (clKeyString.toUpperCase().equals(s.pronoun.trim().toUpperCase()) && clValueString.toUpperCase().equals(answer.toUpperCase())) {
             f1mat.truePositives++;
             System.out.println("WGSchema.score(): correct answer for: " + s);
@@ -297,18 +297,20 @@ public class WGschema {
 
         F1Matrix total = new F1Matrix();
         long startTime = System.currentTimeMillis();
-        int totalGroundTruth = 0;
-        int totalExtracted = 0;
+        CNF cnf;
+        List<CNF> cnfs = new ArrayList<>();
+        List<String> kifc;
+        String kif;
         for (Sent s : sentences) {
             try {
-                CNF cnf = interp.interpretGenCNF(s.sentence);
+                cnf = interp.interpretGenCNF(s.sentence);
                 System.out.println();
                 System.out.println(cnf);
                 System.out.println();
-                ArrayList<CNF> cnfs = new ArrayList<>();
+                cnfs.clear();
                 cnfs.add(cnf);
-                ArrayList<String> kifc = interp.interpretCNF(cnfs);
-                String kif = interp.fromKIFClauses(kifc);
+                kifc = interp.interpretCNF(cnfs);
+                kif = interp.fromKIFClauses(kifc);
                 System.out.println(kif);
                 System.out.println();
                 total = total.add(score(s,Interpreter.substGroups));

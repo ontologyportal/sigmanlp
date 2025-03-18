@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -51,9 +52,9 @@ public class QAOutputGenerator {
 
     /************************************************************
      */
-    public static ArrayList<String> getAllFilenamesInDir(String dir) throws IOException {
+    public static List<String> getAllFilenamesInDir(String dir) throws IOException {
 
-        ArrayList<String> res = new ArrayList<String>();
+        List<String> res = new ArrayList<String>();
         Files.walk(Paths.get(dir)).forEach(filePath -> {
             if (Files.isRegularFile(filePath)) {
                 System.out.println(filePath);
@@ -65,15 +66,16 @@ public class QAOutputGenerator {
 
     /************************************************************
      */
-    public static ArrayList<ArrayList<String>> extractFile(Path p) {
+    public static List<List<String>> extractFile(Path p) {
 
-        ArrayList<String> querys = new ArrayList<String>();
-        ArrayList<String> anses = new ArrayList<String>();
-        ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
+        List<String> querys = new ArrayList<>();
+        List<String> anses = new ArrayList<>();
+        List<List<String>> res = new ArrayList<>();
 
         try (Scanner in = new Scanner(p)) {
+            String input;
             while (in.hasNextLine()) {
-                String input = in.nextLine();
+                input = in.nextLine();
                 input = input.replaceAll("[\"]", "\\\"");
                 //passage
                 if (input.startsWith("&&")) {
@@ -118,8 +120,8 @@ public class QAOutputGenerator {
      */
     public static List<Record> getRecordFromStringSet(String[] strs, Interpreter inter) {
 
-        ArrayList<Record> res = new ArrayList<Record>();
-        Field questionfield = null;
+        List<Record> res = new ArrayList<>();
+        Field questionfield;
         try {
             questionfield = inter.getClass().getDeclaredField("question");
             questionfield.setAccessible(true);
@@ -127,8 +129,12 @@ public class QAOutputGenerator {
             userInputsfield.setAccessible(true);
             Document userInputs = (Document) userInputsfield.get(inter);
             int i = 0;
+            Record r;
+            List<String> kifClauses;
+            List<CNF> inputs;
+            String s1, s2, s3, result;
             for (String s : strs) {
-                Record r = new Record(i++, s);
+                r = new Record(i++, s);
                 s = s.trim();
                 if (s.endsWith("?"))
                     questionfield.setBoolean(inter, true);
@@ -136,35 +142,34 @@ public class QAOutputGenerator {
                     questionfield.setBoolean(inter, false);
 
                 if (!questionfield.getBoolean(inter)) {
-                    inter.tfidf.addInput(s);
+                    Interpreter.tfidf.addInput(s);
                 }
-                ArrayList<String> kifClauses;
                 try {
-                    ArrayList<CNF> inputs = Lists.newArrayList(inter.interpretGenCNF(s));
+                    inputs = Lists.newArrayList(inter.interpretGenCNF(s));
                     r.CNF = inputs.get(0);
                     kifClauses = inter.interpretCNF(inputs);
                 }
                 catch (Exception e) {
-                    System.out.println("Paring error in sentence :" + s);
+                    System.err.println("Paring error in sentence :" + s);
                     r.CNF = new CNF();
                     r.result = "Parsing error";
                     res.add(r);
                     continue;
                 }
-                String s1 = inter.toFOL(kifClauses);
-                String s2 = inter.postProcess(s1);
-                String s3 = inter.addQuantification(s2);
+                s1 = inter.toFOL(kifClauses);
+                s2 = Interpreter.postProcess(s1);
+                s3 = inter.addQuantification(s2);
                 r.KIF = new Formula(s3).toString();
 
-                String result = inter.fromKIFClauses(kifClauses);
+                result = inter.fromKIFClauses(kifClauses);
                 System.out.println("INFO in Interpreter.interpretSingle(): Theorem proving result: '" + result + "'");
 
                 if (questionfield.getBoolean(inter)) {
-                    if (("I don't know.".equals(result) && inter.autoir) || inter.ir) {
+                    if (("I don't know.".equals(result) && inter.autoir) || Interpreter.ir) {
                         if (inter.autoir) {
                             System.out.println("Interpreter had no response so trying TFIDF");
                         }
-                        result = inter.tfidf.matchInput(s).toString();
+                        result = Interpreter.tfidf.matchInput(s);
                     }
                 }
                 else {
@@ -199,8 +204,9 @@ public class QAOutputGenerator {
         }
         try (PrintWriter pw = new PrintWriter(path)) {
             JSONArray arr = new JSONArray();
+            JSONObject obj;
             for (Record k : list) {
-                JSONObject obj = new JSONObject();
+                obj = new JSONObject();
                 obj.put("index", k.index + "");
                 obj.put("sentence", k.sen);
                 obj.put("CNF", k.CNF.toString());
@@ -235,11 +241,11 @@ public class QAOutputGenerator {
 
             StringBuilder sb = new StringBuilder();
             sb.append("{\n");
-            sb.append("  \"index\":\"" + index + "\",\n");
-            sb.append("  \"sentence\":\"" + sen + "\",\n");
-            sb.append("  \"CNF\":\"" + CNF + "\",\n");
-            sb.append("  \"KIF\":\"" + KIF + "\",\n");
-            sb.append("  \"result\":\"" + result + "\"\n");
+            sb.append("  \"index\":\"").append(index).append("\",\n");
+            sb.append("  \"sentence\":\"").append(sen).append("\",\n");
+            sb.append("  \"CNF\":\"").append(CNF).append("\",\n");
+            sb.append("  \"KIF\":\"").append(KIF).append("\",\n");
+            sb.append("  \"result\":\"").append(result).append("\"\n");
             sb.append("}\n");
             return sb.toString();
         }
@@ -257,17 +263,15 @@ public class QAOutputGenerator {
             inter.initialize();
         }
         String[] strs = CommonCNFUtil.loadSentencesFromTxt(inputPath);
-        System.out.println("Strins are: " + strs);
-        List<Record> res = null;
-        res = getRecordFromStringSet(strs, inter);
+        System.out.println("Strins are: " + Arrays.toString(strs));
+        List<Record> res = getRecordFromStringSet(strs, inter);
         System.out.println(res);
         try {
             saveRecord(res, outputPath);
         }
         catch (FileNotFoundException e) {
-            System.out.println("Can't save file.");
+            System.err.println("Can't save file.");
             e.printStackTrace();
-            return;
         }
     }
 
@@ -284,12 +288,12 @@ public class QAOutputGenerator {
             inter = new Interpreter();
             inter.initialize();
         }
-        ArrayList<String> files;
+        List<String> files;
         try {
             files = getAllFilenamesInDir(dir);
         }
         catch (IOException e) {
-            System.out.println("The directory input is not correct.");
+            System.err.println("The directory input is not correct.");
             return;
         }
         for (String file : files) {
@@ -382,8 +386,8 @@ public class QAOutputGenerator {
                     try {
                         generateForFile(input, inter);
                     }
-                    catch (Exception e) {
-                        System.out.println("The file input is invalid, please enter the fullpath with filename: eg. /Users/Obama/workspace/test.txt");
+                    catch (IOException e) {
+                        System.err.println("The file input is invalid, please enter the fullpath with filename: eg. /Users/Obama/workspace/test.txt");
                         continue;
                     }
                 }

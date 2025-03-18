@@ -11,20 +11,16 @@ import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.KButilities;
 import com.articulate.sigma.utils.StringUtil;
 import com.articulate.sigma.wordNet.WordNet;
-import com.articulate.sigma.wordNet.WordNetUtilities;
+
 import com.google.common.base.Strings;
+
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.ling.Label;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.semgraph.SemanticGraph;
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
-import edu.stanford.nlp.simple.Sentence;
-import edu.stanford.nlp.simple.SentenceAlgorithms;
 import edu.stanford.nlp.trees.*;
 import edu.stanford.nlp.util.CoreMap;
-import edu.stanford.nlp.ie.machinereading.structure.Span;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -46,7 +42,7 @@ import com.articulate.nlp.corpora.CorpusReader;
 public class NPtype {
 
     // not sure yet if more than one could be found
-    public static HashSet<CoreLabel> heads = new HashSet<>();
+    public static Set<CoreLabel> heads = new HashSet<>();
 
     private static Pipeline p = new Pipeline(true);
 
@@ -137,14 +133,11 @@ public class NPtype {
      */
     private static boolean filterTypes(String newC) {
 
-        if (kb.isChildOf(newC,"Region") || kb.isChildOf(newC,"Substance") ||
+        return kb.isChildOf(newC,"Region") || kb.isChildOf(newC,"Substance") ||
                 kb.isChildOf(newC,"SymbolicString") || kb.isChildOf(newC,"Human") ||
                 kb.isChildOf(newC,"Attribute") || kb.isChildOf(newC,"Region") ||
                 kb.isChildOf(newC,"Relation") || kb.isChildOf(newC,"TimePosition") ||
-                kb.isChildOf(newC,"LinguisticExpression") || kb.isChildOf(newC,"Process")) {
-            return true;
-        }
-        return false;
+                kb.isChildOf(newC,"LinguisticExpression") || kb.isChildOf(newC,"Process");
     }
 
     /** ***************************************************************
@@ -165,7 +158,7 @@ public class NPtype {
         if (debug && type != null)
             System.out.println("betterTermReplacement() child: " + kb.isChildOf(newC,type));
 
-        boolean result = false;
+        boolean result;
         if (type != null)
             result = (oldC == null ||
                 (newC != null && kb.compareTermDepth(newC,oldC) > 0 && kb.isChildOf(newC,type)));
@@ -188,7 +181,7 @@ public class NPtype {
 
         System.out.println("findType: \"" + s + "\"");
         s = StringUtil.removeEnclosingQuotes(s);
-        Annotation document = null;
+        Annotation document;
         try {
             document = p.annotate(s);
         }
@@ -207,11 +200,12 @@ public class NPtype {
         dfs(head,tree,headFinder);
         String sumo = null;
         if (heads.size() != 1) {
-            String firstTerm = null;
-            if (heads.size() == 0)
+            if (heads.isEmpty())
                 System.out.println("No heads found");
             else {
                 if (debug) System.out.println("Multiple heads");
+                CoreLabel lab;
+                String newsumo, eqText, WNMWsumo, NERsumo;
                 for (CoreLabel cl : heads) {
                     int toknum = cl.index();
                     if (toknum-1 > labels.size()) {
@@ -222,17 +216,17 @@ public class NPtype {
                         Thread.currentThread().dumpStack();
                         continue;
                     }
-                    CoreLabel lab = labels.get(toknum-1);
-                    String newsumo = lab.get(WSDAnnotator.SUMOAnnotation.class);
+                    lab = labels.get(toknum-1);
+                    newsumo = lab.get(WSDAnnotator.SUMOAnnotation.class);
                     if (betterTermReplacement(newsumo,sumo,typeRestrict))
                         sumo = newsumo;
                     if (debug && sumo != null && newsumo != null) {
                         int eqrel = kb.compareTermDepth(newsumo,sumo);
-                        String eqText = KButilities.eqNum2Text(eqrel);
+                        eqText = KButilities.eqNum2Text(eqrel);
                         System.out.println("findType(): " + newsumo + " " + eqText + " " + sumo);
                     }
-                    String WNMWsumo = lab.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
-                    String NERsumo = lab.get(NERAnnotator.NERSUMOAnnotation.class);
+                    WNMWsumo = lab.get(WNMultiWordAnnotator.WNMWSUMOAnnotation.class);
+                    NERsumo = lab.get(NERAnnotator.NERSUMOAnnotation.class);
                     if (debug) System.out.println("findType(): core label ---------- \n" + RelExtract.toCoreLabelString(lab));
                     if (debug) System.out.println("findType(): (newsumo:sumo:WNMW:NER): " + newsumo + " : " + sumo + " : " +
                             WNMWsumo + " : " + NERsumo);
@@ -300,9 +294,9 @@ public class NPtype {
      * @param eval if true, don't include results that are already in WordNet or SUMO
      * @return a map of NPs and their lemma values, if any
      */
-    public static HashMap<String,String> findNPs(String s, boolean eval) {
+    public static Map<String,String> findNPs(String s, boolean eval) {
 
-        HashMap<String,String> result = new HashMap<>();
+        Map<String,String> result = new HashMap<>();
         Annotation wholeDocument = null;
         try {
             wholeDocument = new Annotation(s);
@@ -316,13 +310,15 @@ public class NPtype {
         String lastLemma = "";
         StringBuilder NP = new StringBuilder();
         int tokCount = 0;
+        List<CoreLabel> tokens;
+        String orig, lemma, pos;
         for (CoreMap sentence : sentences) {
-            List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+            tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
             for (CoreLabel token : tokens) {
                 if (debug) System.out.println("NPtype.findNP(): result so far: " + result);
-                String orig = token.originalText();
-                String lemma = token.lemma();
-                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                orig = token.originalText();
+                lemma = token.lemma();
+                pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
                 if (debug) System.out.println("NPtype.findNPs(): orig, pos, lemma " + orig + " , " + pos + " , " + lemma);
                 if (pos.equals("NN") || pos.equals("NNS") || pos.equals("NNP") || pos.equals("NNPS")) {
                     if (pos.equals(lastPOS)) {
@@ -339,7 +335,7 @@ public class NPtype {
                         if (eval && evaluateNP(NP.toString(),lastLemma))
                             result.put(NP.toString(),lastLemma);
                         if (debug) System.out.println("NPtype.findNPs(): result so far 3 : " + result);
-                        NP = new StringBuilder();
+                        NP.setLength(0); // reset
                         tokCount = 1;  // reset counter of words in NP
                         NP.append(orig);
                         lastPOS = pos;
@@ -352,7 +348,7 @@ public class NPtype {
                     if (eval && evaluateNP(NP.toString(),lastLemma))
                         result.put(NP.toString(),lastLemma);
                     if (debug) System.out.println("NPtype.findNPs(): result so far 5 : " + result);
-                    NP = new StringBuilder();
+                    NP.setLength(0); // reset
                     tokCount = 0;  // reset counter of words in NP
                     lastPOS = pos;
                 }
@@ -366,13 +362,14 @@ public class NPtype {
     /** ***************************************************************
      * collect noun phrases from a file
      */
-    public static HashSet<String> collectNPs(String fname) {
+    public static Set<String> collectNPs(String fname) {
 
-        HashSet<String> result = new HashSet<>();
-        ArrayList<String> lines = CorpusReader.readFile(fname);
+        Set<String> result = new HashSet<>();
+        Map<String,String> nps;
+        List<String> lines = CorpusReader.readFile(fname);
         for (String l : lines) {
-            HashMap<String,String> nps = findNPs(l,false);
-            if (nps.size() > 0)
+            nps = findNPs(l,false);
+            if (!nps.isEmpty())
                 result.addAll(nps.keySet());
         }
         return result;
@@ -383,7 +380,7 @@ public class NPtype {
      */
     public static void interpInter() {
 
-        String input = "";
+        String input;
         Scanner scanner = new Scanner(System.in);
         do {
             System.out.print("Enter sentence: ");

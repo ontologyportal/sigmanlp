@@ -4,6 +4,7 @@
 /dist
 /target
 /examples/target
+/lib
 
 # JUnit output
 /TEST*.xml
@@ -19,13 +20,6 @@
 
 # IDEA files
 .idea
-
-# Build related files
-/lib/sigmakee.jar
-/lib/sigmaUtils.jar
-
-# Manually install
-/lib/stanford-corenlp-*.jar
 
 # NetBeans IDE
 nbproject/private
@@ -57,3 +51,6 @@ out-log.txt
 
 # COCA
 /corpora/COCA/*
+/.ivy/
+/corpora/FCE.mv.db
+/corpora/wikipedia/

@@ -61,7 +61,7 @@ public class RulePrepAboutRefersToIntegrationTest extends IntegrationTestBase {
         System.out.println("\n\n ================= RulePrepAboutRefersToIntegrationTest =================\n" +
                 sent);
         ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> cleanedActual = getCleanedOutput(kifClauses);
         System.out.println("\n\nRulePrepAboutRefersToIntegrationTest: sentence: " + sent);
         System.out.println("\n\nInterpretNumericsTest: actual: " + (new TreeSet(cleanedActual)));
@@ -866,7 +866,7 @@ public class RulePrepAboutRefersToIntegrationTest extends IntegrationTestBase {
 
     /****************************************************************
      */
-    private Set<String> getCleanedOutput(ArrayList<String> kifClauses) {
+    private Set<String> getCleanedOutput(List<String> kifClauses) {
 
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\n ", "")).collect(Collectors.toSet());

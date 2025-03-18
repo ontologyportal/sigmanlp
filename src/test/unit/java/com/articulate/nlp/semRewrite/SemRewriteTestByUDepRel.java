@@ -7,7 +7,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -62,13 +62,13 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
                 "sumo(Automobile,car-5), attribute(John-1,Male), sumo(Human,John-1), " +
                 "sumo(Red,red-4), number(SINGULAR,John-1), tense(PRESENT,have-2), " +
                 "number(SINGULAR,car-5)";
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
                 "(attribute car-5 Red)"
         };
 
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
 
@@ -87,13 +87,13 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
         String input = "sumo(LondonUnitedKingdom,London-1), number(SINGULAR,London-1), " +
                 "root(ROOT-0,smell-2), nsubj(smell-2,London-1), sumo(Smelling,smell-2), " +
                 "tense(PRESENT,smell-2), acomp(smells-2,sweet-3), sumo(Sweetness,sweet-3)";
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
                 "(attribute London-1 Sweetness)"
         };
 
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
 
@@ -111,13 +111,13 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
                 "number(SINGULAR,meat-2), root(ROOT-0,smell-3), nsubj(smell-3,meat-2), " +
                 "acomp(smell-3,sweet-4), sumo(Smelling,smell-3), tense(PRESENT,smell-3), " +
                 "acomp(smells-3,sweet-4), sumo(Sweetness,sweet-4)";
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
                 "(attribute meat-2 Sweetness)"
         };
 
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
 
@@ -139,13 +139,13 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
                 "number(SINGULAR,sister-4), root(ROOT-0,arrive-6), " +
                 "nsubj(arrive-6,Mary-1), sumo(Arriving,arrive-6), " +
                 "tense(PAST,arrive-6)";
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
                 "(equals Mary-1 sister-4)"
         };
 
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
 
@@ -166,13 +166,13 @@ public class SemRewriteTestByUDepRel extends UnitTestBase {
                 "sumo(Day,yesterday-1), number(SINGULAR,yesterday-1), " +
                 "root(ROOT-0,run-4), tmod(run-4,Yesterday-1), nsubj(run-4,Mary-3), " +
                 "sumo(Running,run-4), tense(PAST,run-4)";
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
 
         String[] expected = {
                 "(during run-4 Yesterday-1)"
         };
 
-        ArrayList<String> kifClauses = interpreter.interpretCNF(cnfInput);
+        List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
 

@@ -10,8 +10,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    com.articulate.nlp.corpora.SchemaOrgTest.class
+    SchemaOrgTest.class
 })
 public class UnitCorporaTestSuite extends UnitTestBase {
-    
+
 } // end class file UnitCorporaTestSuite.java

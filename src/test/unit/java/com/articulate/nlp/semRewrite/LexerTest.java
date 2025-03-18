@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,8 +78,8 @@ public class LexerTest extends UnitTestBase {
         Lexer lex1 = new Lexer(example1);
         Lexer lex2 = new Lexer(example2);
         try {
-            ArrayList<String> res1 = lex1.lexTypes();
-            ArrayList<String> res2 = lex2.lexTypes();
+            List<String> res1 = lex1.lexTypes();
+            List<String> res2 = lex2.lexTypes();
             System.out.println("INFO in Lexer.testLex(): completed parsing example 1: " + res1);
             System.out.println("INFO in Lexer.testLex(): completed parsing example 1: " + res2);
             assertThat(res1, hasItems(Lexer.Directive));
