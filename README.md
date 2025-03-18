@@ -15,13 +15,12 @@ For macOS, replace .bashrc with .zshrc
 ```sh
 cd ~
 echo "## SigmaNLP" >> .bashrc
-echo "export CORPORA=\$ONTOLOGYPORTAL_GIT/sigmanlp/corpora" >> .bashrc
-echo "export SIGMANLP_CP=\$ONTOLOGYPORTAL_GIT/sigmanlp/build/sigmanlp.jar:$ONTOLOGYPORTAL_GIT/sigmanlp/lib/*" >> .bashrc
+echo "export CORPORA=\"\$ONTOLOGYPORTAL_GIT/sigmanlp/corpora\"" >> .bashrc
+echo "export SIGMANLP_CP=\"\$ONTOLOGYPORTAL_GIT/sigmanlp/build/sigmanlp.jar:$ONTOLOGYPORTAL_GIT/sigmanlp/lib/*\"" >> .bashrc
 source ~/.bashrc
 cd ~/workspace/
 git clone https://github.com/ontologyportal/sigmanlp
 cd ~/workspace/sigmanlp
-ant get.stanford.corenlp.models
 ant
 ```
 
@@ -65,20 +64,24 @@ the following in your config.xml
 <preference name="nlpTools" value="yes" />
 ```
 
-To run on the command line, try
+To test SigmaNLP on the command line, try
 ```sh
-java -Xmx10g -Xss1m -cp $ONTOLOGYPORTAL_GIT/sigmanlp/build/classes:$ONTOLOGYPORTAL_GIT/sigmanlp/lib/* com.articulate.nlp.semRewrite.Interpreter -i
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP com.articulate.nlp.semRewrite.Interpreter -i
 ```
 
-jUnit
-=====
+jUnit ANT
+=========
 ```sh
-java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
-/home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
+ant test
+```
+
+jUnit CLI
+=========
+```sh
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP\
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllUnitSemRewrite
 
-java -Xmx10g -Xss1m -cp /home/user/workspace/sigmanlp/build/classes:
-/home/user/workspace/sigmanlp/build/lib/*:/home/user/workspace/sigmanlp/lib/*
+java -Xmx10g -Xss1m -cp $SIGMANLP_CP\
 org.junit.runner.JUnitCore com.articulate.nlp.semRewrite.RunAllSemRewriteIntegTest
 ```
 
