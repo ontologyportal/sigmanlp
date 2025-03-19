@@ -255,6 +255,21 @@
     =====
     -->
 
+    <target name="stop.tomcat" description="stop web application in tomcat">
+        <exec executable="sh">
+            <arg value="-c"/>
+            <arg value="'${tomcat.home}/bin/shutdown.sh'"/>
+        </exec>
+    </target>
+
+    <target name="start.tomcat" description="start web application in tomcat">
+        <exec executable="sh">
+            <arg value="-c"/>
+            <arg value="'${tomcat.home}/bin/startup.sh'"/>
+        </exec>
+        <!--<antcall target="monitor.catalina.out"/>-->
+    </target>
+
     <target name="update.sigmanlp">
         <git command="pull" dir="${user.dir}">
             <args>
