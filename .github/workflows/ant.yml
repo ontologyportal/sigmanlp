@@ -100,7 +100,7 @@ jobs:
           SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
           SIGMA_SRC: ${{ github.workspace }}/sigmakee
           CORPORA: ${{ github.workspace }}/sigmanlp/corpora
-        working-directory: ./sigmanlp
+        working-directory: ${{ github.workspace }}
         run: |
           sed -i "s|/home/theuser/workspace/sumo|$ONTOLOGYPORTAL_GIT/sumo|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
           sed -i "s|/home/theuser/.sigmakee|$SIGMA_HOME|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
@@ -124,7 +124,7 @@ jobs:
           CORPORA: ${{ github.workspace }}/sigmanlp/corpora
         working-directory: ${{ github.workspace }}
         run: |
-          find $SIGMA_HOME/KBs -name '*.ser' -delete
+          find $SIGMA_HOME/KBs -name '**/*.ser' -delete
           cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
           sed -i "s|/home/theuser/workspace/sumo|$ONTOLOGYPORTAL_GIT/sumo|g" $SIGMA_HOME/KBs/config.xml
           sed -i "s|/home/theuser/.sigmakee|$SIGMA_HOME|g" $SIGMA_HOME/KBs/config.xml
