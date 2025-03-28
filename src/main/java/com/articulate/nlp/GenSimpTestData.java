@@ -2262,7 +2262,7 @@ public class GenSimpTestData {
             DateTimeFormatter format = DateTimeFormatter.ofPattern(dateOption);
             english.append(capital("on "));
             english.append(d.format(format)).append(" ");
-            prop.append("(instance ?T (DayFn ").append(day).append(" (MonthFn ").append(month).append(" (YearFn ").append(year).append(")))) (during ?P ?T) ");
+            prop.append("(instance ?T (DayFn ").append(day).append(" (MonthFn ").append(month).append(" (YearFn ").append(theYear).append(")))) (during ?P ?T) ");
             hasdate = true;
             startOfSentence = false;
         }
