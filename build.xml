@@ -103,7 +103,7 @@
     <property name="dist.war" value="${dist.home}/${web.app.name}.war"/>
     <property name="deploy.home" value="${dist.home}/${web.app.name}"/>
     <property name="git.home" value="${env.ONTOLOGYPORTAL_GIT}"/>
-    <property name="sigmakee.home" value="${env.SIGMA_SRC}" />
+    <property name="sigmakee.home" value="${env.SIGMA_SRC}"/>
 
     <property name="javac.release" value="11"/>
     <property name="run.jvmargs" value="-Xmx10g -Xss1m"/>
@@ -164,9 +164,9 @@
     -->
 
     <target name="build.sigmakee" depends="init">
-        <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all" />
-        <copy todir="${basedir}/lib" file="../sigmakee/build/sigmakee.jar" />
-        <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar" />
+        <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all"/>
+        <copy todir="${basedir}/lib" file="../sigmakee/build/sigmakee.jar"/>
+        <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar"/>
     </target>
 
     <target name="compile" depends="build.sigmakee" description="Compile sigmanlp">
