@@ -556,12 +556,11 @@
 
     <!-- Copy customized config files for testing -->
     <target name="prep.main.config">
-        <!-- Restore main config post integration testing -->
-        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.main.config"/>
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.full.config"/>
     </target>
     <!-- SUMO, MILO and domain only -->
     <target name="prep.integration.config">
-        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.integration.config"/>
+        <ant antfile="${sigma_src}/nbproject/ide-targets.xml" inheritAll="false" target="prep.top.mid.config"/>
     </target>
     <!-- SUMO and domain only -->
     <target name="prep.unit.config">

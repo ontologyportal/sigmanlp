@@ -1,4 +1,4 @@
-#July 3, 208:  Revision to include SIGMA NLP
+#July 3, 2008:  Revision to include SIGMA NLP
 FROM centos:latest
 MAINTAINER Anonymous Contributor
 
@@ -61,7 +61,7 @@ RUN su -l sumo -c "mkdir /home/sumo/workspace; mkdir /home/sumo/Programs/; mkdir
     #Create the DB (This is required)
     su -l sumo -c "java -Xmx7g -classpath /home/sumo/workspace/sigmakee/build/classes:/home/sumo/workspace/sigmakee/build/lib/*:/home/sumo/workspace/sigmakee/lib/* com.articulate.sigma.PasswordService -c" && \
     #Run the non-interactive account creation
-    su -l sumo -c "java -Xmx7g -classpath /home/sumo/workspace/sigmakee/build/classes:/home/sumo/workspace/sigmakee/build/lib/*:/home/sumo/workspace/sigmakee/lib/* com.articulate.sigma.PasswordService -a3 admin admin nlpAdmin@nowhere.com" && \ 
+    su -l sumo -c "java -Xmx7g -classpath /home/sumo/workspace/sigmakee/build/classes:/home/sumo/workspace/sigmakee/build/lib/*:/home/sumo/workspace/sigmakee/lib/* com.articulate.sigma.PasswordService -a3 admin admin nlpAdmin@nowhere.com" && \
     #The following is a cleanup - the problem is that you can't change the password once we do this.
     su -l sumo -c "rm -Rf /home/sumo/Programs/bins; rm -Rf /home/sumo/Programs/*.tar; rm -Rf /home/sumo/workspace/sigmakee; rm -Rf /home/sumo/workspace/sigmanlp"
 

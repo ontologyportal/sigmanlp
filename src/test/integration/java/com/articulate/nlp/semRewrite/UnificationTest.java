@@ -29,7 +29,7 @@ public class UnificationTest extends IntegrationTestBase {
      */
     private void doTest(String sent, String input, Set<String> expectedOutput) {
 
-        ArrayList<CNF> cnfInput = interpreter.getCNFInput(input);
+        List<CNF> cnfInput = interpreter.getCNFInput(input);
         List<String> kifClauses = interpreter.interpretCNF(cnfInput);
         Set<String> actual = Sets.newHashSet(kifClauses);
         Set<String> cleanedActual = actual.stream().map(str -> str.replaceAll("\\s+", " ")).collect(Collectors.toSet());
@@ -39,7 +39,7 @@ public class UnificationTest extends IntegrationTestBase {
         if (cleanedActual.containsAll(expectedOutput))
             System.out.println("UnificationTest: pass");
         else
-            System.out.println("UnificationTest: fail");
+            System.err.println("UnificationTest: fail");
         assertTrue(cleanedActual.containsAll(expectedOutput));
     }
 

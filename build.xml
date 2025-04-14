@@ -38,6 +38,7 @@
         <taskdef resource="org/apache/ivy/ant/antlib.xml"
                  uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
         <ivy:retrieve/>
+        <!--<ivy:report/>-->
 
         <path id="compile.classpath">
             <fileset dir="${basedir}/lib">
