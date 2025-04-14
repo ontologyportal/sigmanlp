@@ -15,21 +15,23 @@
             <exclude name="jmespath-java"/>
         </dependency>
         <dependency org="com.esotericsoftware" name="kryo" rev="5.6.2" conf="api->default"/>
+        <dependency org="com.google.guava" name="guava" rev="19.0" transitive="false" conf="api->default"/>
         <!-- https://mvnrepository.com/artifact/com.googlecode.efficient-java-matrix-library/ejml -->
         <dependency org="com.googlecode.efficient-java-matrix-library" name="ejml" rev="0.23" conf="api->default"/>
-        <dependency org="com.google.guava" name="guava" rev="19.0" transitive="false" conf="api->default"/>
         <dependency org="com.googlecode.json-simple" name="json-simple" rev="1.1.1" transitive="false" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
+        <dependency org="com.h2database" name="h2" rev="2.3.232" transitive="false" conf="api->default"/>
         <!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
         <dependency org="com.opencsv" name="opencsv" rev="3.8" conf="api->default"/>
+        <dependency org="com.servlets" name="cos" rev="09May2002" transitive="false" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/com.sun.mail/jakarta.mail -->
+        <dependency org="com.sun.mail" name="jakarta.mail" rev="1.6.7" conf="api->default"/>
         <!-- https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-impl -->
         <dependency org="com.sun.xml.bind" name="jaxb-impl" rev="2.4.0-b180830.0438" conf="api->default"/>
         <dependency org="commons-beanutils" name="commons-beanutils" rev="1.9.2" conf="api->default"/>
         <dependency org="commons-codec" name="commons-codec" rev="1.9" conf="api->default"/>
         <dependency org="commons-collections" name="commons-collections" rev="3.2.1" conf="api->default"/>
         <dependency org="commons-io" name="commons-io" rev="2.5" conf="api->default"/>
-        <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
-        <dependency org="com.h2database" name="h2" rev="2.3.232" transitive="false" conf="api->default"/>
-        <dependency org="com.servlets" name="cos" rev="09May2002" transitive="false" conf="api->default"/>
         <dependency org="edu.stanford.nlp" name="stanford-corenlp" rev="4.5.7" conf="api->default">
             <artifact name="stanford-corenlp"/>
             <artifact name="stanford-corenlp" m:classifier="models"/>
@@ -41,6 +43,7 @@
             <exclude name="ejml-fsparse"/>
             <exclude name="ejml-zdense"/>
             <exclude name="jakarta.servlet-api"/>
+            <exclude name="javax.activation-api"/>
             <exclude name="jsr305"/>
             <exclude name="lucene-queries"/>
             <exclude name="lucene-sandbox"/>
@@ -50,9 +53,6 @@
         <dependency org="io.github.ollama4j" name="ollama4j" rev="1.0.93" conf="api->default">
             <exclude name="jsoup"/>
         </dependency>
-        <dependency org="javax.mail" name="mail" rev="1.4.7" transitive="false" conf="api->default"/>
-        <!-- https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api -->
-        <dependency org="javax.xml.bind" name="jaxb-api" rev="2.4.0-b180830.0359" conf="api->default"/>
         <dependency org="org.antlr" name="antlr4-runtime" rev="4.9.3" transitive="false" conf="api->default"/>
         <dependency org="org.apache.commons" name="commons-lang3" rev="3.12.0" conf="api->default"/>
         <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpcore -->
