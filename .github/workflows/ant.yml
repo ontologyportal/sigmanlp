@@ -23,6 +23,8 @@ jobs:
   build-test-upload:
     name: Built, Test & Upload
     runs-on: ubuntu-latest
+    env:
+      CATALINA_HOME: /usr/local/tomcat
 
     steps:
       - name: checkout sigmanlp
