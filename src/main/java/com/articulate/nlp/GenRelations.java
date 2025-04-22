@@ -101,8 +101,8 @@ public class GenRelations {
         System.out.println("Finished loading KBs");
         Set<String> allSUMOFunctionsSet = kb.kbCache.getChildInstances("Function");
         Set<String> allSUMORelationsSet = kb.kbCache.getChildInstances("Relation");
-        //allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
-        //allSUMORelationsSet.remove("Function");
+        allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
+        allSUMORelationsSet.remove("Function");
         allSUMORelationsRandSet = RandSet.listToEqualPairs(allSUMORelationsSet);
         allTermFormats = kb.getTermFormatMapAll("EnglishLanguage");
         allFormats = kb.getFormatMapAll("EnglishLanguage");
@@ -164,8 +164,6 @@ public class GenRelations {
     public static boolean handleLinks() {
 
         englishSentence = englishSentence.replace("&%", "");
-        englishSentence = englishSentence.replace("%%", "%");
-        // TODO: implement %*. There are only a handful of cases where this is needed.
         return true;
     }
 
@@ -274,6 +272,16 @@ public class GenRelations {
     }
 
 
+    public static boolean handlePercents() {
+        if (englishSentence.contains("%") && !englishSentence.contains("%%")) {
+            System.out.println("ERROR in GenRelations.java. Relation format has more variables than domains for relation " + randRelation);
+            return false;
+        }
+        englishSentence = englishSentence.replace("%%", "%");
+        // TODO: implement %*. There are only a handful of cases where this is needed.
+        return true;
+    }
+
     public static void main(String[] args) throws Exception {
 
         init(args);
@@ -282,13 +290,6 @@ public class GenRelations {
         while (sentenceGeneratedCounter < numToGenerate) {
             resetGenParams();
             randRelation = allSUMORelationsRandSet.getNext();
-            // DELETE ME START
-            if (randRelation.equals("")) {
-                System.out.println("No more relations.");
-                System.exit(0);
-            }
-            allSUMORelationsRandSet.remove(randRelation);
-            // DELETE ME END
             randRelationFormats = allFormats.get(randRelation);
             if (randRelationFormats != null) {
                 englishSentence = randRelationFormats.get(random.nextInt(randRelationFormats.size()));
@@ -300,7 +301,7 @@ public class GenRelations {
                     }
                     if (debug) System.out.println("    random Format chosen: " + englishSentence);
 
-                    if (handleLinks() && handleFormatSymbols() && handleArgs()) {
+                    if (handleLinks() && handleFormatSymbols() && handleArgs() && handlePercents()) {
                         englishSentence = englishSentence.substring(0, 1).toUpperCase() + englishSentence.substring(1);
                         englishSentence = (isQuestion) ? englishSentence + "?" : englishSentence + ".";
                         if (debug) System.out.println("Final English sentence : " + englishSentence);
