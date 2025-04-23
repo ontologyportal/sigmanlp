@@ -100,9 +100,13 @@ public class GenRelations {
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         System.out.println("Finished loading KBs");
         Set<String> allSUMOFunctionsSet = kb.kbCache.getChildInstances("Function");
+        Set<String> allSUMOVariableAritySet = kb.kbCache.getChildInstances("VariableArityRelation");
         Set<String> allSUMORelationsSet = kb.kbCache.getChildInstances("Relation");
         allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
+        allSUMORelationsSet.removeAll(allSUMOVariableAritySet);
         allSUMORelationsSet.remove("Function");
+        allSUMORelationsSet.remove("VariableArityRelation");
+        allSUMORelationsSet.remove("documentation");
         allSUMORelationsRandSet = RandSet.listToEqualPairs(allSUMORelationsSet);
         allTermFormats = kb.getTermFormatMapAll("EnglishLanguage");
         allFormats = kb.getFormatMapAll("EnglishLanguage");
@@ -192,19 +196,24 @@ public class GenRelations {
         englishSentence = englishSentence.replaceAll(regex, "$1");
 
         // delete all the unused negative commands
-        englishSentence = englishSentence.replace(" %n "," ");
-        englishSentence = englishSentence.replace("%n "," ");
         englishSentence = englishSentence.replaceAll(" %n\\{.+?\\} "," ");
         englishSentence = englishSentence.replaceAll("%n\\{.+?\\} "," ");
+        englishSentence = englishSentence.replaceAll("%n\\{.+?\\}","");
+        englishSentence = englishSentence.replace(" %n "," ");
+        englishSentence = englishSentence.replace("%n "," ");
+        englishSentence = englishSentence.replace("%n","");
         // delete all unused positive commands
         englishSentence = englishSentence.replaceAll(" %p\\{.+?\\} "," ");
         englishSentence = englishSentence.replaceAll("%p\\{.+?\\} "," ");
+        englishSentence = englishSentence.replaceAll("%p\\{.+?\\}","");
         // delete all unused positive question commands
         englishSentence = englishSentence.replaceAll(" %qp\\{.+?\\} "," ");
         englishSentence = englishSentence.replaceAll("%qp\\{.+?\\} "," ");
+        englishSentence = englishSentence.replaceAll("%qp\\{.+?\\}","");
         // delete all unused negative question commands
         englishSentence = englishSentence.replaceAll(" %qn\\{.+?\\} "," ");
         englishSentence = englishSentence.replaceAll("%qn\\{.+?\\} "," ");
+        englishSentence = englishSentence.replaceAll("%qn\\{.+?\\}","");
         return true;
     }
 
@@ -274,7 +283,7 @@ public class GenRelations {
 
     public static boolean handlePercents() {
         if (englishSentence.contains("%") && !englishSentence.contains("%%")) {
-            System.out.println("ERROR in GenRelations.java. Relation format has more variables than domains for relation " + randRelation);
+            System.out.println("ERROR in GenRelations.java. Relation format has more variables than domains for relation " + randRelation + ". Remaining format statement, after substitution of possible variables: " + englishSentence);
             return false;
         }
         englishSentence = englishSentence.replace("%%", "%");
@@ -290,6 +299,10 @@ public class GenRelations {
         while (sentenceGeneratedCounter < numToGenerate) {
             resetGenParams();
             randRelation = allSUMORelationsRandSet.getNext();
+            /*allSUMORelationsRandSet.remove(randRelation);
+            if (randRelation.equals("")) {
+                sentenceGeneratedCounter = 999999;
+            }*/
             randRelationFormats = allFormats.get(randRelation);
             if (randRelationFormats != null) {
                 englishSentence = randRelationFormats.get(random.nextInt(randRelationFormats.size()));
