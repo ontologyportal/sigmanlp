@@ -1,7 +1,6 @@
 package com.articulate.nlp;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -11,6 +10,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Random;
 import java.util.HashSet;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 
 
 /** Utility methods useful for synthetically generating sentences.
@@ -113,6 +115,35 @@ public class GenUtils {
                 e.printStackTrace();
             }
         }
+    }
+
+    /** ***************************************************************
+     *   Runs a bash command
+     */
+    public static String runBashCommand(String command) {
+
+        StringBuilder output = new StringBuilder();
+        try {
+            // Run the command using bash -c
+            ProcessBuilder builder = new ProcessBuilder("bash", "-c", command);
+            builder.redirectErrorStream(true);  // combine stderr with stdout
+            Process process = builder.start();
+            // Read the output
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                output.append("Command exited with code ").append(exitCode).append("\n");
+            }
+
+        } catch (IOException | InterruptedException e) {
+            output.append("Error: ").append(e.getMessage()).append("\n");
+        }
+        return output.toString().trim();
     }
 
 

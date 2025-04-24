@@ -7,6 +7,7 @@ import io.github.ollama4j.utils.OptionsBuilder;
 import io.github.ollama4j.utils.Options;
 
 import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Set;
 import java.util.Arrays;
@@ -57,6 +58,7 @@ public class GenRelations {
     public static Map<String, List<String>> allTermFormats;
     public static Map<String, List<String>> allFormats;
     public static List<Formula> domainsAll;
+    public static HashSet<String> allSUMONumbersSet;
     public static boolean isQuestion;
     public static boolean isNegated;
     public static String randRelation;
@@ -67,6 +69,8 @@ public class GenRelations {
     public static final int TERM = 1;
     public static final int ARG_NUM = 2;
     public static final int ARG_CLASS = 3;
+
+
 
     /** ***************************************************************
      *   Initiates important variables and objects needed
@@ -102,11 +106,15 @@ public class GenRelations {
         Set<String> allSUMOFunctionsSet = kb.kbCache.getChildInstances("Function");
         Set<String> allSUMOVariableAritySet = kb.kbCache.getChildInstances("VariableArityRelation");
         Set<String> allSUMORelationsSet = kb.kbCache.getChildInstances("Relation");
+        allSUMONumbersSet = kb.kbCache.getChildInstances("Number");
         allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
         allSUMORelationsSet.removeAll(allSUMOVariableAritySet);
         allSUMORelationsSet.remove("Function");
         allSUMORelationsSet.remove("VariableArityRelation");
         allSUMORelationsSet.remove("documentation");
+
+
+
         allSUMORelationsRandSet = RandSet.listToEqualPairs(allSUMORelationsSet);
         allTermFormats = kb.getTermFormatMapAll("EnglishLanguage");
         allFormats = kb.getFormatMapAll("EnglishLanguage");
@@ -118,6 +126,7 @@ public class GenRelations {
         outputFileLogic = args[0] + "-log.txt";
         genUtils.createFileIfDoesNotExists(outputFileEnglish);
         genUtils.createFileIfDoesNotExists(outputFileLogic);
+
     }
 
 
@@ -233,11 +242,11 @@ public class GenRelations {
                 String[] d = getDomainArgNum(i + "");
                 if (d != null) {
                     String argClass = d[ARG_CLASS];
+                    if (debug) System.out.println("argClass: " + argClass);
                     if (d[ARG_CLASS].equals("Formula") || d[ARG_CLASS].equals("Predicate")) {
                         if (debug) System.out.println("Unable to process formula or predicate (they are higher order)");
                         return false;
                     }
-                    if (debug) System.out.println("argClass: " + argClass);
                     List<String> childClasses = new ArrayList<>();
                     childClasses.add(argClass);
                     Set<String> childClassesSet = kb.kbCache.getChildClasses(argClass);
@@ -245,6 +254,9 @@ public class GenRelations {
                         childClasses.addAll(childClassesSet);
                     }
                     String randomSubclass = childClasses.get(random.nextInt(childClasses.size()));
+                    if (allSUMONumbersSet.contains(randomSubclass)) {
+                        // TO DO: Handle numbers
+                    }
                     if(debug) System.out.println("randomSubclass: " + randomSubclass);
                     List<String> randomSubclassTermFormats = allTermFormats.get(randomSubclass);
                     if (randomSubclassTermFormats != null) {
@@ -271,6 +283,7 @@ public class GenRelations {
             } else if (isQuestion) {
                 //TODO: Finish this!!!!
                 logicPhrase += "?X" + i + " ";
+                return false;
             } else {
                 System.out.println("ERROR in GenRelations.java. Relation format for " + randRelation + " missing argument %" + i);
                 return false;
@@ -281,7 +294,7 @@ public class GenRelations {
     }
 
 
-    public static boolean handlePercents() {
+    public static boolean handlePercentsInFormats() {
         if (englishSentence.contains("%") && !englishSentence.contains("%%")) {
             System.out.println("ERROR in GenRelations.java. Relation format has more variables than domains for relation " + randRelation + ". Remaining format statement, after substitution of possible variables: " + englishSentence);
             return false;
@@ -299,10 +312,6 @@ public class GenRelations {
         while (sentenceGeneratedCounter < numToGenerate) {
             resetGenParams();
             randRelation = allSUMORelationsRandSet.getNext();
-            /*allSUMORelationsRandSet.remove(randRelation);
-            if (randRelation.equals("")) {
-                sentenceGeneratedCounter = 999999;
-            }*/
             randRelationFormats = allFormats.get(randRelation);
             if (randRelationFormats != null) {
                 englishSentence = randRelationFormats.get(random.nextInt(randRelationFormats.size()));
@@ -314,16 +323,13 @@ public class GenRelations {
                     }
                     if (debug) System.out.println("    random Format chosen: " + englishSentence);
 
-                    if (handleLinks() && handleFormatSymbols() && handleArgs() && handlePercents()) {
+                    if (handleLinks() && handleFormatSymbols() && handleArgs() && handlePercentsInFormats()) {
                         englishSentence = englishSentence.substring(0, 1).toUpperCase() + englishSentence.substring(1);
                         englishSentence = (isQuestion) ? englishSentence + "?" : englishSentence + ".";
                         if (debug) System.out.println("Final English sentence : " + englishSentence);
                         if (debug) System.out.println("Final Logic phrase     : " + logicPhrase);
                         GenUtils.writeEnglishLogicPairToFile(englishSentence, logicPhrase, outputFileEnglish, outputFileLogic);
                         sentenceGeneratedCounter++;
-                        if (englishSentence.contains("%1")) {
-                            System.exit(0);
-                        }
                     }
                 }
             } else {
@@ -334,3 +340,69 @@ public class GenRelations {
         System.out.println("\n\n\nSuccessfully generated " + numToGenerate + " sentences. Make it a great day!\n");
     }
 }
+
+
+            // Code to loop through each relation in alphabetical order
+           /*
+        PrintWriter writer = new PrintWriter("relations_ideas.txt");
+             // DELETE ME
+        treeSet = new TreeSet<>(allSUMORelationsSet);
+        //DELETE ME END
+           public static TreeSet<String> treeSet;  // Now it's sorted!
+
+           randRelation = treeSet.pollFirst();
+
+            allSUMORelationsRandSet.remove(randRelation);
+            if (randRelation == null || randRelation.equals("")) {
+                sentenceGeneratedCounter = 999999;
+                writer.close();
+                System.exit(0);
+            }
+            String formatResults = genUtils.runBashCommand("grep \"(format EnglishLanguage " + randRelation + " \" ../sumo/*.kif");
+            String documentResults = genUtils.runBashCommand("grep \"(documentation " + randRelation + " EnglishLanguage" + "\" ../sumo/*.kif");
+            String domainResults = genUtils.runBashCommand("grep \"(domain " + randRelation + " \" ../sumo/*.kif");
+            String domainSubclassResults = genUtils.runBashCommand("grep \"(domainSubclass " + randRelation + " \" ../sumo/*.kif");
+
+            formatResults = Arrays.stream(formatResults.split("\n"))
+                    .map(line -> line.contains(":") ? line.split(":", 2)[1] + ":" + line.split(":", 2)[0] : line)
+                    .collect(Collectors.joining("\n"));
+            documentResults = Arrays.stream(documentResults.split("\n"))
+                    .map(line -> line.contains(":") ? line.split(":", 2)[1] + ":" + line.split(":", 2)[0] : line)
+                    .collect(Collectors.joining("\n"));
+            domainResults = Arrays.stream(domainResults.split("\n"))
+                    .map(line -> line.contains(":") ? line.split(":", 2)[1] + ":" + line.split(":", 2)[0] : line)
+                    .collect(Collectors.joining("\n"));
+            domainSubclassResults = Arrays.stream(domainSubclassResults.split("\n"))
+                    .map(line -> line.contains(":") ? line.split(":", 2)[1] + ":" + line.split(":", 2)[0] : line)
+                    .collect(Collectors.joining("\n"));
+
+            formatResults = formatResults.replace("\n", "\n;; ");
+            documentResults = documentResults.replace("\n", "\n;; ");
+            domainResults = domainResults.replace("\n", "\n;; ");
+            domainSubclassResults = domainSubclassResults.replace("\n", "\n;; ");
+            formatResults = formatResults.replace(":../sumo/", "\t; ");
+            documentResults = documentResults.replace(":../sumo/", "\t; ");
+            domainResults = domainResults.replace(":../sumo/", "\t; ");
+            domainSubclassResults = domainSubclassResults.replace(":../sumo/", "\t; ");
+
+            writer.println(";;;;;;;;;;;;;;;;;;;;;;;; " + randRelation + " ;;;;;;;;;;;;;;;;;;;;;;;;");
+            if (!documentResults.contains("Command exited with code 1")) {
+                writer.println(";; " + documentResults);
+            }
+            else {
+                writer.println(";; No document statement found for " + randRelation);
+            }
+            writer.println(";; " + domainResults);
+            if (!domainSubclassResults.contains("Command exited with code 1")) {
+                writer.println(";; " + domainSubclassResults);
+            }
+            if (!formatResults.contains("Command exited with code 1")) {
+                writer.println(";; " + formatResults);
+            }
+            else {
+                writer.println(";; No format found for " + randRelation);
+            }
+            writer.println("\n; (format EnglishLanguage " + randRelation + " \"\")\n\n\n\n");
+            System.out.println("numGenerated: " + sentenceGeneratedCounter);
+            // DELETE END
+*/
