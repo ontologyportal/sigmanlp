@@ -6,6 +6,7 @@ import io.github.ollama4j.types.OllamaModelType;
 import io.github.ollama4j.utils.OptionsBuilder;
 import io.github.ollama4j.utils.Options;
 
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -71,6 +72,9 @@ public class GenRelations {
     public static final int ARG_CLASS = 3;
 
 
+    public static ArrayList<String> logicVariables;
+    public static ArrayList<String> logicInstanceFormulas;
+    public static String logicRelationFormula;
 
     /** ***************************************************************
      *   Initiates important variables and objects needed
@@ -106,14 +110,11 @@ public class GenRelations {
         Set<String> allSUMOFunctionsSet = kb.kbCache.getChildInstances("Function");
         Set<String> allSUMOVariableAritySet = kb.kbCache.getChildInstances("VariableArityRelation");
         Set<String> allSUMORelationsSet = kb.kbCache.getChildInstances("Relation");
-        allSUMONumbersSet = kb.kbCache.getChildInstances("Number");
         allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
         allSUMORelationsSet.removeAll(allSUMOVariableAritySet);
         allSUMORelationsSet.remove("Function");
         allSUMORelationsSet.remove("VariableArityRelation");
         allSUMORelationsSet.remove("documentation");
-
-
 
         allSUMORelationsRandSet = RandSet.listToEqualPairs(allSUMORelationsSet);
         allTermFormats = kb.getTermFormatMapAll("EnglishLanguage");
@@ -126,11 +127,12 @@ public class GenRelations {
         outputFileLogic = args[0] + "-log.txt";
         genUtils.createFileIfDoesNotExists(outputFileEnglish);
         genUtils.createFileIfDoesNotExists(outputFileLogic);
-
     }
 
-
-
+    /** ***************************************************************
+     *   Resets parameters for generation. To be called
+     *   at the beginning of each new sentence generation.
+     */
     public static void resetGenParams() {
 
         isQuestion = GenSimpTestData.biasedBoolean(1, 2);
@@ -138,8 +140,17 @@ public class GenRelations {
         genUtils.resetVariables();
         logicPhrase = "";
         englishSentence = "";
+        logicVariables = new ArrayList();
+        logicInstanceFormulas = new ArrayList();
+        logicRelationFormula = "";
     }
 
+    /** ***************************************************************
+     *   For a domain statement, splits into a string array.
+     *   (domain myFormula 1 myClass)
+     *   returns
+     *   ["domain", "myFormula", "1", "myClass"]
+     */
     public static String[] parseDomainFormula(String formula) {
 
         String trimmed = formula.trim();
@@ -157,6 +168,13 @@ public class GenRelations {
         return parts;
     }
 
+    /** ***************************************************************
+     *   For a given relation, gets the domain formula associated
+     *   with an index.
+     *   if the relation is (myRelation arg1 arg2), then getDomainArgNum(1)
+     *   will return
+     *   ["domain", "arg1", "1", "classOfArg1"]
+     */
     public static String[] getDomainArgNum(String argNum) {
 
         for (Formula d : domainsAll) {
@@ -173,13 +191,42 @@ public class GenRelations {
         return null;
     }
 
+    /** ***************************************************************
+     *   Builds the logic formula from constituent logic parts
+     */
+    public static String buildLogicFormula() {
+        String returnFormula = logicRelationFormula;
+        if (!logicInstanceFormulas.isEmpty()) {
+            for (String f:logicInstanceFormulas) {
+                returnFormula = f+returnFormula;
+            }
+            returnFormula = "(and " + returnFormula + ")";
+        }
+        if (!logicVariables.isEmpty()) {
+            String existentialList = "";
+            for (String v:logicVariables) {
+                existentialList += v + " ";
+            }
+            returnFormula = "(exists (" + existentialList.substring(0, existentialList.length()-1) + ")" + returnFormula + ")";
+        }
+        if (isNegated) {
+            returnFormula = "(not " + returnFormula + ")";
+        }
+        return returnFormula;
+    }
 
+    /** ***************************************************************
+     *   Handles links in the format statement.
+     */
     public static boolean handleLinks() {
 
         englishSentence = englishSentence.replace("&%", "");
         return true;
     }
 
+    /** ***************************************************************
+     *   handles format symbols in the format statement.
+     */
     public static boolean handleFormatSymbols() {
 
         if (isQuestion && !isNegated) {
@@ -226,6 +273,9 @@ public class GenRelations {
         return true;
     }
 
+    /** ***************************************************************
+     *   Handles arguments in the format statement (i.e. %1, %2 ...).
+     */
     public static boolean handleArgs() {
         domainsAll = kb.askWithRestriction(0, "domain", 1, randRelation);
         List<Formula> domainSubclasses = kb.askWithRestriction(0, "domainSubclass", 1, randRelation);
@@ -235,8 +285,7 @@ public class GenRelations {
             System.out.println("ERROR in GenRelations.java. Relation " + randRelation + " has no domain statements, but has format.");
             return false;
         }
-        logicPhrase = (isNegated) ? "(not ": "";
-        logicPhrase += "(" + randRelation + " ";
+        logicRelationFormula += "(" + randRelation;
         for (int i = 1; i <= valence; i++) {
             if (englishSentence.contains("%" + i)) {
                 String[] d = getDomainArgNum(i + "");
@@ -254,20 +303,23 @@ public class GenRelations {
                         childClasses.addAll(childClassesSet);
                     }
                     String randomSubclass = childClasses.get(random.nextInt(childClasses.size()));
-                    if (allSUMONumbersSet.contains(randomSubclass)) {
+                    if (kb.kbCache.subclassOf(randomSubclass, "Quantity")) {
                         // TO DO: Handle numbers
+                        // System.out.println("Numbers not supported for: " + randRelation + " " + randomSubclass);
+                        return false;
                     }
                     if(debug) System.out.println("randomSubclass: " + randomSubclass);
                     List<String> randomSubclassTermFormats = allTermFormats.get(randomSubclass);
                     if (randomSubclassTermFormats != null) {
                         String randomSubclassTermFormat = randomSubclassTermFormats.get(random.nextInt(randomSubclassTermFormats.size()));
                         if (d[DOMAIN_TYPE].equals("domainSubclass")) {
-                            logicPhrase += " " + randomSubclass;
+                            logicRelationFormula += " " + randomSubclass;
                             englishSentence = englishSentence.replace("%"+i, randomSubclassTermFormat);
                         } else if (d[DOMAIN_TYPE].equals("domain")) {
                             String randomVariableName = genUtils.randomVariableName();
-                            logicPhrase = "(instance " + randomVariableName + " " + randomSubclass + ")" + logicPhrase;
-                            logicPhrase += " " + randomVariableName;
+                            logicVariables.add(randomVariableName);
+                            logicInstanceFormulas.add("(instance " + randomVariableName + " " + randomSubclass + ")");
+                            logicRelationFormula += " " + randomVariableName;
                             englishSentence = englishSentence.replace("%"+i, "the " + randomSubclassTermFormat);
                         } else {
                             System.out.println("ERROR in GenRelations.java. Unknown type (its not domain or domainSubclass) in formula: " + d[DOMAIN_TYPE]);
@@ -289,12 +341,15 @@ public class GenRelations {
                 return false;
             }
         }
-        logicPhrase = (isNegated) ? logicPhrase + "))" : logicPhrase + ")";
+        logicRelationFormula += ")";
         return true;
     }
 
-
+    /** ***************************************************************
+     *   Handles the % escape character in format statements.
+     */
     public static boolean handlePercentsInFormats() {
+
         if (englishSentence.contains("%") && !englishSentence.contains("%%")) {
             System.out.println("ERROR in GenRelations.java. Relation format has more variables than domains for relation " + randRelation + ". Remaining format statement, after substitution of possible variables: " + englishSentence);
             return false;
@@ -304,9 +359,18 @@ public class GenRelations {
         return true;
     }
 
+    /** ***************************************************************
+     *   Main method. Has the generation loop
+     *      1. Setup
+     *      2. Get random relation
+     *      3. Get random format statement associated with relation
+     *      4. Select values for format statement
+     *      5. Write english/logic pair to file
+     */
     public static void main(String[] args) throws Exception {
 
         init(args);
+        System.out.println("Numbersets: " + allSUMONumbersSet);
         System.out.println("Finished initialization, beginning sentence generation.");
         sentenceGeneratedCounter = 0;
         while (sentenceGeneratedCounter < numToGenerate) {
@@ -326,6 +390,7 @@ public class GenRelations {
                     if (handleLinks() && handleFormatSymbols() && handleArgs() && handlePercentsInFormats()) {
                         englishSentence = englishSentence.substring(0, 1).toUpperCase() + englishSentence.substring(1);
                         englishSentence = (isQuestion) ? englishSentence + "?" : englishSentence + ".";
+                        logicPhrase = buildLogicFormula();
                         if (debug) System.out.println("Final English sentence : " + englishSentence);
                         if (debug) System.out.println("Final Logic phrase     : " + logicPhrase);
                         GenUtils.writeEnglishLogicPairToFile(englishSentence, logicPhrase, outputFileEnglish, outputFileLogic);
