@@ -82,6 +82,14 @@ public class RandSet {
     }
 
     /** ***************************************************************
+     *   Removes a term from the RandSet.
+     */
+    public void remove(String termToRemove) {
+        if (terms != null) terms.remove(termToRemove);
+        if (returned != null) returned.remove(termToRemove);
+    }
+
+    /** ***************************************************************
      * Convert a list into a RandSet that assumes a frequency count of
      * one for each element
      */
