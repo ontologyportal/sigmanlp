@@ -1,5 +1,6 @@
 package com.articulate.nlp;
 
+import com.articulate.sigma.Formula;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.*;
@@ -21,7 +22,7 @@ public class KBLite {
     private List<String> kifFiles = new ArrayList<>();
 
     // Fast lookup map: key = second argument, value = argument list
-    private final Map<String, List<List<String>>> termArguments = new HashMap<>();
+    // private final Map<String, List<List<String>>> termArguments = new HashMap<>();
     public final Set<String> terms = new TreeSet<>();
     private final Map<String, String> documentation = new HashMap<>();
     private final Map<String, List<String>> termFormats = new HashMap<>();
@@ -35,10 +36,19 @@ public class KBLite {
     private final Set<String> subAttributes = new HashSet<>();
     private final Set<String> subrelations = new HashSet<>();
 
+    // This is the formula, then the arg list. example: ["(subclass Cat Animal)", "subclass", "cat", "animal"]
+    private final List<List<String>> rawFormulasWithArgs = new ArrayList<>();
+
+    // Note, this is incredibly space inefficient, but has great performance.
+    //private final Map<Integer, Map<String, Set<List<String>>>> indexedFormulas = new HashMap<>();
 
     // Set of relevant first arguments
     private static final Set<String> TERM_CREATION_ARGUMENTS = new HashSet<>(Arrays.asList(
             "subAttribute", "instance", "subrelation", "subclass"
+    ));
+
+    private static final Set<String> IGNORED_FORMULA_STARTS = new HashSet<>(Arrays.asList(
+            "and", "or", "forall", "=>", "exists"
     ));
 
     /**
@@ -168,6 +178,15 @@ public class KBLite {
         }
         List<String> arguments = splitFormulaArguments(formulaStr);
 
+        if (arguments == null || arguments.isEmpty()
+                || IGNORED_FORMULA_STARTS.contains(arguments.get(0)))
+            return; // In this lite version we don't care about formulas that start with =>, exists, and, or.
+
+        List<String> thisRawFormWithArg = new ArrayList<>();
+        thisRawFormWithArg.add(formulaStr);               // insert at front
+        thisRawFormWithArg.addAll(arguments);      // append the rest
+        rawFormulasWithArgs.add(thisRawFormWithArg);
+
         // Handle documentation entries
         if (arguments.size() > 3 &&
                 "documentation".equals(arguments.get(0)) &&
@@ -247,12 +266,14 @@ public class KBLite {
                     break;
             }
 
-            List<List<String>> argLists = termArguments.get(arguments.get(1));
+
+            /*List<List<String>> argLists = termArguments.get(arguments.get(1));
             if (argLists == null) {
                 argLists = new ArrayList<>();
                 termArguments.put(arguments.get(1), argLists);
             }
             argLists.add(arguments);
+             */
 
             String childKey = arguments.get(2);
             String childValue = arguments.get(1);
@@ -380,6 +401,26 @@ public class KBLite {
         return termFormats;
     }
 
+    /***************************************************************
+     * @return an ArrayList of Formulas in which the two terms provided appear
+     * in the indicated argument positions. If there are no Formula(s)
+     * matching the given terms and respective argument positions,
+     * return an empty ArrayList. Iterate through the smallest list of
+     * results.
+     */
+    public List<Formula> askWithRestriction(int argnum1, String term1, int argnum2, String term2) {
+        // Format of rawFormulasWithArgs is the formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
+        // Note: argnums are indexed starting at 1.
+        List<Formula> result = new ArrayList<>();
+        for (List<String> formula: rawFormulasWithArgs) {
+            if (argnum1 < formula.size() && argnum2 < formula.size()
+                    && formula[argnum1].equals(term1) && formula[argnum2].equals(term2)) {
+                result.add(new Formula(formula.get(0)));
+            }
+        }
+        return result;
+    }
+
 
     public static void main(String[] args) {
         KBLite kbLite = new KBLite("SUMO");
@@ -391,5 +432,7 @@ public class KBLite {
             System.out.println("Relation instances: " + item);
         }
         System.out.println("Instance count: " + kbLite.instances.size());
+        while (true)
+            System.out.print(".");
     }
 }
