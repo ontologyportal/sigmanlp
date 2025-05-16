@@ -17,11 +17,12 @@ public class KBLite {
 
     // Constant for the KB directory path, always ends with a separator
     private static final String KB_FILEPATH = System.getenv("SIGMA_HOME") + File.separator + "KBs" + File.separator;
-
+    public String kbDir = KB_FILEPATH; // kbDir used for compatibility purposes.
     private List<String> kifFiles = new ArrayList<>();
 
     // Fast lookup map: key = second argument, value = argument list
-    private final Map<String, List<List<String>>> terms = new HashMap<>();
+    private final Map<String, List<List<String>>> termArguments = new HashMap<>();
+    public final Set<String> terms = new TreeSet<>();
     private final Map<String, String> documentation = new HashMap<>();
     private final Map<String, List<String>> termFormats = new HashMap<>();
     private final Map<String, List<String>> formats = new HashMap<>();
@@ -44,9 +45,11 @@ public class KBLite {
      * Constructor that takes the KB name and extracts the kif files for that KB.
      */
     public KBLite(String kbName) {
-        System.out.println("***************************************************\nWARNING: KBLite does not perform syntax, type check, \nor any other check to ensure the knowledge base is \naccurate. Only use after you are otherwise confident in the accuracy \nof the Knowledge Base.\n***************************************************");
+        System.out.println("\n*****************************************************\nWARNING: KBLite does not perform syntax, type check, \nor any other check to ensure the knowledge base is \naccurate. Only use after you are otherwise confident \nin the accuracy of the Knowledge Base.\n*****************************************************\n");
         getKifFilesFromConfig(kbName);
+        System.out.println("Loading kif files into cache.");
         loadKifs();
+        System.out.println("Files loaded.");
     }
 
     private void getKifFilesFromConfig(String kbName) {
@@ -94,8 +97,7 @@ public class KBLite {
                 boolean inQuote = false;
                 while ((line = reader.readLine()) != null) {
                     // Remove comments (everything after ';')
-                    line = stripComments(line, inQuote);
-                    line = line.trim();
+                    line = stripComments(line, inQuote).trim();
                     if (line.isEmpty()) {
                         continue; // Skip blank/whitespace-only lines
                     }
@@ -107,6 +109,7 @@ public class KBLite {
                             formula.setLength(0); // reset the formula buffer
                             parenBalance = 0;
                         } else {
+                            System.out.println("ERROR in KBLite.loadKifs. Unexpected characters outside of comments or formulas for line: " + line);
                             continue; // skip lines that don't start a formula
                         }
                     }
@@ -224,6 +227,8 @@ public class KBLite {
                 TERM_CREATION_ARGUMENTS.contains(arguments.get(0)) &&
                 !arguments.get(1).startsWith("?")) {
 
+            terms.add(arguments.get(1));
+            terms.add(arguments.get(2)); // Otherwise things like Entity will never get added, or if doing a domain ontology, the root level classes.
             switch (arguments.get(0)) {
                 case "subAttribute":
                     subAttributes.add(arguments.get(1));
@@ -242,10 +247,10 @@ public class KBLite {
                     break;
             }
 
-            List<List<String>> argLists = terms.get(arguments.get(1));
+            List<List<String>> argLists = termArguments.get(arguments.get(1));
             if (argLists == null) {
                 argLists = new ArrayList<>();
-                terms.put(arguments.get(1), argLists);
+                termArguments.put(arguments.get(1), argLists);
             }
             argLists.add(arguments);
 
@@ -258,7 +263,6 @@ public class KBLite {
             }
             childList.add(childValue);
 
-
             String parentKey = arguments.get(1);
             String parentValue = arguments.get(2);
             List<String> parentList = parents.get(parentKey);
@@ -267,9 +271,6 @@ public class KBLite {
                 parents.put(parentKey, parentList);
             }
             parentList.add(parentValue);
-
-
-
         }
     }
 
@@ -331,8 +332,9 @@ public class KBLite {
     }
 
     public boolean isInstance (String term) {
-        return instances.contains(term);
+        return instances.contains(term) || subrelations.contains(term) || subAttributes.contains(term);
     }
+
 
     public Set<String> getChildClasses(String cl) {
 
@@ -353,15 +355,41 @@ public class KBLite {
         return childClasses;
     }
 
+    public Set<String> getAllInstances(String className) {
+        if (className == null || className.isEmpty()) {
+            return new TreeSet<>();
+        }
+        Set<String> instancesOfClassName = new TreeSet<>();
+        Set<String> allSubclassesofClassName = getChildClasses(className);
+        allSubclassesofClassName.add(className);
+        Iterator<String> iterator = allSubclassesofClassName.iterator();
+        while (iterator.hasNext()) {
+            List<String> childrenOfClass = children.get(iterator.next());
+            if (childrenOfClass != null) {
+                for (String child : childrenOfClass) {
+                    if (isInstance(child)) {
+                        instancesOfClassName.add(child);
+                    }
+                }
+            }
+        }
+        return instancesOfClassName;
+    }
+
+    public Map<String, List<String>> getTermFormatMap() {
+        return termFormats;
+    }
+
 
     public static void main(String[] args) {
-        KBLite kbLite = new KBLite("TEST");
+        KBLite kbLite = new KBLite("SUMO");
         for (String f : kbLite.kifFiles) {
             System.out.println(f);
         }
-        Set<String> AnimalSubclasses = kbLite.getChildClasses("Animal");
-        for (String item:AnimalSubclasses) {
-            System.out.println("Animal subclasses: " + item);
+        Set<String> AnimalInstances = kbLite.getAllInstances("Relation");
+        for (String item:AnimalInstances) {
+            System.out.println("Relation instances: " + item);
         }
+        System.out.println("Instance count: " + kbLite.instances.size());
     }
 }
