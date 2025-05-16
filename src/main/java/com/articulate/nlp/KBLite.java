@@ -29,10 +29,10 @@ public class KBLite {
     private final Map<String, List<String>> parents = new HashMap<>();
     private final Map<String, List<List<String>>> domains = new HashMap<>();
     private final Map<String, List<String>> ranges = new HashMap<>();
-    private final Set<String> subclasses = new HashMap<>();
-    private final Set<String> instances = new HashMap<>();
-    private final Set<String> subAttributes = new HashMap<>();
-    private final Set<String> subrelations = new HashMap<>();
+    private final Set<String> subclasses = new HashSet<>();
+    private final Set<String> instances = new HashSet<>();
+    private final Set<String> subAttributes = new HashSet<>();
+    private final Set<String> subrelations = new HashSet<>();
 
 
     // Set of relevant first arguments
@@ -44,7 +44,7 @@ public class KBLite {
      * Constructor that takes the KB name and extracts the kif files for that KB.
      */
     public KBLite(String kbName) {
-        System.out.println("WARNING: KBLite does not perform syntax, type check, or any other check to ensure the knowledge base is accurate. Only use after you are otherwise confident in the accuracy of the Knowledge Base");
+        System.out.println("***************************************************\nWARNING: KBLite does not perform syntax, type check, \nor any other check to ensure the knowledge base is \naccurate. Only use after you are otherwise confident in the accuracy \nof the Knowledge Base.\n***************************************************");
         getKifFilesFromConfig(kbName);
         loadKifs();
     }
@@ -91,13 +91,10 @@ public class KBLite {
                 StringBuilder formula = new StringBuilder();
                 int parenBalance = 0;
                 boolean inFormula = false;
-
+                boolean inQuote = false;
                 while ((line = reader.readLine()) != null) {
                     // Remove comments (everything after ';')
-                    int commentIndex = line.indexOf(';');
-                    if (commentIndex != -1) {
-                        line = line.substring(0, commentIndex);
-                    }
+                    line = stripComments(line, inQuote);
                     line = line.trim();
                     if (line.isEmpty()) {
                         continue; // Skip blank/whitespace-only lines
@@ -117,15 +114,22 @@ public class KBLite {
                     // Accumulate the line
                     formula.append(line).append(" ");
 
-                    // Update parenthesis balance
-                    for (char c : line.toCharArray()) {
-                        if (c == '(') parenBalance++;
-                        else if (c == ')') parenBalance--;
+                    for (int i = 0; i < line.length(); i++) {
+                        char c = line.charAt(i);
+                        // Handle quote toggling (ignore escaped quotes)
+                        if (c == '"' && (i == 0 || line.charAt(i - 1) != '\\')) {
+                            inQuote = !inQuote;
+                        }
+                        if (!inQuote) {
+                            if (c == '(') parenBalance++;
+                            else if (c == ')') parenBalance--;
+                        }
                     }
 
                     // If balanced, process the formula
                     if (inFormula && parenBalance == 0) {
-                        processFormula(formula);
+                        String formulaStr = formula.toString().replace("\n", "").trim();
+                        processFormula(formulaStr);
                         inFormula = false;
                     }
                 }
@@ -136,9 +140,26 @@ public class KBLite {
         }
     }
 
+    private String stripComments(String line, boolean p_inQuote) {
 
-    private void processFormula(String formula) {
-        String formulaStr = formula.toString().replace("\n", "").trim();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            // Toggle inQuote state on unescaped "
+            if (c == '"' && (i == 0 || line.charAt(i - 1) != '\\')) {
+                p_inQuote = !p_inQuote;
+            }
+            // If semicolon and not in quote, treat as comment start
+            if (c == ';' && !p_inQuote) {
+                break;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    private void processFormula(String formulaStr) {
+
         if (formulaStr.startsWith("(") && formulaStr.endsWith(")")) {
             formulaStr = formulaStr.substring(1, formulaStr.length() - 1).trim();
         }
@@ -217,7 +238,7 @@ public class KBLite {
                     subclasses.add(arguments.get(1));
                     break;
                 default:
-                    System.out.println("Error in KBLite, should not get here with line: " + line);
+                    System.out.println("Error in KBLite, should not get here with line: " + arguments);
                     break;
             }
 
@@ -317,20 +338,24 @@ public class KBLite {
 
         Set<String> childClasses = new HashSet<>();
         Queue<String> childrenToProcess = new LinkedList<>();
-        childrenToProcess.addAll(children(cl));
+        List<String> childrenOfCl = children.get(cl);
+        if (childrenOfCl != null)
+            childrenToProcess.addAll(childrenOfCl);
         while (!childrenToProcess.isEmpty()) {
-            child = childrenToProcess.poll();
+            String child = childrenToProcess.poll();
             if (isSubclass(child)) {
                 childClasses.add(child);
-                childrenToProcess.addAll(children(child));
+                List<String> childrenOfChild = children.get(child);
+                if (childrenOfChild != null)
+                    childrenToProcess.addAll(childrenOfChild);
             }
         }
-        return childClasses
+        return childClasses;
     }
 
 
     public static void main(String[] args) {
-        KBLite kbLite = new KBLite("SUMO");
+        KBLite kbLite = new KBLite("TEST");
         for (String f : kbLite.kifFiles) {
             System.out.println(f);
         }
@@ -338,10 +363,5 @@ public class KBLite {
         for (String item:AnimalSubclasses) {
             System.out.println("Animal subclasses: " + item);
         }
-        kbLite.children.forEach((key, valueList) -> {
-            if (valueList.size() > 0) {
-                System.out.println(key + " : " + valueList);
-            }
-        });
     }
 }
