@@ -29,6 +29,10 @@ public class KBLite {
     private final Map<String, List<String>> parents = new HashMap<>();
     private final Map<String, List<List<String>>> domains = new HashMap<>();
     private final Map<String, List<String>> ranges = new HashMap<>();
+    private final Set<String> subclasses = new HashMap<>();
+    private final Set<String> instances = new HashMap<>();
+    private final Set<String> subAttributes = new HashMap<>();
+    private final Set<String> subrelations = new HashMap<>();
 
 
     // Set of relevant first arguments
@@ -175,11 +179,47 @@ public class KBLite {
             valueList.add(value);
         }
 
+        if (arguments.size() > 3 &&
+                ("domain".equals(arguments.get(0)) || "domainSubclass".equals(arguments.get(0)))) {
+            String key = arguments.get(1); // the second argument
+
+            List<List<String>> argLists = domains.get(key);
+            if (argLists == null) {
+                argLists = new ArrayList<>();
+                domains.put(key, argLists);
+            }
+            argLists.add(arguments);
+        }
+
+        if (arguments.size() > 2 &&
+                ("range".equals(arguments.get(0)) || "rangeSubclass".equals(arguments.get(0)))) {
+            String key = arguments.get(1); // the second argument
+            ranges.put(key, arguments);    // store the entire argument list as the value
+        }
+
         // Save to terms map if first argument is a term creation argument,
         // there is a second argument, and it does NOT start with '?'
         if (arguments.size() > 1 &&
                 TERM_CREATION_ARGUMENTS.contains(arguments.get(0)) &&
                 !arguments.get(1).startsWith("?")) {
+
+            switch (arguments.get(0)) {
+                case "subAttribute":
+                    subAttributes.add(arguments.get(1));
+                    break;
+                case "instance":
+                    instances.add(arguments.get(1));
+                    break;
+                case "subrelation":
+                    subrelations.add(arguments.get(1));
+                    break;
+                case "subclass":
+                    subclasses.add(arguments.get(1));
+                    break;
+                default:
+                    System.out.println("Error in KBLite, should not get here with line: " + line);
+                    break;
+            }
 
             List<List<String>> argLists = terms.get(arguments.get(1));
             if (argLists == null) {
@@ -197,6 +237,7 @@ public class KBLite {
             }
             childList.add(childValue);
 
+
             String parentKey = arguments.get(1);
             String parentValue = arguments.get(2);
             List<String> parentList = parents.get(parentKey);
@@ -206,23 +247,7 @@ public class KBLite {
             }
             parentList.add(parentValue);
 
-            if (arguments.size() > 3 &&
-                    ("domain".equals(arguments.get(0)) || "domainSubclass".equals(arguments.get(0)))) {
-                String key = arguments.get(1); // the second argument
 
-                List<List<String>> argLists = domains.get(key);
-                if (argLists == null) {
-                    argLists = new ArrayList<>();
-                    domains.put(key, argLists);
-                }
-                argLists.add(arguments);
-            }
-
-            if (arguments.size() > 2 &&
-                    ("range".equals(arguments.get(0)) || "rangeSubclass".equals(arguments.get(0)))) {
-                String key = arguments.get(1); // the second argument
-                ranges.put(key, arguments);    // store the entire argument list as the value
-            }
 
         }
     }
@@ -280,6 +305,13 @@ public class KBLite {
         return result;
     }
 
+    public boolean isSubclass (String term) {
+        return subclasses.contains(term);
+    }
+
+    public boolean isInstance (String term) {
+        return instances.contains(term);
+    }
 
     public Set<String> getChildClasses(String cl) {
 
@@ -288,9 +320,9 @@ public class KBLite {
         childrenToProcess.addAll(children(cl));
         while (!childrenToProcess.isEmpty()) {
             child = childrenToProcess.poll();
-            childArgLists = terms.get(child);
-            if (child.get(0).equals("subclass")) {
-                childrenToProcess.addAll(children())
+            if (isSubclass(child)) {
+                childClasses.add(child);
+                childrenToProcess.addAll(children(child));
             }
         }
         return childClasses
@@ -301,6 +333,10 @@ public class KBLite {
         KBLite kbLite = new KBLite("SUMO");
         for (String f : kbLite.kifFiles) {
             System.out.println(f);
+        }
+        Set<String> AnimalSubclasses = kbLite.getChildClasses("Animal");
+        for (String item:AnimalSubclasses) {
+            System.out.println("Animal subclasses: " + item);
         }
         kbLite.children.forEach((key, valueList) -> {
             if (valueList.size() > 0) {
