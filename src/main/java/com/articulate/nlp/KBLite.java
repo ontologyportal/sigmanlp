@@ -24,6 +24,9 @@ public class KBLite {
     // Fast lookup map: key = second argument, value = argument list
     // private final Map<String, List<List<String>>> termArguments = new HashMap<>();
     public final Set<String> terms = new TreeSet<>();
+    public Set<String> relations = new HashSet<>();
+    public Set<String> functions = new HashSet<>();
+
     private final Map<String, String> documentation = new HashMap<>();
     private final Map<String, List<String>> termFormats = new HashMap<>();
     private final Map<String, List<String>> formats = new HashMap<>();
@@ -59,6 +62,8 @@ public class KBLite {
         getKifFilesFromConfig(kbName);
         System.out.println("Loading kif files into cache.");
         loadKifs();
+        buildRelationsCache();
+        buildFunctionsCache();
         System.out.println("Files loaded.");
     }
 
@@ -348,8 +353,41 @@ public class KBLite {
         return result;
     }
 
+    private void buildRelationsCache() {
+        relations.addAll(getAllInstances("Relation"));
+    }
+
+    private void buildFunctionsCache() {
+        functions.addAll(getAllInstances("Function"));
+    }
+
+    /*
+        All the methods above are used to load the cache.
+        All the methods below are used after the cache has been loaded.
+     */
+
     public boolean isSubclass (String term) {
         return subclasses.contains(term);
+    }
+
+    /***************************************************************
+     * Returns
+     * true if the subclass cache supports the conclusion that c1 is a subclass
+     * of c2, else returns false.  Note that classes are also subclasses of
+     * themselves. Note: will return false if childClass is an instance, even if
+     * it is an instance of the parentClass.
+     *
+     * @param c1 A String, the name of a Class.
+     * @param parent A String, the name of a Class.
+     * @return boolean
+     */
+    public boolean isSubclass (String childClass, String parentClass) {
+        if (childClass == null || parentClass == null || childClass.isEmpty() || parentClass.isEmpty())
+            return false;
+        if (childClass.equals(parentClass))
+           return true;
+        Set<String> subclassesOfParent = getChildClasses(parentClass);
+        return subclassesOfParent.contains(childClass);
     }
 
     public boolean isInstance (String term) {
@@ -414,7 +452,7 @@ public class KBLite {
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
             if (argnum1 < formula.size() && argnum2 < formula.size()
-                    && formula[argnum1].equals(term1) && formula[argnum2].equals(term2)) {
+                    && formula.get(argnum1).equals(term1) && formula.get(argnum2).equals(term2)) {
                 result.add(new Formula(formula.get(0)));
             }
         }
@@ -432,7 +470,5 @@ public class KBLite {
             System.out.println("Relation instances: " + item);
         }
         System.out.println("Instance count: " + kbLite.instances.size());
-        while (true)
-            System.out.print(".");
     }
 }
