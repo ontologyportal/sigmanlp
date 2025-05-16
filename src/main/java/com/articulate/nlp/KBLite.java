@@ -25,6 +25,10 @@ public class KBLite {
     private final Map<String, String> documentation = new HashMap<>();
     private final Map<String, List<String>> termFormats = new HashMap<>();
     private final Map<String, List<String>> formats = new HashMap<>();
+    private final Map<String, List<String>> children = new HashMap<>();
+    private final Map<String, List<String>> parents = new HashMap<>();
+    private final Map<String, List<List<String>>> domains = new HashMap<>();
+    private final Map<String, List<String>> ranges = new HashMap<>();
 
 
     // Set of relevant first arguments
@@ -117,61 +121,7 @@ public class KBLite {
 
                     // If balanced, process the formula
                     if (inFormula && parenBalance == 0) {
-                        String formulaStr = formula.toString().replace("\n", "").trim();
-                        if (formulaStr.startsWith("(") && formulaStr.endsWith(")")) {
-                            formulaStr = formulaStr.substring(1, formulaStr.length() - 1).trim();
-                        }
-                        List<String> arguments = splitFormulaArguments(formulaStr);
-
-                        // Handle documentation entries
-                        if (arguments.size() > 3 &&
-                                "documentation".equals(arguments.get(0)) &&
-                                "EnglishLanguage".equals(arguments.get(2))) {
-                            documentation.put(arguments.get(1), arguments.get(3));
-                        }
-
-                        // Handle format entries
-                        if (arguments.size() > 3 &&
-                                "format".equals(arguments.get(0)) &&
-                                "EnglishLanguage".equals(arguments.get(1))) {
-                            String key = arguments.get(2);
-                            String value = arguments.get(3);
-                            List<String> valueList = formats.get(key);
-                            if (valueList == null) {
-                                valueList = new ArrayList<>();
-                                formats.put(key, valueList);
-                            }
-                            valueList.add(value);
-                        }
-
-                        // Handle termFormat entries
-                        if (arguments.size() > 3 &&
-                                "termFormat".equals(arguments.get(0)) &&
-                                "EnglishLanguage".equals(arguments.get(1))) {
-                            String key = arguments.get(2);
-                            String value = arguments.get(3);
-                            List<String> valueList = termFormats.get(key);
-                            if (valueList == null) {
-                                valueList = new ArrayList<>();
-                                termFormats.put(key, valueList);
-                            }
-                            valueList.add(value);
-                        }
-
-                        // Save to terms map if first argument is a term creation argument,
-                        // there is a second argument, and it does NOT start with '?'
-                        if (arguments.size() > 1 &&
-                                TERM_CREATION_ARGUMENTS.contains(arguments.get(0)) &&
-                                !arguments.get(1).startsWith("?")) {
-
-                            List<List<String>> argLists = terms.get(arguments.get(1));
-                            if (argLists == null) {
-                                argLists = new ArrayList<>();
-                                terms.put(arguments.get(1), argLists);
-                            }
-                            argLists.add(arguments);
-                        }
-
+                        processFormula(formula);
                         inFormula = false;
                     }
                 }
@@ -182,6 +132,100 @@ public class KBLite {
         }
     }
 
+
+    private void processFormula(String formula) {
+        String formulaStr = formula.toString().replace("\n", "").trim();
+        if (formulaStr.startsWith("(") && formulaStr.endsWith(")")) {
+            formulaStr = formulaStr.substring(1, formulaStr.length() - 1).trim();
+        }
+        List<String> arguments = splitFormulaArguments(formulaStr);
+
+        // Handle documentation entries
+        if (arguments.size() > 3 &&
+                "documentation".equals(arguments.get(0)) &&
+                "EnglishLanguage".equals(arguments.get(2))) {
+            documentation.put(arguments.get(1), arguments.get(3));
+        }
+
+        // Handle format entries
+        if (arguments.size() > 3 &&
+                "format".equals(arguments.get(0)) &&
+                "EnglishLanguage".equals(arguments.get(1))) {
+            String key = arguments.get(2);
+            String value = arguments.get(3);
+            List<String> valueList = formats.get(key);
+            if (valueList == null) {
+                valueList = new ArrayList<>();
+                formats.put(key, valueList);
+            }
+            valueList.add(value);
+        }
+
+        // Handle termFormat entries
+        if (arguments.size() > 3 &&
+                "termFormat".equals(arguments.get(0)) &&
+                "EnglishLanguage".equals(arguments.get(1))) {
+            String key = arguments.get(2);
+            String value = arguments.get(3);
+            List<String> valueList = termFormats.get(key);
+            if (valueList == null) {
+                valueList = new ArrayList<>();
+                termFormats.put(key, valueList);
+            }
+            valueList.add(value);
+        }
+
+        // Save to terms map if first argument is a term creation argument,
+        // there is a second argument, and it does NOT start with '?'
+        if (arguments.size() > 1 &&
+                TERM_CREATION_ARGUMENTS.contains(arguments.get(0)) &&
+                !arguments.get(1).startsWith("?")) {
+
+            List<List<String>> argLists = terms.get(arguments.get(1));
+            if (argLists == null) {
+                argLists = new ArrayList<>();
+                terms.put(arguments.get(1), argLists);
+            }
+            argLists.add(arguments);
+
+            String childKey = arguments.get(2);
+            String childValue = arguments.get(1);
+            List<String> childList = children.get(childKey);
+            if (childList == null) {
+                childList = new ArrayList<>();
+                children.put(childKey, childList);
+            }
+            childList.add(childValue);
+
+            String parentKey = arguments.get(1);
+            String parentValue = arguments.get(2);
+            List<String> parentList = parents.get(parentKey);
+            if (parentList == null) {
+                parentList = new ArrayList<>();
+                parents.put(parentKey, parentList);
+            }
+            parentList.add(parentValue);
+
+            if (arguments.size() > 3 &&
+                    ("domain".equals(arguments.get(0)) || "domainSubclass".equals(arguments.get(0)))) {
+                String key = arguments.get(1); // the second argument
+
+                List<List<String>> argLists = domains.get(key);
+                if (argLists == null) {
+                    argLists = new ArrayList<>();
+                    domains.put(key, argLists);
+                }
+                argLists.add(arguments);
+            }
+
+            if (arguments.size() > 2 &&
+                    ("range".equals(arguments.get(0)) || "rangeSubclass".equals(arguments.get(0)))) {
+                String key = arguments.get(1); // the second argument
+                ranges.put(key, arguments);    // store the entire argument list as the value
+            }
+
+        }
+    }
 
 
     /**
@@ -237,14 +281,29 @@ public class KBLite {
     }
 
 
+    public Set<String> getChildClasses(String cl) {
+
+        Set<String> childClasses = new HashSet<>();
+        Queue<String> childrenToProcess = new LinkedList<>();
+        childrenToProcess.addAll(children(cl));
+        while (!childrenToProcess.isEmpty()) {
+            child = childrenToProcess.poll();
+            childArgLists = terms.get(child);
+            if (child.get(0).equals("subclass")) {
+                childrenToProcess.addAll(children())
+            }
+        }
+        return childClasses
+    }
+
 
     public static void main(String[] args) {
         KBLite kbLite = new KBLite("SUMO");
         for (String f : kbLite.kifFiles) {
             System.out.println(f);
         }
-        kbLite.termFormats.forEach((key, valueList) -> {
-            if (valueList.size() > 1) {
+        kbLite.children.forEach((key, valueList) -> {
+            if (valueList.size() > 0) {
                 System.out.println(key + " : " + valueList);
             }
         });

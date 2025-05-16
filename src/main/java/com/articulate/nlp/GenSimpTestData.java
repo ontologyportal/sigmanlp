@@ -501,6 +501,7 @@ public class GenSimpTestData {
         for (String s : kb.terms) {
             res = kb.askWithRestriction(0,"termFormat",2,s);
             if (res == null || res.isEmpty()) {
+                System.out.println("ERROR IN GenSimpTestData.genMissingTermFormats: MISSING TERM FORMAT FOR: " + s);
                 boolean inst = false;
                 if (kb.isInstance(s))
                     inst = true;
