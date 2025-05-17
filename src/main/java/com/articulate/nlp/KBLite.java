@@ -12,7 +12,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-
+import java.util.Random;
 
 public class KBLite {
 
@@ -39,11 +39,9 @@ public class KBLite {
     private final Set<String> subAttributes = new HashSet<>();
     private final Set<String> subrelations = new HashSet<>();
 
+    Random rand = new Random();
     // This is the formula, then the arg list. example: ["(subclass Cat Animal)", "subclass", "cat", "animal"]
     private final List<List<String>> rawFormulasWithArgs = new ArrayList<>();
-
-    // Note, this is incredibly space inefficient, but has great performance.
-    //private final Map<Integer, Map<String, Set<List<String>>>> indexedFormulas = new HashMap<>();
 
     // Set of relevant first arguments
     private static final Set<String> TERM_CREATION_ARGUMENTS = new HashSet<>(Arrays.asList(
@@ -58,7 +56,7 @@ public class KBLite {
      * Constructor that takes the KB name and extracts the kif files for that KB.
      */
     public KBLite(String kbName) {
-        System.out.println("\n*****************************************************\nWARNING: KBLite does not perform syntax, type check, \nor any other check to ensure the knowledge base is \naccurate. Only use after you are otherwise confident \nin the accuracy of the Knowledge Base.\n*****************************************************\n");
+        System.out.println("\n*****************************************************\nWARNING: KBLite does not perform syntax, type check, \nor any other check to ensure the knowledge base is \naccurate. Only use after you are otherwise confident \nin the accuracy of the Knowledge Base. EnglishLanguage only.\n*****************************************************\n");
         getKifFilesFromConfig(kbName);
         System.out.println("Loading kif files into cache.");
         loadKifs();
@@ -271,15 +269,6 @@ public class KBLite {
                     break;
             }
 
-
-            /*List<List<String>> argLists = termArguments.get(arguments.get(1));
-            if (argLists == null) {
-                argLists = new ArrayList<>();
-                termArguments.put(arguments.get(1), argLists);
-            }
-            argLists.add(arguments);
-             */
-
             String childKey = arguments.get(2);
             String childValue = arguments.get(1);
             List<String> childList = children.get(childKey);
@@ -303,7 +292,7 @@ public class KBLite {
 
     /**
      * Splits a KIF formula into top-level arguments, preserving subformulas.
-     * E.g., "subclass bat (subformula function)" -> ["subclass", "bat", "(subformula function)"]
+     * e.g., "subclass bat (subformula function)" -> ["subclass", "bat", "(subformula function)"]
      */
     private List<String> splitFormulaArguments(String formula) {
         List<String> result = new ArrayList<>();
@@ -361,11 +350,25 @@ public class KBLite {
         functions.addAll(getAllInstances("Function"));
     }
 
-    /*
+
+    /**********************************************************************
         All the methods above are used to load the cache.
         All the methods below are used after the cache has been loaded.
-     */
+     ********************************************************************/
 
+
+    /** ***************************************************************
+     *  Returns the format map in English only. Parameter lang is
+     *  ignored. Only used for compatibility.
+     */
+    public Map<String, List<String>> getFormatMapAll(String lang) {
+        return formats;
+    }
+
+    /** *****************************************************************
+     *
+     *  Returns true if the term is a subclass.
+     */
     public boolean isSubclass (String term) {
         return subclasses.contains(term);
     }
@@ -392,6 +395,20 @@ public class KBLite {
 
     public boolean isInstance (String term) {
         return instances.contains(term) || subrelations.contains(term) || subAttributes.contains(term);
+    }
+
+    /***************************************************************
+     * Returns
+     * true if i is an instance of c, else returns false.
+     *
+     * @param i A String denoting an instance.
+     * @param c A String denoting a Class.
+     * @return true or false.
+     */
+    public boolean isInstanceOf(String i, String c) {
+
+        Set<String> childInstances = getAllInstances(c);
+        return childInstances.contains(i);
     }
 
 
@@ -439,6 +456,42 @@ public class KBLite {
         return termFormats;
     }
 
+    /** ************************************************
+     *
+     * @param lang
+     * @return random term format.
+     */
+    public String getTermFormat(String lang, String term) {
+        List<String> termFormatsForTerm = termFormats.get(term);
+        return termFormatsForTerm.get(rand.nextInt(termFormatsForTerm.size()));
+    }
+
+    /***************************************************************
+     * Returns an ArrayList containing the Formulas that match the request.
+     *
+     * @param kind   May be one of "ant", "cons", "stmt", or "arg" ONLY SUPPORTS "arg"
+     * @param term   The term that appears in the statements being requested.
+     * @param argnum The argument position of the term being asked for. The first
+     *               argument after the predicate is "1". This parameter is ignored
+     *               if the kind is "ant", "cons" or "stmt".
+     * @return An ArrayList of Formula(s), which will be empty if no match
+     * found.
+     * see KIF.createKey()
+     */
+    public List<Formula> ask(String kind, int argnum, String term) {
+        // assume kind == "arg"
+        // Format of rawFormulasWithArgs is the formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
+        // Note: argnums are indexed starting at 1.
+        List<Formula> result = new ArrayList<>();
+        for (List<String> formula: rawFormulasWithArgs) {
+            if (argnum < formula.size()
+                    && formula.get(argnum).equals(term)) {
+                result.add(new Formula(formula.get(0)));
+            }
+        }
+        return result;
+    }
+
     /***************************************************************
      * @return an ArrayList of Formulas in which the two terms provided appear
      * in the indicated argument positions. If there are no Formula(s)
@@ -459,16 +512,58 @@ public class KBLite {
         return result;
     }
 
+    /***************************************************************
+     * Returns an
+     * ArrayList of Formulas in which the two terms provided appear in the
+     * indicated argument positions. If there are no Formula(s) matching the
+     * given terms and respective argument positions, return an empty ArrayList.
+     *
+     * @return ArrayList
+     */
+    public List<Formula> askWithTwoRestrictions(int argnum1, String term1,
+                                                int argnum2, String term2,
+                                                int argnum3, String term3) {
+        List<Formula> result = new ArrayList<>();
+        for (List<String> formula: rawFormulasWithArgs) {
+            if (argnum1 < formula.size() && argnum2 < formula.size() && argnum3 < formula.size()
+                    && formula.get(argnum1).equals(term1) && formula.get(argnum2).equals(term2) && formula.get(argnum3).equals(term3)) {
+                result.add(new Formula(formula.get(0)));
+            }
+        }
+        return result;
+    }
+
+    /*************************************************************
+     *  Does very basic syntax and type checking. This is good
+     *  enough for basic sentence generation.
+     */
+    public boolean isValidFormula (String formula) {
+        // Check balanced parentheses
+        int count = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(') {
+                count++;
+            } else if (c == ')') {
+                count--;
+                if (count < 0) return false;
+            }
+        }
+        if (count != 0) return false;
+        formArgs = splitFormulaArguments(formula);
+        if (relations.contains(formArgs.get(0))) {
+            asdfadsfasdf
+        }
+    }
+
 
     public static void main(String[] args) {
         KBLite kbLite = new KBLite("SUMO");
         for (String f : kbLite.kifFiles) {
             System.out.println(f);
         }
-        Set<String> AnimalInstances = kbLite.getAllInstances("Relation");
-        for (String item:AnimalInstances) {
-            System.out.println("Relation instances: " + item);
+        while(true){
+            System.out.println(".");
         }
-        System.out.println("Instance count: " + kbLite.instances.size());
     }
 }
