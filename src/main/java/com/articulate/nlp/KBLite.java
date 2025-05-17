@@ -62,6 +62,13 @@ public class KBLite {
         loadKifs();
         buildRelationsCache();
         buildFunctionsCache();
+        // Sort domains
+        for (Map.Entry<String, List<List<String>>> entry : domains.entrySet()) {
+            List<List<String>> listOfLists = entry.getValue();
+            listOfLists.sort(Comparator.comparingInt(
+                    sublist -> Integer.parseInt(sublist.get(2))
+            ));
+        }
         System.out.println("Files loaded.");
     }
 
@@ -552,18 +559,30 @@ public class KBLite {
         if (count != 0) return false;
         formArgs = splitFormulaArguments(formula);
         if (relations.contains(formArgs.get(0))) {
-            asdfadsfasdf
+            if (relationTypesGood(formArgs);
         }
     }
 
+    /***********************************************************
+     *
+     * @param formArgs - array of arguments. i.e. ['mother', 'mom', 'child']
+     * @return true if the types of the input match the types of the domain.
+     */
+    private boolean relationTypesGood(List<String> formArgs) {
+        List<String> relDomains = domains.get(formArgs[0]);
+        for (int i=0; i < relDomains.size(); i++) {
+
+        }
+    }
 
     public static void main(String[] args) {
         KBLite kbLite = new KBLite("SUMO");
         for (String f : kbLite.kifFiles) {
             System.out.println(f);
         }
-        while(true){
-            System.out.println(".");
+
+        for(List<String> d:kbLite.domains) {
+            System.out.println (d);
         }
     }
 }
