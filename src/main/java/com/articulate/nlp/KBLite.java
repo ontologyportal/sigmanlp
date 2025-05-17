@@ -466,9 +466,13 @@ public class KBLite {
     /** ************************************************
      *
      *  Returns random term format.
-     *  Only supports English.
+     *  Currently Only supports English.
      */
     public String getTermFormat(String lang, String term) {
+        return getTermFormat(term);
+    }
+
+    public String getTermFormat(String term) {
         List<String> termFormatsForTerm = termFormats.get(term);
         return termFormatsForTerm.get(rand.nextInt(termFormatsForTerm.size()));
     }

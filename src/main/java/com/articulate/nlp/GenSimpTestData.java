@@ -45,6 +45,7 @@ public class GenSimpTestData {
 
     public static boolean debug = false;
     public static KB kb;
+    private KBLite kbLite;
     public static boolean printFrame = false;
     public static final boolean allowImperatives = false;
     public static PrintWriter pw = null;
@@ -101,6 +102,18 @@ public class GenSimpTestData {
     /** ***************************************************************
      */
     public GenSimpTestData() {
+
+        initGSTD()
+    }
+
+    public static GenSimpTestData gstd = new GenSimpTestData(boolean GenKB) {
+        
+        KBmanager.getMgr().initializeOnce();
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        initGSTD()
+    }
+
+    private static void initGSTD() {
 
         initNumbers();
         initRequests();
@@ -273,7 +286,7 @@ public class GenSimpTestData {
     public static Map<String,String> readHumans() {
 
         Map<String,String> result = new HashMap<>();
-        List<List<String>> fn = DB.readSpreadsheet(kb.kbDir +
+        List<List<String>> fn = DB.readSpreadsheet(kbLite.kbDir +
                 File.separator + "WordNetMappings/FirstNames.csv", null, false, ',');
         fn.remove(0);  // remove the header
 
@@ -329,15 +342,13 @@ public class GenSimpTestData {
     public static void genMissingTermFormats() {
 
         System.out.println("GenSimpTestData.genMissingTermFormats(): start");
-        KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         List<Formula> res;
-        for (String s : kb.terms) {
-            res = kb.askWithRestriction(0,"termFormat",2,s);
+        for (String s : kbLite.terms) {
+            res = kbLite.askWithRestriction(0,"termFormat",2,s);
             if (res == null || res.isEmpty()) {
                 System.out.println("ERROR IN GenSimpTestData.genMissingTermFormats: MISSING TERM FORMAT FOR: " + s);
                 boolean inst = false;
-                if (kb.isInstance(s))
+                if (kbLite.isInstance(s))
                     inst = true;
                 String news = StringUtil.camelCaseToSep(s,true,inst);
                 System.out.println("(termFormat EnglishLanguage " + s + " \"" + news + "\")");
@@ -453,7 +464,7 @@ public class GenSimpTestData {
     public Set<Capability> collectCapabilities() {
 
         Set<Capability> result = new HashSet<>();
-        List<Formula> forms2 = kb.ask("arg",0,"requiredRole");
+        List<Formula> forms2 = kbLite.ask("arg",0,"requiredRole");
         System.out.println("collectCapabilities(): requiredRoles: " + forms2);
         Capability p;
         for (Formula f : forms2) {
@@ -466,7 +477,7 @@ public class GenSimpTestData {
             result.add(p);
         }
 
-        List<Formula> forms3 = kb.ask("arg",0,"prohibitedRole");
+        List<Formula> forms3 = kbLite.ask("arg",0,"prohibitedRole");
         for (Formula f : forms3) {
             //System.out.println("collectCapabilities(): form: " + f);
             p = this.new Capability();
@@ -477,19 +488,19 @@ public class GenSimpTestData {
             result.add(p);
         }
 
-        List<Formula> forms = kb.ask("cons",0,"capability");
+        List<Formula> forms = kbLite.ask("cons",0,"capability");
         String ant, antClass, cons, kind, consClass, rel;
         Formula fant, fcons, fneg;
         for (Formula f : forms) {
             //System.out.println("collectCapabilities(): form: " + f);
             ant = FormulaUtil.antecedent(f);
             fant = new Formula(ant);
-            if (fant.isSimpleClause(kb) && fant.car().equals("instance")) {
+            if (fant.isSimpleClause(null) && fant.car().equals("instance")) {
                 antClass = fant.getStringArgument(2); // the thing that plays a role
                 cons = FormulaUtil.consequent(f);
                 fcons = new Formula(cons);
                 kind = fcons.getStringArgument(0); // capability or requiredRole
-                if (fcons.isSimpleClause(kb)) {
+                if (fcons.isSimpleClause(null)) {
                     consClass = fcons.getStringArgument(1);  // the process type
                     rel = fcons.getStringArgument(2);  // the role it plays
                     p = this.new Capability();
@@ -502,7 +513,7 @@ public class GenSimpTestData {
                         p.can = true;
                     result.add(p);
                 }
-                else if (fcons.isSimpleNegatedClause(kb)) {
+                else if (fcons.isSimpleNegatedClause(null)) {
                     fneg = fcons.getArgument(1);
                     consClass = fneg.getStringArgument(1);  // the process type
                     rel = fneg.getStringArgument(2);  // the role it plays
@@ -629,8 +640,7 @@ public class GenSimpTestData {
     public void runGenSentence() {
 
         System.out.println("GenSimpTestData.runGenSentence(): start");
-        KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        kbLite = new KBLite("SUMO");
         System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
         LFeatures lfeat = new LFeatures(this);
@@ -650,8 +660,7 @@ public class GenSimpTestData {
     public void parallelGenSentence() {
 
         System.out.println("GenSimpTestData.parallelGenSentence(): start");
-        KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        kbLite = new KBLite("SUMO");
         System.out.println("GenSimpTestData.parallelGenSentence(): finished loading KBs");
 
         List<Integer> numbers = new ArrayList<>();
@@ -674,7 +683,7 @@ public class GenSimpTestData {
      */
     public boolean compoundVerb(String term) {
 
-        String word = kb.getTermFormat("EnglishLanguage",term);
+        String word = kbLite.getTermFormat("EnglishLanguage",term);
         if (word == null || word.contains(" ")) {
             if (debug) System.out.println("compoundVerb(): or null: " + word + " " + term);
             return true;
@@ -748,7 +757,7 @@ public class GenSimpTestData {
         }
         String root = "";
         String nounForm = "";
-        if (kb.isSubclass(term,"Game") && !term.equals("Game")) {
+        if (kbLite.isSubclass(term,"Game") && !term.equals("Game")) {
             nounForm = " " + word;
             root = "play";
         }
@@ -879,7 +888,7 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("getQuantity(): term: " + term);
         float val = rand.nextFloat() * 20;
-        List<Formula> forms = kb.askWithRestriction(0,"roomTempState",1,term);
+        List<Formula> forms = kbLite.askWithRestriction(0,"roomTempState",1,term);
         if (debug) System.out.println("getQuantity(): forms: " + forms);
         if (forms == null || forms.isEmpty())
             return null;
@@ -891,10 +900,10 @@ public class GenSimpTestData {
         if (state.equals("Liquid") || state.equals("Gas"))
             unitType = "UnitOfVolume";
         if (debug) System.out.println("getQuantity(): unitType: " + unitType);
-        Set<String> units = kb.kbCache.getInstancesForType(unitType);
+        Set<String> units = kbLite.getAllInstances(unitType);
         if (debug) System.out.println("getQuantity(): units: " + units);
         String unit = (String) units.toArray()[rand.nextInt(units.size())];
-        String unitEng = kb.getTermFormat("EnglishLanguage",unit);
+        String unitEng = kbLite.getTermFormat("EnglishLanguage",unit);
         if (WordNet.wn.exceptionNounPluralHash.containsKey(unitEng))
             unitEng = WordNet.wn.exceptionNounPluralHash.get(unitEng);
         else
@@ -909,33 +918,19 @@ public class GenSimpTestData {
 
     /** ***************************************************************
      * @param term is a SUMO term
-     * get a random term format if there is more than one
-     */
-    public String getTermFormat(String term) {
-
-        ArrayList<Formula> forms = (ArrayList) kb.askWithTwoRestrictions(0,"termFormat",1,"EnglishLanguage",2,term);
-        if (forms == null || forms.size() == 0)
-            return null;
-        int rint = rand.nextInt(forms.size());
-        return StringUtil.removeEnclosingQuotes(forms.get(rint).getStringArgument(3));
-    }
-
-    /** ***************************************************************
-     * @param term is a SUMO term
      * @param avp is a hack to return whether there was a plural, and its count
      */
     public String nounFormFromTerm(String term, AVPair avp, String other) {
 
         if (term.startsWith("UNK"))
             return term;
-        //String word = kb.getTermFormat("EnglishLanguage",term);
-        String word = getTermFormat(term);
+        String word = kbLite.getTermFormat(term);
         if (word == null) {
             System.out.println("nounFormFromTerm(): no term format for " + term);
             return null;
         }
-        if (kb.isInstance(term)) {
-            if (kb.kbCache.isInstanceOf(term,"Human"))
+        if (kbLite.isInstance(term)) {
+            if (kbLite.isInstanceOf(term,"Human"))
                 return word;
             else {
                 if (StringUtil.emptyString(other))
@@ -945,7 +940,7 @@ public class GenSimpTestData {
             }
 
         }
-        boolean subst = kb.isSubclass(term,"Substance");
+        boolean subst = kbLite.isSubclass(term,"Substance");
         if (subst) {
             if (rand.nextBoolean()) {
                 AVPair quant = getQuantity(term);
@@ -961,7 +956,7 @@ public class GenSimpTestData {
                 return capital("some ") + word;
         }
         String number = "";
-        if (biasedBoolean(1,5) && kb.isSubclass(term,"CorpuscularObject")) { // occasionally make this a plural or count
+        if (biasedBoolean(1,5) && kbLite.isSubclass(term,"CorpuscularObject")) { // occasionally make this a plural or count
             int index = rand.nextInt(numbers.size());  // how many of the object
             avp.value = Integer.toString(index);
             if (rand.nextBoolean())
@@ -1058,7 +1053,7 @@ public class GenSimpTestData {
      */
     private void addBodyPart(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
-        String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "BodyPart");
+        String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "BodyPart");
         if (bodyPart == null)
             bodyPart = lfeat.bodyParts.getNext();
         AVPair plural = new AVPair();
@@ -1120,7 +1115,7 @@ public class GenSimpTestData {
             english.delete(english.length() - 7, english.length());
             english.append(" \""); // restore space and quote
         }
-        else if (kb.isInstanceOf(lfeat.subj,"SocialRole")) { // a plumber... etc
+        else if (kbLite.isInstanceOf(lfeat.subj,"SocialRole")) { // a plumber... etc
             if (lfeat.framePart.startsWith("Somebody's (body part)")) {
                 if (lfeat.subj.equals("You"))
                     english.append(capital("your"));
@@ -1262,7 +1257,7 @@ public class GenSimpTestData {
                                 String proc, String word, LFeatures lfeat) {
 
         if (debug) System.out.println("generateVerb(): word,proc,subj: " + word + ", " + proc + ", " + lfeat.subj);
-        if (debug) System.out.println("generateVerb(): kb.isSubclass(proc,\"IntentionalProcess\"): " + kb.isSubclass(proc,"IntentionalProcess"));
+        if (debug) System.out.println("generateVerb(): kb.isSubclass(proc,\"IntentionalProcess\"): " + kbLite.isSubclass(proc,"IntentionalProcess"));
         String verb = verbForm(proc,negated,word,lfeat.subjectPlural,english,lfeat);
         String adverb = "";
         String adverbSUMO = "";
@@ -1292,17 +1287,17 @@ public class GenSimpTestData {
         else if (lfeat.framePart.startsWith("Something"))
             prop.append("(involvedInEvent ?P ?H) ");
         else if (lfeat.subj != null && lfeat.subj.equalsIgnoreCase("What") &&
-                !kb.isSubclass(proc,"IntentionalProcess")) {
+                !kbLite.isSubclass(proc,"IntentionalProcess")) {
             prop.append("(involvedInEvent ?P ?H) ");
         }
         else if (lfeat.subj != null &&
-                  (kb.isSubclass(lfeat.subj,"AutonomousAgent") ||
-                   kb.isInstanceOf(lfeat.subj,"SocialRole") ||
+                  (kbLite.isSubclass(lfeat.subj,"AutonomousAgent") ||
+                   kbLite.isInstanceOf(lfeat.subj,"SocialRole") ||
                    lfeat.subj.equalsIgnoreCase("Who") ||
                    lfeat.subj.equals("You"))) {
-            if (kb.isSubclass(proc,"IntentionalProcess"))
+            if (kbLite.isSubclass(proc,"IntentionalProcess"))
                 prop.append("(agent ?P ?H) ");
-            else if (kb.isSubclass(proc,"BiologicalProcess"))
+            else if (kbLite.isSubclass(proc,"BiologicalProcess"))
                 prop.append("(experiencer ?P ?H) ");
             else
                 prop.append("(agent ?P ?H) ");
@@ -1362,7 +1357,7 @@ public class GenSimpTestData {
                 lfeat.directType = "Human";
             }
             else {
-                lfeat.directType = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+                lfeat.directType = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
                 if (lfeat.directType == null)
                     lfeat.directType = lfeat.socRoles.getNext();
             }
@@ -1466,8 +1461,8 @@ public class GenSimpTestData {
             addSecondVerb(english,prop,lfeat);
             if (debug) System.out.println("generateDirectObject(2): added second verb, english: " + english);
         }
-        else if (kb.isSubclass(lfeat.verbType, "Translocation") &&
-                (kb.isSubclass(lfeat.directType,"Region") || kb.isSubclass(lfeat.directType,"StationaryObject"))) {
+        else if (kbLite.isSubclass(lfeat.verbType, "Translocation") &&
+                (kbLite.isSubclass(lfeat.directType,"Region") || kbLite.isSubclass(lfeat.directType,"StationaryObject"))) {
             //    (kb.isSubclass(dprep.noun,"Region") || kb.isSubclass(dprep.noun,"StationaryObject"))) {
             if (debug) System.out.println("generateDirectObject(3): location, region or object: " + english);
             if (lfeat.directType.equals("Human"))
@@ -1503,7 +1498,7 @@ public class GenSimpTestData {
                     role = "orientation";
                     break;
                 default:
-                    if (kb.isSubclass(lfeat.verbType,"Transfer")) {
+                    if (kbLite.isSubclass(lfeat.verbType,"Transfer")) {
                         prop.append("(objectTransferred ?P ?DO) ");
                         role = "objectTransferred";
                     }
@@ -1621,7 +1616,7 @@ public class GenSimpTestData {
             if (plural.attribute.equals("true"))
                 addSUMOplural(prop,lfeat.indirectType,plural,"?IO");
             else {
-                if (kb.isInstanceOf(lfeat.indirectType,"SocialRole"))
+                if (kbLite.isInstanceOf(lfeat.indirectType,"SocialRole"))
                     prop.append("(attribute ?IO ").append(lfeat.indirectType).append(") ");
                 else
                     prop.append("(instance ?IO ").append(lfeat.indirectType).append(") ");
@@ -1655,21 +1650,14 @@ public class GenSimpTestData {
             prop.append(closeParens(lfeat));
             onceWithoutInd = false;
             if (debug) System.out.println("generateIndirectObject(): " + english);
-            if (KButilities.isValidFormula(kb,prop.toString())) {
-                if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
-                String finalEnglish = english.toString().replaceAll("  "," ");
-                //System.out.println("writing english");
-                englishFile.println(finalEnglish);
-                //System.out.println("writing logic");
-                logicFile.println(prop);
-                frameFile.println(lfeat);
-                sentCount++;
-            }
-            else {
-                System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
-                System.out.println(KButilities.errors);
-                System.out.println(english);
-            }
+            //if (KButilities.isValidFormula(kb,prop.toString())) {
+            String finalEnglish = english.toString().replaceAll("  "," ");
+            //System.out.println("writing english");
+            englishFile.println(finalEnglish);
+            //System.out.println("writing logic");
+            logicFile.println(prop);
+            frameFile.println(lfeat);
+            sentCount++;
         }
         else if (lfeat.framePart.contains("INFINITIVE")) {
             getVerb(lfeat,true);
@@ -1700,21 +1688,15 @@ public class GenSimpTestData {
                 prop.append(newProp);
             }
             if (debug) System.out.println("generateIndirectObject(): " + english);
-            if (KButilities.isValidFormula(kb,prop.toString())) {
-                if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
-                String finalEnglish = english.toString().replaceAll("  "," ");
-                //System.out.println("writing english");
-                englishFile.println(finalEnglish);
-                //System.out.println("writing logic");
-                logicFile.println(prop);
-                frameFile.println(lfeat);
-                sentCount++;
-            }
-            else {
-                System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
-                System.out.println(KButilities.errors);
-                System.out.println(english);
-            }
+            //if (KButilities.isValidFormula(kb,prop.toString())) {
+            //    if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
+            String finalEnglish = english.toString().replaceAll("  "," ");
+            //System.out.println("writing english");
+            englishFile.println(finalEnglish);
+            //System.out.println("writing logic");
+            logicFile.println(prop);
+            frameFile.println(lfeat);
+            sentCount++;
         }
         else {  // close off the formula without an indirect object
             if (debug) System.out.println("generateIndirectObject(): attitude: " + lfeat.attitude);
@@ -1740,21 +1722,15 @@ public class GenSimpTestData {
             indCount = 0;
             if (!onceWithoutInd) {
                 if (debug) System.out.println("====== generateIndirectObject(): " + english);
-                if (KButilities.isValidFormula(kb,prop.toString())) {
-                    if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
-                    String finalEnglish = english.toString().replaceAll("  "," ");
-                    //System.out.println("writing english");
-                    englishFile.println(finalEnglish);
-                    //System.out.println("writing logic");
-                    logicFile.println(prop);
-                    frameFile.println(lfeat);
-                    sentCount++;
-                }
-                else {
-                    System.out.println("generateIndirectObject(): Error invalid formula: " + Formula.textFormat(prop.toString()));
-                    System.out.println(KButilities.errors);
-                    System.out.println(english);
-                }
+                //if (KButilities.isValidFormula(kb,prop.toString())) {
+                if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
+                String finalEnglish = english.toString().replaceAll("  "," ");
+                //System.out.println("writing english");
+                englishFile.println(finalEnglish);
+                //System.out.println("writing logic");
+                logicFile.println(prop);
+                frameFile.println(lfeat);
+                sentCount++;
             }
             onceWithoutInd = true;
         }
@@ -1771,7 +1747,7 @@ public class GenSimpTestData {
         if (verbEx.contains(v)) // check for specifically excluded verbs and their SUMO subclasses
             return true;
         for (String s : verbEx) {
-            if (kb.isSubclass(v,s))
+            if (kbLite.isSubclass(v,s))
                 return true;
         }
         if (debug) System.out.println("excludedVerb(): not excluded: " + v);
@@ -1814,7 +1790,7 @@ public class GenSimpTestData {
                 lfeat.indirectType = "Human";
             }
             else {
-                lfeat.indirectType = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+                lfeat.indirectType = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
                 if (lfeat.indirectType == null)
                     lfeat.indirectType = lfeat.socRoles.getNext();
             }
@@ -2166,7 +2142,7 @@ public class GenSimpTestData {
                 if (debug) System.out.println("GenSimpTestData.generateHuman(): generated a You (understood)");
             }
             else if (val < 6) { // a role
-                socialRole = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+                socialRole = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
                 if (socialRole == null)
                     socialRole = lfeat.socRoles.getNext();
                 type.append(socialRole);
@@ -2214,7 +2190,7 @@ public class GenSimpTestData {
         String role;
         StringBuilder prop1, english1;
         for (int i = 0; i < humanMax; i++) {
-            role = WordPairFrequency.getNounInClassFromVerb(lfeat, kb, "SocialRole");
+            role = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
             if (role == null)
                 role = lfeat.socRoles.getNext();
             if (lfeat.subj.equals(role)) continue;
@@ -2357,11 +2333,7 @@ public class GenSimpTestData {
     public void genProcTable() {
 
         System.out.println("GenSimpTestData.genProcTable(): start");
-        // KBmanager.getMgr().initializeOnce();
-        // kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         Collection<Capability> caps = collectCapabilities();
-        //System.out.println("GenSimpTestData.genProcTable(): " + caps.size() + " capability entries");
-        //System.out.println(caps);
         extendCapabilities(caps);
     }
 
@@ -2373,7 +2345,7 @@ public class GenSimpTestData {
         Set<Capability> hs;
         Set<String> childClasses;
         for (Capability c : caps) {
-            childClasses = kb.kbCache.getChildClasses(c.proc);
+            childClasses = kbLite.getChildClasses(c.proc);
             if (childClasses != null) {
                 childClasses.add(c.proc); // add the original class
                 for (String cls : childClasses) { // add each of the subclasses
@@ -2407,11 +2379,11 @@ public class GenSimpTestData {
             if (debug) System.out.println("checkCapabilities(): found capabilities: " + capabilities.get(proc));
             Set<Capability> caps = capabilities.get(proc);
             for (Capability c : caps) {
-                if (c.caserole.equals(role) && (c.object.equals(obj) || kb.isSubclass(obj,c.object)) && !c.negated && c.must) {
+                if (c.caserole.equals(role) && (c.object.equals(obj) || kbLite.isSubclass(obj,c.object)) && !c.negated && c.must) {
                     if (debug) System.out.println("checkCapabilities(): approved");
                     return true;
                 }
-                if (c.caserole.equals(role) && !c.object.equals(obj) & !kb.isSubclass(obj,c.object) && c.must) {
+                if (c.caserole.equals(role) && !c.object.equals(obj) & !kbLite.isSubclass(obj,c.object) && c.must) {
                     if (debug) System.out.println("checkCapabilities(): rejected, object is not a " + c.object);
                     return false;
                 }
@@ -2419,7 +2391,7 @@ public class GenSimpTestData {
                     if (debug) System.out.println("checkCapabilities(): rejected.  Conflict with: " + c);
                     return false;
                 }
-                if (c.caserole.equals(role) && !c.object.equals(obj) && !kb.isSubclass(obj,c.object) && !c.negated && c.must) {
+                if (c.caserole.equals(role) && !c.object.equals(obj) && !kbLite.isSubclass(obj,c.object) && !c.negated && c.must) {
                     if (debug) System.out.println("checkCapabilities(): rejected.  Conflict with: " + c);
                     return false;
                 }
@@ -2441,7 +2413,7 @@ public class GenSimpTestData {
      */
     public void showAttributes() {
 
-        Set<String> attribs = kb.kbCache.getInstancesForType("Attribute");
+        Set<String> attribs = kbLite.getAllInstances("Attribute");
         List<String> synsets;
         for (String s : attribs) {
             synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(s);
