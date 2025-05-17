@@ -465,8 +465,8 @@ public class KBLite {
 
     /** ************************************************
      *
-     * @param lang
-     * @return random term format.
+     *  Returns random term format.
+     *  Only supports English.
      */
     public String getTermFormat(String lang, String term) {
         List<String> termFormatsForTerm = termFormats.get(term);
@@ -541,14 +541,14 @@ public class KBLite {
     }
 
     /*************************************************************
-     *  Does very basic syntax and type checking. This is good
+     *  TODO: Does very basic syntax and type checking. This is good
      *  enough for basic sentence generation.
      */
-    public boolean isValidFormula (String formula) {
+/*    public boolean isValidFormula (String formula) {
         // Check balanced parentheses
         int count = 0;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
+        for (int i = 0; i < formula.length(); i++) {
+            char c = formula.charAt(i);
             if (c == '(') {
                 count++;
             } else if (c == ')') {
@@ -557,32 +557,50 @@ public class KBLite {
             }
         }
         if (count != 0) return false;
-        formArgs = splitFormulaArguments(formula);
+        List<String> formArgs = splitFormulaArguments(formula);
         if (relations.contains(formArgs.get(0))) {
-            if (relationTypesGood(formArgs);
+            if (relationTypesGood(formArgs)) {
+                return true;
+            }
         }
+        return true;
     }
-
+*/
     /***********************************************************
      *
      * @param formArgs - array of arguments. i.e. ['mother', 'mom', 'child']
      * @return true if the types of the input match the types of the domain.
      */
-    private boolean relationTypesGood(List<String> formArgs) {
-        List<String> relDomains = domains.get(formArgs[0]);
-        for (int i=0; i < relDomains.size(); i++) {
-
+/*    private boolean relationTypesGood(List<String> formArgs) {
+        List<List<String>> relDomains = domains.get(formArgs.get(0));
+        if (relDomains.size() != formArgs.size()-1) {
+            System.out.println("Wrong arity for formula: " + formArgs);
+            return false;
         }
-    }
+        for (int i=0; i<relDomains.size(); i++) {
+            dClass = relDomains.get(i).get(3);
+            fArg = formArgs.get(i);
+            if (d.get(0).equals("domainSubclass")) {
+                Set<String> dSubClasses =  getChildClasses(dClass);
+                return false;
+            } else {
+                Set<String> dInstances = getAllInstances(dClass);
 
+                return false;
+            }
+        }
+        return true;
+    }
+*/
     public static void main(String[] args) {
         KBLite kbLite = new KBLite("SUMO");
         for (String f : kbLite.kifFiles) {
             System.out.println(f);
         }
-
-        for(List<String> d:kbLite.domains) {
-            System.out.println (d);
+        Set<String> birdClasses = kbLite.getChildClasses("Bird");
+        for (String bird : birdClasses) {
+            System.out.println(bird);
         }
+
     }
 }

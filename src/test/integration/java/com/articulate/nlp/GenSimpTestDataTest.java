@@ -285,7 +285,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testNLG()");
         String s = "(=> (and (valence ?REL ?NUMBER) (instance ?REL Predicate)) (forall (@ROW) (=> (?REL @ROW) (equal (ListLengthFn (ListFn @ROW)) ?NUMBER))))";
-        String actual = toEnglish(s);
+        String actual = GenUtils.toEnglish(s, kb);
         System.out.println("Strike:" + kb.getTermFormat("EnglishLanguage","BaseballStrike"));
         System.out.println("Strike2:" + kb.getTermFormatMap("EnglishLanguage").get("BaseballStrike"));
         System.out.println("Strike3:" + LanguageFormatter.translateWord(kb.getTermFormatMap("EnglishLanguage"),"BaseballStrike"));
