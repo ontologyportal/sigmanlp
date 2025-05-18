@@ -45,7 +45,7 @@ public class GenSimpTestData {
 
     public static boolean debug = false;
     public static KB kb;
-    private KBLite kbLite;
+    public static KBLite kbLite;
     public static boolean printFrame = false;
     public static final boolean allowImperatives = false;
     public static PrintWriter pw = null;
@@ -103,17 +103,28 @@ public class GenSimpTestData {
      */
     public GenSimpTestData() {
 
-        initGSTD()
-    }
-
-    public static GenSimpTestData gstd = new GenSimpTestData(boolean GenKB) {
-        
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        initGSTD()
+        initGSTD();
     }
 
-    private static void initGSTD() {
+    public GenSimpTestData(boolean useKBLite) {
+
+        if (useKBLite) {
+            kbLite = new KBLite("SUMO");
+            KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+            WordNet.initOnce();
+            if (WordNet.wn == null) {
+                System.out.println("Well, that didn't work.");
+            }
+        } else {
+            KBmanager.getMgr().initializeOnce();
+            kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        }
+        initGSTD();
+    }
+
+    private void initGSTD() {
 
         initNumbers();
         initRequests();
@@ -202,9 +213,11 @@ public class GenSimpTestData {
 
     /** ***************************************************************
      * Get frequency-sorted co-occurrences of adj/noun and adv/verb pairs
+     * TODO: Once Ollama generation is complete, this won't be necessary.
      */
     public static void initModifiers() {
 
+        /*
         String prefix = System.getenv("CORPORA") + File.separator + "COCA" + File.separator;
         File n = new File(prefix + "nouns.txt");
         File v = new File(prefix + "verbs.txt");
@@ -213,9 +226,9 @@ public class GenSimpTestData {
 
         coca.freqNouns = PairMap.readMap(n.getAbsolutePath());
         coca.freqVerbs = PairMap.readMap(v.getAbsolutePath());
-        //System.out.println("Nouns: " + coca.freqNouns);
-        //System.out.println("Verbs: " + coca.freqVerbs);
         COCA.filterModifiers(coca.freqVerbs,coca.freqNouns);
+
+         */
     }
 
     /** ***************************************************************
@@ -411,6 +424,20 @@ public class GenSimpTestData {
         public String toString() {
             return procType + ": " + prep + ": " + noun;
         }
+    }
+
+    /** ***************************************************************
+     * @param term is a SUMO term
+     * get a random term format if there is more than one
+     *
+     */
+    public String getTermFormat(String term) {
+
+        ArrayList<Formula> forms = (ArrayList) kb.askWithTwoRestrictions(0,"termFormat",1,"EnglishLanguage",2,term);
+        if (forms == null || forms.size() == 0)
+            return null;
+        int rint = rand.nextInt(forms.size());
+        return StringUtil.removeEnclosingQuotes(forms.get(rint).getStringArgument(3));
     }
 
     /** ***************************************************************
@@ -640,7 +667,6 @@ public class GenSimpTestData {
     public void runGenSentence() {
 
         System.out.println("GenSimpTestData.runGenSentence(): start");
-        kbLite = new KBLite("SUMO");
         System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
         LFeatures lfeat = new LFeatures(this);
@@ -1844,12 +1870,13 @@ public class GenSimpTestData {
     }
 
     /** ***************************************************************
+     *  TODO: Use WordPairFrequency an LLM to get the best adverb.
      */
     private void getAdverb(LFeatures lfeat, boolean second) {
 
         String word = "";
         String adverb = "";
-        if (second)
+        /* if (second)
             word = lfeat.secondVerb;
         else
             word = lfeat.verb;
@@ -1877,11 +1904,13 @@ public class GenSimpTestData {
                 total = total + increment;
             }
             if (debug) System.out.println("adverb(): found adverb: " + adverb);
+
+         */
             if (second)
                 lfeat.secondVerbModifier = adverb;
             else
                 lfeat.adverb = adverb;
-        }
+        
     }
 
     /** ***************************************************************
@@ -1904,7 +1933,7 @@ public class GenSimpTestData {
             do {
                 proc = lfeat.processes.getNext(); // processes is a RandSet
                 synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(proc);
-                if (synsets.isEmpty()) // keep searching for processes with equivalent synsets
+                if (synsets == null || synsets.isEmpty()) // keep searching for processes with equivalent synsets
                     if (debug) System.out.println("getVerb(): no equivalent synsets for: " + proc);
             } while (excludedVerb(proc) || synsets.isEmpty()); // too hard grammatically for now to have compound verbs
             if (debug) System.out.println("getVerb(): checking process: " + proc);
@@ -2485,7 +2514,7 @@ public class GenSimpTestData {
                 if (args.length > 1 && args[0].equals("-s")) { // create NL/logic synthetically
                     if (args.length > 2)
                         sentMax = Integer.parseInt(args[2]);
-                    GenSimpTestData gstd = new GenSimpTestData();
+                    GenSimpTestData gstd = new GenSimpTestData(true);
                     gstd.runGenSentence();
                     englishFile.close();
                     logicFile.close();
@@ -2494,7 +2523,7 @@ public class GenSimpTestData {
                 if (args.length > 1 && args[0].equals("-p")) { // create NL/logic synthetically
                     if (args.length > 2)
                         sentMax = Integer.parseInt(args[2]);
-                    GenSimpTestData gstd = new GenSimpTestData();
+                    GenSimpTestData gstd = new GenSimpTestData(true);
                     gstd.parallelGenSentence();
                     englishFile.close();
                     logicFile.close();

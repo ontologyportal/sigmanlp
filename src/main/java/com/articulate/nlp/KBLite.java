@@ -17,7 +17,7 @@ import java.util.Random;
 public class KBLite {
 
     // Constant for the KB directory path, always ends with a separator
-    private static final String KB_FILEPATH = System.getenv("SIGMA_HOME") + File.separator + "KBs" + File.separator;
+    private static final String KB_FILEPATH = System.getenv("SIGMA_HOME") + File.separator + "KBs";
     public String kbDir = KB_FILEPATH; // kbDir used for compatibility purposes.
     private List<String> kifFiles = new ArrayList<>();
 
@@ -56,7 +56,7 @@ public class KBLite {
      * Constructor that takes the KB name and extracts the kif files for that KB.
      */
     public KBLite(String kbName) {
-        System.out.println("\n*****************************************************\nWARNING: KBLite does not perform syntax, type check, \nor any other check to ensure the knowledge base is \naccurate. Only use after you are otherwise confident \nin the accuracy of the Knowledge Base. EnglishLanguage only.\n*****************************************************\n");
+        System.out.println("\n********************************************************\nWARNING: KBLite does not perform syntax, type check, or \nany other check to ensure the knowledge base is accurate. \nOnly use after you are otherwise confident in the \naccuracy of the Knowledge Base. EnglishLanguage only.\n********************************************************\n");
         getKifFilesFromConfig(kbName);
         System.out.println("Loading kif files into cache.");
         loadKifs();
@@ -75,7 +75,7 @@ public class KBLite {
     private void getKifFilesFromConfig(String kbName) {
         kifFiles.clear();
         try {
-            File file = new File(KB_FILEPATH + "config.xml");
+            File file = new File(KB_FILEPATH + File.separator + "config.xml");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             org.w3c.dom.Document doc = dBuilder.parse(file); // <-- fully qualified
@@ -104,7 +104,7 @@ public class KBLite {
 
     public void loadKifs() {
         for (String kifFile : kifFiles) {
-            File file = new File(KB_FILEPATH + kifFile);
+            File file = new File(KB_FILEPATH + File.separator + kifFile);
             if (!file.exists()) {
                 System.err.println("Error: File not found: " + file.getAbsolutePath());
                 continue;
@@ -223,7 +223,7 @@ public class KBLite {
                 "termFormat".equals(arguments.get(0)) &&
                 "EnglishLanguage".equals(arguments.get(1))) {
             String key = arguments.get(2);
-            String value = arguments.get(3);
+            String value = arguments.get(3).replaceAll("^\"|\"$", ""); // Strip off opening and closing quotation marks
             List<String> valueList = termFormats.get(key);
             if (valueList == null) {
                 valueList = new ArrayList<>();
@@ -438,6 +438,10 @@ public class KBLite {
         return childClasses;
     }
 
+    public Set<String> getInstancesForType(String className) {
+        return getAllInstances(className);
+    }
+
     public Set<String> getAllInstances(String className) {
         if (className == null || className.isEmpty()) {
             return new TreeSet<>();
@@ -474,6 +478,10 @@ public class KBLite {
 
     public String getTermFormat(String term) {
         List<String> termFormatsForTerm = termFormats.get(term);
+        if (termFormatsForTerm == null) {
+            System.out.println("No term format for: " + term);
+            return null;
+        }
         return termFormatsForTerm.get(rand.nextInt(termFormatsForTerm.size()));
     }
 
