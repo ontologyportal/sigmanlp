@@ -1,6 +1,9 @@
 package com.articulate.nlp;
 
 
+import com.articulate.sigma.nlg.NLGUtils;
+import com.articulate.sigma.*;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -13,6 +16,7 @@ import java.util.HashSet;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
+
 
 
 /** Utility methods useful for synthetically generating sentences.
@@ -117,6 +121,17 @@ public class GenUtils {
         }
     }
 
+
+    /** ***************************************************************
+     * generate new SUMO statements for relations and output English
+     * paraphrase
+     */
+    public static String toEnglish(String form, KB kb) {
+
+        return NLGUtils.htmlParaphrase("", form, kb.getFormatMap("EnglishLanguage"),
+                kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage");
+    }
+
     /** ***************************************************************
      *   Runs a bash command
      */
@@ -146,5 +161,5 @@ public class GenUtils {
         return output.toString().trim();
     }
 
-
+    
 }

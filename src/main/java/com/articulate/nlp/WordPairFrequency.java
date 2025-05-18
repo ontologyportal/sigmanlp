@@ -1,6 +1,5 @@
 package com.articulate.nlp;
 
-import com.articulate.sigma.KB;
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.wordNet.WordNet;
 
@@ -155,7 +154,7 @@ public class WordPairFrequency {
      * Gets a noun from a particular class given a verb.
      * classname could be "BodyPart" or "SocialRole" for example.
      */
-    public static String getNounInClassFromVerb(LFeatures lfeat, KB kb, String className) {
+    public static String getNounInClassFromVerb(LFeatures lfeat, KBLite kb, String className) {
 
         if (debug) System.out.println("WordPairFrequency.getNounInClassFromVerb() - className: " + className);
         if (!dbExists()) { return lfeat.objects.getNext(); }
