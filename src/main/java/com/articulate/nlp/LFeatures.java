@@ -94,7 +94,8 @@ public class LFeatures {
         Set<String> artInst = GenSimpTestData.kbLite.getInstancesForType("Artifact");
         Set<String> artClass = GenSimpTestData.kbLite.getChildClasses("Artifact");
 
-        Collection<AVPair> procFreqs = genSimpTestData.findWordFreq(GenSimpTestData.kbLite.getChildClasses("Process"));
+        Set<String> processesSet = GenSimpTestData.kbLite.getChildClasses("Process");
+        Collection<AVPair> procFreqs = genSimpTestData.findWordFreq(processesSet);
         processes = RandSet.create(procFreqs);
 
         if (useCapabilities) {
@@ -117,7 +118,6 @@ public class LFeatures {
         addUnknownsObjects(objFreqs);
         if (debug) System.out.println("LFeatures(): create objects");
         objects = RandSet.create(objFreqs);
-        //System.out.println("LFeatures(): objects: " + objects.terms);
     }
 
     /***************************************************************

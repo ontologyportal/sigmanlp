@@ -114,9 +114,6 @@ public class GenSimpTestData {
             kbLite = new KBLite("SUMO");
             KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
             WordNet.initOnce();
-            if (WordNet.wn == null) {
-                System.out.println("Well, that didn't work.");
-            }
         } else {
             KBmanager.getMgr().initializeOnce();
             kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
@@ -634,23 +631,20 @@ public class GenSimpTestData {
         AVPair avp;
         for (String term : terms) {
             List<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(term);
-            //if (debug) System.out.println("findWordFreq(): proc list size: " + terms.size());
             int count;
             if (synsets == null || synsets.isEmpty())
-                count = 0;
+                count = 1;
             else {
                 int freq = 0;
                 for (String s : synsets) {
                     resultWords = WordNet.wn.getWordsFromSynset(s);
-                    //System.out.println("findWordFreq(): freq: " + WordNet.wn.senseFrequencies.size());
-                    //System.out.println("findWordFreq(): synset: " + s);
                     int f = 0;
                     if (WordNet.wn.senseFrequencies.containsKey(s))
                         f = WordNet.wn.senseFrequencies.get(s);
                     if (f > freq)
                         freq = f;
                 }
-                count = (int) Math.round(Math.log(freq) + 1.0);
+                count = (int) Math.round(Math.log(freq) + 1.0) + 1;
             }
             avp = new AVPair(term,Integer.toString(count));
             avpList.add(avp);
@@ -670,6 +664,7 @@ public class GenSimpTestData {
         System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
         LFeatures lfeat = new LFeatures(this);
+        //System.out.println(lfeat.processes);
 //        List<String> terms = new ArrayList<>();
         //if (debug) System.out.println("GenSimpTestData.runGenSentence():  lfeat.direct: " + lfeat.direct);
         //System.exit(1);

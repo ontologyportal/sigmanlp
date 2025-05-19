@@ -18,6 +18,7 @@ import java.util.Set;
 
 public class WordPairFrequency {
     public static boolean debug = false;
+    public static boolean WORDPAIR_OFF = true;
 
     private static String db_location = System.getenv("CORPORA") +"/COCA/word_pairs.db";
 
@@ -119,6 +120,7 @@ public class WordPairFrequency {
     public static String getNounFromNounAndVerb(LFeatures lfeat) {
 
         if (debug) System.out.println("WordPairFrequency.getNounFromNoun()" + lfeat.subj + " " + lfeat.verb);
+        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
         if (!dbExists() || lfeat.subj == null) { return lfeat.objects.getNext(); }
         ArrayList<AVPair> subjSet = WordPairFrequency.getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun);
         ArrayList<AVPair> objSet = WordPairFrequency.getWordPairFrequencies(lfeat.subj, WordType.noun, WordType.noun);
@@ -157,6 +159,7 @@ public class WordPairFrequency {
     public static String getNounInClassFromVerb(LFeatures lfeat, KBLite kb, String className) {
 
         if (debug) System.out.println("WordPairFrequency.getNounInClassFromVerb() - className: " + className);
+        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
         if (!dbExists()) { return lfeat.objects.getNext(); }
         ArrayList<AVPair> subjList = getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun);
         ArrayList<AVPair> instanceList = new ArrayList();
@@ -189,6 +192,7 @@ public class WordPairFrequency {
     public static String getNounFromVerb(LFeatures lfeat) {
 
         if (debug) System.out.println("WordPairFrequency.getNounFromVerb() ");
+        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
         if (!dbExists()) { return lfeat.objects.getNext(); }
         RandSet subjSet = RandSet.create(getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun));
         String term = subjSet.getNext();
