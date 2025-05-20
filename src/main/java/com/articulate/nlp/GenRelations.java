@@ -39,7 +39,7 @@ import com.articulate.sigma.wordNet.WSD;
 public class GenRelations {
 
     public static boolean debug = false;
-    public static KB kb;
+    public static KBLite kbLite;
     public static String outputFileEnglish = "relations-eng.txt";
     public static String outputFileLogic = "relations-log.txt";
     public static boolean EQUIVALENCE_MAPPINGS = false;
@@ -104,12 +104,11 @@ public class GenRelations {
         options = new OptionsBuilder().setTemperature(1.0f).build();
 
         // load the knowledge base
-        KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        kbLite = new KBLite("SUMO");
         System.out.println("Finished loading KBs");
-        Set<String> allSUMOFunctionsSet = kb.kbCache.getChildInstances("Function");
-        Set<String> allSUMOVariableAritySet = kb.kbCache.getChildInstances("VariableArityRelation");
-        Set<String> allSUMORelationsSet = kb.kbCache.getChildInstances("Relation");
+        Set<String> allSUMOFunctionsSet = kbLite.getAllInstances("Function");
+        Set<String> allSUMOVariableAritySet = kbLite.getAllInstances("VariableArityRelation");
+        Set<String> allSUMORelationsSet = kbLite.getAllInstances("Relation");
         allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
         allSUMORelationsSet.removeAll(allSUMOVariableAritySet);
         allSUMORelationsSet.remove("Function");
@@ -117,8 +116,8 @@ public class GenRelations {
         allSUMORelationsSet.remove("documentation");
 
         allSUMORelationsRandSet = RandSet.listToEqualPairs(allSUMORelationsSet);
-        allTermFormats = kb.getTermFormatMapAll("EnglishLanguage");
-        allFormats = kb.getFormatMapAll("EnglishLanguage");
+        allTermFormats = kbLite.getTermFormatMap();
+        allFormats = kbLite.getFormatMap();
         random = new Random();
         genUtils = new GenUtils();
 
@@ -230,17 +229,22 @@ public class GenRelations {
     public static boolean handleFormatSymbols() {
 
         if (isQuestion && !isNegated) {
-            if (!(englishSentence.contains("%qp{"))) {
+            if (!englishSentence.contains("%qp{")) {
                 isQuestion = false;
             }
         } else if (isQuestion && isNegated) {
              if (!englishSentence.contains("%qn{")) {
                  isQuestion = false;
              }
+
         }
         if (!isQuestion && isNegated) {
-            // Replaces all occurrences of the string "%n" with "not", but won't replace "%n{"
-            englishSentence = englishSentence.replaceAll("%n(?!\\{)", "not");
+            if (!englishSentence.contains("%n")) {
+                isNegated = false;
+            } else{
+                // Replaces all occurrences of the string "%n" with "not", but won't replace "%n{"
+                englishSentence = englishSentence.replaceAll("%n(?!\\{)", "not");
+            }
         }
         if (debug) System.out.println("Is question: " + isQuestion);
         if (debug) System.out.println("Is negated : " + isNegated);
@@ -277,8 +281,8 @@ public class GenRelations {
      *   Handles arguments in the format statement (i.e. %1, %2 ...).
      */
     public static boolean handleArgs() {
-        domainsAll = kb.askWithRestriction(0, "domain", 1, randRelation);
-        List<Formula> domainSubclasses = kb.askWithRestriction(0, "domainSubclass", 1, randRelation);
+        domainsAll = kbLite.askWithRestriction(0, "domain", 1, randRelation);
+        List<Formula> domainSubclasses = kbLite.askWithRestriction(0, "domainSubclass", 1, randRelation);
         domainsAll.addAll(domainSubclasses);
         int valence = domainsAll.size();
         if (valence == 0) {
@@ -298,12 +302,12 @@ public class GenRelations {
                     }
                     List<String> childClasses = new ArrayList<>();
                     childClasses.add(argClass);
-                    Set<String> childClassesSet = kb.kbCache.getChildClasses(argClass);
+                    Set<String> childClassesSet = kbLite.getChildClasses(argClass);
                     if (childClassesSet != null) {
                         childClasses.addAll(childClassesSet);
                     }
                     String randomSubclass = childClasses.get(random.nextInt(childClasses.size()));
-                    if (kb.kbCache.subclassOf(randomSubclass, "Quantity")) {
+                    if (kbLite.subclassOf(randomSubclass, "Quantity")) {
                         // TO DO: Handle numbers
                         // System.out.println("Numbers not supported for: " + randRelation + " " + randomSubclass);
                         return false;

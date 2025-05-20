@@ -232,6 +232,7 @@ public class KBLite {
             valueList.add(value);
         }
 
+        // Handle domain and domainSubclass entries
         if (arguments.size() > 3 &&
                 ("domain".equals(arguments.get(0)) || "domainSubclass".equals(arguments.get(0)))) {
             String key = arguments.get(1); // the second argument
@@ -368,6 +369,12 @@ public class KBLite {
      *  Returns the format map in English only. Parameter lang is
      *  ignored. Only used for compatibility.
      */
+    public Map<String, List<String>> getFormatMap() {
+        return formats;
+    }
+    public Map<String, List<String>> getFormatMap(String lang) {
+        return formats;
+    }
     public Map<String, List<String>> getFormatMapAll(String lang) {
         return formats;
     }
@@ -391,6 +398,7 @@ public class KBLite {
      * @param parent A String, the name of a Class.
      * @return boolean
      */
+    public boolean subclassOf(String childClass, String parentClass) {return isSubclass(childClass, parentClass);}
     public boolean isSubclass (String childClass, String parentClass) {
         if (childClass == null || parentClass == null || childClass.isEmpty() || parentClass.isEmpty())
             return false;
@@ -500,7 +508,8 @@ public class KBLite {
     public List<Formula> ask(String kind, int argnum, String term) {
         // assume kind == "arg"
         // Format of rawFormulasWithArgs is the formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
-        // Note: argnums are indexed starting at 1.
+        // The actual args in rawFormulasWithArgs starts at 1, so we have to add 1 to argnum when querying rawFormulasWithArgs.
+        argnum++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
             if (argnum < formula.size()
@@ -519,12 +528,12 @@ public class KBLite {
      * results.
      */
     public List<Formula> askWithRestriction(int argnum1, String term1, int argnum2, String term2) {
-        // Format of rawFormulasWithArgs is the formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
-        // Note: argnums are indexed starting at 1.
+        // See not on KBLite.ask()
+        argnum1++; argnum2++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
-            if (argnum1 < formula.size() && argnum2 < formula.size()
-                    && formula.get(argnum1).equals(term1) && formula.get(argnum2).equals(term2)) {
+            if (argnum1+1 < formula.size() && argnum2+1 < formula.size()
+                    && formula.get(argnum1+1).equals(term1) && formula.get(argnum2+1).equals(term2)) {
                 result.add(new Formula(formula.get(0)));
             }
         }
@@ -542,6 +551,8 @@ public class KBLite {
     public List<Formula> askWithTwoRestrictions(int argnum1, String term1,
                                                 int argnum2, String term2,
                                                 int argnum3, String term3) {
+        //see note on KBLite.ask()
+        argnum1++; argnum2++; argnum3++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
             if (argnum1 < formula.size() && argnum2 < formula.size() && argnum3 < formula.size()
