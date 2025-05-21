@@ -71,7 +71,6 @@ public class GenRelations {
     public static final int ARG_NUM = 2;
     public static final int ARG_CLASS = 3;
 
-
     public static ArrayList<String> logicVariables;
     public static ArrayList<String> logicInstanceFormulas;
     public static String logicRelationFormula;
@@ -230,17 +229,19 @@ public class GenRelations {
 
         if (isQuestion && !isNegated) {
             if (!englishSentence.contains("%qp{")) {
-                isQuestion = false;
+                return false;
             }
         } else if (isQuestion && isNegated) {
              if (!englishSentence.contains("%qn{")) {
-                 isQuestion = false;
+                 return false;
              }
-
         }
-        if (!isQuestion && isNegated) {
+        if (!isQuestion && (englishSentence.contains("%qn{") || englishSentence.contains("%qp{"))) {
+            return false;
+        }
+        if (isNegated) {
             if (!englishSentence.contains("%n")) {
-                isNegated = false;
+                return false;
             } else{
                 // Replaces all occurrences of the string "%n" with "not", but won't replace "%n{"
                 englishSentence = englishSentence.replaceAll("%n(?!\\{)", "not");
@@ -341,7 +342,7 @@ public class GenRelations {
                 logicPhrase += "?X" + i + " ";
                 return false;
             } else {
-                System.out.println("ERROR in GenRelations.java. Relation format for " + randRelation + " missing argument %" + i);
+                System.out.println("ERROR in GenRelations.java. Relation format for " + randRelation + " missing argument %" + i + ". EnglishSentence: " + englishSentence);
                 return false;
             }
         }
@@ -393,7 +394,8 @@ public class GenRelations {
 
                     if (handleLinks() && handleFormatSymbols() && handleArgs() && handlePercentsInFormats()) {
                         englishSentence = englishSentence.substring(0, 1).toUpperCase() + englishSentence.substring(1);
-                        englishSentence = (isQuestion) ? englishSentence + "?" : englishSentence + ".";
+                        englishSentence = englishSentence.replaceAll("\\p{Punct}$", "");  // Removes any punctuation that might have been in the format.
+                        englishSentence = (isQuestion) ? englishSentence + "?" : englishSentence + ".";  // Add back in the appropriate punctuation.
                         logicPhrase = buildLogicFormula();
                         if (debug) System.out.println("Final English sentence : " + englishSentence);
                         if (debug) System.out.println("Final Logic phrase     : " + logicPhrase);

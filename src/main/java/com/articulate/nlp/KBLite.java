@@ -193,7 +193,7 @@ public class KBLite {
             return; // In this lite version we don't care about formulas that start with =>, exists, and, or.
 
         List<String> thisRawFormWithArg = new ArrayList<>();
-        thisRawFormWithArg.add(formulaStr);               // insert at front
+        thisRawFormWithArg.add("(" + formulaStr + ")");               // insert at front
         thisRawFormWithArg.addAll(arguments);      // append the rest
         rawFormulasWithArgs.add(thisRawFormWithArg);
 
@@ -209,7 +209,7 @@ public class KBLite {
                 "format".equals(arguments.get(0)) &&
                 "EnglishLanguage".equals(arguments.get(1))) {
             String key = arguments.get(2);
-            String value = arguments.get(3);
+            String value = arguments.get(3).replaceAll("^\"|\"$", ""); // Strip off opening and closing quotation marks
             List<String> valueList = formats.get(key);
             if (valueList == null) {
                 valueList = new ArrayList<>();
@@ -506,9 +506,10 @@ public class KBLite {
      * see KIF.createKey()
      */
     public List<Formula> ask(String kind, int argnum, String term) {
-        // assume kind == "arg"
-        // Format of rawFormulasWithArgs is the formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
+        // Only support for kind == "arg"
+        // Format of rawFormulasWithArgs is the complete formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
         // The actual args in rawFormulasWithArgs starts at 1, so we have to add 1 to argnum when querying rawFormulasWithArgs.
+        if (!kind.equals("arg")) { System.out.println("ERROR IN KBLite.ask(). Unsupported kind for kind: '" + kind + "' argnum: " + argnum + " term: " + term); return null;}
         argnum++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
@@ -528,12 +529,12 @@ public class KBLite {
      * results.
      */
     public List<Formula> askWithRestriction(int argnum1, String term1, int argnum2, String term2) {
-        // See not on KBLite.ask()
+        // See not on KBLite.ask() for why we increments the argsnums.
         argnum1++; argnum2++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
-            if (argnum1+1 < formula.size() && argnum2+1 < formula.size()
-                    && formula.get(argnum1+1).equals(term1) && formula.get(argnum2+1).equals(term2)) {
+            if (argnum1 < formula.size() && argnum2 < formula.size()
+                    && formula.get(argnum1).equals(term1) && formula.get(argnum2).equals(term2)) {
                 result.add(new Formula(formula.get(0)));
             }
         }
@@ -551,7 +552,7 @@ public class KBLite {
     public List<Formula> askWithTwoRestrictions(int argnum1, String term1,
                                                 int argnum2, String term2,
                                                 int argnum3, String term3) {
-        //see note on KBLite.ask()
+        //see note on KBLite.ask() for why we increment the argnums.
         argnum1++; argnum2++; argnum3++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
