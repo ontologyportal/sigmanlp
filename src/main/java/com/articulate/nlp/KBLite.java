@@ -51,7 +51,7 @@ public class KBLite {
     ));
 
     private static final Set<String> IGNORED_FORMULA_STARTS = new HashSet<>(Arrays.asList(
-            "and", "or", "forall", "exists"
+            "and", "or", "forall", "exists", "KappaFn"
     ));
 
     // Nested class to hold implications
@@ -61,6 +61,9 @@ public class KBLite {
         public Implication(List<String> antecedent, List<String> consequent) {
             this.antecedent = antecedent;
             this.consequent = consequent;
+        }
+        public String toFormulaString() {
+            return "(=> (" + String.join(" ", antecedent) + ") (" + String.join(" ", consequent) + "))";
         }
     }
 
@@ -529,14 +532,26 @@ public class KBLite {
     public List<Formula> ask(String kind, int argnum, String term) {
         // Only support for kind == "arg"
         // Format of rawFormulasWithArgs is the complete formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
-        // The actual args in rawFormulasWithArgs starts at 1, so we have to add 1 to argnum when querying rawFormulasWithArgs.
-        if (kind.equals("stmt")) { System.out.println("ERROR IN KBLite.ask(). Unsupported kind for kind: '" + kind + "' argnum: " + argnum + " term: " + term); return null;}
-        argnum++;
+        // The actual args in rawFormulasWithArgs starts at 1, so for kind=args we have to add 1 to argnum when querying rawFormulasWithArgs.
         List<Formula> result = new ArrayList<>();
-        for (List<String> formula: rawFormulasWithArgs) {
-            if (argnum < formula.size()
-                    && formula.get(argnum).equals(term)) {
-                result.add(new Formula(formula.get(0)));
+        if (kind.equals("stmt")) {
+            System.out.println("ERROR IN KBLite.ask(). Unsupported kind for kind: '" + kind + "' argnum: " + argnum + " term: " + term);
+            return null;
+        }
+        if (kind.equals("arg")) {
+            argnum++;
+            for (List<String> formula : rawFormulasWithArgs) {
+                if (argnum < formula.size()
+                        && formula.get(argnum).equals(term)) {
+                    result.add(new Formula(formula.get(0)));
+                }
+            }
+        } else if (kind.equals("ant") || kind.equals("cons")) {
+            for (Implication imp : implications) {
+                String impArg = kind.equals("ant") ? imp.antecedent.get(argnum) : imp.consequent.get(argnum);
+                if(impArg != null && impArg.equals(term)) {
+                    result.add(new Formula(imp.toFormulaString()));
+                }
             }
         }
         return result;

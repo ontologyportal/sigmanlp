@@ -1099,7 +1099,7 @@ public class GenSimpTestData {
         StringBuilder type = new StringBuilder();
         StringBuilder name = new StringBuilder();
         if (biasedBoolean(1,5) ) {
-            lfeat.subj = "who";
+            lfeat.subj = "Who";
             lfeat.subjName = "";
             lfeat.question = true;
             english.delete(0,english.length());

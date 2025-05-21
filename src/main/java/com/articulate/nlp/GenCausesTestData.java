@@ -6,6 +6,7 @@ import io.github.ollama4j.types.OllamaModelType;
 import io.github.ollama4j.utils.OptionsBuilder;
 import io.github.ollama4j.utils.Options;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.util.Collection;
 import java.util.Set;
@@ -31,7 +32,7 @@ import com.articulate.sigma.wordNet.WSD;
 public class GenCausesTestData {
 
     public static boolean debug = false;
-    public static KB kb;
+    public static KBLite kbLite;
     public static String outputFileEnglish = "causes-eng.txt";
     public static String outputFileLogic = "causes-log.txt";
     public static boolean EQUIVALENCE_MAPPINGS = false;
@@ -163,17 +164,23 @@ public class GenCausesTestData {
         }
 
         // connect to Ollama
+        System.out.println("Connecting to Ollama...");
         String host = "http://localhost:" + args[2] + "/";
         System.out.println("Connecting to " + host);
         ollamaAPI = new OllamaAPI(host);
         ollamaAPI.setVerbose(false);
         options = new OptionsBuilder().setTemperature(1.0f).build();
+        System.out.println("Connected.");
 
         // load the knowledge base
-        KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        System.out.println("Loading KBs");
+        kbLite = new KBLite("SUMO");
         System.out.println("Finished loading KBs");
-        Set<String> allSUMOTermsSet = kb.kbCache.getChildClasses("Process");
+        System.out.println("Loading Wordnet");
+        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+        WordNet.initOnce();
+        System.out.println("Wordnet loaded");
+        Set<String> allSUMOTermsSet = kbLite.getChildClasses("Process");
         allSUMOTermsRandSet = RandSet.listToEqualPairs(allSUMOTermsSet);
         random = new Random();
 
@@ -344,6 +351,7 @@ public class GenCausesTestData {
      */
     private static String getRandomSUMOMapping(String term) {
         Set<String> synsetOfTerm = WordNet.wn.getSynsetsFromWord(term.toLowerCase());
+        System.out.println("Term: " + term.toLowerCase() + " - Synset: " + synsetOfTerm);
         ArrayList<String> equivalentTerms = new ArrayList();
         int counter = 0;
         for (String synset:synsetOfTerm) {
@@ -354,7 +362,7 @@ public class GenCausesTestData {
                 if (sumoMapping.charAt(sumoMapping.length() - 1) == '=' || EQUIVALENCE_MAPPINGS == false) {
                     String sumoTerm = sumoMapping.substring(0, sumoMapping.length() - 1);
                     if (debug) System.out.println("Mapping to: " + sumoTerm);
-                    if(kb.kbCache.subclassOf(sumoTerm, "Process")) {
+                    if(kbLite.subclassOf(sumoTerm, "Process")) {
                         if (debug) System.out.println(sumoTerm + " is a process. Added.");
                         equivalentTerms.add(sumoMapping.substring(0, sumoMapping.length() - 1));
                     }
@@ -409,7 +417,7 @@ public class GenCausesTestData {
             if (responseInSumo != null) {
                 responseInSumo = responseInSumo.substring(2, responseInSumo.length() - 1);
                 // The resulting term must be a process. If its not, then just choose a random process that maps to the term.
-                if (!kb.kbCache.subclassOf(responseInSumo, "Process")) {
+                if (!kbLite.subclassOf(responseInSumo, "Process")) {
                     responseInSumo = getRandomSUMOMapping(responseOllamaEnglish);
                 }
             }
@@ -484,7 +492,7 @@ public class GenCausesTestData {
             // get a random SUMO Process
             if (debug) System.out.println("\n");
             String randomSumoProcess = allSUMOTermsRandSet.getNext();
-            String randomSumoProcessEnglish = kb.getTermFormat("EnglishLanguage", randomSumoProcess);
+            String randomSumoProcessEnglish = kbLite.getTermFormat("EnglishLanguage", randomSumoProcess);
             if (randomSumoProcessEnglish == null) {
                 randomSumoProcessEnglish = addSpaceBeforeCapitals((randomSumoProcess));
             }
