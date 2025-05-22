@@ -6,16 +6,13 @@ import io.github.ollama4j.types.OllamaModelType;
 import io.github.ollama4j.utils.OptionsBuilder;
 import io.github.ollama4j.utils.Options;
 
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Collection;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -105,6 +102,8 @@ public class GenRelations {
         // load the knowledge base
         kbLite = new KBLite("SUMO");
         System.out.println("Finished loading KBs");
+        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+        WordNet.initOnce();
         Set<String> allSUMOFunctionsSet = kbLite.getAllInstances("Function");
         Set<String> allSUMOVariableAritySet = kbLite.getAllInstances("VariableArityRelation");
         Set<String> allSUMORelationsSet = kbLite.getAllInstances("Relation");

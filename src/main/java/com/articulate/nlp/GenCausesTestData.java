@@ -406,6 +406,7 @@ public class GenCausesTestData {
      */
     public static String mapResponseToSUMOTerm(String responseOllamaEnglish, String randomSumoProcessEnglish) {
         // Find the word sense disambibuation, aka, the closest mapping to the Ollama response in SUMO.
+        /*
         String[] arr = randomSumoProcessEnglish.split("\\s+"); // Splitting by one or more whitespace characters
         ArrayList<String> processSplitIntoWords = new ArrayList<>(Arrays.asList(arr));
         processSplitIntoWords.add("causes");
@@ -423,6 +424,9 @@ public class GenCausesTestData {
             }
         }
         return responseInSumo;
+        */
+        Set<String> synsetOfTerm = WordNet.wn.getSynsetsFromWord(responseOllamaEnglish.toLowerCase());
+        return GenUtils.getBestSUMOMapping(synsetOfTerm);
     }
 
 

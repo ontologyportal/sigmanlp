@@ -28,17 +28,17 @@ public class KBLite {
     public Set<String> functions = new HashSet<>();
 
     private final List<Implication> implications = new ArrayList<>();
-    private final Map<String, String> documentation = new HashMap<>();
-    private final Map<String, List<String>> termFormats = new HashMap<>();
-    private final Map<String, List<String>> formats = new HashMap<>();
+    public final Map<String, String> documentation = new HashMap<>();
+    public final Map<String, List<String>> termFormats = new HashMap<>();
+    public final Map<String, List<String>> formats = new HashMap<>();
     private final Map<String, List<String>> children = new HashMap<>();
     private final Map<String, List<String>> parents = new HashMap<>();
-    private final Map<String, List<List<String>>> domains = new HashMap<>();
-    private final Map<String, List<String>> ranges = new HashMap<>();
-    private final Set<String> subclasses = new HashSet<>();
-    private final Set<String> instances = new HashSet<>();
-    private final Set<String> subAttributes = new HashSet<>();
-    private final Set<String> subrelations = new HashSet<>();
+    public final Map<String, List<List<String>>> domains = new HashMap<>();
+    public final Map<String, List<String>> ranges = new HashMap<>();
+    public final Set<String> subclasses = new HashSet<>();
+    public final Set<String> instances = new HashSet<>();
+    public final Set<String> subAttributes = new HashSet<>();
+    public final Set<String> subrelations = new HashSet<>();
 
     Random rand = new Random();
     // This is the formula, then the arg list. example: ["(subclass Cat Animal)", "subclass", "cat", "animal"]
@@ -71,7 +71,7 @@ public class KBLite {
      * Constructor that takes the KB name and extracts the kif files for that KB.
      */
     public KBLite(String kbName) {
-        System.out.println("\n********************************************************\nWARNING: KBLite does not perform syntax, type check, or \nany other check to ensure the knowledge base is accurate. \nOnly use after you are otherwise confident in the \naccuracy of the Knowledge Base. EnglishLanguage only.\n********************************************************\n");
+        System.out.println("\n**********************************************************\nWARNING: KBLite does not perform syntax, type check, or \nany other check to ensure the knowledge base is accurate. \nOnly use after you are otherwise confident in the \naccuracy of the Knowledge Base. EnglishLanguage only.\n**********************************************************\n");
         getKifFilesFromConfig(kbName);
         System.out.println("Loading kif files into cache.");
         loadKifs();
@@ -144,7 +144,7 @@ public class KBLite {
                             formula.setLength(0); // reset the formula buffer
                             parenBalance = 0;
                         } else {
-                            System.out.println("ERROR in KBLite.loadKifs. Unexpected characters outside of comments or formulas for line: " + line);
+                            System.out.println("ERROR in KBLite.loadKifs(). Unexpected characters outside of comments or formulas for line: " + line);
                             continue; // skip lines that don't start a formula
                         }
                     }
@@ -291,7 +291,7 @@ public class KBLite {
                     subclasses.add(arguments.get(1));
                     break;
                 default:
-                    System.out.println("Error in KBLite, should not get here with line: " + arguments);
+                    System.out.println("Error in KBLite.processFormula(), should not get here with line: " + arguments);
                     break;
             }
 
@@ -511,7 +511,7 @@ public class KBLite {
     public String getTermFormat(String term) {
         List<String> termFormatsForTerm = termFormats.get(term);
         if (termFormatsForTerm == null) {
-            System.out.println("No term format for: " + term);
+            System.out.println("KBLite.getTermFormat() - No term format for: " + term);
             return null;
         }
         return termFormatsForTerm.get(rand.nextInt(termFormatsForTerm.size()));
