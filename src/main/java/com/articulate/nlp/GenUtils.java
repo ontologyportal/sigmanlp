@@ -2,6 +2,7 @@ package com.articulate.nlp;
 
 
 import com.articulate.sigma.nlg.NLGUtils;
+import com.articulate.sigma.wordNet.WordNet;
 import com.articulate.sigma.*;
 
 import java.nio.ByteBuffer;
@@ -11,12 +12,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.HashSet;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
-
+import java.util.Set;
 
 
 /** Utility methods useful for synthetically generating sentences.
@@ -81,7 +83,31 @@ public class GenUtils {
             }
         }
     }
+    
+    /** **************************************************************************
+     * Gets the best SUMO mapping for a word. Chooses a random equivalent mapping,
+     * if no equivalent mapping exists, return null.
+     */
+    public static String getBestSUMOMapping(Set<String> synsetOfTerm) {
 
+        ArrayList<String> equivalentTerms = new ArrayList();
+        for (String synset:synsetOfTerm) {
+            String sumoMapping = WordNet.wn.getSUMOMapping(synset);
+            if (sumoMapping != null) {
+                sumoMapping = sumoMapping.substring(2);
+                if (sumoMapping.charAt(sumoMapping.length() - 1) == '=') {
+                    equivalentTerms.add(sumoMapping.substring(0, sumoMapping.length() - 1));
+                }
+            }
+        }
+        if (!equivalentTerms.isEmpty()) {
+            // TODO: Do wordsense disambiguation
+            Random rand = new Random();
+            return equivalentTerms.get(rand.nextInt(equivalentTerms.size()));
+        }
+        return null;
+    }
+    
     /** ***************************************************************
      *   Writes an english sentence and logic sentence to their
      *   respective files.

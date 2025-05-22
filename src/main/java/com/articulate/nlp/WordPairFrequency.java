@@ -18,6 +18,7 @@ import java.util.Set;
 
 public class WordPairFrequency {
     public static boolean debug = false;
+    public static boolean WORDPAIR_OFF = false;
 
     private static String db_location = System.getenv("CORPORA") +"/COCA/word_pairs.db";
 
@@ -89,28 +90,7 @@ public class WordPairFrequency {
         }
     }
 
-    /** **************************************************************************
-     * Gets the best SUMO mapping for a word. Chooses a random equivalent mapping,
-     * if no equivalent mapping exists, return null.
-     */
-    private static String getBestSUMOMapping(Set<String> synsetOfTerm) {
 
-        ArrayList<String> equivalentTerms = new ArrayList();
-        for (String synset:synsetOfTerm) {
-            String sumoMapping = WordNet.wn.getSUMOMapping(synset);
-            if (sumoMapping != null) {
-                sumoMapping = sumoMapping.substring(2);
-                if (sumoMapping.charAt(sumoMapping.length() - 1) == '=') {
-                    equivalentTerms.add(sumoMapping.substring(0, sumoMapping.length() - 1));
-                }
-            }
-        }
-        if (!equivalentTerms.isEmpty()) {
-            Random rand = new Random();
-            return equivalentTerms.get(rand.nextInt(equivalentTerms.size()));
-        }
-        return null;
-    }
 
     /** ***************************************************************
      * Gets an Object from a Subject (and verb). The intersection of the
@@ -119,6 +99,7 @@ public class WordPairFrequency {
     public static String getNounFromNounAndVerb(LFeatures lfeat) {
 
         if (debug) System.out.println("WordPairFrequency.getNounFromNoun()" + lfeat.subj + " " + lfeat.verb);
+        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
         if (!dbExists() || lfeat.subj == null) { return lfeat.objects.getNext(); }
         ArrayList<AVPair> subjSet = WordPairFrequency.getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun);
         ArrayList<AVPair> objSet = WordPairFrequency.getWordPairFrequencies(lfeat.subj, WordType.noun, WordType.noun);
@@ -139,7 +120,7 @@ public class WordPairFrequency {
                 term = mergedSet.getNext();
                 synsetOfTerm = WordNet.wn.getSynsetsFromWord(term);
                 for (int j = 0; j < 5; j++) {
-                    noun = getBestSUMOMapping(synsetOfTerm);
+                    noun = GenUtils.getBestSUMOMapping(synsetOfTerm);
                     if (debug) System.out.println("Choosing: " + term + " which maps to " + noun + " in SUMO.");
                     if (noun != null && !noun.equals("Human")) {
                         return noun;
@@ -157,6 +138,7 @@ public class WordPairFrequency {
     public static String getNounInClassFromVerb(LFeatures lfeat, KBLite kb, String className) {
 
         if (debug) System.out.println("WordPairFrequency.getNounInClassFromVerb() - className: " + className);
+        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
         if (!dbExists()) { return lfeat.objects.getNext(); }
         ArrayList<AVPair> subjList = getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun);
         ArrayList<AVPair> instanceList = new ArrayList();
@@ -164,7 +146,7 @@ public class WordPairFrequency {
         String noun;
         for (AVPair subj:subjList) {
             synsetOfTerm = WordNet.wn.getSynsetsFromWord(subj.attribute);
-            noun = getBestSUMOMapping(synsetOfTerm);
+            noun = GenUtils.getBestSUMOMapping(synsetOfTerm);
             if (debug) System.out.println("WordPairFrequency.getNounInClassFromVerb(): " + subj.attribute + " maps to " + noun);
             //String wordCapitalized = subj.attribute.substring(0, 1).toUpperCase() + subj.attribute.substring(1);
             if (noun != null && !noun.equals("Position") && kb.isSubclass(noun, className)) {
@@ -189,11 +171,12 @@ public class WordPairFrequency {
     public static String getNounFromVerb(LFeatures lfeat) {
 
         if (debug) System.out.println("WordPairFrequency.getNounFromVerb() ");
+        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
         if (!dbExists()) { return lfeat.objects.getNext(); }
         RandSet subjSet = RandSet.create(getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun));
         String term = subjSet.getNext();
         Set<String> synsetOfTerm = WordNet.wn.getSynsetsFromWord(term);
-        String noun = getBestSUMOMapping(synsetOfTerm);
+        String noun = GenUtils.getBestSUMOMapping(synsetOfTerm);
         if (debug) System.out.println("NounFromVerb - noun chosen: " + noun);
         return (noun != null) ? noun : lfeat.objects.getNext();
     }

@@ -27,20 +27,22 @@ public class KBLite {
     public Set<String> relations = new HashSet<>();
     public Set<String> functions = new HashSet<>();
 
-    private final Map<String, String> documentation = new HashMap<>();
-    private final Map<String, List<String>> termFormats = new HashMap<>();
-    private final Map<String, List<String>> formats = new HashMap<>();
+    private final List<Implication> implications = new ArrayList<>();
+    public final Map<String, String> documentation = new HashMap<>();
+    public final Map<String, List<String>> termFormats = new HashMap<>();
+    public final Map<String, List<String>> formats = new HashMap<>();
     private final Map<String, List<String>> children = new HashMap<>();
     private final Map<String, List<String>> parents = new HashMap<>();
-    private final Map<String, List<List<String>>> domains = new HashMap<>();
-    private final Map<String, List<String>> ranges = new HashMap<>();
-    private final Set<String> subclasses = new HashSet<>();
-    private final Set<String> instances = new HashSet<>();
-    private final Set<String> subAttributes = new HashSet<>();
-    private final Set<String> subrelations = new HashSet<>();
+    public final Map<String, List<List<String>>> domains = new HashMap<>();
+    public final Map<String, List<String>> ranges = new HashMap<>();
+    public final Set<String> subclasses = new HashSet<>();
+    public final Set<String> instances = new HashSet<>();
+    public final Set<String> subAttributes = new HashSet<>();
+    public final Set<String> subrelations = new HashSet<>();
 
     Random rand = new Random();
     // This is the formula, then the arg list. example: ["(subclass Cat Animal)", "subclass", "cat", "animal"]
+    // rawFormulasWithArgs does not include implication formulas, or formulas that begin with IGNORED_FORMULA_STARTS.
     private final List<List<String>> rawFormulasWithArgs = new ArrayList<>();
 
     // Set of relevant first arguments
@@ -49,14 +51,27 @@ public class KBLite {
     ));
 
     private static final Set<String> IGNORED_FORMULA_STARTS = new HashSet<>(Arrays.asList(
-            "and", "or", "forall", "=>", "exists"
+            "and", "or", "forall", "exists", "KappaFn"
     ));
+
+    // Nested class to hold implications
+    public static class Implication {
+        public List<String> antecedent;
+        public List<String> consequent;
+        public Implication(List<String> antecedent, List<String> consequent) {
+            this.antecedent = antecedent;
+            this.consequent = consequent;
+        }
+        public String toFormulaString() {
+            return "(=> (" + String.join(" ", antecedent) + ") (" + String.join(" ", consequent) + "))";
+        }
+    }
 
     /**
      * Constructor that takes the KB name and extracts the kif files for that KB.
      */
     public KBLite(String kbName) {
-        System.out.println("\n********************************************************\nWARNING: KBLite does not perform syntax, type check, or \nany other check to ensure the knowledge base is accurate. \nOnly use after you are otherwise confident in the \naccuracy of the Knowledge Base. EnglishLanguage only.\n********************************************************\n");
+        System.out.println("\n**********************************************************\nWARNING: KBLite does not perform syntax, type check, or \nany other check to ensure the knowledge base is accurate. \nOnly use after you are otherwise confident in the \naccuracy of the Knowledge Base. EnglishLanguage only.\n**********************************************************\n");
         getKifFilesFromConfig(kbName);
         System.out.println("Loading kif files into cache.");
         loadKifs();
@@ -129,7 +144,7 @@ public class KBLite {
                             formula.setLength(0); // reset the formula buffer
                             parenBalance = 0;
                         } else {
-                            System.out.println("ERROR in KBLite.loadKifs. Unexpected characters outside of comments or formulas for line: " + line);
+                            System.out.println("ERROR in KBLite.loadKifs(). Unexpected characters outside of comments or formulas for line: " + line);
                             continue; // skip lines that don't start a formula
                         }
                     }
@@ -183,19 +198,22 @@ public class KBLite {
 
     private void processFormula(String formulaStr) {
 
-        if (formulaStr.startsWith("(") && formulaStr.endsWith(")")) {
-            formulaStr = formulaStr.substring(1, formulaStr.length() - 1).trim();
-        }
         List<String> arguments = splitFormulaArguments(formulaStr);
-
         if (arguments == null || arguments.isEmpty()
                 || IGNORED_FORMULA_STARTS.contains(arguments.get(0)))
-            return; // In this lite version we don't care about formulas that start with =>, exists, and, or.
+            return; // In this lite version we don't care about formulas that start with exists, and, or.
 
-        List<String> thisRawFormWithArg = new ArrayList<>();
-        thisRawFormWithArg.add(formulaStr);               // insert at front
-        thisRawFormWithArg.addAll(arguments);      // append the rest
-        rawFormulasWithArgs.add(thisRawFormWithArg);
+        // Handle implication entries, and save the rest of the formulas to rawFormulasWithArgs
+        if (arguments.size() > 2 && "=>".equals(arguments.get(0))) {
+            List<String> antecedent = splitFormulaArguments(arguments.get(1));
+            List<String> consequent = splitFormulaArguments(arguments.get(2));
+            implications.add(new Implication(antecedent, consequent));
+        } else { // Handle non-implications separately.
+            List<String> thisRawFormWithArg = new ArrayList<>();
+            thisRawFormWithArg.add(formulaStr);               // insert at front
+            thisRawFormWithArg.addAll(arguments);      // append the rest
+            rawFormulasWithArgs.add(thisRawFormWithArg);
+        }
 
         // Handle documentation entries
         if (arguments.size() > 3 &&
@@ -209,7 +227,7 @@ public class KBLite {
                 "format".equals(arguments.get(0)) &&
                 "EnglishLanguage".equals(arguments.get(1))) {
             String key = arguments.get(2);
-            String value = arguments.get(3);
+            String value = arguments.get(3).replaceAll("^\"|\"$", ""); // Strip off opening and closing quotation marks
             List<String> valueList = formats.get(key);
             if (valueList == null) {
                 valueList = new ArrayList<>();
@@ -232,6 +250,7 @@ public class KBLite {
             valueList.add(value);
         }
 
+        // Handle domain and domainSubclass entries
         if (arguments.size() > 3 &&
                 ("domain".equals(arguments.get(0)) || "domainSubclass".equals(arguments.get(0)))) {
             String key = arguments.get(1); // the second argument
@@ -272,7 +291,7 @@ public class KBLite {
                     subclasses.add(arguments.get(1));
                     break;
                 default:
-                    System.out.println("Error in KBLite, should not get here with line: " + arguments);
+                    System.out.println("Error in KBLite.processFormula(), should not get here with line: " + arguments);
                     break;
             }
 
@@ -299,9 +318,15 @@ public class KBLite {
 
     /**
      * Splits a KIF formula into top-level arguments, preserving subformulas.
-     * e.g., "subclass bat (subformula function)" -> ["subclass", "bat", "(subformula function)"]
+     * e.g., "(subclass bat (subformula function))" -> ["subclass", "bat", "(subformula function)"]
      */
     private List<String> splitFormulaArguments(String formula) {
+        if (formula.startsWith("(") && formula.endsWith(")")) {
+            formula = formula.substring(1, formula.length() - 1).trim();
+        }
+        else {
+            return null; // Not a valid formula.
+        }
         List<String> result = new ArrayList<>();
         int len = formula.length();
         int i = 0;
@@ -368,6 +393,12 @@ public class KBLite {
      *  Returns the format map in English only. Parameter lang is
      *  ignored. Only used for compatibility.
      */
+    public Map<String, List<String>> getFormatMap() {
+        return formats;
+    }
+    public Map<String, List<String>> getFormatMap(String lang) {
+        return formats;
+    }
     public Map<String, List<String>> getFormatMapAll(String lang) {
         return formats;
     }
@@ -391,6 +422,7 @@ public class KBLite {
      * @param parent A String, the name of a Class.
      * @return boolean
      */
+    public boolean subclassOf(String childClass, String parentClass) {return isSubclass(childClass, parentClass);}
     public boolean isSubclass (String childClass, String parentClass) {
         if (childClass == null || parentClass == null || childClass.isEmpty() || parentClass.isEmpty())
             return false;
@@ -479,7 +511,7 @@ public class KBLite {
     public String getTermFormat(String term) {
         List<String> termFormatsForTerm = termFormats.get(term);
         if (termFormatsForTerm == null) {
-            System.out.println("No term format for: " + term);
+            System.out.println("KBLite.getTermFormat() - No term format for: " + term);
             return null;
         }
         return termFormatsForTerm.get(rand.nextInt(termFormatsForTerm.size()));
@@ -498,14 +530,28 @@ public class KBLite {
      * see KIF.createKey()
      */
     public List<Formula> ask(String kind, int argnum, String term) {
-        // assume kind == "arg"
-        // Format of rawFormulasWithArgs is the formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
-        // Note: argnums are indexed starting at 1.
+        // Only support for kind == "arg"
+        // Format of rawFormulasWithArgs is the complete formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
+        // The actual args in rawFormulasWithArgs starts at 1, so for kind=args we have to add 1 to argnum when querying rawFormulasWithArgs.
         List<Formula> result = new ArrayList<>();
-        for (List<String> formula: rawFormulasWithArgs) {
-            if (argnum < formula.size()
-                    && formula.get(argnum).equals(term)) {
-                result.add(new Formula(formula.get(0)));
+        if (kind.equals("stmt")) {
+            System.out.println("ERROR IN KBLite.ask(). Unsupported kind for kind: '" + kind + "' argnum: " + argnum + " term: " + term);
+            return null;
+        }
+        if (kind.equals("arg")) {
+            argnum++;
+            for (List<String> formula : rawFormulasWithArgs) {
+                if (argnum < formula.size()
+                        && formula.get(argnum).equals(term)) {
+                    result.add(new Formula(formula.get(0)));
+                }
+            }
+        } else if (kind.equals("ant") || kind.equals("cons")) {
+            for (Implication imp : implications) {
+                String impArg = kind.equals("ant") ? imp.antecedent.get(argnum) : imp.consequent.get(argnum);
+                if(impArg != null && impArg.equals(term)) {
+                    result.add(new Formula(imp.toFormulaString()));
+                }
             }
         }
         return result;
@@ -519,8 +565,8 @@ public class KBLite {
      * results.
      */
     public List<Formula> askWithRestriction(int argnum1, String term1, int argnum2, String term2) {
-        // Format of rawFormulasWithArgs is the formula, then the args. example ["(subclass Cat Animal)", "subclass", "Cat", "Animal"]
-        // Note: argnums are indexed starting at 1.
+        // See not on KBLite.ask() for why we increments the argsnums.
+        argnum1++; argnum2++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
             if (argnum1 < formula.size() && argnum2 < formula.size()
@@ -542,6 +588,8 @@ public class KBLite {
     public List<Formula> askWithTwoRestrictions(int argnum1, String term1,
                                                 int argnum2, String term2,
                                                 int argnum3, String term3) {
+        //see note on KBLite.ask() for why we increment the argnums.
+        argnum1++; argnum2++; argnum3++;
         List<Formula> result = new ArrayList<>();
         for (List<String> formula: rawFormulasWithArgs) {
             if (argnum1 < formula.size() && argnum2 < formula.size() && argnum3 < formula.size()
