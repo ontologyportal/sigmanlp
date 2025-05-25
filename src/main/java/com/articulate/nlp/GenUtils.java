@@ -107,7 +107,14 @@ public class GenUtils {
         }
         return null;
     }
-    
+
+    public static String capitalizeFirstLetter(String sentenceToCapitalize) {
+            if (sentenceToCapitalize == null || sentenceToCapitalize.isEmpty()) {
+                return sentenceToCapitalize;
+            }
+            return sentenceToCapitalize.substring(0, 1).toUpperCase() + sentenceToCapitalize.substring(1);
+    }
+
     /** ***************************************************************
      *   Writes an english sentence and logic sentence to their
      *   respective files.

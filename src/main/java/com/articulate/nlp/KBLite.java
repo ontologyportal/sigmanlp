@@ -31,8 +31,8 @@ public class KBLite {
     public final Map<String, String> documentation = new HashMap<>();
     public final Map<String, List<String>> termFormats = new HashMap<>();
     public final Map<String, List<String>> formats = new HashMap<>();
-    private final Map<String, List<String>> children = new HashMap<>();
-    private final Map<String, List<String>> parents = new HashMap<>();
+    public final Map<String, List<String>> childrenOf = new HashMap<>();
+    public final Map<String, List<String>> parentsOf = new HashMap<>();
     public final Map<String, List<List<String>>> domains = new HashMap<>();
     public final Map<String, List<String>> ranges = new HashMap<>();
     public final Set<String> subclasses = new HashSet<>();
@@ -297,19 +297,19 @@ public class KBLite {
 
             String childKey = arguments.get(2);
             String childValue = arguments.get(1);
-            List<String> childList = children.get(childKey);
+            List<String> childList = childrenOf.get(childKey);
             if (childList == null) {
                 childList = new ArrayList<>();
-                children.put(childKey, childList);
+                childrenOf.put(childKey, childList);
             }
             childList.add(childValue);
 
             String parentKey = arguments.get(1);
             String parentValue = arguments.get(2);
-            List<String> parentList = parents.get(parentKey);
+            List<String> parentList = parentsOf.get(parentKey);
             if (parentList == null) {
                 parentList = new ArrayList<>();
-                parents.put(parentKey, parentList);
+                parentsOf.put(parentKey, parentList);
             }
             parentList.add(parentValue);
         }
@@ -455,14 +455,14 @@ public class KBLite {
 
         Set<String> childClasses = new HashSet<>();
         Queue<String> childrenToProcess = new LinkedList<>();
-        List<String> childrenOfCl = children.get(cl);
+        List<String> childrenOfCl = childrenOf.get(cl);
         if (childrenOfCl != null)
             childrenToProcess.addAll(childrenOfCl);
         while (!childrenToProcess.isEmpty()) {
             String child = childrenToProcess.poll();
             if (isSubclass(child)) {
                 childClasses.add(child);
-                List<String> childrenOfChild = children.get(child);
+                List<String> childrenOfChild = childrenOf.get(child);
                 if (childrenOfChild != null)
                     childrenToProcess.addAll(childrenOfChild);
             }
@@ -483,7 +483,7 @@ public class KBLite {
         allSubclassesofClassName.add(className);
         Iterator<String> iterator = allSubclassesofClassName.iterator();
         while (iterator.hasNext()) {
-            List<String> childrenOfClass = children.get(iterator.next());
+            List<String> childrenOfClass = childrenOf.get(iterator.next());
             if (childrenOfClass != null) {
                 for (String child : childrenOfClass) {
                     if (isInstance(child)) {
