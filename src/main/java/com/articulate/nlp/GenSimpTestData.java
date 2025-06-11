@@ -1098,7 +1098,7 @@ public class GenSimpTestData {
         if (debug) System.out.println("generateHumanSubject(): startOfSentence: " + startOfSentence);
         StringBuilder type = new StringBuilder();
         StringBuilder name = new StringBuilder();
-        if (biasedBoolean(1,5) ) {
+        if (biasedBoolean(1,5) ) { // It's a question.
             lfeat.subj = "Who";
             lfeat.subjName = "";
             lfeat.question = true;

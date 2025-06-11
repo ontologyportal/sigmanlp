@@ -20,6 +20,17 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.Set;
 
+import io.github.ollama4j.OllamaAPI;
+import io.github.ollama4j.models.response.OllamaResult;
+import io.github.ollama4j.types.OllamaModelType;
+import io.github.ollama4j.utils.OptionsBuilder;
+import io.github.ollama4j.utils.Options;
+import java.net.Socket;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.io.OutputStream;
+
 
 /** Utility methods useful for synthetically generating sentences.
  */
@@ -30,6 +41,10 @@ public class GenUtils {
     private static final int MAX_VARIABLE_LENGTH = 2;
     static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     static final String NUMBERS = "0123456789";
+    static String OLLAMA_MODEL = "qwen3:1.7b";
+    static int OLLAMA_PORT;
+    public static OllamaAPI ollamaAPI;
+    public static Options options;
 
     /** ***************************************************************
      *   Creates a random unique variable name.
@@ -194,5 +209,67 @@ public class GenUtils {
         return output.toString().trim();
     }
 
-    
+    /**
+     * Checks if the Ollama server is listening on a specified port.
+     * @param port the port to check
+     * @return true if the server is running, false otherwise
+     */
+    public static boolean isOllamaServerRunning(int port) {
+        try (Socket s = new Socket("localhost", port)) {
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Starts the Ollama server on the specified port if it is not already running.
+     * @param port the port to check and use for the server
+     * @throws IOException if there is an error starting the server process
+     * @throws InterruptedException if the process is interrupted
+     */
+    public static void startOllamaServer(int port) {
+        System.out.println("GenUtils: Starting Ollama Server on port: " + port);
+        try {
+            if (!isOllamaServerRunning(port)) {
+                ProcessBuilder pb = new ProcessBuilder("ollama", "serve");
+                pb.environment().put("OLLAMA_HOST", "0.0.0.0:" + port);
+                Process process = pb.start();
+                Thread.sleep(10000);
+                if (!isOllamaServerRunning(port)) {
+                    System.err.println("Failed to start Ollama server on port " + port);
+                    System.exit(1);
+                }
+                OLLAMA_PORT = port;
+                System.out.println("GenUtils: Ollama server started on port: " + port);
+            } else { System.out.println("GenUtils: Ollama server already running on port: " + port);}
+
+            System.out.println("GenUtils: Creating connection to Ollama server using model: " + OLLAMA_MODEL);
+            ollamaAPI = new OllamaAPI("http://localhost:" + port + "/");
+            ollamaAPI.setVerbose(false);
+            options = new OptionsBuilder().setTemperature(0.0f).build();
+            System.out.println("GenUtils: Connected to Ollama server");
+        } catch (Exception e) {
+            System.err.println("Failed to start Ollama server on port " + port);
+            System.err.println("Error: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    public static void changeOllamaModel(String new_model) {
+        OLLAMA_MODEL = new_model;
+    }
+
+    public static String askOllama(String prompt) {
+        try {
+            ollamaAPI.setRequestTimeoutSeconds(60);
+            OllamaResult result =
+                    ollamaAPI.generate(OLLAMA_MODEL, prompt, false, options);
+            return result.getResponse().toString();
+        } catch (Exception e) {
+            System.out.println("Error in GenUtils.askOllama(): " + e.getMessage());
+            return null;
+        }
+    }
+
 }
