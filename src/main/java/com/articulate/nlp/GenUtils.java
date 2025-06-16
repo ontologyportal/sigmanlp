@@ -85,7 +85,7 @@ public class GenUtils {
     /** ***************************************************************
      *   Creates a file if one doesn't exist already.
      */
-    public void createFileIfDoesNotExists(String fileName) {
+    public static void createFileIfDoesNotExists(String fileName) {
 
         Path filePath = Paths.get(fileName);
         if (Files.exists(filePath)) {

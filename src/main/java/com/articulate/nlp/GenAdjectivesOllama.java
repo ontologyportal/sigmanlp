@@ -42,7 +42,7 @@ public class GenAdjectivesOllama {
         }
         numToGenerate = Integer.parseInt(args[1]);
         GenUtils.startOllamaServer(Integer.parseInt(args[2]));
-        String ollamaResponse = GenUtils.askOllama("You are a computer that only knows JSON format talking to another computer that only understands JSON format. Give me 100 human names in JSON format, split into unique first name and unique last name. Use this format: {\"names\": [{\"first\": \"<name>\", \"last\": \"<name>\"},{\"first\": \"<name>\", \"last\": \"<name>\"}, etc.")
+        String ollamaResponse = GenUtils.askOllama("You are a computer that only knows JSON format talking to another computer that only understands JSON format. Give me 100 human names in JSON format, split into unique first name and unique last name. Use this format: {\"names\": [{\"first\": \"<name>\", \"last\": \"<name>\"},{\"first\": \"<name>\", \"last\": \"<name>\"}, etc.");
     }
 
 
@@ -52,17 +52,17 @@ public class GenAdjectivesOllama {
     public static void main(String args[]) {
         System.out.println("Generating synthetic sentences with adjectives.");
         init(args);
-        generated = 0;
+        int generated = 0;
         while (generated < numToGenerate) {
             LFeatures lfeat = new LFeatures(gstd);
             lfeat.tense = gstd.rand.nextInt(3) * 2; // PAST = 0; PRESENT = 2; FUTURE = 4
             lfeat.negatedBody = gstd.rand.nextBoolean();
             // Subject is either a role (e.g. nurse) or a named human (e.g. "Bill").
-            if (gstd.rand.nextInt(2)) { // Choose role
+            /*if (gstd.rand.nextInt(2)) { // Choose role
 
             } else { // Choose name
 
-            }
+            }*/
             StringBuilder english = new StringBuilder();
             StringBuilder prop = new StringBuilder();
 
