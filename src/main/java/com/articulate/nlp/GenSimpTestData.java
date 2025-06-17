@@ -458,41 +458,31 @@ public class GenSimpTestData {
     public void runGenSentence() {
 
         System.out.println("GenSimpTestData.runGenSentence(): start");
-        System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
-        LFeatures lfeat = new LFeatures();
-        //System.out.println(lfeatsets.processes);
-//        List<String> terms = new ArrayList<>();
-        //if (debug) System.out.println("GenSimpTestData.runGenSentence():  lfeat.direct: " + lfeat.direct);
-        //System.exit(1);
-        //for (Preposition p : lfeat.direct)
-        //    terms.add(p.procType);
-        genAttitudes(lfeat);
+        StringBuilder english, prop;
+        LFeatures lfeat;
+
+        while (sentCount < sentMax) {
+            english = new StringBuilder();
+            prop = new StringBuilder();
+            lfeat = new LFeatures();
+            if (!suppress.contains("attitude")) {
+                genAttitudes(english, prop, lfeat);
+            }
+            if (!suppress.contains("modal")){
+                genWithModals(english, prop, lfeat);
+            }
+            int tryCount = 0;
+            StringBuilder prop1, english1;
+            do {
+                english1 = new StringBuilder(english);
+                prop1 = new StringBuilder(prop);
+                getVerb(lfeat,false);
+                genProc(english1, prop1, lfeat);
+            } while (tryCount++ < 10 && prop1.toString().equals(""));
+        }
     }
 
-    /** ***************************************************************
-     * Create action sentences, possibly with modals.  Indirect object and its preposition
-     * can be left out.
-     */
-    public void parallelGenSentence() {
-
-        System.out.println("GenSimpTestData.parallelGenSentence(): start");
-        kbLite = new KBLite("SUMO");
-        System.out.println("GenSimpTestData.parallelGenSentence(): finished loading KBs");
-
-        List<Integer> numbers = new ArrayList<>();
-        for (int i =0; i < sentMax; i++)
-            numbers.add(i);
-        //ArrayList<String> terms = new ArrayList<>();
-        //if (debug) System.out.println("GenSimpTestData.parallelGenSentence():  lfeat.direct: " + lfeat.direct);
-        //System.exit(1);
-        //for (Preposition p : lfeat.direct)
-        //    terms.add(p.procType);
-        numbers.parallelStream().forEach(number -> {
-            LFeatures lfeat = new LFeatures();
-            genAttitudes(lfeat);
-        });
-    }
 
 
     /** ***************************************************************
@@ -1911,76 +1901,44 @@ public class GenSimpTestData {
 
 
 
-    /** ***************************************************************
-     */
-    public void genWithHumans(StringBuilder english,
-                              StringBuilder prop,
-                              LFeatures lfeat) {
-
-
-        if (debug) System.out.println("GenSimpTestData.genWithHumans()");
-        int humCount = 0;
-        lfeatsets.humans.clearReturns();
-        for (int i = 0; i < humanMax; i++) {
-            lfeat.subj = lfeatsets.humans.getNext();
-            if (lfeat.subj.equals(lfeat.attSubj)) continue;
-            if (humCount++ > humanMax) break;
-            int tryCount = 0;
-            StringBuilder prop1, english1;
-            do {
-                prop1 = new StringBuilder(prop);
-                english1 = new StringBuilder(english);
-                getVerb(lfeat,false);
-                genProc(english1, prop1, lfeat);
-            } while (tryCount++ < 10 && prop1.equals(""));
-        }
-    }
 
     /** ***************************************************************
      * use None, knows, believes, says, desires for attitudes
      */
-    public void genAttitudes(LFeatures lfeat) {
+    public void genAttitudes(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
         if (debug) System.out.println("GenSimpTestData.genAttitudes(): ");
         if (debug) System.out.println("GenSimpTestData.genAttitudes(): human list size: " + lfeatsets.humans.size());
+
         String that;
-        int humCount = 0;
-        HashSet<String> previous = new HashSet<>(); // humans appearing already in the sentence
-        StringBuilder english, prop, type, name;
-        Word attWord;
-        while (sentCount < sentMax) {
-            english = new StringBuilder();
-            prop = new StringBuilder();
-            startOfSentence = true;
-            attWord = attitudes.get(rand.nextInt(attitudes.size()));
-            lfeat.attitude = attWord.term;
-            if (debug) System.out.println("GenSimpTestData.genAttitudes(): ========================= start ");
-            if (!attWord.term.equals("None") && !suppress.contains("attitude")) {
-                type = new StringBuilder();
-                name = new StringBuilder();
-                lfeat.attNeg = rand.nextBoolean();
-                if (lfeat.attNeg)
-                    prop.append("(not (exists (?HA) (and  ");
-                else
-                    prop.append("(exists (?HA) (and ");
-                generateHuman(english,prop,false,"?HA",type,name,lfeat);
-                prop.append("(").append(attWord.term).append(" ?HA ");
-                lfeat.attSubj = name.toString(); // the subject of the propositional attitude
-                startOfSentence = false;
-                if (rand.nextBoolean() || lfeat.attitude.equals("desires"))
-                    that = "that ";
-                else
-                    that = "";
-                if (lfeat.attNeg)
-                    english.append("doesn't ").append(attWord.root).append(" ").append(that);
-                else
-                    english.append(attWord.present).append(" ").append(that);
-                if (attWord.term.equals("says"))
-                    english.append("\"");
-            }
-            if (debug) System.out.println("GenSimpTestData.genAttitudes(): english: " + english);
-            genWithModals(english,prop,lfeat);
+        startOfSentence = true;
+        Word attWord = attitudes.get(rand.nextInt(attitudes.size()));
+        lfeat.attitude = attWord.term;
+        if (debug) System.out.println("GenSimpTestData.genAttitudes(): ========================= start ");
+        if (!attWord.term.equals("None")) {
+            StringBuilder type = new StringBuilder();
+            StringBuilder name = new StringBuilder();
+            lfeat.attNeg = rand.nextBoolean();
+            if (lfeat.attNeg)
+                prop.append("(not (exists (?HA) (and  ");
+            else
+                prop.append("(exists (?HA) (and ");
+            generateHuman(english,prop,false,"?HA",type,name,lfeat);
+            prop.append("(").append(attWord.term).append(" ?HA ");
+            lfeat.attSubj = name.toString(); // the subject of the propositional attitude
+            startOfSentence = false;
+            if (rand.nextBoolean() || lfeat.attitude.equals("desires"))
+                that = "that ";
+            else
+                that = "";
+            if (lfeat.attNeg)
+                english.append("doesn't ").append(attWord.root).append(" ").append(that);
+            else
+                english.append(attWord.present).append(" ").append(that);
+            if (attWord.term.equals("says"))
+                english.append("\"");
         }
+        if (debug) System.out.println("GenSimpTestData.genAttitudes(): ========= end english: " + english);
     }
 
     /** ***************************************************************
@@ -2004,33 +1962,22 @@ public class GenSimpTestData {
                               StringBuilder prop,
                               LFeatures lfeat) {
 
-        if (debug) System.out.println("GenSimpTestData.genWithModals()");
-        int humCount = 0;
+        if (debug) System.out.println("GenSimpTestData.genWithModals() start");
         AVPair modal = lfeatsets.modals.get(rand.nextInt(lfeatsets.modals.size()));
         lfeat.modal = modal;
         lfeat.negatedModal = biasedBoolean(2,10); // make it negated one time out of 5
-        StringBuilder englishNew = new StringBuilder(english);
-        StringBuilder propNew = new StringBuilder(prop);
         if (debug) System.out.println("genWithModals(): " + modal);
-        if (!lfeat.modal.attribute.equals("None") && !suppress.contains("modal")) {
+        if (!lfeat.modal.attribute.equals("None")) {
             if (lfeat.negatedModal)
-                propNew.append("(not (modalAttribute ");
+                prop.append("(not (modalAttribute ");
             else
-                propNew.append("(modalAttribute ");
-            englishNew.append(negatedModal(modal.value,lfeat.negatedModal));
+                prop.append("(modalAttribute ");
+            english.append(negatedModal(modal.value,lfeat.negatedModal));
             if (startOfSentence)
-                englishNew.replace(0,1,englishNew.substring(0,1).toUpperCase());
+                english.replace(0,1,english.substring(0,1).toUpperCase());
             startOfSentence = false;
         }
-        if (debug) System.out.println("GenSimpTestData.genWithModals(): english: " + english);
-        int tryCount = 0;
-        StringBuilder prop1, english1;
-        do {
-            prop1 = new StringBuilder(propNew);
-            english1 = new StringBuilder(englishNew);
-            getVerb(lfeat,false);
-            genProc(english1, prop1, lfeat);
-        } while (tryCount++ < 10 && prop1.toString().equals(""));
+        if (debug) System.out.println("GenSimpTestData.genWithModals() end: english: " + english);
     }
 
 
@@ -2107,7 +2054,7 @@ public class GenSimpTestData {
         System.out.println("  -g <filename> - generate ground statement pairs for all relations");
         System.out.println("  -i - generate English for all non-ground formulas");
         System.out.println("  -s <filename> <optional count> - generate NL/logic compositional <count> sentences to <filename> (no extension)");
-        System.out.println("  -p <filename> <optional count> - parallel generation of NL/logic compositional <count> sentences to <filename> (no extension)");
+        // System.out.println("  -p <filename> <optional count> - parallel generation of NL/logic compositional <count> sentences to <filename> (no extension)");
         System.out.println("  -n - generate term formats from term names in a file");
         System.out.println("  -u - other utility");
     }
@@ -2148,7 +2095,7 @@ public class GenSimpTestData {
                     logicFile.close();
                     frameFile.close();
                 }
-                if (args.length > 1 && args[0].equals("-p")) { // create NL/logic synthetically
+                /*if (args.length > 1 && args[0].equals("-p")) { // create NL/logic synthetically
                     if (args.length > 2)
                         sentMax = Integer.parseInt(args[2]);
                     GenSimpTestData gstd = new GenSimpTestData(true);
@@ -2156,7 +2103,7 @@ public class GenSimpTestData {
                     englishFile.close();
                     logicFile.close();
                     frameFile.close();
-                }
+                }*/
                 if (args.length > 0 && args[0].equals("-g")) { // generate ground statements
                     GenGroundStatements ggs = new GenGroundStatements();
                     ggs.generate(englishFile, logicFile);
@@ -2382,5 +2329,59 @@ public class GenSimpTestData {
  count = count * loopMax; // lfeat.direct.size();
  count = count * loopMax; // lfeat.indirect.size();
  return count;
+ }
+ */
+
+
+
+/** ***************************************************************
+ Not used
+ public void genWithHumans(StringBuilder english,
+ StringBuilder prop,
+ LFeatures lfeat) {
+
+
+ if (debug) System.out.println("GenSimpTestData.genWithHumans()");
+ int humCount = 0;
+ lfeatsets.humans.clearReturns();
+ for (int i = 0; i < humanMax; i++) {
+ lfeat.subj = lfeatsets.humans.getNext();
+ if (lfeat.subj.equals(lfeat.attSubj)) continue;
+ if (humCount++ > humanMax) break;
+ int tryCount = 0;
+ StringBuilder prop1, english1;
+ do {
+ prop1 = new StringBuilder(prop);
+ english1 = new StringBuilder(english);
+ getVerb(lfeat,false);
+ genProc(english1, prop1, lfeat);
+ } while (tryCount++ < 10 && prop1.equals(""));
+ }
+ }
+ */
+
+/** ***************************************************************
+ * Create action sentences, possibly with modals.  Indirect object and its preposition
+ * can be left out.
+ *
+ * To be implemented later
+ public void parallelGenSentence() {
+
+ System.out.println("GenSimpTestData.parallelGenSentence(): start");
+ kbLite = new KBLite("SUMO");
+ System.out.println("GenSimpTestData.parallelGenSentence(): finished loading KBs");
+
+ List<Integer> numbers = new ArrayList<>();
+ for (int i =0; i < sentMax; i++)
+ numbers.add(i);
+ //ArrayList<String> terms = new ArrayList<>();
+ //if (debug) System.out.println("GenSimpTestData.parallelGenSentence():  lfeat.direct: " + lfeat.direct);
+ //System.exit(1);
+ //for (Preposition p : lfeat.direct)
+ //    terms.add(p.procType);
+ numbers.parallelStream().forEach(number -> {
+ LFeatures lfeat = new LFeatures();
+ genAttitudes(lfeat);
+ });
  }
  */
