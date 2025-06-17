@@ -10,7 +10,16 @@ import java.util.*;
 public class LFeatures {
 
     private static final boolean debug = false;
+    private static final Random rand = new Random();
 
+    public static final int NOTIME = -1;
+    public static final int PAST = 0;         // spoke, docked
+    public static final int PASTPROG = 1;     // was speaking, was docking
+    public static final int PRESENT = 2;      // speaks, docks
+    public static final int PROGRESSIVE = 3;  // is speaking, is docking
+    public static final int FUTURE = 4;       // will speak, will dock
+    public static final int FUTUREPROG = 5;   // will be speaking, will be docking
+    public static final int IMPERATIVE = 6;   // treat imperatives like a tense
 
     public boolean testMode = false;
 
@@ -81,6 +90,20 @@ public class LFeatures {
         secondVerb = "";
         secondVerbType = "";
     }
+
+    /** ***************************************************************
+     * Tense methods
+     */
+    public boolean isProgressive() {
+        return tense == PROGRESSIVE || tense == PASTPROG || tense == FUTUREPROG;
+    }
+    public boolean isPastProgressive() { return tense == PASTPROG; }
+    public boolean isPast() { return tense == PAST; }
+    public boolean isPresent() { return tense == PRESENT; }
+    public boolean isFuture() { return tense == FUTURE; }
+    public boolean isImperative() { return tense == IMPERATIVE; }
+    public boolean noTense() { return tense == NOTIME; }
+    public static int getRandomTense() { return rand.nextInt(IMPERATIVE+1) - 1; }
 
     @Override
     public String toString() {

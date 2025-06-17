@@ -20,11 +20,11 @@ public class GenAdjectives {
      */
     public static String makeLogTense(LFeatures lfeat) {
 
-        if (lfeat.tense == gstd.PAST)
+        if (lfeat.isPast())
             return "(before ?T Now) ";
-        else if (lfeat.tense == gstd.FUTURE)
+        else if (lfeat.isFuture())
             return "(before Now ?T) ";
-        else // (lfeat.tense == gstd.PRESENT)
+        else // (lfeat.isPresent())
             return "(equal ?T Now) ";
     }
 
@@ -40,11 +40,11 @@ public class GenAdjectives {
             else
                 neg = "n't ";
         }
-        if (lfeat.tense == gstd.PAST)
+        if (lfeat.isPast())
             verb = "was" + neg;
-        if (lfeat.tense == gstd.PRESENT)
+        if (lfeat.isPresent())
             verb = "is" + neg;
-        if (lfeat.tense == gstd.FUTURE) {
+        if (lfeat.isFuture()) {
             if (lfeat.negatedBody) {
                 if (neg.equals("n't "))
                     verb = "won't be ";
@@ -70,19 +70,19 @@ public class GenAdjectives {
             else
                 neg = "n't ";
         }
-        if (lfeat.tense == gstd.PAST) {
+        if (lfeat.isPast()) {
             if (lfeat.negatedBody)
                 verb = "did" + neg + "have ";
             else
                 verb = "has ";
         }
-        if (lfeat.tense == gstd.PRESENT) {
+        if (lfeat.isPresent()) {
             if (lfeat.negatedBody)
                 verb = "does" + neg + "have ";
             else
                 verb = "has ";
         }
-        if (lfeat.tense == gstd.FUTURE) {
+        if (lfeat.isFuture()) {
             if (lfeat.negatedBody) {
                 if (neg.equals("n't "))
                     verb = "won't have ";
@@ -108,19 +108,19 @@ public class GenAdjectives {
             else
                 neg = "n't ";
         }
-        if (lfeat.tense == gstd.PAST) {
+        if (lfeat.isPast()) {
             if (lfeat.negatedBody)
                 verb = "did" + neg + "feel ";
             else
                 verb = "felt ";
         }
-        if (lfeat.tense == gstd.PRESENT) {
+        if (lfeat.isPresent()) {
             if (lfeat.negatedBody)
                 verb = "does" + neg + "have ";
             else
                 verb = "has ";
         }
-        if (lfeat.tense == gstd.FUTURE) {
+        if (lfeat.isFuture()) {
             if (lfeat.negatedBody) {
                 if (neg.equals("n't "))
                     verb = "won't have ";

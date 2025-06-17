@@ -51,7 +51,6 @@ public class LFeatureSets {
 
 
     public LFeatureSets(KBLite kbLiteParam) {
-        WordNet.initOnce();
         kbLite = kbLiteParam;
         //  get capabilities from axioms like
         //  (=> (instance ?GUN Gun) (capability Shooting instrument ?GUN))
