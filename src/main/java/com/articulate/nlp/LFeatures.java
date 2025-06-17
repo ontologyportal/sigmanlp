@@ -53,11 +53,11 @@ public class LFeatures {
     public boolean question = false;
     public String verb = "";
     public String verbType = ""; // the SUMO class of the verb
+    public List<String> frames = null;  // verb frames for the current process type
     public String adverb = "";
     public int tense = -1; // GenSimpTestData.NOTIME;
     public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
     public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
-
 
 
     /***************************************************************

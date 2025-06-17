@@ -15,7 +15,7 @@ import java.util.*;
 public class LFeatureSets {
 
     public boolean debug = false;
-    public static boolean useCapabilities = true; // include process types from capabilities list
+    public static boolean useCapabilities = false; // include process types from capabilities list
 
     public class Capability {
 
@@ -43,7 +43,6 @@ public class LFeatureSets {
     public RandSet bodyParts = null;
     public Set<String> prevHumans = new HashSet<>();
     public RandSet processes = null;
-    public List<String> frames = null;  // verb frames for the current process type
     private KBLite kbLite = null;
 
 

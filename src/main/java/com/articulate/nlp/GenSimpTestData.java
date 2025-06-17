@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 
 public class GenSimpTestData {
 
-    public static boolean debug = false;
+    public static boolean debug = true;
     public static KB kb;
     public static KBLite kbLite;
     public static boolean printFrame = false;
@@ -1782,10 +1782,10 @@ public class GenSimpTestData {
         String frame = null;
         int count = 0;
         do {
-            frame = lfeatsets.frames.get(rand.nextInt(lfeatsets.frames.size()));
+            frame = lfeat.frames.get(rand.nextInt(lfeat.frames.size()));
             count++;
-        } while (count < (lfeatsets.frames.size() * 2) && (StringUtil.emptyString(frame) || skipFrame(frame)));
-        if (count >= (lfeatsets.frames.size() * 2) || StringUtil.emptyString(frame) || skipFrame(frame))
+        } while (count < (lfeat.frames.size() * 2) && (StringUtil.emptyString(frame) || skipFrame(frame)));
+        if (count >= (lfeat.frames.size() * 2) || StringUtil.emptyString(frame) || skipFrame(frame))
             return;
         frame = stripTenseFromFrame(frame);
         if (debug) System.out.println("getFrame() set frame to: " + frame);
@@ -1810,12 +1810,12 @@ public class GenSimpTestData {
             else
                 english.insert(0,RandSet.listToEqualPairs(requests).getNext() + english);
         }
-        lfeatsets.frames = WordNetUtilities.getVerbFramesForWord(lfeat.verbSynset, lfeat.verb);
-        if (lfeatsets.frames == null || lfeatsets.frames.isEmpty()) {
+        lfeat.frames = WordNetUtilities.getVerbFramesForWord(lfeat.verbSynset, lfeat.verb);
+        if (lfeat.frames == null || lfeat.frames.isEmpty()) {
             if (debug) System.out.println("genProc() no frames for word: " + lfeat.verb);
             return;
         }
-        if (debug) System.out.println("genProc() frames: " + lfeatsets.frames);
+        if (debug) System.out.println("genProc() frames: " + lfeat.frames);
         if (debug) System.out.println("genProc() time: " + printTense(lfeat.tense));
         if (debug) System.out.println("genProc() synset: " + lfeat.verbSynset);
 

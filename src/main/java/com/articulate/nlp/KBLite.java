@@ -512,6 +512,8 @@ public class KBLite {
         List<String> termFormatsForTerm = termFormats.get(term);
         if (termFormatsForTerm == null) {
             System.out.println("KBLite.getTermFormat() - No term format for: " + term);
+            // Thread.dumpStack();  // Prints to stderr
+            // System.exit(1);
             return null;
         }
         return termFormatsForTerm.get(rand.nextInt(termFormatsForTerm.size()));
