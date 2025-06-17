@@ -193,27 +193,6 @@ public class GenSimpTestData {
         prepPhrase.put("wading","in ");
     }
 
-
-    /** ***************************************************************
-     * estimate the number of sentences that will be produced
-     */
-    public static String printTense(int t) {
-
-        switch (t) {
-            case -1: return "NOTIME";
-            case 0:  return "PAST";
-            case 1:  return "PASTPROG";
-            case 2:  return "PRESENT";
-            case 3:  return "PROGRESSIVE";
-            case 4:  return "FUTURE";
-            case 5:  return "FUTUREPROG";
-            case 6:  return "IMPERATIVE";
-        }
-        return "";
-    }
-
-    
-
     /** ***************************************************************
      * generate new SUMO termFormat statements for constants in a file
      */
@@ -518,7 +497,7 @@ public class GenSimpTestData {
         }
         String result = "";
         if (debug) System.out.println("verbForm(): (term,word): " + term + ", " + word);
-        if (debug) System.out.println("verbForm(): tense: " + printTense(lfeat.tense));
+        if (debug) System.out.println("verbForm(): tense: " + lfeat.printTense());
         if (debug) System.out.println("verbForm(): plural: " + plural);
         if (debug) System.out.println("verbForm(): negated: " + negated);
         if (debug) System.out.println("verbForm(): subj: " + lfeat.subj);
@@ -1757,8 +1736,9 @@ public class GenSimpTestData {
             if (debug) System.out.println("genProc() no frames for word: " + lfeat.verb);
             return;
         }
+        System.out.println("ARE YOU EVER MAKING IT HERE!!!!!????????????????????????????????");
         if (debug) System.out.println("genProc() frames: " + lfeat.frames);
-        if (debug) System.out.println("genProc() time: " + printTense(lfeat.tense));
+        if (debug) System.out.println("genProc() time: " + lfeat.printTense());
         if (debug) System.out.println("genProc() synset: " + lfeat.verbSynset);
 
         if (debug) System.out.println("genProc() word: " + lfeat.verb);

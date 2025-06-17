@@ -105,6 +105,22 @@ public class LFeatures {
     public boolean noTense() { return tense == NOTIME; }
     public static int getRandomTense() { return rand.nextInt(IMPERATIVE+1) - 1; }
 
+    public String printTense() {
+
+        switch (tense) {
+            case -1: return "NOTIME";
+            case 0:  return "PAST";
+            case 1:  return "PASTPROG";
+            case 2:  return "PRESENT";
+            case 3:  return "PROGRESSIVE";
+            case 4:  return "FUTURE";
+            case 5:  return "FUTUREPROG";
+            case 6:  return "IMPERATIVE";
+        }
+        return "";
+    }
+
+
     @Override
     public String toString() {
         return "LFeatures{" +
