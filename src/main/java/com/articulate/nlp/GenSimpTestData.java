@@ -68,9 +68,6 @@ public class GenSimpTestData {
     public static final int FUTUREPROG = 5;   // will be speaking, will be docking
     public static final int IMPERATIVE = 6;   // treat imperatives like a tense
 
-    public static final Set<String> verbEx = new HashSet<>(
-            Arrays.asList("Acidification","Vending","OrganizationalProcess",
-                    "NaturalProcess","Corkage","LinguisticCommunication"));
     public static final List<Word> attitudes = new ArrayList<>();
     public static final Set<String> suppress = new HashSet<>( // forms to suppress, usually for testing
             Arrays.asList());
@@ -497,18 +494,6 @@ public class GenSimpTestData {
         });
     }
 
-    /** ***************************************************************
-     * also return true if there's no termFormat for the process
-     */
-    public boolean compoundVerb(String term) {
-
-        String word = kbLite.getTermFormat("EnglishLanguage",term);
-        if (word == null || word.contains(" ")) {
-            if (debug) System.out.println("compoundVerb(): or null: " + word + " " + term);
-            return true;
-        }
-        return false;
-    }
 
     /** ***************************************************************
      * return true if the tense is past progressive, present progressive,
@@ -1546,23 +1531,6 @@ public class GenSimpTestData {
         return onceWithoutInd;
     }
 
-    /** ***************************************************************
-     */
-    public boolean excludedVerb(String v) {
-
-        if (debug) System.out.println("excludedVerb(): checking: " + v);
-        if (compoundVerb(v))  // exclude compound verbs for now since the morphology is too difficult
-            return true;
-        if (verbEx.contains(v)) // check for specifically excluded verbs and their SUMO subclasses
-            return true;
-        for (String s : verbEx) {
-            if (kbLite.isSubclass(v,s))
-                return true;
-        }
-        if (debug) System.out.println("excludedVerb(): not excluded: " + v);
-        return false;
-    }
-
 
     /** ***************************************************************
      * Get a person or thing
@@ -1672,7 +1640,7 @@ public class GenSimpTestData {
                 synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(proc);
                 if (synsets == null || synsets.isEmpty()) // keep searching for processes with equivalent synsets
                     if (debug) System.out.println("getVerb(): no equivalent synsets for: " + proc);
-            } while (excludedVerb(proc) || synsets.isEmpty()); // too hard grammatically for now to have compound verbs
+            } while (synsets.isEmpty());
             if (debug) System.out.println("getVerb(): checking process: " + proc);
             if (debug) System.out.println("getVerb(): synsets size: " + synsets.size() + " for term: " + proc);
             synset = synsets.get(rand.nextInt(synsets.size()));

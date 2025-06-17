@@ -15,6 +15,10 @@ import java.util.*;
 public class LFeatureSets {
 
     public boolean debug = false;
+    public boolean excludeCompoundVerbs = true;
+    public static final Set<String> verbEx = new HashSet<>(
+            Arrays.asList("Acidification","Vending","OrganizationalProcess",
+                    "NaturalProcess","Corkage","LinguisticCommunication"));
     public static boolean useCapabilities = false; // include process types from capabilities list
 
     public class Capability {
@@ -74,6 +78,7 @@ public class LFeatureSets {
         Set<String> artClass = kbLite.getChildClasses("Artifact");
 
         Set<String> processesSet = kbLite.getChildClasses("Process");
+        processesSet.removeIf(v -> excludedVerb(v));
         Collection<AVPair> procFreqs = findWordFreq(processesSet);
         processes = RandSet.create(procFreqs);
 
@@ -336,6 +341,38 @@ public class LFeatureSets {
             }
         }
         return result;
+    }
+
+
+    /** ***************************************************************
+     *  too hard grammatically for now to have compound verbs
+     */
+    public boolean excludedVerb(String v) {
+
+        if (debug) System.out.println("excludedVerb(): checking: " + v);
+        if (excludeCompoundVerbs && compoundVerb(v))  // exclude compound verbs for now since the morphology is too difficult
+            return true;
+        if (verbEx.contains(v)) // check for specifically excluded verbs and their SUMO subclasses
+            return true;
+        for (String s : verbEx) {
+            if (kbLite.isSubclass(v,s))
+                return true;
+        }
+        if (debug) System.out.println("excludedVerb(): not excluded: " + v);
+        return false;
+    }
+
+    /** ***************************************************************
+     * also return true if there's no termFormat for the process
+     */
+    public boolean compoundVerb(String term) {
+
+        String word = kbLite.getTermFormat("EnglishLanguage",term);
+        if (word == null || word.contains(" ")) {
+            if (debug) System.out.println("compoundVerb(): or null: " + word + " " + term);
+            return true;
+        }
+        return false;
     }
 
 }
