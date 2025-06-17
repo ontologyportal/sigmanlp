@@ -13,7 +13,6 @@ public class LFeatures {
 
     public boolean testMode = false;
 
-    private final GenSimpTestData genSimpTestData;
     public boolean attNeg = false; // for propositional attitudes
     public boolean attPlural = false;
     public int attCount = 1;
@@ -55,7 +54,7 @@ public class LFeatures {
     public String verb = "";
     public String verbType = ""; // the SUMO class of the verb
     public String adverb = "";
-    public int tense = GenSimpTestData.NOTIME;
+    public int tense = -1; // GenSimpTestData.NOTIME;
     public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
     public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
 

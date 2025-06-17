@@ -2,6 +2,7 @@ package com.articulate.nlp;
 
 import com.articulate.sigma.utils.AVPair;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -20,59 +21,77 @@ public class LFeatureSets {
     public List<String> frames = null;  // verb frames for the current process type
 
 
-    public LFeatureSets(GenSimpTestData genSimpTestData) {
-        this.genSimpTestData = genSimpTestData;
+    public LFeatureSets(KBLite kbLite) {
 
         //  get capabilities from axioms like
         //  (=> (instance ?GUN Gun) (capability Shooting instrument ?GUN))
         // indirect = collectCapabilities(); // TODO: need to restore and combine this filter with verb frames
         if (debug) System.out.println("LFeatureSets(): collect terms");
-        genders = GenSimpTestData.humans;
+        genders = readHumans();
         addUnknownsHumansOrgs(genders);
         humans = RandSet.listToEqualPairs(genders.keySet());
 
         modals = initModals();
 
-        Set<String> roles = GenSimpTestData.kbLite.getInstancesForType("SocialRole");
+        Set<String> roles = kbLite.getInstancesForType("SocialRole");
         //if (debug) System.out.println("LFeatureSets(): SocialRoles: " + roles);
-        Collection<AVPair> roleFreqs = genSimpTestData.findWordFreq(roles);
+        Collection<AVPair> roleFreqs = findWordFreq(roles);
         socRoles = RandSet.create(roleFreqs);
 
-        Set<String> parts = GenSimpTestData.kbLite.getInstancesForType("BodyPart");
+        Set<String> parts = kbLite.getInstancesForType("BodyPart");
         //if (debug) System.out.println("LFeatureSets(): BodyParts: " + parts);
-        Collection<AVPair> bodyFreqs = genSimpTestData.findWordFreq(parts);
+        Collection<AVPair> bodyFreqs = findWordFreq(parts);
         bodyParts = RandSet.create(bodyFreqs);
 
-        Set<String> artInst = GenSimpTestData.kbLite.getInstancesForType("Artifact");
-        Set<String> artClass = GenSimpTestData.kbLite.getChildClasses("Artifact");
+        Set<String> artInst = kbLite.getInstancesForType("Artifact");
+        Set<String> artClass = kbLite.getChildClasses("Artifact");
 
-        Set<String> processesSet = GenSimpTestData.kbLite.getChildClasses("Process");
-        Collection<AVPair> procFreqs = genSimpTestData.findWordFreq(processesSet);
+        Set<String> processesSet = kbLite.getChildClasses("Process");
+        Collection<AVPair> procFreqs = findWordFreq(processesSet);
         processes = RandSet.create(procFreqs);
 
         if (useCapabilities) {
-            RandSet rs = RandSet.listToEqualPairs(GenSimpTestData.capabilities.keySet());
+            RandSet rs = RandSet.listToEqualPairs(capabilities.keySet());
             processes.terms.addAll(rs.terms);
         }
 
-        Set<String> orgInst = GenSimpTestData.kbLite.getInstancesForType("OrganicObject");
-        Set<String> orgClass = GenSimpTestData.kbLite.getChildClasses("OrganicObject");
+        Set<String> orgInst = kbLite.getInstancesForType("OrganicObject");
+        Set<String> orgClass = kbLite.getChildClasses("OrganicObject");
 
         HashSet<String> objs = new HashSet<>();
         objs.addAll(orgClass);
         objs.addAll(artClass);
         HashSet<String> objs2 = new HashSet<>();
         for (String s : objs)
-            if (!s.equals("Human") && !GenSimpTestData.kbLite.isSubclass(s, "Human"))
+            if (!s.equals("Human") && !kbLite.isSubclass(s, "Human"))
                 objs2.add(s);
         if (debug) System.out.println("LFeatureSets(): OrganicObjects and Artifacts: " + objs);
-        Collection<AVPair> objFreqs = genSimpTestData.findWordFreq(objs2);
+        Collection<AVPair> objFreqs = findWordFreq(objs2);
         addUnknownsObjects(objFreqs);
         if (debug) System.out.println("LFeatureSets(): create objects");
         objects = RandSet.create(objFreqs);
     }
 
-    
+
+    /** ***************************************************************
+     * generate new SUMO termFormat and instance statements for names
+     */
+    public static Map<String,String> readHumans() {
+
+        Map<String,String> result = new HashMap<>();
+        List<List<String>> fn = DB.readSpreadsheet(kbLite.kbDir +
+                File.separator + "WordNetMappings/FirstNames.csv", null, false, ',');
+        fn.remove(0);  // remove the header
+
+        String firstName, g;
+        for (List<String> ar : fn) {
+            firstName = ar.get(0);
+            g = ar.get(1);
+            result.put(firstName,g);
+        }
+        return result;
+    }
+
     /***************************************************************
      * add UNK words to the list of objects
      */
@@ -134,5 +153,42 @@ public class LFeatureSets {
         }
         return modals;
     }
+
+    /** ***************************************************************
+     * @param terms a collection of SUMO terms
+     * @return an ArrayList of AVPair with a value of log of frequency
+     *          derived from the equivalent synsets the terms map to. Attribute
+     *          of each AVPair is a SUMO term.  If we didn't use the log
+     *          of frequency we'd practically just get "to be" every time
+     *          Used in LFeatures.java
+     */
+    public List<AVPair> findWordFreq(Collection<String> terms) {
+
+        List<AVPair> avpList = new ArrayList<>();
+        List<String> resultWords;
+        AVPair avp;
+        for (String term : terms) {
+            List<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(term);
+            int count;
+            if (synsets == null || synsets.isEmpty())
+                count = 1;
+            else {
+                int freq = 0;
+                for (String s : synsets) {
+                    resultWords = WordNet.wn.getWordsFromSynset(s);
+                    int f = 0;
+                    if (WordNet.wn.senseFrequencies.containsKey(s))
+                        f = WordNet.wn.senseFrequencies.get(s);
+                    if (f > freq)
+                        freq = f;
+                }
+                count = (int) Math.round(Math.log(freq) + 1.0) + 1;
+            }
+            avp = new AVPair(term,Integer.toString(count));
+            avpList.add(avp);
+        }
+        return avpList;
+    }
+
 
 }

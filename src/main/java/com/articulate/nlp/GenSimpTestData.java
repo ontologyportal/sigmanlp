@@ -82,22 +82,22 @@ public class GenSimpTestData {
                                                   // NL/logic should be on same line in the different files
     public static PrintWriter frameFile = null; // LFeatures for the current sentence, to support future processing
 
-    public static long estSentCount = 1;
     public static long sentCount = 0;
     public static long sentMax = 10000000;
     public static boolean startOfSentence = true;
+    public static LFeatureSets lfeatsets;
     public static List<String> numbers = new ArrayList<>();
     public static List<String> requests = new ArrayList<>(); // polite phrase at start of sentence
     public static List<String> endings = new ArrayList<>(); // polite phrase at end of sentence
     public static List<String> others = new ArrayList<>(); // when next noun is same as a previous one
     public static Map<String,String> prepPhrase = new HashMap<>();
-    public static Map<String,String> humans = new HashMap<>();
 
     // verb and noun keys with values that are the frequency of coocurence with a given
     // adjective or adverb
     public Map<String, Map<Integer,Set<String>>> freqVerbs = new HashMap<>();
     public Map<String, Map<Integer,Set<String>>> freqNouns = new HashMap<>();
     public static COCA coca = new COCA();
+
 
     /** ***************************************************************
      */
@@ -123,6 +123,7 @@ public class GenSimpTestData {
 
     private void initGSTD() {
 
+        lfeatset = new LFeatureSets(kbLite);
         initNumbers();
         initRequests();
         initAttitudes();
@@ -130,8 +131,6 @@ public class GenSimpTestData {
         initPrepPhrase();
         initEndings();
         genProcTable();
-        initModifiers();
-        humans = readHumans();
     }
 
     /** ***************************************************************
@@ -208,25 +207,6 @@ public class GenSimpTestData {
         prepPhrase.put("wading","in ");
     }
 
-    /** ***************************************************************
-     * Get frequency-sorted co-occurrences of adj/noun and adv/verb pairs
-     * TODO: Once Ollama generation is complete, this won't be necessary.
-     */
-    public static void initModifiers() {
-
-        /*
-        String prefix = System.getenv("CORPORA") + File.separator + "COCA" + File.separator;
-        File n = new File(prefix + "nouns.txt");
-        File v = new File(prefix + "verbs.txt");
-        if (!n.exists() || !v.exists())
-            coca.pairFreq(prefix);
-
-        coca.freqNouns = PairMap.readMap(n.getAbsolutePath());
-        coca.freqVerbs = PairMap.readMap(v.getAbsolutePath());
-        COCA.filterModifiers(coca.freqVerbs,coca.freqNouns);
-
-         */
-    }
 
     /** ***************************************************************
      * estimate the number of sentences that will be produced
@@ -246,23 +226,6 @@ public class GenSimpTestData {
         return "";
     }
 
-    /** ***************************************************************
-     * estimate the number of sentences that will be produced
-     */
-    public static long estimateSentCount(LFeatures lfeat) {
-
-        long count = 2; // include negation
-        if (!suppress.contains("attitude"))
-            count = count * attMax;
-        if (!suppress.contains("modal"))
-            count = count * modalMax * 2; //include negation
-        count = count * (humanMax + lfeat.socRoles.size());
-        count = count * loopMax; // lfeat.intProc.size();
-        count = count * loopMax; // lfeat.direct.size();
-        count = count * loopMax; // lfeat.indirect.size();
-        return count;
-    }
-    
     
 
     /** ***************************************************************
@@ -290,24 +253,6 @@ public class GenSimpTestData {
         }
     }
 
-    /** ***************************************************************
-     * generate new SUMO termFormat and instance statements for names
-     */
-    public static Map<String,String> readHumans() {
-
-        Map<String,String> result = new HashMap<>();
-        List<List<String>> fn = DB.readSpreadsheet(kbLite.kbDir +
-                File.separator + "WordNetMappings/FirstNames.csv", null, false, ',');
-        fn.remove(0);  // remove the header
-
-        String firstName, g;
-        for (List<String> ar : fn) {
-            firstName = ar.get(0);
-            g = ar.get(1);
-            result.put(firstName,g);
-        }
-        return result;
-    }
 
     /** ***************************************************************
      * generate new SUMO termFormat and instance statements for names
@@ -331,12 +276,12 @@ public class GenSimpTestData {
     /** ***************************************************************
      * generate new SUMO statements for names
      */
-    public String genSUMOForHuman(LFeatures lfeat, String name, String var) {
+    public String genSUMOForHuman(LFeatureSet lfeatset, String name, String var) {
 
         StringBuilder sb = new StringBuilder();
         if (name != null) {
             String gender = "Male";
-            String g = lfeat.genders.get(name);
+            String g = lfeatsets.genders.get(name);
             if (g.equalsIgnoreCase("F"))
                 gender = "Female";
             //sb.append("(instance " + var + " Human) ");
@@ -607,41 +552,6 @@ public class GenSimpTestData {
         }
     }
 
-    /** ***************************************************************
-     * @param terms a collection of SUMO terms
-     * @return an ArrayList of AVPair with a value of log of frequency
-     *          derived from the equivalent synsets the terms map to. Attribute
-     *          of each AVPair is a SUMO term.  If we didn't use the log
-     *          of frequency we'd practically just get "to be" every time
-     *          Used in LFeatures.java
-     */
-    public List<AVPair> findWordFreq(Collection<String> terms) {
-
-        List<AVPair> avpList = new ArrayList<>();
-        List<String> resultWords;
-        AVPair avp;
-        for (String term : terms) {
-            List<String> synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(term);
-            int count;
-            if (synsets == null || synsets.isEmpty())
-                count = 1;
-            else {
-                int freq = 0;
-                for (String s : synsets) {
-                    resultWords = WordNet.wn.getWordsFromSynset(s);
-                    int f = 0;
-                    if (WordNet.wn.senseFrequencies.containsKey(s))
-                        f = WordNet.wn.senseFrequencies.get(s);
-                    if (f > freq)
-                        freq = f;
-                }
-                count = (int) Math.round(Math.log(freq) + 1.0) + 1;
-            }
-            avp = new AVPair(term,Integer.toString(count));
-            avpList.add(avp);
-        }
-        return avpList;
-    }
 
     /** ***************************************************************
      * Create action sentences from a subject, preposition, direct object,
@@ -654,14 +564,13 @@ public class GenSimpTestData {
         System.out.println("GenSimpTestData.runGenSentence(): start");
         System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
-        LFeatures lfeat = new LFeatures(this);
-        //System.out.println(lfeat.processes);
+        LFeatureSet lfeat = new LFeatureSet(this);
+        //System.out.println(lfeatsets.processes);
 //        List<String> terms = new ArrayList<>();
         //if (debug) System.out.println("GenSimpTestData.runGenSentence():  lfeat.direct: " + lfeat.direct);
         //System.exit(1);
         //for (Preposition p : lfeat.direct)
         //    terms.add(p.procType);
-        estSentCount = estimateSentCount(lfeat);
         genAttitudes(lfeat);
     }
 
@@ -685,7 +594,6 @@ public class GenSimpTestData {
         //    terms.add(p.procType);
         numbers.parallelStream().forEach(number -> {
             LFeatures lfeat = new LFeatures(this);
-            estSentCount = estimateSentCount(lfeat);
             genAttitudes(lfeat);
         });
     }
@@ -1067,7 +975,7 @@ public class GenSimpTestData {
 
         String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "BodyPart");
         if (bodyPart == null)
-            bodyPart = lfeat.bodyParts.getNext();
+            bodyPart = lfeatsets.bodyParts.getNext();
         AVPair plural = new AVPair();
         english.append(capital(nounFormFromTerm(bodyPart,plural,""))).append(" ");
         if (plural.attribute.equals("true"))
@@ -1197,7 +1105,7 @@ public class GenSimpTestData {
             String term = WordPairFrequency.getNounFromVerb(lfeat);
             /*
             Original code:
-            String term = lfeat.objects.getNext();
+            String term = lfeatsets.objects.getNext();
              */
             // Thompson END
             lfeat.subj = term;
@@ -1345,20 +1253,7 @@ public class GenSimpTestData {
         if (debug) System.out.println("generateVerb(): lfeat.framePart: " + lfeat.framePart);
     }
 
-    /** ***************************************************************
-     * How many occurrences remaining in the frame of 'something' and 'someone'
-     */
-    /*
-    Never used
-    public int countSomes(String frame) {
 
-        String str = "frame";
-        String something = "something";
-        String somebody = "somebody";
-        return (str.split(something,-1).length-1) + (str.split(somebody,-1).length-1);
-    }
-
-     */
     /** ***************************************************************
      * Get a person or thing.  Fill in directName, directtype, preposition
      * as a side effect in lfeat
@@ -1368,13 +1263,13 @@ public class GenSimpTestData {
         if (debug) System.out.println("getDirect(): lfeat.framePart: " + lfeat.framePart);
         if (lfeat.framePart.trim().startsWith("somebody") || lfeat.framePart.trim().startsWith("to somebody") ) {
             if (rand.nextBoolean()) {
-                lfeat.directName = lfeat.humans.getNext();
+                lfeat.directName = lfeatsets.humans.getNext();
                 lfeat.directType = "Human";
             }
             else {
                 lfeat.directType = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
                 if (lfeat.directType == null)
-                    lfeat.directType = lfeat.socRoles.getNext();
+                    lfeat.directType = lfeatsets.socRoles.getNext();
             }
             if (lfeat.framePart.trim().startsWith("to somebody"))
                 lfeat.directPrep = "to ";
@@ -1388,7 +1283,7 @@ public class GenSimpTestData {
             // Thompson Start
             lfeat.directType = WordPairFrequency.getNounFromNounAndVerb(lfeat);
             /* Original code
-            lfeat.directType = lfeat.objects.getNext();
+            lfeat.directType = lfeatsets.objects.getNext();
             */
             // Thompson End
             if (lfeat.framePart.contains("on something"))
@@ -1769,32 +1664,6 @@ public class GenSimpTestData {
         return false;
     }
 
-    /** ***************************************************************
-     */
-    /*
-       Never used
-    public List<String> getVerbFramesForTerm(String term) {
-
-        List<String> frames = new ArrayList<>();
-        List<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(term);
-        if (debug) System.out.println("GenSimpTestData.getVerbFramesForTerm(): synsets size: " +
-                synsets.size() + " for term: " + term);
-        if (synsets.isEmpty())
-            return frames;
-            //synsets = WordNetUtilities.getVerbSynsetsFromSUMO(term);
-        List<String> words;
-        List<String> newframes;
-        for (String s : synsets) {
-            words = WordNet.wn.getWordsFromSynset(s);
-            for (String w : words) {
-                newframes = WordNetUtilities.getVerbFramesForWord(s,w);
-                if (newframes != null)
-                    frames.addAll(newframes);
-            }
-        }
-        return frames;
-    }
-    */
 
     /** ***************************************************************
      * Get a person or thing
@@ -1804,13 +1673,13 @@ public class GenSimpTestData {
         if (debug) System.out.println("getIndirect(): frame: " + lfeat.framePart);
         if (lfeat.framePart.endsWith("somebody")) {
             if (rand.nextBoolean()) {
-                lfeat.indirectName = lfeat.humans.getNext();
+                lfeat.indirectName = lfeatsets.humans.getNext();
                 lfeat.indirectType = "Human";
             }
             else {
                 lfeat.indirectType = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
                 if (lfeat.indirectType == null)
-                    lfeat.indirectType = lfeat.socRoles.getNext();
+                    lfeat.indirectType = lfeatsets.socRoles.getNext();
             }
         }
         else if (lfeat.framePart.endsWith("something")) {
@@ -1837,35 +1706,6 @@ public class GenSimpTestData {
         return frame.contains("PP") || frame.contains("CLAUSE") || frame.contains("V-ing") || frame.contains("Adjective");
     }
 
-    /** ***************************************************************
-     * @return the word part of 9-digit synset concatenated with a "-" and root of the verb
-     */
-    /*
-    Never used
-    private String getWordPart(String s) {
-
-        if (s.length() < 11) {
-            System.out.println("Error in getWordPart(): bad input: " + s);
-            return "";
-        }
-        return s.substring(10);
-    }
-     */
-
-    /** ***************************************************************
-     * @return the synset part of 9-digit synset concatenated with a "-" and root of the verb
-     */
-    /*
-    Never used
-    private String getSynsetPart(String s) {
-
-        if (s.length() < 11) {
-            System.out.println("Error in getSynsetPart(): bad input: " + s);
-            return "";
-        }
-        return s.substring(0,9);
-    }
-    */
 
     /** ***************************************************************
      *  TODO: Use WordPairFrequency an LLM to get the best adverb.
@@ -1929,7 +1769,7 @@ public class GenSimpTestData {
         List<String> words;
         do {
             do {
-                proc = lfeat.processes.getNext(); // processes is a RandSet
+                proc = lfeatsets.processes.getNext(); // processes is a RandSet
                 synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(proc);
                 if (synsets == null || synsets.isEmpty()) // keep searching for processes with equivalent synsets
                     if (debug) System.out.println("getVerb(): no equivalent synsets for: " + proc);
@@ -2043,10 +1883,10 @@ public class GenSimpTestData {
         String frame = null;
         int count = 0;
         do {
-            frame = lfeat.frames.get(rand.nextInt(lfeat.frames.size()));
+            frame = lfeatsets.frames.get(rand.nextInt(lfeatsets.frames.size()));
             count++;
-        } while (count < (lfeat.frames.size() * 2) && (StringUtil.emptyString(frame) || skipFrame(frame)));
-        if (count >= (lfeat.frames.size() * 2) || StringUtil.emptyString(frame) || skipFrame(frame))
+        } while (count < (lfeatsets.frames.size() * 2) && (StringUtil.emptyString(frame) || skipFrame(frame)));
+        if (count >= (lfeatsets.frames.size() * 2) || StringUtil.emptyString(frame) || skipFrame(frame))
             return;
         frame = stripTenseFromFrame(frame);
         if (debug) System.out.println("getFrame() set frame to: " + frame);
@@ -2071,12 +1911,12 @@ public class GenSimpTestData {
             else
                 english.insert(0,RandSet.listToEqualPairs(requests).getNext() + english);
         }
-        lfeat.frames = WordNetUtilities.getVerbFramesForWord(lfeat.verbSynset, lfeat.verb);
-        if (lfeat.frames == null || lfeat.frames.isEmpty()) {
+        lfeatsets.frames = WordNetUtilities.getVerbFramesForWord(lfeat.verbSynset, lfeat.verb);
+        if (lfeatsets.frames == null || lfeatsets.frames.isEmpty()) {
             if (debug) System.out.println("genProc() no frames for word: " + lfeat.verb);
             return;
         }
-        if (debug) System.out.println("genProc() frames: " + lfeat.frames);
+        if (debug) System.out.println("genProc() frames: " + lfeatsets.frames);
         if (debug) System.out.println("genProc() time: " + printTense(lfeat.tense));
         if (debug) System.out.println("genProc() synset: " + lfeat.verbSynset);
 
@@ -2146,7 +1986,7 @@ public class GenSimpTestData {
      *             "Attribute" or subAttribute, as a side effect.
      * @param name the name of the named human, as a side effect.
      *
-     * lfeat.prevHumans are names or roles from previous parts of the
+     * lfeatsets.prevHumans are names or roles from previous parts of the
      *                 sentence that should not be repeated, modified
      *                 as a side effect.
      */
@@ -2171,26 +2011,26 @@ public class GenSimpTestData {
             else if (val < 6) { // a role
                 socialRole = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
                 if (socialRole == null)
-                    socialRole = lfeat.socRoles.getNext();
+                    socialRole = lfeatsets.socRoles.getNext();
                 type.append(socialRole);
                 prop.append("(attribute ").append(var).append(" ").append(type).append(") ");
                 plural = new AVPair();
                 english.append(capital(nounFormFromTerm(type.toString(),plural,""))).append(" ");
-                if (lfeat.prevHumans.contains(type))  // don't allow the same name or role twice in a sentence
+                if (lfeatsets.prevHumans.contains(type))  // don't allow the same name or role twice in a sentence
                     found = true;
                 else
-                    lfeat.prevHumans.add(type.toString());
+                    lfeatsets.prevHumans.add(type.toString());
             }
             else {  // a named human
-                name.append(lfeat.humans.getNext());
+                name.append(lfeatsets.humans.getNext());
                 type.append("Human");
                 prop.append("(instance ").append(var).append(" Human) ");
                 prop.append("(names \"").append(name).append("\" ").append(var).append(") ");
                 english.append(name).append(" ");
-                if (lfeat.prevHumans.contains(name)) // don't allow the same name or role twice in a sentence
+                if (lfeatsets.prevHumans.contains(name)) // don't allow the same name or role twice in a sentence
                     found = true;
                 else
-                    lfeat.prevHumans.add(name.toString());
+                    lfeatsets.prevHumans.add(name.toString());
             }
         } while (found);
         if (!StringUtil.emptyString(lfeat.framePart) && lfeat.framePart.length() > 9 &&
@@ -2201,42 +2041,6 @@ public class GenSimpTestData {
         if (debug) System.out.println("GenSimpTestData.generateHuman(): name: " + name);
         if (debug) System.out.println("GenSimpTestData.generateHuman(): english: " + english);
     }
-
-    /** ***************************************************************
-     * Create action sentences from a subject, preposition, direct object,
-     * preposition and indirect object.  Indirect object and its preposition
-     * can be left out.  Actions can be past and future tense or
-     * wrapped in modals.
-     */
-    /*
-    Not used
-     */
-    /*
-    public void genWithRoles(StringBuilder english,
-                             StringBuilder prop,
-                             LFeatures lfeat) {
-
-        if (debug) System.out.println("GenSimpTestData.genWithRoles()");
-        int humCount = 0;
-        String role;
-        StringBuilder prop1, english1;
-        for (int i = 0; i < humanMax; i++) {
-            role = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
-            if (role == null)
-                role = lfeat.socRoles.getNext();
-            if (lfeat.subj.equals(role)) continue;
-            if (humCount++ > loopMax) break;
-            lfeat.subj = role;
-            int tryCount = 0;
-            do {
-                prop1 = new StringBuilder(prop);
-                english1 = new StringBuilder(english);
-                getVerb(lfeat,false);
-                genProc(english1, prop1, lfeat);
-            } while (tryCount++ < 10 && prop1.equals(""));
-        }
-    }
-    */
 
 
 
@@ -2249,9 +2053,9 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("GenSimpTestData.genWithHumans()");
         int humCount = 0;
-        lfeat.humans.clearReturns();
+        lfeatsets.humans.clearReturns();
         for (int i = 0; i < humanMax; i++) {
-            lfeat.subj = lfeat.humans.getNext();
+            lfeat.subj = lfeatsets.humans.getNext();
             if (lfeat.subj.equals(lfeat.attSubj)) continue;
             if (humCount++ > humanMax) break;
             int tryCount = 0;
@@ -2271,7 +2075,7 @@ public class GenSimpTestData {
     public void genAttitudes(LFeatures lfeat) {
 
         if (debug) System.out.println("GenSimpTestData.genAttitudes(): ");
-        if (debug) System.out.println("GenSimpTestData.genAttitudes(): human list size: " + lfeat.humans.size());
+        if (debug) System.out.println("GenSimpTestData.genAttitudes(): human list size: " + lfeatsets.humans.size());
         String that;
         int humCount = 0;
         HashSet<String> previous = new HashSet<>(); // humans appearing already in the sentence
@@ -2335,7 +2139,7 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("GenSimpTestData.genWithModals()");
         int humCount = 0;
-        AVPair modal = lfeat.modals.get(rand.nextInt(lfeat.modals.size()));
+        AVPair modal = lfeatsets.modals.get(rand.nextInt(lfeatsets.modals.size()));
         lfeat.modal = modal;
         lfeat.negatedModal = biasedBoolean(2,10); // make it negated one time out of 5
         StringBuilder englishNew = new StringBuilder(english);
@@ -2443,21 +2247,7 @@ public class GenSimpTestData {
         return true;
     }
 
-    /** ***************************************************************
-     * find attributes in SUMO that have equivalences to WordNet
-     */
-    /*
-    Never called
-    public void showAttributes() {
 
-        Set<String> attribs = kbLite.getAllInstances("Attribute");
-        List<String> synsets;
-        for (String s : attribs) {
-            synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(s);
-            if (debug) System.out.println("term and synset: " + s + ", " + synsets);
-        }
-    }
-     */
     /** ***************************************************************
      * generate NL paraphrases for all non-ground formulas
      */
@@ -2577,7 +2367,7 @@ public class GenSimpTestData {
                         System.out.println("noun form: " + gstd.nounFormFromTerm(word,new AVPair(),""));
                     if (WordNet.wn.exceptionNounPluralHash.containsKey(word))
                         System.out.println("noun form for sheep: " + WordNet.wn.exceptionNounPluralHash.get(word));
-                    LFeatures lfeat = new LFeatures(gstd);
+                    LFeatures lfeat = new LFeatures();
                     lfeat.frame = "Something ----s something Adjective/Noun";
                     lfeat.framePart = lfeat.frame;
                     System.out.println("frame: ");
@@ -2594,3 +2384,174 @@ public class GenSimpTestData {
         }
     }
 }
+
+// Unfinished methods, TODO:
+    /*
+        /** ***************************************************************
+         * Get frequency-sorted co-occurrences of adj/noun and adv/verb pairs
+         * TODO: Once Ollama generation is complete, this won't be necessary.
+         *
+    public static void initModifiers() {
+
+
+        String prefix = System.getenv("CORPORA") + File.separator + "COCA" + File.separator;
+        File n = new File(prefix + "nouns.txt");
+        File v = new File(prefix + "verbs.txt");
+        if (!n.exists() || !v.exists())
+            coca.pairFreq(prefix);
+
+        coca.freqNouns = PairMap.readMap(n.getAbsolutePath());
+        coca.freqVerbs = PairMap.readMap(v.getAbsolutePath());
+        COCA.filterModifiers(coca.freqVerbs,coca.freqNouns);
+
+
+    }
+    */
+
+/** ***************************************************************
+ * How many occurrences remaining in the frame of 'something' and 'someone'
+ */
+    /*
+    Never used
+    public int countSomes(String frame) {
+
+        String str = "frame";
+        String something = "something";
+        String somebody = "somebody";
+        return (str.split(something,-1).length-1) + (str.split(somebody,-1).length-1);
+    }
+
+     */
+
+
+/** ***************************************************************
+ */
+    /*
+       Never used
+    public List<String> getVerbFramesForTerm(String term) {
+
+        List<String> frames = new ArrayList<>();
+        List<String> synsets = WordNetUtilities.getEquivalentVerbSynsetsFromSUMO(term);
+        if (debug) System.out.println("GenSimpTestData.getVerbFramesForTerm(): synsets size: " +
+                synsets.size() + " for term: " + term);
+        if (synsets.isEmpty())
+            return frames;
+            //synsets = WordNetUtilities.getVerbSynsetsFromSUMO(term);
+        List<String> words;
+        List<String> newframes;
+        for (String s : synsets) {
+            words = WordNet.wn.getWordsFromSynset(s);
+            for (String w : words) {
+                newframes = WordNetUtilities.getVerbFramesForWord(s,w);
+                if (newframes != null)
+                    frames.addAll(newframes);
+            }
+        }
+        return frames;
+    }
+    */
+
+
+
+/** ***************************************************************
+ * @return the word part of 9-digit synset concatenated with a "-" and root of the verb
+ */
+    /*
+    Never used
+    private String getWordPart(String s) {
+
+        if (s.length() < 11) {
+            System.out.println("Error in getWordPart(): bad input: " + s);
+            return "";
+        }
+        return s.substring(10);
+    }
+     */
+
+/** ***************************************************************
+ * @return the synset part of 9-digit synset concatenated with a "-" and root of the verb
+ */
+    /*
+    Never used
+    private String getSynsetPart(String s) {
+
+        if (s.length() < 11) {
+            System.out.println("Error in getSynsetPart(): bad input: " + s);
+            return "";
+        }
+        return s.substring(0,9);
+    }
+    */
+
+
+/** ***************************************************************
+ * Create action sentences from a subject, preposition, direct object,
+ * preposition and indirect object.  Indirect object and its preposition
+ * can be left out.  Actions can be past and future tense or
+ * wrapped in modals.
+ */
+    /*
+    Not used
+     */
+    /*
+    public void genWithRoles(StringBuilder english,
+                             StringBuilder prop,
+                             LFeatures lfeat) {
+
+        if (debug) System.out.println("GenSimpTestData.genWithRoles()");
+        int humCount = 0;
+        String role;
+        StringBuilder prop1, english1;
+        for (int i = 0; i < humanMax; i++) {
+            role = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
+            if (role == null)
+                role = lfeatsets.socRoles.getNext();
+            if (lfeat.subj.equals(role)) continue;
+            if (humCount++ > loopMax) break;
+            lfeat.subj = role;
+            int tryCount = 0;
+            do {
+                prop1 = new StringBuilder(prop);
+                english1 = new StringBuilder(english);
+                getVerb(lfeat,false);
+                genProc(english1, prop1, lfeat);
+            } while (tryCount++ < 10 && prop1.equals(""));
+        }
+    }
+    */
+
+
+/** ***************************************************************
+ * find attributes in SUMO that have equivalences to WordNet
+ */
+    /*
+    Never called
+    public void showAttributes() {
+
+        Set<String> attribs = kbLite.getAllInstances("Attribute");
+        List<String> synsets;
+        for (String s : attribs) {
+            synsets = WordNetUtilities.getEquivalentSynsetsFromSUMO(s);
+            if (debug) System.out.println("term and synset: " + s + ", " + synsets);
+        }
+    }
+     */
+
+
+/** ***************************************************************
+ * estimate the number of sentences that will be produced
+
+ public static long estimateSentCount(LFeature lfeat) {
+
+ long count = 2; // include negation
+ if (!suppress.contains("attitude"))
+ count = count * attMax;
+ if (!suppress.contains("modal"))
+ count = count * modalMax * 2; //include negation
+ count = count * (humanMax + lfeatsets.socRoles.size());
+ count = count * loopMax; // lfeat.intProc.size();
+ count = count * loopMax; // lfeat.direct.size();
+ count = count * loopMax; // lfeat.indirect.size();
+ return count;
+ }
+ */
