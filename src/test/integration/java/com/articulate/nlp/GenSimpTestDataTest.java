@@ -34,8 +34,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         GenSimpTestData.initNumbers();
-        gstd.genProcTable();
-        lfeat = new LFeatures(gstd);
+        lfeat = new LFeatures();
         String fname = "test";
         FileWriter fweng;
         FileWriter fwlog;
@@ -108,8 +107,8 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         StringBuilder english = new StringBuilder();
         AVPair avp = new AVPair();
         System.out.println("testCapability(): (proc,role,obj): " + proc + ", " + role + ", " + obj);
-        if (capabilities.containsKey(proc))
-            System.out.println("testCapability(): capabilities: " + capabilities.get(proc));
+        if (gstd.lfeatsets.capabilities.containsKey(proc))
+            System.out.println("testCapability(): capabilities: " + gstd.lfeatsets.capabilities.get(proc));
         else
             System.out.println("testCapability(): proc not found");
         boolean actual = gstd.checkCapabilities(proc,role,obj);
@@ -199,7 +198,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println();
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testSell()");
-        LFeatures lfeat = new LFeatures(gstd);
+        LFeatures lfeat = new LFeatures();
         lfeat.testMode = true;
         lfeat.subjName = "John";
         lfeat.subj = "Human";
@@ -228,7 +227,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println();
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testTaste()");
-        LFeatures lfeat = new LFeatures(gstd);
+        LFeatures lfeat = new LFeatures();
         lfeat.testMode = true;
         lfeat.subjName = "CollegeSenior";
         lfeat.subj = "Human";
@@ -256,7 +255,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println();
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testVoteFor()");
-        LFeatures lfeat = new LFeatures(gstd);
+        LFeatures lfeat = new LFeatures();
         lfeat.testMode = true;
         lfeat.subjName = "John";
         lfeat.subj = "Human";

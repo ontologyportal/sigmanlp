@@ -141,7 +141,7 @@ public class GenAdjectives {
         boolean useTense = true;
         Lists val = Lists.EMO;
         for (int i = 0; i < gstd.sentMax; i++) {
-            LFeatures lfeat = new LFeatures(gstd);
+            LFeatures lfeat = new LFeatures();
             lfeat.tense = gstd.rand.nextInt(3) * 2; // PAST = 0; PRESENT = 2; FUTURE = 4
             lfeat.negatedBody = gstd.rand.nextBoolean();
 

@@ -11,6 +11,7 @@ public class LFeatures {
 
     private static final boolean debug = false;
 
+
     public boolean testMode = false;
 
     public boolean attNeg = false; // for propositional attitudes
@@ -34,7 +35,6 @@ public class LFeatures {
     public boolean subjectPlural = false;
     public int subjectCount = 1;
 
-    public static boolean useCapabilities = true; // include process types from capabilities list
 
     public String frame = null; // the particular verb frame under consideration.
     public String framePart = null; // the frame that gets "consumed" during processing

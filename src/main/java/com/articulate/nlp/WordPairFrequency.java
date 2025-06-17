@@ -96,11 +96,11 @@ public class WordPairFrequency {
      * Gets an Object from a Subject (and verb). The intersection of the
      * Subject list and Object list are calculated, and a random term is selected.
      */
-    public static String getNounFromNounAndVerb(LFeatures lfeat) {
+    public static String getNounFromNounAndVerb(LFeatureSets lfeatset, LFeatures lfeat) {
 
         if (debug) System.out.println("WordPairFrequency.getNounFromNoun()" + lfeat.subj + " " + lfeat.verb);
-        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
-        if (!dbExists() || lfeat.subj == null) { return lfeat.objects.getNext(); }
+        if (WORDPAIR_OFF) { return lfeatset.objects.getNext(); }
+        if (!dbExists() || lfeat.subj == null) { return lfeatset.objects.getNext(); }
         ArrayList<AVPair> subjSet = WordPairFrequency.getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun);
         ArrayList<AVPair> objSet = WordPairFrequency.getWordPairFrequencies(lfeat.subj, WordType.noun, WordType.noun);
         ArrayList<AVPair> mergedList = new ArrayList();
@@ -128,18 +128,18 @@ public class WordPairFrequency {
                 }
             }
         }
-        return lfeat.objects.getNext();
+        return lfeatset.objects.getNext();
     }
 
     /** ***************************************************************
      * Gets a noun from a particular class given a verb.
      * classname could be "BodyPart" or "SocialRole" for example.
      */
-    public static String getNounInClassFromVerb(LFeatures lfeat, KBLite kb, String className) {
+    public static String getNounInClassFromVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kb, String className) {
 
         if (debug) System.out.println("WordPairFrequency.getNounInClassFromVerb() - className: " + className);
-        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
-        if (!dbExists()) { return lfeat.objects.getNext(); }
+        if (WORDPAIR_OFF) { return lfeatset.objects.getNext(); }
+        if (!dbExists()) { return lfeatset.objects.getNext(); }
         ArrayList<AVPair> subjList = getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun);
         ArrayList<AVPair> instanceList = new ArrayList();
         Set<String> synsetOfTerm;
@@ -168,17 +168,17 @@ public class WordPairFrequency {
     /** ***************************************************************
      * Given a verb, gets an associated random Noun from that Verb.
      */
-    public static String getNounFromVerb(LFeatures lfeat) {
+    public static String getNounFromVerb(LFeatureSets lfeatset, LFeatures lfeat) {
 
         if (debug) System.out.println("WordPairFrequency.getNounFromVerb() ");
-        if (WORDPAIR_OFF) { return lfeat.objects.getNext(); }
-        if (!dbExists()) { return lfeat.objects.getNext(); }
+        if (WORDPAIR_OFF) { return lfeatset.objects.getNext(); }
+        if (!dbExists()) { return lfeatset.objects.getNext(); }
         RandSet subjSet = RandSet.create(getWordPairFrequencies(lfeat.verb, WordType.verb, WordType.noun));
         String term = subjSet.getNext();
         Set<String> synsetOfTerm = WordNet.wn.getSynsetsFromWord(term);
         String noun = GenUtils.getBestSUMOMapping(synsetOfTerm);
         if (debug) System.out.println("NounFromVerb - noun chosen: " + noun);
-        return (noun != null) ? noun : lfeat.objects.getNext();
+        return (noun != null) ? noun : lfeatset.objects.getNext();
     }
 
     /** ***************************************************************

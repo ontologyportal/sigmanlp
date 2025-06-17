@@ -1,14 +1,39 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.utils.AVPair;
-
+import com.articulate.sigma.DB;
 import java.io.File;
+import com.articulate.sigma.Formula;
+import com.articulate.sigma.FormulaUtil;
+import com.articulate.sigma.wordNet.WordNetUtilities;
+import com.articulate.sigma.wordNet.WordNet;
 import java.util.*;
 
 /**
  * **************************************************************
  */
 public class LFeatureSets {
+
+    public boolean debug = false;
+    public static boolean useCapabilities = true; // include process types from capabilities list
+
+    public class Capability {
+
+        public boolean negated = false; // not a capability
+        public String proc = null; // the process or verb
+        public String object = null; // SUMO term for direct or indirect object type
+        public String caserole = null; // the CaseRole
+        public String prep = null; // the preposition to use
+        public boolean must = false; // must have the following CaseRole
+        public boolean mustNot = false; // must not have the following CaseRole
+        public boolean can = false; // can have the following CaseRole
+        public String fromParent = null; // which parent Process is the info inherited from, if any
+        @Override
+        public String toString() {
+            return proc + " : " + object + " : " + caserole + " : " + negated;
+        }
+    }
+    public static final Map<String,Set<Capability>> capabilities = new HashMap<>();
 
     public List<AVPair> modals = null;
     public Map<String, String> genders = null;
@@ -19,13 +44,16 @@ public class LFeatureSets {
     public Set<String> prevHumans = new HashSet<>();
     public RandSet processes = null;
     public List<String> frames = null;  // verb frames for the current process type
+    private KBLite kbLite = null;
 
 
-    public LFeatureSets(KBLite kbLite) {
-
+    public LFeatureSets(KBLite kbLiteParam) {
+        WordNet.initOnce();
+        kbLite = kbLiteParam;
         //  get capabilities from axioms like
         //  (=> (instance ?GUN Gun) (capability Shooting instrument ?GUN))
         // indirect = collectCapabilities(); // TODO: need to restore and combine this filter with verb frames
+        genProcTable();
         if (debug) System.out.println("LFeatureSets(): collect terms");
         genders = readHumans();
         addUnknownsHumansOrgs(genders);
@@ -76,7 +104,7 @@ public class LFeatureSets {
     /** ***************************************************************
      * generate new SUMO termFormat and instance statements for names
      */
-    public static Map<String,String> readHumans() {
+    public Map<String,String> readHumans() {
 
         Map<String,String> result = new HashMap<>();
         List<List<String>> fn = DB.readSpreadsheet(kbLite.kbDir +
@@ -190,5 +218,125 @@ public class LFeatureSets {
         return avpList;
     }
 
+    /** ***************************************************************
+     * negated, proc, object, caserole, prep, mustTrans, mustNotTrans, canTrans
+     */
+    public void genProcTable() {
+
+        System.out.println("GenSimpTestData.genProcTable(): start");
+        Collection<Capability> caps = collectCapabilities();
+        extendCapabilities(caps);
+    }
+
+    /** ***************************************************************
+     * generate subclasses for each capability
+     */
+    public void extendCapabilities(Collection<Capability> caps) {
+
+        Set<Capability> hs;
+        Set<String> childClasses;
+        for (Capability c : caps) {
+            childClasses = kbLite.getChildClasses(c.proc);
+            if (childClasses != null) {
+                childClasses.add(c.proc); // add the original class
+                for (String cls : childClasses) { // add each of the subclasses
+                    c.proc = cls;
+                    hs = new HashSet<>();
+                    if (capabilities.containsKey(c.proc))
+                        hs = capabilities.get(c.proc);
+                    hs.add(c);
+                    capabilities.put(cls, hs);
+                }
+            }
+            else {
+                hs = new HashSet<>();
+                if (capabilities.containsKey(c.proc))
+                    hs = capabilities.get(c.proc);
+                hs.add(c);
+                capabilities.put(c.proc, hs);
+            }
+        }
+    }
+
+    /** ***************************************************************
+     * Collect capability axioms of a specific form: Antecedent must be
+     * a single (instance ?X ?Y) literal.  Consequent must be a single
+     * (capability ?A ?B ?X) literal.  Returns ?Y - class of the thing,
+     * ?A - the Process type and ?B the role that ?Y plays in the process.
+     * Also accept (requiredRole ?A ?B ?C) and (prohibitedRole ?A ?B ?C)
+     * forms
+     * @return Capability objects
+     */
+    public Set<Capability> collectCapabilities() {
+
+        Set<Capability> result = new HashSet<>();
+        List<Formula> forms2 = kbLite.ask("arg",0,"requiredRole");
+        System.out.println("collectCapabilities(): requiredRoles: " + forms2);
+        Capability p;
+        for (Formula f : forms2) {
+            //System.out.println("collectCapabilities(): form: " + f);
+            p = this.new Capability();
+            p.proc = f.getStringArgument(1);
+            p.caserole = f.getStringArgument(2);
+            p.object = f.getStringArgument(3);
+            p.must = true;
+            result.add(p);
+        }
+
+        List<Formula> forms3 = kbLite.ask("arg",0,"prohibitedRole");
+        for (Formula f : forms3) {
+            //System.out.println("collectCapabilities(): form: " + f);
+            p = this.new Capability();
+            p.proc = f.getStringArgument(1);
+            p.caserole = f.getStringArgument(2);
+            p.object = f.getStringArgument(3);
+            p.mustNot = true;
+            result.add(p);
+        }
+
+        List<Formula> forms = kbLite.ask("cons",0,"capability");
+        String ant, antClass, cons, kind, consClass, rel;
+        Formula fant, fcons, fneg;
+        for (Formula f : forms) {
+            //System.out.println("collectCapabilities(): form: " + f);
+            ant = FormulaUtil.antecedent(f);
+            fant = new Formula(ant);
+            if (fant.isSimpleClause(null) && fant.car().equals("instance")) {
+                antClass = fant.getStringArgument(2); // the thing that plays a role
+                cons = FormulaUtil.consequent(f);
+                fcons = new Formula(cons);
+                kind = fcons.getStringArgument(0); // capability or requiredRole
+                if (fcons.isSimpleClause(null)) {
+                    consClass = fcons.getStringArgument(1);  // the process type
+                    rel = fcons.getStringArgument(2);  // the role it plays
+                    p = this.new Capability();
+                    p.proc = consClass;
+                    p.caserole = rel;
+                    p.object = antClass;
+                    if (forms2.contains(f))
+                        p.must = true;
+                    else
+                        p.can = true;
+                    result.add(p);
+                }
+                else if (fcons.isSimpleNegatedClause(null)) {
+                    fneg = fcons.getArgument(1);
+                    consClass = fneg.getStringArgument(1);  // the process type
+                    rel = fneg.getStringArgument(2);  // the role it plays
+                    p = this.new Capability();
+                    p.proc = consClass;
+                    p.caserole = rel;
+                    p.object = antClass;
+                    if (forms2.contains(f))
+                        p.must = true;
+                    else
+                        p.can = true;
+                    p.negated = true;
+                    result.add(p);
+                }
+            }
+        }
+        return result;
+    }
 
 }

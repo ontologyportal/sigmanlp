@@ -75,8 +75,6 @@ public class GenSimpTestData {
     public static final Set<String> suppress = new HashSet<>( // forms to suppress, usually for testing
             Arrays.asList());
 
-    public static final Map<String,Set<Capability>> capabilities = new HashMap<>();
-
     public static PrintWriter englishFile = null; //generated English sentences
     public static PrintWriter logicFile = null;   //generated logic sentences, one per line,
                                                   // NL/logic should be on same line in the different files
@@ -123,14 +121,14 @@ public class GenSimpTestData {
 
     private void initGSTD() {
 
-        lfeatset = new LFeatureSets(kbLite);
+        lfeatsets = new LFeatureSets(kbLite);
         initNumbers();
         initRequests();
         initAttitudes();
         initOthers();
         initPrepPhrase();
         initEndings();
-        genProcTable();
+        lfeatsets.genProcTable();
     }
 
     /** ***************************************************************
@@ -260,8 +258,8 @@ public class GenSimpTestData {
     public static void generateAllHumans() {
 
         String g;
-        for (String firstName : humans.keySet()) {
-            g = humans.get(firstName);
+        for (String firstName : lfeatsets.genders.keySet()) {
+            g = lfeatsets.genders.get(firstName);
             if (firstName != null) {
                 String gender = "Male";
                 if (g.toUpperCase().equals("F"))
@@ -276,7 +274,7 @@ public class GenSimpTestData {
     /** ***************************************************************
      * generate new SUMO statements for names
      */
-    public String genSUMOForHuman(LFeatureSet lfeatset, String name, String var) {
+    public String genSUMOForHuman(String name, String var) {
 
         StringBuilder sb = new StringBuilder();
         if (name != null) {
@@ -411,86 +409,6 @@ public class GenSimpTestData {
         }
     }
 
-    /** ***************************************************************
-     * Collect capability axioms of a specific form: Antecedent must be
-     * a single (instance ?X ?Y) literal.  Consequent must be a single
-     * (capability ?A ?B ?X) literal.  Returns ?Y - class of the thing,
-     * ?A - the Process type and ?B the role that ?Y plays in the process.
-     * Also accept (requiredRole ?A ?B ?C) and (prohibitedRole ?A ?B ?C)
-     * forms
-     * @return Capability objects
-     */
-    public Set<Capability> collectCapabilities() {
-
-        Set<Capability> result = new HashSet<>();
-        List<Formula> forms2 = kbLite.ask("arg",0,"requiredRole");
-        System.out.println("collectCapabilities(): requiredRoles: " + forms2);
-        Capability p;
-        for (Formula f : forms2) {
-            //System.out.println("collectCapabilities(): form: " + f);
-            p = this.new Capability();
-            p.proc = f.getStringArgument(1);
-            p.caserole = f.getStringArgument(2);
-            p.object = f.getStringArgument(3);
-            p.must = true;
-            result.add(p);
-        }
-
-        List<Formula> forms3 = kbLite.ask("arg",0,"prohibitedRole");
-        for (Formula f : forms3) {
-            //System.out.println("collectCapabilities(): form: " + f);
-            p = this.new Capability();
-            p.proc = f.getStringArgument(1);
-            p.caserole = f.getStringArgument(2);
-            p.object = f.getStringArgument(3);
-            p.mustNot = true;
-            result.add(p);
-        }
-
-        List<Formula> forms = kbLite.ask("cons",0,"capability");
-        String ant, antClass, cons, kind, consClass, rel;
-        Formula fant, fcons, fneg;
-        for (Formula f : forms) {
-            //System.out.println("collectCapabilities(): form: " + f);
-            ant = FormulaUtil.antecedent(f);
-            fant = new Formula(ant);
-            if (fant.isSimpleClause(null) && fant.car().equals("instance")) {
-                antClass = fant.getStringArgument(2); // the thing that plays a role
-                cons = FormulaUtil.consequent(f);
-                fcons = new Formula(cons);
-                kind = fcons.getStringArgument(0); // capability or requiredRole
-                if (fcons.isSimpleClause(null)) {
-                    consClass = fcons.getStringArgument(1);  // the process type
-                    rel = fcons.getStringArgument(2);  // the role it plays
-                    p = this.new Capability();
-                    p.proc = consClass;
-                    p.caserole = rel;
-                    p.object = antClass;
-                    if (forms2.contains(f))
-                        p.must = true;
-                    else
-                        p.can = true;
-                    result.add(p);
-                }
-                else if (fcons.isSimpleNegatedClause(null)) {
-                    fneg = fcons.getArgument(1);
-                    consClass = fneg.getStringArgument(1);  // the process type
-                    rel = fneg.getStringArgument(2);  // the role it plays
-                    p = this.new Capability();
-                    p.proc = consClass;
-                    p.caserole = rel;
-                    p.object = antClass;
-                    if (forms2.contains(f))
-                        p.must = true;
-                    else
-                        p.can = true;
-                    p.negated = true;
-                    result.add(p);
-                }
-            }
-        }
-        return result;
-    }
 
     /** ***************************************************************
      * @return modifications to the parameter as a side effect
@@ -533,25 +451,6 @@ public class GenSimpTestData {
         }
     }
 
-    /** ***************************************************************
-     */
-    public class Capability {
-
-        public boolean negated = false; // not a capability
-        public String proc = null; // the process or verb
-        public String object = null; // SUMO term for direct or indirect object type
-        public String caserole = null; // the CaseRole
-        public String prep = null; // the preposition to use
-        public boolean must = false; // must have the following CaseRole
-        public boolean mustNot = false; // must not have the following CaseRole
-        public boolean can = false; // can have the following CaseRole
-        public String fromParent = null; // which parent Process is the info inherited from, if any
-        @Override
-        public String toString() {
-            return proc + " : " + object + " : " + caserole + " : " + negated;
-        }
-    }
-
 
     /** ***************************************************************
      * Create action sentences from a subject, preposition, direct object,
@@ -564,7 +463,7 @@ public class GenSimpTestData {
         System.out.println("GenSimpTestData.runGenSentence(): start");
         System.out.println("GenSimpTestData.runGenSentence(): finished loading KBs");
 
-        LFeatureSet lfeat = new LFeatureSet(this);
+        LFeatures lfeat = new LFeatures();
         //System.out.println(lfeatsets.processes);
 //        List<String> terms = new ArrayList<>();
         //if (debug) System.out.println("GenSimpTestData.runGenSentence():  lfeat.direct: " + lfeat.direct);
@@ -593,7 +492,7 @@ public class GenSimpTestData {
         //for (Preposition p : lfeat.direct)
         //    terms.add(p.procType);
         numbers.parallelStream().forEach(number -> {
-            LFeatures lfeat = new LFeatures(this);
+            LFeatures lfeat = new LFeatures();
             genAttitudes(lfeat);
         });
     }
@@ -973,7 +872,7 @@ public class GenSimpTestData {
      */
     private void addBodyPart(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
-        String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "BodyPart");
+        String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "BodyPart");
         if (bodyPart == null)
             bodyPart = lfeatsets.bodyParts.getNext();
         AVPair plural = new AVPair();
@@ -1102,7 +1001,7 @@ public class GenSimpTestData {
         }
         else if (lfeat.framePart.startsWith("Something")) {
             // Thompson START
-            String term = WordPairFrequency.getNounFromVerb(lfeat);
+            String term = WordPairFrequency.getNounFromVerb(lfeatsets, lfeat);
             /*
             Original code:
             String term = lfeatsets.objects.getNext();
@@ -1267,7 +1166,7 @@ public class GenSimpTestData {
                 lfeat.directType = "Human";
             }
             else {
-                lfeat.directType = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
+                lfeat.directType = WordPairFrequency.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "SocialRole");
                 if (lfeat.directType == null)
                     lfeat.directType = lfeatsets.socRoles.getNext();
             }
@@ -1281,7 +1180,7 @@ public class GenSimpTestData {
         }
         else if (lfeat.framePart.trim().startsWith("something") || lfeat.framePart.trim().startsWith("on something")) {
             // Thompson Start
-            lfeat.directType = WordPairFrequency.getNounFromNounAndVerb(lfeat);
+            lfeat.directType = WordPairFrequency.getNounFromNounAndVerb(lfeatsets, lfeat);
             /* Original code
             lfeat.directType = lfeatsets.objects.getNext();
             */
@@ -1365,7 +1264,7 @@ public class GenSimpTestData {
                     (lfeat.directType.equals("Human") && lfeat.directName.equals(lfeat.subjName)))
                 other = RandSet.listToEqualPairs(others).getNext() + " ";
         if (lfeat.directType != null && lfeat.directType.equals("Human"))
-            prop.append(genSUMOForHuman(lfeat, lfeat.directName, "?DO"));
+            prop.append(genSUMOForHuman(lfeat.directName, "?DO"));
         AVPair plural = new AVPair();
         if (!"".equals(lfeat.secondVerbType)) {
             addSecondVerb(english,prop,lfeat);
@@ -1532,7 +1431,7 @@ public class GenSimpTestData {
                     prop.append("(instance ?IO ").append(lfeat.indirectType).append(") ");
             }
             if (lfeat.framePart.contains("somebody"))
-                prop.append(genSUMOForHuman(lfeat,lfeat.indirectName,"?IO"));
+                prop.append(genSUMOForHuman(lfeat.indirectName,"?IO"));
             else
                 prop.append("(instance ?IO ").append(lfeat.indirectType).append(")");
 
@@ -1677,13 +1576,13 @@ public class GenSimpTestData {
                 lfeat.indirectType = "Human";
             }
             else {
-                lfeat.indirectType = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
+                lfeat.indirectType = WordPairFrequency.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "SocialRole");
                 if (lfeat.indirectType == null)
                     lfeat.indirectType = lfeatsets.socRoles.getNext();
             }
         }
         else if (lfeat.framePart.endsWith("something")) {
-            lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeat);
+            lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeatsets, lfeat);
         }
         if (debug) System.out.println("getIndirect(): type: " + lfeat.indirectType);
     }
@@ -1946,7 +1845,7 @@ public class GenSimpTestData {
         lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
         int indCount = 0;
         boolean onceWithoutInd = false;
-        lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeat);
+        lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeatsets, lfeat);
         if (lfeat.negatedBody)
             prop.append("(not ");
         prop.append("(exists (?H ?P ?DO ?IO) (and ");
@@ -2009,7 +1908,7 @@ public class GenSimpTestData {
                 if (debug) System.out.println("GenSimpTestData.generateHuman(): generated a You (understood)");
             }
             else if (val < 6) { // a role
-                socialRole = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
+                socialRole = WordPairFrequency.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "SocialRole");
                 if (socialRole == null)
                     socialRole = lfeatsets.socRoles.getNext();
                 type.append(socialRole);
@@ -2166,45 +2065,7 @@ public class GenSimpTestData {
         } while (tryCount++ < 10 && prop1.toString().equals(""));
     }
 
-    /** ***************************************************************
-     * negated, proc, object, caserole, prep, mustTrans, mustNotTrans, canTrans
-     */
-    public void genProcTable() {
 
-        System.out.println("GenSimpTestData.genProcTable(): start");
-        Collection<Capability> caps = collectCapabilities();
-        extendCapabilities(caps);
-    }
-
-    /** ***************************************************************
-     * generate subclasses for each capability
-     */
-    public void extendCapabilities(Collection<Capability> caps) {
-
-        Set<Capability> hs;
-        Set<String> childClasses;
-        for (Capability c : caps) {
-            childClasses = kbLite.getChildClasses(c.proc);
-            if (childClasses != null) {
-                childClasses.add(c.proc); // add the original class
-                for (String cls : childClasses) { // add each of the subclasses
-                    c.proc = cls;
-                    hs = new HashSet<>();
-                    if (capabilities.containsKey(c.proc))
-                        hs = capabilities.get(c.proc);
-                    hs.add(c);
-                    capabilities.put(cls, hs);
-                }
-            }
-            else {
-                hs = new HashSet<>();
-                if (capabilities.containsKey(c.proc))
-                    hs = capabilities.get(c.proc);
-                hs.add(c);
-                capabilities.put(c.proc, hs);
-            }
-        }
-    }
 
     /** ***************************************************************
      * negated, proc, object, caserole, prep, mustTrans, mustNotTrans, canTrans
@@ -2214,10 +2075,10 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("checkCapabilities(): starting");
         if (debug) System.out.println("checkCapabilities(): (proc,role,obj): " + proc + ", " + role + ", " + obj);
-        if (capabilities.containsKey(proc)) {
-            if (debug) System.out.println("checkCapabilities(): found capabilities: " + capabilities.get(proc));
-            Set<Capability> caps = capabilities.get(proc);
-            for (Capability c : caps) {
+        if (lfeatsets.capabilities.containsKey(proc)) {
+            if (debug) System.out.println("checkCapabilities(): found capabilities: " + lfeatsets.capabilities.get(proc));
+            Set<LFeatureSets.Capability> caps = lfeatsets.capabilities.get(proc);
+            for (LFeatureSets.Capability c : caps) {
                 if (c.caserole.equals(role) && (c.object.equals(obj) || kbLite.isSubclass(obj,c.object)) && !c.negated && c.must) {
                     if (debug) System.out.println("checkCapabilities(): approved");
                     return true;
@@ -2503,7 +2364,7 @@ public class GenSimpTestData {
         String role;
         StringBuilder prop1, english1;
         for (int i = 0; i < humanMax; i++) {
-            role = WordPairFrequency.getNounInClassFromVerb(lfeat, kbLite, "SocialRole");
+            role = WordPairFrequency.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "SocialRole");
             if (role == null)
                 role = lfeatsets.socRoles.getNext();
             if (lfeat.subj.equals(role)) continue;
@@ -2541,7 +2402,7 @@ public class GenSimpTestData {
 /** ***************************************************************
  * estimate the number of sentences that will be produced
 
- public static long estimateSentCount(LFeature lfeat) {
+ public static long estimateSentCount(LFeatures lfeat) {
 
  long count = 2; // include negation
  if (!suppress.contains("attitude"))

@@ -54,7 +54,7 @@ public class GenAdjectivesOllama {
         init(args);
         int generated = 0;
         while (generated < numToGenerate) {
-            LFeatures lfeat = new LFeatures(gstd);
+            LFeatures lfeat = new LFeatures();
             lfeat.tense = gstd.rand.nextInt(3) * 2; // PAST = 0; PRESENT = 2; FUTURE = 4
             lfeat.negatedBody = gstd.rand.nextBoolean();
             // Subject is either a role (e.g. nurse) or a named human (e.g. "Bill").
