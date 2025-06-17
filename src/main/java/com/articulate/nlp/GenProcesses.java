@@ -20,6 +20,7 @@ package com.articulate.nlp;
  */
 
 
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -66,13 +67,13 @@ public class GenProcesses {
         }
     }
 
-
     // Queues for each pipeline stage
     private static final BlockingQueue<SentenceData> Vqueue = new LinkedBlockingQueue<>();
     private static final BlockingQueue<SentenceData> SVqueue = new LinkedBlockingQueue<>();
     private static final BlockingQueue<SentenceData> SVOqueue = new LinkedBlockingQueue<>();
     private static final BlockingQueue<SentenceData> SVOIOqueue = new LinkedBlockingQueue<>();
 
+    public static KBLite kbLite;
     private static String outputFileEnglish;
     private static String outputFileLogic;
     private static int numSentences;
@@ -83,7 +84,9 @@ public class GenProcesses {
     private static volatile boolean monitoring = true;
     private static GenerationMode generationMode;
 
-
+    private static Set<String> processesSet;
+    private static Set<String> AutonomousAgentSet;
+    private static Set<String> EntitySet;
 
 
     /**
@@ -113,6 +116,9 @@ public class GenProcesses {
             System.out.println("Available generation modes: RANDOM, WORDFREQ, OLLAMA, FRAMENETLITE_RAND, FRAMENETLITE_WORDFREQ, FRAMENETLITE_OLLAMA");
             return false;
         }
+        kbLite = new KBLite("SUMO");
+        processesSet = kbLite.getChildClasses("Process");
+
         GenUtils.createFileIfDoesNotExists(outputFileEnglish);
         GenUtils.createFileIfDoesNotExists(outputFileLogic);
         return true;

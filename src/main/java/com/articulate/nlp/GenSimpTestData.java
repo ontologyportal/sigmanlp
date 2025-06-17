@@ -400,16 +400,6 @@ public class GenSimpTestData {
         if (debug) System.out.println();
     }
 
-    /** ***************************************************************
-     */
-    public static void testProgressPrint() {
-
-        estSentCount = 1000000;
-        do {
-            progressPrint();
-            sentCount++;
-        } while (true);
-    }
 
     /** ***************************************************************
      */
@@ -623,6 +613,7 @@ public class GenSimpTestData {
      *          derived from the equivalent synsets the terms map to. Attribute
      *          of each AVPair is a SUMO term.  If we didn't use the log
      *          of frequency we'd practically just get "to be" every time
+     *          Used in LFeatures.java
      */
     public List<AVPair> findWordFreq(Collection<String> terms) {
 
@@ -1357,6 +1348,8 @@ public class GenSimpTestData {
     /** ***************************************************************
      * How many occurrences remaining in the frame of 'something' and 'someone'
      */
+    /*
+    Never used
     public int countSomes(String frame) {
 
         String str = "frame";
@@ -1365,6 +1358,7 @@ public class GenSimpTestData {
         return (str.split(something,-1).length-1) + (str.split(somebody,-1).length-1);
     }
 
+     */
     /** ***************************************************************
      * Get a person or thing.  Fill in directName, directtype, preposition
      * as a side effect in lfeat
@@ -1777,6 +1771,8 @@ public class GenSimpTestData {
 
     /** ***************************************************************
      */
+    /*
+       Never used
     public List<String> getVerbFramesForTerm(String term) {
 
         List<String> frames = new ArrayList<>();
@@ -1798,6 +1794,7 @@ public class GenSimpTestData {
         }
         return frames;
     }
+    */
 
     /** ***************************************************************
      * Get a person or thing
@@ -1843,6 +1840,8 @@ public class GenSimpTestData {
     /** ***************************************************************
      * @return the word part of 9-digit synset concatenated with a "-" and root of the verb
      */
+    /*
+    Never used
     private String getWordPart(String s) {
 
         if (s.length() < 11) {
@@ -1851,10 +1850,13 @@ public class GenSimpTestData {
         }
         return s.substring(10);
     }
+     */
 
     /** ***************************************************************
      * @return the synset part of 9-digit synset concatenated with a "-" and root of the verb
      */
+    /*
+    Never used
     private String getSynsetPart(String s) {
 
         if (s.length() < 11) {
@@ -1863,6 +1865,7 @@ public class GenSimpTestData {
         }
         return s.substring(0,9);
     }
+    */
 
     /** ***************************************************************
      *  TODO: Use WordPairFrequency an LLM to get the best adverb.
@@ -2205,6 +2208,10 @@ public class GenSimpTestData {
      * can be left out.  Actions can be past and future tense or
      * wrapped in modals.
      */
+    /*
+    Not used
+     */
+    /*
     public void genWithRoles(StringBuilder english,
                              StringBuilder prop,
                              LFeatures lfeat) {
@@ -2229,6 +2236,10 @@ public class GenSimpTestData {
             } while (tryCount++ < 10 && prop1.equals(""));
         }
     }
+    */
+
+
+
     /** ***************************************************************
      */
     public void genWithHumans(StringBuilder english,
@@ -2435,6 +2446,8 @@ public class GenSimpTestData {
     /** ***************************************************************
      * find attributes in SUMO that have equivalences to WordNet
      */
+    /*
+    Never called
     public void showAttributes() {
 
         Set<String> attribs = kbLite.getAllInstances("Attribute");
@@ -2444,6 +2457,7 @@ public class GenSimpTestData {
             if (debug) System.out.println("term and synset: " + s + ", " + synsets);
         }
     }
+     */
     /** ***************************************************************
      * generate NL paraphrases for all non-ground formulas
      */
@@ -2554,7 +2568,6 @@ public class GenSimpTestData {
 
                     //testPutting();
                     //testToy();
-                    //testProgressPrint();
                     GenSimpTestData gstd = new GenSimpTestData();
                     KBmanager.getMgr().initializeOnce();
                     kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
