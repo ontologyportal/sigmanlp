@@ -59,15 +59,6 @@ public class GenSimpTestData {
 
     public static final Random rand = new Random();
 
-    public static final int NOTIME = -1;
-    public static final int PAST = 0;         // spoke, docked
-    public static final int PASTPROG = 1;     // was speaking, was docking
-    public static final int PRESENT = 2;      // speaks, docks
-    public static final int PROGRESSIVE = 3;  // is speaking, is docking
-    public static final int FUTURE = 4;       // will speak, will dock
-    public static final int FUTUREPROG = 5;   // will be speaking, will be docking
-    public static final int IMPERATIVE = 6;   // treat imperatives like a tense
-
     public static final List<Word> attitudes = new ArrayList<>();
     public static final Set<String> suppress = new HashSet<>( // forms to suppress, usually for testing
             Arrays.asList());
@@ -478,21 +469,12 @@ public class GenSimpTestData {
                 english1 = new StringBuilder(english);
                 prop1 = new StringBuilder(prop);
                 getVerb(lfeat,false);
+                progressPrint();
                 genProc(english1, prop1, lfeat);
             } while (tryCount++ < 10 && prop1.toString().equals(""));
         }
     }
 
-
-
-    /** ***************************************************************
-     * return true if the tense is past progressive, present progressive,
-     * or future progressive
-     */
-    public boolean isProgressive(int time) {
-
-        return time == PROGRESSIVE || time == PASTPROG || time == FUTUREPROG;
-    }
 
     /** ***************************************************************
      * @return the correct version of the copula for tense, number and
@@ -504,15 +486,15 @@ public class GenSimpTestData {
         String neg = "";
         boolean cont = rand.nextBoolean() && negated;
         switch (time) {
-            case NOTIME: break;
-            case PAST: cop = "was"; if (plural) cop = "were"; if (negated) cop = cop + " not"; break;
-            case PASTPROG:  cop = "was"; if (plural) cop = "were"; if (negated) cop = cop + " not"; break;
-            case PRESENT:  cop = "is"; if (plural) cop = "are"; if (negated) cop = cop + " not"; break;
-            case PROGRESSIVE:  cop = "is"; if (plural) cop = "are"; if (negated) cop = cop + " not"; break;
-            case FUTURE: cop = "will be"; if (negated) cop = "will not be"; break;
-            case FUTUREPROG: cop = "will be"; if (negated) cop = "will not be"; break;
+            case LFeatures.NOTIME: break;
+            case LFeatures.PAST: cop = "was"; if (plural) cop = "were"; if (negated) cop = cop + " not"; break;
+            case LFeatures.PASTPROG:  cop = "was"; if (plural) cop = "were"; if (negated) cop = cop + " not"; break;
+            case LFeatures.PRESENT:  cop = "is"; if (plural) cop = "are"; if (negated) cop = cop + " not"; break;
+            case LFeatures.PROGRESSIVE:  cop = "is"; if (plural) cop = "are"; if (negated) cop = cop + " not"; break;
+            case LFeatures.FUTURE: cop = "will be"; if (negated) cop = "will not be"; break;
+            case LFeatures.FUTUREPROG: cop = "will be"; if (negated) cop = "will not be"; break;
         }
-        if (cont && time < FUTURE)
+        if (cont && time < LFeatures.FUTURE)
             return cop.replace(" not","n't ");
         if (cont)
             return cop.replace("will not","won't") + " ";
@@ -547,7 +529,7 @@ public class GenSimpTestData {
         if (debug) System.out.println("verbForm(): subj: " + lfeat.subj);
         if (!StringUtil.emptyString(lfeat.subj) && lfeat.subj.equals("You")) {
             if (debug) System.out.println("verbForm(): using imperative tense for 'you'");
-            lfeat.tense = IMPERATIVE;
+            lfeat.tense = LFeatures.IMPERATIVE;
         }
         String root = "";
         String nounForm = "";
@@ -577,10 +559,10 @@ public class GenSimpTestData {
             }
             else {
                 switch (lfeat.tense) {
-                    case PAST:
+                    case LFeatures.PAST:
                         neg = "has not ";
                         break;
-                    case FUTURE:
+                    case LFeatures.FUTURE:
                         neg = "will not ";
                         break;
                     default:
@@ -605,7 +587,7 @@ public class GenSimpTestData {
             copula = copula.substring(2);
         if (copula.endsWith("won't"))
             copula = copula + " ";
-        if (isProgressive(lfeat.tense)) {
+        if (lfeat.isProgressive()) {
             if (WordNet.wn.exceptVerbProgHash.containsKey(root)) {
                 word = copula + WordNet.wn.exceptVerbProgHash.get(root);
                 return word + nounForm;
@@ -623,7 +605,7 @@ public class GenSimpTestData {
                 return result;
             }
         }
-        if (lfeat.tense == PAST) {
+        if (lfeat.isPast()) {
             if (WordNet.wn.exceptionVerbPastHash.containsKey(root))
                 word = WordNet.wn.exceptionVerbPastHash.get(root);
             else {
@@ -637,7 +619,7 @@ public class GenSimpTestData {
         String es = "s";
         if (plural)
             es = "";
-        if (lfeat.tense == PRESENT || lfeat.tense == NOTIME) {
+        if (lfeat.isPresent() || lfeat.noTense()) {
             if (root.endsWith("ch") || root.endsWith("sh") || root.endsWith("ss") || root.equals("go"))
                 es = "es";
             if (root.endsWith("e"))
@@ -651,7 +633,7 @@ public class GenSimpTestData {
                 return capital(root) + es + nounForm;
             }
         }
-        if (lfeat.tense == FUTURE) {
+        if (lfeat.isFuture()) {
             if (neg.startsWith("do"))
                 neg = "not ";
             if (rand.nextBoolean() && !StringUtil.emptyString(neg))
@@ -662,7 +644,7 @@ public class GenSimpTestData {
         }
         if (root.endsWith("y") && !root.matches(".*[aeiou]y$") && !negated && "".equals(nounForm))
             return capital(root.substring(0,root.length()-1) + "ies");
-        if (lfeat.tense != NOTIME)
+        if (!lfeat.noTense())
             System.out.println("Error in verbForm(): time is unallowed value: " + lfeat.tense);
         if (negated)
             return "doesn't " + root + nounForm;
@@ -1102,11 +1084,11 @@ public class GenSimpTestData {
             return;
         }
         // if (time == -1) do nothing extra
-        if (lfeat.tense == PAST)
+        if (lfeat.isPast())
             prop.append("(before (EndFn (WhenFn ?P)) Now) ");
-        if (lfeat.tense == PRESENT)
+        if (lfeat.isPresent())
             prop.append("(temporallyBetween (BeginFn (WhenFn ?P)) Now (EndFn (WhenFn ?P))) ");
-        if (lfeat.tense == FUTURE)
+        if (lfeat.isFuture())
             prop.append("(before Now (BeginFn (WhenFn ?P))) ");
         if (lfeat.framePart.startsWith("----s")) {
             if (lfeat.framePart.length() < 6)
@@ -1189,7 +1171,7 @@ public class GenSimpTestData {
         }
         else if (lfeat.framePart.trim().startsWith("VERB-ing")) {
             getVerb(lfeat,true);
-            lfeat.tense = PROGRESSIVE;
+            lfeat.tense = LFeatures.PROGRESSIVE;
             lfeat.secondVerb = verbForm(lfeat.secondVerbType,false,lfeat.secondVerb,false,english,lfeat);
             if (lfeat.secondVerb.startsWith("is "))
                 lfeat.secondVerb = lfeat.secondVerb.substring(3);
@@ -1691,7 +1673,7 @@ public class GenSimpTestData {
         int yearMult = 1;
         LocalDateTime now = LocalDateTime.now();
         int year = now.getYear();
-        if (lfeat.tense == PAST || lfeat.tense == PASTPROG) {
+        if (lfeat.isPast() || lfeat.isPastProgressive()) {
             yearMult = -1;
         }
         int theYear = (rand.nextInt(100) * yearMult) + year;
@@ -1759,15 +1741,17 @@ public class GenSimpTestData {
                         StringBuilder prop,
                         LFeatures lfeat) {
 
-        progressPrint();
-        lfeat.tense = rand.nextInt(IMPERATIVE+1) - 1;
-        if (lfeat.tense == IMPERATIVE && rand.nextBoolean()) {
+        lfeat.tense = LFeatures.getRandomTense();
+        if (lfeat.isImperative() && rand.nextBoolean()) {
             lfeat.polite = true;
             if (rand.nextBoolean())
                 lfeat.politeFirst = false; // put at end
             else
                 english.insert(0,RandSet.listToEqualPairs(requests).getNext() + english);
         }
+        System.out.println("Verb : " + lfeat.verb);
+        System.out.println("Verb synset: " + lfeat.verbSynset);
+        System.out.println("Verb synset: " + lfeat);
         lfeat.frames = WordNetUtilities.getVerbFramesForWord(lfeat.verbSynset, lfeat.verb);
         if (lfeat.frames == null || lfeat.frames.isEmpty()) {
             if (debug) System.out.println("genProc() no frames for word: " + lfeat.verb);
