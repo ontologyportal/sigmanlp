@@ -21,6 +21,8 @@ public class LFeatureSets {
                     "NaturalProcess","Corkage","LinguisticCommunication"));
     public static boolean useCapabilities = false; // include process types from capabilities list
 
+    /** *******************************************
+     */
     public class Capability {
 
         public boolean negated = false; // not a capability
@@ -39,6 +41,21 @@ public class LFeatureSets {
     }
     public static final Map<String,Set<Capability>> capabilities = new HashMap<>();
 
+    /** ***************************************************************
+     */
+    public class Word {
+        public String term = null;
+        public String root = null;
+        public String present = null;
+        public String part = null;
+        public String trans = null; // transitivity string
+        public String derivedFromParentClass = ""; // is the term a subclass of the authored relationship
+
+        public Word(String t, String r, String pr, String pa) {
+            term = t; root = r; present = pr; part = pa;
+        }
+    }
+
     public List<AVPair> modals = null;
     public Map<String, String> genders = null;
     public RandSet humans = null;
@@ -48,6 +65,13 @@ public class LFeatureSets {
     public Set<String> prevHumans = new HashSet<>();
     public RandSet processes = null;
     private KBLite kbLite = null;
+
+    public static List<String> numbers = new ArrayList<>();
+    public static List<String> requests = new ArrayList<>(); // polite phrase at start of sentence
+    public static List<String> endings = new ArrayList<>(); // polite phrase at end of sentence
+    public static List<String> others = new ArrayList<>(); // when next noun is same as a previous one
+    public static Map<String,String> prepPhrase = new HashMap<>();
+    public static final List<Word> attitudes = new ArrayList<>();
 
 
     public LFeatureSets(KBLite kbLiteParam) {
@@ -103,7 +127,95 @@ public class LFeatureSets {
         objects = RandSet.create(objFreqs);
     }
 
+    /** ***************************************************************
+     * estimate the number of sentences that will be produced
+     */
+    public static void initNumbers() {
 
+        numbers.add("zero");
+        numbers.add("one");
+        numbers.add("two");
+        numbers.add("three");
+        numbers.add("four");
+        numbers.add("five");
+        numbers.add("six");
+        numbers.add("seven");
+        numbers.add("eight");
+        numbers.add("nine");
+        numbers.add("ten");
+    }
+
+    /** ***************************************************************
+     * Politeness wrappers for imperatives
+     */
+    public static void initRequests() {
+
+        requests.add("Could you please ");
+        requests.add("Can you please ");
+        requests.add("Would you please ");
+        requests.add("Could you ");
+        requests.add("Would you ");
+        requests.add("Please ");
+    }
+
+    /** ***************************************************************
+     * Initialize the grammatical forms of propositional attitudes
+     */
+    public void initAttitudes(boolean suppressAttitudes) {
+
+        for (int i = 0; i < 50; i++)
+            attitudes.add(new Word("None","","",""));
+        if (!suppressAttitudes) {
+            attitudes.add(new Word("knows", "know", "knows", "knew"));
+            attitudes.add(new Word("believes", "believe", "believes", "believed"));
+            attitudes.add(new Word("says", "say", "says", "said"));
+            attitudes.add(new Word("desires", "desire", "desires", "desired"));
+        }
+    }
+
+    /** ***************************************************************
+     * Politeness wrappers for imperatives
+     */
+    public static void initEndings() {
+
+        endings.add("please");
+        endings.add("for me please");
+        endings.add("for me");
+    }
+
+    /** ***************************************************************
+     * Politeness wrappers for imperatives
+     */
+    public static void initOthers() {
+
+        others.add("another ");
+        others.add("a different ");
+        others.add("the other ");
+    }
+
+    /** ***************************************************************
+     * Politeness wrappers for imperatives
+     */
+    public static void initPrepPhrase() {
+
+        prepPhrase.put("vote","for ");
+        prepPhrase.put("search","for ");
+        prepPhrase.put("partake","of ");
+        prepPhrase.put("dreaming","of "); // TODO up
+        prepPhrase.put("fall","off of "); // TODO or on, onto, under, outside, inside...
+        prepPhrase.put("sing","about "); // TODO for, to, with
+        prepPhrase.put("pull","on "); // TODO pull at, pull over, pull out, or just pull a vehicle
+        prepPhrase.put("dream","of "); // TODO about
+        prepPhrase.put("tell","about "); // TODO of, someone about
+        prepPhrase.put("act","as ");
+        prepPhrase.put("pretend","to be ");
+        prepPhrase.put("act","as ");
+        prepPhrase.put("nod","to ");
+        prepPhrase.put("hunt","for "); // must have a direct object
+        prepPhrase.put("read","about ");  // TODO but also "read a book"
+        prepPhrase.put("wading","in ");
+    }
+    
     /** ***************************************************************
      * generate new SUMO termFormat and instance statements for names
      */

@@ -33,7 +33,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         gstd = new GenSimpTestData();
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        GenSimpTestData.initNumbers();
+        gstd.lfeatsets.initNumbers();
         lfeat = new LFeatures();
         String fname = "test";
         FileWriter fweng;

@@ -38,37 +38,12 @@ public class LFeatures {
     public String secondVerbType = ""; // the SUMO type of the second verb
     public String secondVerbSynset = "";
     public String secondVerbModifier= ""; // adverb
-    public String subj = "";
+    public String subj = null;
     public String subjName = "";
     public String subjectModifier = ""; // adjective
     public boolean subjectPlural = false;
     public int subjectCount = 1;
-
-
-    public String frame = null; // the particular verb frame under consideration.
-    public String framePart = null; // the frame that gets "consumed" during processing
-    // Note that the frame is destructively modified as we proceed through the sentence
-    public String verbSynset = null;
-    public String directName = null;  // the direct object
-    public String directType = null;  // the direct object
-    public boolean directPlural = false;
-    public int directCount = 1;
-    public String directModifier = ""; // adjective
-    public String indirectName = null; // the indirect object
-    public String indirectType = null; // the indirect object
-    public boolean indirectPlural = false;
-    public int indirectCount = 1;
-    public String indirectModifier = ""; // adjective
-    public boolean question = false;
-    public String verb = "";
-    public String verbType = ""; // the SUMO class of the verb
-    public List<String> frames = null;  // verb frames for the current process type
-    public String adverb = "";
-    public int tense = -1; // GenSimpTestData.NOTIME;
-    public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
-    public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
-
-
+    
     /***************************************************************
      * clear basic flags in the non-modal part of the sentence
      */
@@ -90,6 +65,33 @@ public class LFeatures {
         secondVerb = "";
         secondVerbType = "";
     }
+
+    // Note that the frame is destructively modified as we proceed through the sentence
+    public String frame = null; // the particular verb frame under consideration.
+    public String framePart = null; // the frame that gets "consumed" during processing
+    public List<String> frames = null;  // verb frames for the current process type
+    
+    public String verbSynset = null;
+    public String directName = null;  // the direct object
+    public String directType = null;  // the direct object
+    public boolean directPlural = false;
+    public int directCount = 1;
+    public String directModifier = ""; // adjective
+    public String indirectName = null; // the indirect object
+    public String indirectType = null; // the indirect object
+    public boolean indirectPlural = false;
+    public int indirectCount = 1;
+    public String indirectModifier = ""; // adjective
+    public boolean question = false;
+    public String verb = "";
+    public String verbType = ""; // the SUMO class of the verb
+    public String adverb = "";
+    public int tense = -1; // GenSimpTestData.NOTIME;
+    public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
+    public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
+
+
+
 
     /** ***************************************************************
      * Tense methods
