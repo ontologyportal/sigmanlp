@@ -122,7 +122,15 @@ public class LFeatures {
         return "";
     }
 
-
+    public String generateEnglish() {
+        return "";
+    }
+    
+    public String generateLogic() {
+        return "";
+    }
+    
+    
     @Override
     public String toString() {
         return "LFeatures{" +

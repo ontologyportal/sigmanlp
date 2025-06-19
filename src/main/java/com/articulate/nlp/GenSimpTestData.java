@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 
 public class GenSimpTestData {
 
-    public static boolean debug = false;
+    public static boolean debug = true;
     public static KB kb;
     public static KBLite kbLite;
     public static boolean printFrame = false;
@@ -67,7 +67,6 @@ public class GenSimpTestData {
                                                   // NL/logic should be on same line in the different files
     public static PrintWriter frameFile = null; // LFeatures for the current sentence, to support future processing
 
-    public static long sentCount = 0;
     public static long sentMax = 10000000;
     public static boolean startOfSentence = true;
     public static LFeatureSets lfeatsets;
@@ -202,7 +201,7 @@ public class GenSimpTestData {
 
     /** ***************************************************************
      */
-    public static void progressPrint() {
+    public static void progressPrint(int sentCount, int badSentCount) {
 
         if ((sentCount % 100) != 0) return;
         if (!debug) System.out.print("\r\33[2K");
@@ -210,6 +209,7 @@ public class GenSimpTestData {
         System.out.print(String.format("%.2f", value));
         System.out.print("% complete. ");
         System.out.print(sentCount + " of total " + sentMax);
+        System.out.print(sentCount + ". Discarded sentence attempts: " + badSentCount);
         if (debug) System.out.println();
     }
 
@@ -303,37 +303,24 @@ public class GenSimpTestData {
 
         StringBuilder english, prop;
         LFeatures lfeat;
+        int sentCount = 0;
+        int badSentCount = 0;
 
         while (sentCount < sentMax) {
-            progressPrint();
+            progressPrint(sentCount, badSentCount);
+            System.out.println("Progress" + sentCount);
             english = new StringBuilder();
             prop = new StringBuilder();
             lfeat = new LFeatures();
-            if (!suppress.contains("attitude")) {
-                genAttitudes(english, prop, lfeat);
+            if (genSentence(english, prop, lfeat)) {
+                printSentenceToFiles(english, prop, lfeat);
+                sentCount++;
             }
-            if (!suppress.contains("modal")){
-                genWithModals(english, prop, lfeat);
+            else {
+                badSentCount++;
             }
-            int tryCount = 0;
-            StringBuilder prop1, english1;
-            do {
-                english1 = new StringBuilder(english);
-                prop1 = new StringBuilder(prop);
-                lfeat.clearSVO();
-                getVerb(lfeat,false);
-                getTense(english1, lfeat);
-                getFrame(lfeat);  // Get a verb frame from WordNet
-                if (lfeat.framePart != null) {
-                    getPrepFromFrame(lfeat);
-                    lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
-                    lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeatsets, lfeat);
-                    genProc(english1, prop1, lfeat);
-                } else {
-                    if (debug) System.out.println("runGenSentence() no acceptable verb frames for word: " + lfeat.verb);
-                }
-            } while (tryCount++ < 10 && prop1.toString().equals(""));
         }
+        System.out.println("Finished generating " + sentCount + " good sentences. The number of malformed sentences during generation: " + badSentCount);
     }
 
 
@@ -718,7 +705,7 @@ public class GenSimpTestData {
             lfeat.subj = "Who";
             lfeat.subjName = "";
             lfeat.question = true;
-            english.delete(0,english.length());
+            english.setLength(0);
             english.append(capital(lfeat.subj)).append(" ");
             startOfSentence = false;
             if (debug) System.out.println("generateHumanSubject(): question: " + english);
@@ -1218,10 +1205,8 @@ public class GenSimpTestData {
     /** ***************************************************************
      * Also handle the INFINITIVE verb frame
      */
-    public boolean generateIndirectObject(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
+    public void generateIndirectObject(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
-        onceWithoutInd = false;
-        if (debug) System.out.println("generateIndirectObject(): sentCount: " + sentCount);
         if (!StringUtil.emptyString(lfeat.framePart) && lfeat.indirectPrep.equals(""))
             getPrepFromFrame(lfeat);
         if (!"".equals(lfeat.indirectPrep))
@@ -1277,13 +1262,7 @@ public class GenSimpTestData {
                 prop.append(newProp);
             }
             prop.append(closeParens(lfeat));
-            onceWithoutInd = false;
             if (debug) System.out.println("generateIndirectObject(): " + english);
-            String finalEnglish = english.toString().replaceAll("  "," ");
-            englishFile.println(finalEnglish);
-            logicFile.println(prop);
-            frameFile.println(lfeat);
-            sentCount++;
         }
         else if (lfeat.framePart.contains("INFINITIVE")) {
             getVerb(lfeat,true);
@@ -1314,11 +1293,6 @@ public class GenSimpTestData {
                 prop.append(newProp);
             }
             if (debug) System.out.println("generateIndirectObject(): " + english);
-            String finalEnglish = english.toString().replaceAll("  "," ");
-            englishFile.println(finalEnglish);
-            logicFile.println(prop);
-            frameFile.println(lfeat);
-            sentCount++;
         }
         else {  // close off the formula without an indirect object
             if (debug) System.out.println("generateIndirectObject(): attitude: " + lfeat.attitude);
@@ -1341,18 +1315,19 @@ public class GenSimpTestData {
                 prop.setLength(0);
                 prop.append(newProp);
             }
-            if (!onceWithoutInd) {
-                if (debug) System.out.println("====== generateIndirectObject(): " + english);
-                if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
-                String finalEnglish = english.toString().replaceAll("  "," ");
-                englishFile.println(finalEnglish);
-                logicFile.println(prop);
-                frameFile.println(lfeat);
-                sentCount++;
-            }
-            onceWithoutInd = true;
+            if (debug) System.out.println("====== generateIndirectObject(): " + english);
+            if (debug) System.out.println("generateIndirectObject(): valid formula: " + Formula.textFormat(prop.toString()));
         }
-        return onceWithoutInd;
+    }
+
+    /** ************************************************************************
+     *  Prints sentence with logic to a file
+     */
+    public void printSentenceToFiles(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
+        String finalEnglish = english.toString().replaceAll("  "," ");
+        englishFile.println(finalEnglish);
+        logicFile.println(prop);
+        frameFile.println(lfeat);
     }
 
 
@@ -1601,42 +1576,65 @@ public class GenSimpTestData {
         lfeat.frame = frame;
     }
 
-    /** ***************************************************************
-     * Create action sentences from a subject, preposition, direct object,
+    /** **************************************************************************
+     * Create a single action sentence from a subject, preposition, direct object,
      * preposition and indirect object based on WordNet verb frames
      */
-    public void genProc(StringBuilder english,
-                        StringBuilder prop,
-                        LFeatures lfeat) {
+    public boolean genSentence(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
-        if ((lfeat.attitude.equals("None") && lfeat.modal.attribute.equals("None")) ||
-                lfeat.attitude.equals("says"))
-            startOfSentence = true;
-
-
-        if (lfeat.negatedBody)
-            prop.append("(not ");
-        prop.append("(exists (?H ?P ?DO ?IO) (and ");
-        if (biasedBoolean(1,10) && english.length() == 0)
-            addTimeDate(english,prop,lfeat);
-        if (debug) System.out.println("genProc(2) startOfSentence: " + startOfSentence);
-
-        generateSubject(english, prop, lfeat);
-        generateVerb(lfeat.negatedBody, english, prop, lfeat.verbType, lfeat.verb, lfeat);
-        if (prop.toString().equals("")) {
-            if (debug) System.out.println("genProc(): return b/c empty prop for " + english);
-            return;
+        if (!suppress.contains("attitude")) {
+            genAttitudes(english, prop, lfeat);
         }
-        startOfSentence = false;
-        generateDirectObject(english, prop, lfeat);
-        if (StringUtil.emptyString(prop.toString())) {
-            if (debug) System.out.println("genProc(): return b/c empty prop for " + english);
-            return;
+        if (!suppress.contains("modal")){
+            genWithModals(english, prop, lfeat);
         }
-        generateIndirectObject(english, prop, lfeat);
-        lfeat.framePart = lfeat.frame;  // recreate frame destroyed during generation
-        if (debug)
-            System.out.println("====================\n genProc(): end " + english);
+        int tryCount = 0;
+        String englishReference = english.toString();
+        String propReference = prop.toString();
+        do {
+            english.setLength(0);
+            english.append(englishReference);
+            prop.setLength(0);
+            prop.append(propReference);
+            lfeat.clearSVO();
+            getVerb(lfeat,false);
+            getTense(english, lfeat);
+            getFrame(lfeat);  // Get a verb frame from WordNet
+            if (lfeat.framePart != null) {
+                getPrepFromFrame(lfeat);
+                lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
+                lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeatsets, lfeat);
+                if ((lfeat.attitude.equals("None") && lfeat.modal.attribute.equals("None")) ||
+                        lfeat.attitude.equals("says"))
+                    startOfSentence = true;
+                if (lfeat.negatedBody)
+                    prop.append("(not ");
+                prop.append("(exists (?H ?P ?DO ?IO) (and ");
+                if (biasedBoolean(1,10) && english.length() == 0)
+                    addTimeDate(english,prop,lfeat);
+                if (debug) System.out.println("genSentence(2) startOfSentence: " + startOfSentence);
+                generateSubject(english, prop, lfeat);
+                generateVerb(lfeat.negatedBody, english, prop, lfeat.verbType, lfeat.verb, lfeat);
+                if (prop.toString().equals("")) {
+                    if (debug) System.out.println("genSentence(): return b/c empty prop for " + english);
+                }
+                else {
+                    startOfSentence = false;
+                    generateDirectObject(english, prop, lfeat);
+                    if (StringUtil.emptyString(prop.toString())) {
+                        if (debug) System.out.println("genSentence(): return b/c empty prop for " + english);
+                    }
+                    else {
+                        generateIndirectObject(english, prop, lfeat);
+                        //lfeat.framePart = lfeat.frame;  // recreate frame destroyed during generation
+                        return true;
+                    }
+                }
+            } else {
+                if (debug) System.out.println("runGenSentence() no acceptable verb frames for word: " + lfeat.verb);
+            }
+        } while (tryCount++ < 10 && prop.toString().equals(""));
+        return false;
     }
 
     /** ***************************************************************
