@@ -10,6 +10,7 @@ import java.util.*;
 public class LFeatures {
 
     private static final boolean debug = false;
+    public boolean testMode = false;
     private static final Random rand = new Random();
 
     public static final int NOTIME = -1;
@@ -21,14 +22,14 @@ public class LFeatures {
     public static final int FUTUREPROG = 5;   // will be speaking, will be docking
     public static final int IMPERATIVE = 6;   // treat imperatives like a tense
 
-    public boolean testMode = false;
-
     public boolean attNeg = false; // for propositional attitudes
     public boolean attPlural = false;
     public int attCount = 1;
+    public String attSubjType = null;
     public String attSubj = null; // the agent holding the attitude
     public String attitude = "None";
     public String attitudeModifier = ""; // adjective
+    public LFeatureSets.Word attWord = null;
     public boolean negatedModal = false;
     public boolean negatedBody = false;
     public AVPair modal = new AVPair("None", "none"); // attribute if SUMO ModalAttribute, value is English
@@ -43,28 +44,6 @@ public class LFeatures {
     public String subjectModifier = ""; // adjective
     public boolean subjectPlural = false;
     public int subjectCount = 1;
-    
-    /***************************************************************
-     * clear basic flags in the non-modal part of the sentence
-     */
-    public void clearSVO() {
-
-        subj = null;
-        subjectPlural = false;
-        subjectCount = 1;
-        directName = null;  // the direct object
-        directType = null;  // the direct object
-        directPlural = false;
-        directPrep = "";
-        directCount = 1;
-        indirectName = null; // the indirect object
-        indirectType = null; // the indirect object
-        indirectPlural = false;
-        indirectPrep = "";
-        indirectCount = 1;
-        secondVerb = "";
-        secondVerbType = "";
-    }
 
     // Note that the frame is destructively modified as we proceed through the sentence
     public String frame = null; // the particular verb frame under consideration.
@@ -90,7 +69,30 @@ public class LFeatures {
     public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
     public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
 
+    public String englishSentence;
+    public String logicFormula;
 
+    /***************************************************************
+     * clear basic flags in the non-modal part of the sentence
+     */
+    public void clearSVO() {
+
+        subj = null;
+        subjectPlural = false;
+        subjectCount = 1;
+        directName = null;  // the direct object
+        directType = null;  // the direct object
+        directPlural = false;
+        directPrep = "";
+        directCount = 1;
+        indirectName = null; // the indirect object
+        indirectType = null; // the indirect object
+        indirectPlural = false;
+        indirectPrep = "";
+        indirectCount = 1;
+        secondVerb = "";
+        secondVerbType = "";
+    }
 
 
     /** ***************************************************************
@@ -122,15 +124,51 @@ public class LFeatures {
         return "";
     }
 
-    public String generateEnglish() {
-        return "";
+    boolean startOfSentence;
+    public void flushToEnglishLogic() {
+        boolean startOfSentence = true;
+        StringBuilder english = new StringBuilder();
+        StringBuilder prop = new StringBuilder();
+        if (!attitude.equals("None")) {
+            startOfSentence = false;
+            // English portion
+            english.append(attSubj).append(" ");
+            String that = "";
+            if (rand.nextBoolean() || attitude.equals("desires"))
+                that = "that ";
+            if (attNeg)
+                english.append("doesn't ").append(attWord.root).append(" ").append(that);
+            else
+                english.append(attWord.present).append(" ").append(that);
+            if (attWord.term.equals("says"))
+                english.append("\"");
+
+            // Logic portion
+            if (attNeg) {
+                prop.append("(not (exists (?HA) (and  ");
+            }
+            else {
+                prop.append("(exists (?HA) (and ");
+            }
+            String var = "?HA";
+            if (attSubjType != null && attSubjType.equals("Human")) {
+                prop.append("(instance ").append(var).append(" Human) ");
+                prop.append("(names \"").append(attSubj).append("\" ").append(var).append(") ");
+            }
+            else {
+                prop.append("(attribute ").append(var).append(" ").append(attSubjType).append(") ");
+            }
+            prop.append("(").append(attWord.term).append(" ?HA ");
+        }
+        englishSentence = english.toString();
+        logicFormula = prop.toString();
     }
-    
-    public String generateLogic() {
-        return "";
-    }
-    
-    
+
+
+
+
+
+
     @Override
     public String toString() {
         return "LFeatures{" +

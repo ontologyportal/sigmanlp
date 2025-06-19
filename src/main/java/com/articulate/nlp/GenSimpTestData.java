@@ -312,6 +312,7 @@ public class GenSimpTestData {
             english = new StringBuilder();
             prop = new StringBuilder();
             lfeat = new LFeatures();
+            lfeatsets.prevHumans.clear();
             if (genSentence(english, prop, lfeat)) {
                 printSentenceToFiles(english, prop, lfeat);
                 sentCount++;
@@ -1680,7 +1681,8 @@ public class GenSimpTestData {
                 type.append(socialRole);
                 prop.append("(attribute ").append(var).append(" ").append(type).append(") ");
                 plural = new AVPair();
-                english.append(capital(nounFormFromTerm(type.toString(),plural,""))).append(" ");
+                name.append(capital(nounFormFromTerm(type.toString(),plural,"")));
+                english.append(name.toString()).append(" ");
                 if (lfeatsets.prevHumans.contains(type))  // don't allow the same name or role twice in a sentence
                     found = true;
                 else
@@ -1692,11 +1694,11 @@ public class GenSimpTestData {
                 prop.append("(instance ").append(var).append(" Human) ");
                 prop.append("(names \"").append(name).append("\" ").append(var).append(") ");
                 english.append(name).append(" ");
-                if (lfeatsets.prevHumans.contains(name)) // don't allow the same name or role twice in a sentence
-                    found = true;
-                else
-                    lfeatsets.prevHumans.add(name.toString());
             }
+            if (lfeatsets.prevHumans.contains(name)) // don't allow the same name or role twice in a sentence
+                found = true;
+            else
+                lfeatsets.prevHumans.add(name.toString());
         } while (found);
         if (!StringUtil.emptyString(lfeat.framePart) && lfeat.framePart.length() > 9 &&
                 lfeat.framePart.toLowerCase().startsWith("somebody"))
@@ -1715,6 +1717,7 @@ public class GenSimpTestData {
      */
     public void genAttitudes(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
+        if (debug) System.out.println("GenSimpTestData.genAttitudes(): ========================= start ");
         if (debug) System.out.println("GenSimpTestData.genAttitudes(): ");
         if (debug) System.out.println("GenSimpTestData.genAttitudes(): human list size: " + lfeatsets.humans.size());
 
@@ -1722,8 +1725,8 @@ public class GenSimpTestData {
         startOfSentence = true;
         LFeatureSets.Word attWord = lfeatsets.attitudes.get(rand.nextInt(lfeatsets.attitudes.size()));
         lfeat.attitude = attWord.term;
-        if (debug) System.out.println("GenSimpTestData.genAttitudes(): ========================= start ");
-        if (!attWord.term.equals("None")) {
+        lfeat.attWord = attWord;
+        if (!lfeat.attitude.equals("None")) {
             StringBuilder type = new StringBuilder();
             StringBuilder name = new StringBuilder();
             lfeat.attNeg = rand.nextBoolean();
@@ -1734,6 +1737,7 @@ public class GenSimpTestData {
             generateHuman(english,prop,false,"?HA",type,name,lfeat);
             prop.append("(").append(attWord.term).append(" ?HA ");
             lfeat.attSubj = name.toString(); // the subject of the propositional attitude
+            lfeat.attSubjType = type.toString();
             startOfSentence = false;
             if (rand.nextBoolean() || lfeat.attitude.equals("desires"))
                 that = "that ";
@@ -1880,11 +1884,11 @@ public class GenSimpTestData {
                 FileWriter fwframe;
                 if (args.length > 1) {
                     fweng = new FileWriter(args[1] + "-eng.txt");
-                    englishFile = new PrintWriter(fweng);
+                    englishFile = new PrintWriter(fweng, true);
                     fwlog = new FileWriter(args[1] + "-log.txt");
-                    logicFile = new PrintWriter(fwlog);
+                    logicFile = new PrintWriter(fwlog, true);
                     fwframe = new FileWriter(args[1] + "-frame.txt");
-                    frameFile = new PrintWriter(fwframe);
+                    frameFile = new PrintWriter(fwframe, true);
                 }
                 else {
                     if (args[0].equals("-s") || args[0].equals("-a") ||args[0].equals("-g")) {
