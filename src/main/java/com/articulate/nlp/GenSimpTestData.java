@@ -1486,8 +1486,6 @@ public class GenSimpTestData {
                         StringBuilder prop,
                         LFeatures lfeat) {
 
-        boolean hastime = false;
-        boolean hasdate = false;
         int month = rand.nextInt(12)+1;
         int yearMult = 1;
         LocalDateTime now = LocalDateTime.now();
@@ -1508,29 +1506,28 @@ public class GenSimpTestData {
         dateOptions.add("d MMM uuuu"); dateOptions.add("dd-MM-yyyy"); dateOptions.add("EEE, d MMM yyyy");
         dateOptions.add(getFormattedDate(d));
         String dateOption = dateOptions.get(rand.nextInt(dateOptions.size()));
-        if (biasedBoolean(2,5)) { // sometimes add a time
-            english.append(capital("at "));
-            DateTimeFormatter format = DateTimeFormatter.ofPattern("ha");
-            english.append(t.format(format)).append(" ");
-            prop.append("(instance ?T (HourFn ").append(hour).append(")) (during ?P ?T) ");
-            hastime = true;
-            startOfSentence = false;
+        lfeat.hastime = biasedBoolean(2,5); // sometimes add a time
+        lfeat.hasdate = !lfeat.hastime && biasedBoolean(2,5); // sometimes add a date
+        lfeat.hasdatetime = !lfeat.hastime && !lfeat.hasdate; // sometimes add both
+        if (lfeat.hastime) {
+            lfeat.timeEng = capital("at ") + t.format(DateTimeFormatter.ofPattern("ha"));
+            lfeat.hourLog = hour + "";
+            english.append(lfeat.timeEng).append(" ");
+            prop.append("(instance ?T (HourFn ").append(lfeat.hourLog).append(")) (during ?P ?T) ");
         }
-        if (!hastime && biasedBoolean(2,5)) { // sometimes add a date
-            DateTimeFormatter format = DateTimeFormatter.ofPattern(dateOption);
-            english.append(capital("on "));
-            english.append(d.format(format)).append(" ");
+        if (!lfeat.hastime && lfeat.hasdate) {
+            lfeat.dateEng = capital("on ") + d.format(DateTimeFormatter.ofPattern(dateOption));
+            lfeat.dayLog = day + "";  lfeat.monthLog = month + "";  lfeat.yearLog = theYear + "";
+            english.append(lfeat.dateEng).append(" ");
             prop.append("(instance ?T (DayFn ").append(day).append(" (MonthFn ").append(month).append(" (YearFn ").append(theYear).append(")))) (during ?P ?T) ");
-            hasdate = true;
-            startOfSentence = false;
         }
-        if (!hastime && !hasdate) { // sometimes add both
-            english.append(capital("on "));
-            DateTimeFormatter format = DateTimeFormatter.ofPattern(dateOption + " 'at' ha");
+        if (!lfeat.hastime && !lfeat.hasdate && lfeat.hasdatetime) { // sometimes add both
+            lfeat.dateEng = capital("on ") + ldt.format(DateTimeFormatter.ofPattern(dateOption + " 'at' ha"));
+            lfeat.dayLog = day + "";  lfeat.monthLog = month + "";  lfeat.yearLog = year + "";
             prop.append("(instance ?T (HourFn ").append(hour).append(" (DayFn ").append(day).append(" (MonthFn ").append(month).append(" (YearFn ").append(year).append("))))) (during ?P ?T) ");
-            english.append(ldt.format(format)).append(" ");
-            startOfSentence = false;
+            english.append(lfeat.dateEng).append(" ");
         }
+        startOfSentence = false;
         if (debug) System.out.println("addTimeDate() startOfSentence: " + startOfSentence);
     }
 
@@ -1540,10 +1537,13 @@ public class GenSimpTestData {
         lfeat.tense = LFeatures.getRandomTense();
         if (lfeat.isImperative() && rand.nextBoolean()) {
             lfeat.polite = true;
-            if (rand.nextBoolean())
+            if (rand.nextBoolean()) {
                 lfeat.politeFirst = false; // put at end
-            else
-                english.insert(0,RandSet.listToEqualPairs(lfeatsets.requests).getNext() + english);
+            }
+            else {
+                lfeat.politeWord = RandSet.listToEqualPairs(lfeatsets.requests).getNext();
+                english.insert(0, lfeat.politeWord + english);
+            }
         }
     }
 
@@ -1611,8 +1611,10 @@ public class GenSimpTestData {
                 if (lfeat.negatedBody)
                     prop.append("(not ");
                 prop.append("(exists (?H ?P ?DO ?IO) (and ");
-                if (biasedBoolean(1,10) && english.length() == 0)
-                    addTimeDate(english,prop,lfeat);
+                if (biasedBoolean(1,10) && english.length() == 0) {
+                    lfeat.hasdateORtime = true;
+                    addTimeDate(english, prop, lfeat);
+                }
                 if (debug) System.out.println("genSentence(2) startOfSentence: " + startOfSentence);
                 generateSubject(english, prop, lfeat);
                 generateVerb(lfeat.negatedBody, english, prop, lfeat.verbType, lfeat.verb, lfeat);

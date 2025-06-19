@@ -2,6 +2,7 @@ package com.articulate.nlp;
 
 import com.articulate.sigma.utils.AVPair;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -66,8 +67,19 @@ public class LFeatures {
     public String verbType = ""; // the SUMO class of the verb
     public String adverb = "";
     public int tense = -1; // GenSimpTestData.NOTIME;
+    boolean hastime = false; // has just a time
+    boolean hasdate = false; // has just a date
+    boolean hasdatetime = false; // has both a date and a time
+    boolean hasdateORtime = false;
+    String dateEng = null;
+    String timeEng = null;
+    String yearLog = null;
+    String monthLog = null;
+    String dayLog = null;
+    String hourLog = null;
     public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
     public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
+    public String politeWord = null;
 
     public String englishSentence;
     public String logicFormula;
@@ -92,6 +104,16 @@ public class LFeatures {
         indirectCount = 1;
         secondVerb = "";
         secondVerbType = "";
+        hastime = false;
+        hasdate = false;
+        hasdatetime = false;
+        hasdateORtime = false;
+        dateEng = null;
+        timeEng = null;
+        yearLog = null;
+        monthLog = null;
+        dayLog = null;
+        hourLog = null;
     }
 
 
@@ -128,6 +150,8 @@ public class LFeatures {
         boolean startOfSentence = true;
         StringBuilder english = new StringBuilder();
         StringBuilder prop = new StringBuilder();
+
+        // ATTITUDE
         if (!attitude.equals("None")) {
             startOfSentence = false;
             // English portion
@@ -159,6 +183,8 @@ public class LFeatures {
             }
             prop.append("(").append(attWord.term).append(" ?HA ");
         }
+
+        // MODALS
         if (!modal.attribute.equals("None")) {
             if (negatedModal)
                 english.append(modal.value.substring(0,5) + " not" + modal.value.substring(5));
@@ -172,6 +198,36 @@ public class LFeatures {
                 prop.append("(modalAttribute ");
             startOfSentence = false;
         }
+
+        // DO POLITENESS (IF FIRST)
+        if (isImperative() && polite && politeFirst) {
+            english.insert(0, politeWord + english);
+        }
+
+        // Set up logic for main part of sentence
+        if ((attitude.equals("None") && modal.attribute.equals("None")) || attitude.equals("says"))
+            startOfSentence = true;
+        if (negatedBody)
+            prop.append("(not ");
+        prop.append("(exists (?H ?P ?DO ?IO) (and ");
+
+        // DATE & TIME
+        if (hasdateORtime) {
+            if (hastime) {
+                english.append(timeEng).append(" ");
+                prop.append("(instance ?T (HourFn ").append(hourLog).append(")) (during ?P ?T) ");
+            }
+            if (!hastime && hasdate) {
+                english.append(dateEng).append(" ");
+                prop.append("(instance ?T (DayFn ").append(dayLog).append(" (MonthFn ").append(monthLog).append(" (YearFn ").append(yearLog).append(")))) (during ?P ?T) ");
+            }
+            if (!hastime && !hasdate && hasdatetime) { // sometimes add both
+                prop.append("(instance ?T (HourFn ").append(hourLog).append(" (DayFn ").append(dayLog).append(" (MonthFn ").append(monthLog).append(" (YearFn ").append(yearLog).append("))))) (during ?P ?T) ");
+                english.append(dateEng).append(" ");
+            }
+            startOfSentence = false;
+        }
+
 
         englishSentence = english.toString();
         logicFormula = prop.toString();
