@@ -124,7 +124,6 @@ public class LFeatures {
         return "";
     }
 
-    boolean startOfSentence;
     public void flushToEnglishLogic() {
         boolean startOfSentence = true;
         StringBuilder english = new StringBuilder();
@@ -160,6 +159,20 @@ public class LFeatures {
             }
             prop.append("(").append(attWord.term).append(" ?HA ");
         }
+        if (!modal.attribute.equals("None")) {
+            if (negatedModal)
+                english.append(modal.value.substring(0,5) + " not" + modal.value.substring(5));
+            else
+                english.append(modal.value);
+            if (startOfSentence)
+                english.replace(0,1,english.substring(0,1).toUpperCase());
+            if (negatedModal)
+                prop.append("(not (modalAttribute ");
+            else
+                prop.append("(modalAttribute ");
+            startOfSentence = false;
+        }
+
         englishSentence = english.toString();
         logicFormula = prop.toString();
     }
