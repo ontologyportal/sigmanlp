@@ -42,6 +42,7 @@ public class LFeatures {
     public String secondVerbModifier= ""; // adverb
     public String subj = null;
     public String subjName = "";
+    public String subjType = null;
     public String subjectModifier = ""; // adjective
     public boolean subjectPlural = false;
     public int subjectCount = 1;
@@ -80,6 +81,11 @@ public class LFeatures {
     public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
     public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
     public String politeWord = null;
+    public boolean addPleaseToSubj = false;
+    public boolean addShouldToSubj = false;
+    public boolean addBodyPart = false; // add a body part to the subject
+    public String bodyPart = null; // subject body part
+    public AVPair pluralBodyPart = null;
 
     public String englishSentence;
     public String logicFormula;
@@ -114,6 +120,10 @@ public class LFeatures {
         monthLog = null;
         dayLog = null;
         hourLog = null;
+        addPleaseToSubj = false;
+        addShouldToSubj = false;
+        addBodyPart = false;
+        pluralBodyPart = null;
     }
 
 
@@ -228,13 +238,79 @@ public class LFeatures {
             startOfSentence = false;
         }
 
+        // SUBJECT
+        if (subjType.equals("Human")) {
+            if (question) {
+                english.setLength(0);
+                english.append(subj).append(" ");
+                startOfSentence = false;
+            }
+            else {
+                String var = "?H";
+                if (subj.equals("Human")) {
+                    english.append(subjName).append(" ");
+                    prop.append("(instance ").append(var).append(" Human) ");
+                    prop.append("(names \"").append(subjName).append("\" ").append(var).append(") ");
+                }
+                else if (!subj.equals("You")) { // Its not a human, and its not a "You", so its a social role.
+                    english.append(subj).append(" ");
+                    prop.append("(attribute ").append(var).append(" ").append(subjName).append(") ");
+                } //There is no appended english or logic for subj.equals("You")
+            }
+            if (!subj.equals("You"))
+                startOfSentence = false;
+            else {
+                if (addPleaseToSubj) {
+                    english.append("Please, ");
+                    startOfSentence = false;
+                }
+                else if (addShouldToSubj) {
+                    english.append("You should ");
+                    startOfSentence = false;
+                }
+            }
+            if (attitude.equals("says") && subj.equals("You") && // remove "that" for says "You ..."
+                    english.toString().endsWith("that \"")) {
+                english.delete(english.length() - 7, english.length());
+                english.append(" \""); // restore space and quote
+            }
+            else if (addBodyPart) {
+                if (!subj.equals("You") && !subj.equals("Human")) { // Social Role a plumber... etc
+                    english.deleteCharAt(english.length()-1); // delete trailing space
+                    english.append("'s ");
+                }
+                else if (subj.equals("Human")) {
+                    english.append("'s ");
+                }
+                english.append(bodyPart).append(" ");
+                if (pluralBodyPart.attribute.equals("true"))
+                    addSUMOplural(prop,bodyPart,pluralBodyPart,"?O");
+                else
+                    prop.append("(instance ?O ").append(bodyPart).append(") ");
+                prop.append("(possesses ?H ?O) ");
+            }
+        }
+        else {
 
+        }
+
+        // FLUSH STRING BUILDER OBJECT
         englishSentence = english.toString();
         logicFormula = prop.toString();
     }
 
 
-
+    /** ***************************************************************
+     * Add SUMO content about a plural noun
+     * @param prop is the formula to append to
+     * @param term is the SUMO type of the noun
+     * @param plural is the count of the plural as a String integer in the value field
+     * @param var is the variable for the term in the formula
+     */
+    private static void addSUMOplural(StringBuilder prop, String term, AVPair plural, String var) {
+        prop.append("(memberType ").append(var).append(" ").append(term).append(") ");
+        prop.append("(memberCount ").append(var).append(" ").append(plural.value).append(") ");
+    }
 
 
 

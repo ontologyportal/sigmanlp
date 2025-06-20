@@ -667,7 +667,6 @@ public class GenSimpTestData {
     private static void addSUMOplural(StringBuilder prop, String term, AVPair plural, String var) {
 
         if (debug) System.out.println("addSUMOplural(): prop: " + prop);
-        //prop.append("(instance " + var + " Collection) ");
         prop.append("(memberType ").append(var).append(" ").append(term).append(") ");
         prop.append("(memberCount ").append(var).append(" ").append(plural.value).append(") ");
     }
@@ -678,15 +677,16 @@ public class GenSimpTestData {
      */
     private void addBodyPart(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
-        String bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "BodyPart");
-        if (bodyPart == null)
-            bodyPart = lfeatsets.bodyParts.getNext();
-        AVPair plural = new AVPair();
-        english.append(capital(nounFormFromTerm(bodyPart,plural,""))).append(" ");
-        if (plural.attribute.equals("true"))
-            addSUMOplural(prop,bodyPart,plural,"?O");
+        lfeat.bodyPart = WordPairFrequency.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "BodyPart");
+        if (lfeat.bodyPart == null)
+            lfeat.bodyPart = lfeatsets.bodyParts.getNext();
+        lfeat.pluralBodyPart = new AVPair();
+        lfeat.bodyPart = capital(nounFormFromTerm(lfeat.bodyPart,lfeat.pluralBodyPart,""));
+        english.append(lfeat.bodyPart).append(" ");
+        if (lfeat.pluralBodyPart.attribute.equals("true"))
+            addSUMOplural(prop,lfeat.bodyPart,lfeat.pluralBodyPart,"?O");
         else
-            prop.append("(instance ?O ").append(bodyPart).append(") ");
+            prop.append("(instance ?O ").append(lfeat.bodyPart).append(") ");
         prop.append("(possesses ?H ?O) ");
     }
 
@@ -727,13 +727,18 @@ public class GenSimpTestData {
             startOfSentence = false;
         else {
             if (biasedBoolean(1,5)) {
+                lfeat.addPleaseToSubj = true;
                 english.append("Please, ");
                 startOfSentence = false;
             }
             else if (biasedBoolean(1,5)) {
+                lfeat.addShouldToSubj = true;
                 english.append("You should ");
                 startOfSentence = false;
             }
+        }
+        if (lfeat.framePart.startsWith("Somebody's (body part)")) {
+            lfeat.addBodyPart = true;
         }
         if (lfeat.attitude.equals("says") && lfeat.subj.equals("You") && // remove "that" for says "You ..."
                 english.toString().endsWith("that \"")) {
@@ -741,7 +746,7 @@ public class GenSimpTestData {
             english.append(" \""); // restore space and quote
         }
         else if (kbLite.isInstanceOf(lfeat.subj,"SocialRole")) { // a plumber... etc
-            if (lfeat.framePart.startsWith("Somebody's (body part)")) {
+            if (lfeat.addBodyPart) {
                 if (lfeat.subj.equals("You"))
                     english.append(capital("your"));
                 else {
@@ -750,22 +755,11 @@ public class GenSimpTestData {
                 }
                 addBodyPart(english,prop,lfeat);
             }
-            else {
-                // english.append(capital(nounFormFromTerm(lfeat.subj)) + " "); // already created in generateHuman
-            }
         }
         else {
-            if (lfeat.framePart.startsWith("Somebody's (body part)")) {
-                // english.append(capital(lfeat.subj) + "'s ");
+            if (lfeat.addBodyPart) {
                 english.append("'s ");
                 addBodyPart(english,prop,lfeat);
-            }
-            else {
-                if (!lfeat.subj.equals("You")) {  // if subj is you-understood, don't generate subject
-                    //english.append(capital(lfeat.subj) + " ");
-                    //prop.append("(instance ?H Human) ");
-                    //prop.append("(names \"" + lfeat.subj + "\" ?H) ");
-                }
             }
         }
         removeFrameSubject(lfeat);
@@ -806,13 +800,7 @@ public class GenSimpTestData {
             if (debug) System.out.println("generateThingSubject(): question: " + english);
         }
         else if (lfeat.framePart.startsWith("Something")) {
-            // Thompson START
             String term = WordPairFrequency.getNounFromVerb(lfeatsets, lfeat);
-            /*
-            Original code:
-            String term = lfeatsets.objects.getNext();
-             */
-            // Thompson END
             lfeat.subj = term;
             AVPair plural = new AVPair();
             english.append(capital(nounFormFromTerm(term,plural,""))).append(" ");
@@ -854,11 +842,6 @@ public class GenSimpTestData {
     public void generateSubject(StringBuilder english, StringBuilder prop,
                                   LFeatures lfeat) {
 
-        if (debug) System.out.println("generateSubject(): english: " + english);
-        if (debug) System.out.println("generateSubject(): attitude: " + lfeat.attitude);
-        if (debug) System.out.println("generateSubject(): modal: " + lfeat.modal);
-        if (debug) System.out.println("generateSubject(): startOfSentence: " + startOfSentence);
-        if (debug) System.out.println("generateSubject(): lfeat.framePart(1): " + lfeat.framePart);
         if (!StringUtil.emptyString(lfeat.subj)) {  // for testing, allow for a pre-set subject
             System.out.println("generateSubject(): non-empty subj " + lfeat.subj + " returning");
             english.append(lfeat.subjName).append(" ");
@@ -866,14 +849,13 @@ public class GenSimpTestData {
             return;
         }
         if (lfeat.framePart.startsWith("It") || lfeat.framePart.startsWith("Something")) {
+            lfeat.subjType = "Something";
             generateThingSubject(english, prop, lfeat);
         }
         else { // Somebody
+            lfeat.subjType = "Human";
             generateHumanSubject(english, prop, lfeat);
         }
-        if (debug) System.out.println("generateSubject(): english: " + english);
-        if (debug) System.out.println("generateSubject(): lfeat.framePart: " + lfeat.framePart);
-        if (debug) System.out.println("generateSubject(): startOfSentence: " + startOfSentence);
     }
 
     /** ***************************************************************
