@@ -800,17 +800,19 @@ public class GenSimpTestData {
             if (debug) System.out.println("generateThingSubject(): question: " + english);
         }
         else if (lfeat.framePart.startsWith("Something")) {
-            String term = WordPairFrequency.getNounFromVerb(lfeatsets, lfeat);
-            lfeat.subj = term;
-            AVPair plural = new AVPair();
-            english.append(capital(nounFormFromTerm(term,plural,""))).append(" ");
-            if (plural.attribute.equals("true")) {
-                addSUMOplural(prop, term, plural, "?H");
+            lfeat.subjType = "Something";
+            lfeat.subjName = WordPairFrequency.getNounFromVerb(lfeatsets, lfeat);
+            lfeat.pluralSubj = new AVPair();
+            lfeat.subj = nounFormFromTerm(lfeat.subjName,lfeat.pluralSubj,"");
+            english.append(capital(lfeat.subj)).append(" ");
+            if (lfeat.pluralSubj.attribute.equals("true")) {
+                addSUMOplural(prop, lfeat.subjName, lfeat.pluralSubj, "?H");
                 lfeat.subjectPlural = true;
             }
             else
-                prop.append("(instance ?H ").append(term).append(") ");
+                prop.append("(instance ?H ").append(lfeat.subjName).append(") ");
             if (lfeat.framePart.startsWith("Something is")) {
+                lfeat.subjType = "Something is";
                 english.append("is ");
             }
             else
@@ -818,9 +820,11 @@ public class GenSimpTestData {
         }
         else {  // frame must be "It..."
             if (lfeat.framePart.startsWith("It is")) {
+                lfeat.subjType = "It is";
                 english.append("It is ");
             }
             else {
+                lfeat.subjType = "It";
                 english.append("It ");
             }
         }
@@ -849,7 +853,6 @@ public class GenSimpTestData {
             return;
         }
         if (lfeat.framePart.startsWith("It") || lfeat.framePart.startsWith("Something")) {
-            lfeat.subjType = "Something";
             generateThingSubject(english, prop, lfeat);
         }
         else { // Somebody

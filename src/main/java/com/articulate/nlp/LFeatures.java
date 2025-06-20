@@ -1,6 +1,7 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.utils.AVPair;
+import com.articulate.sigma.utils.StringUtil;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -86,6 +87,7 @@ public class LFeatures {
     public boolean addBodyPart = false; // add a body part to the subject
     public String bodyPart = null; // subject body part
     public AVPair pluralBodyPart = null;
+    public AVPair pluralSubj = null;
 
     public String englishSentence;
     public String logicFormula;
@@ -124,6 +126,7 @@ public class LFeatures {
         addShouldToSubj = false;
         addBodyPart = false;
         pluralBodyPart = null;
+        pluralSubj = null;
     }
 
 
@@ -290,8 +293,30 @@ public class LFeatures {
                 prop.append("(possesses ?H ?O) ");
             }
         }
-        else {
-
+        else { // Subject is Something
+            if (question) {
+                english.append(capital(subj, startOfSentence)).append(" ");
+            }
+            else if (subjType.equals("Something")) {
+                english.append(capital(subj, startOfSentence)).append(" ");
+                if (subjectPlural) {
+                    addSUMOplural(prop, subjName, pluralSubj, "?H");
+                }
+                else
+                    prop.append("(instance ?H ").append(subjName).append(") ");
+                if (subjType.equals("Something is")) {
+                    english.append("is ");
+                }
+            }
+            else {  // frame must be "It..."
+                if (subjType.equals("It is")) {
+                    english.append("It is ");
+                }
+                else {
+                    english.append("It ");
+                }
+            }
+            startOfSentence = false;
         }
 
         // FLUSH STRING BUILDER OBJECT
@@ -312,6 +337,19 @@ public class LFeatures {
         prop.append("(memberCount ").append(var).append(" ").append(plural.value).append(") ");
     }
 
+
+    /** ***************************************************************
+     */
+    public static String capital(String s, boolean startOfSentence) {
+
+        if (debug) System.out.println("capital(): startOfSentence: " + startOfSentence);
+        if (debug) System.out.println("capital(): s: " + s);
+        if (StringUtil.emptyString(s))
+            return s;
+        if (!startOfSentence)
+            return s;
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
 
 
     @Override
