@@ -1211,16 +1211,17 @@ public class GenSimpTestData {
                 prep = getCaseRoleFromPrep(lfeat.indirectPrep);
             if (StringUtil.emptyString(prep))
                 prep = "patient";
-            AVPair plural = new AVPair();
+            lfeat.pluralIndirect = new AVPair();
             if (lfeat.indirectType.equals("Human"))
                 english.append(lfeat.indirectPrep).append(lfeat.indirectName);
             else {
-                english.append(lfeat.indirectPrep).append(nounFormFromTerm(lfeat.indirectType, plural, ""));
+                lfeat.indirectName = nounFormFromTerm(lfeat.indirectType, lfeat.pluralIndirect, "");
+                english.append(lfeat.indirectPrep).append(lfeat.indirectName));
             }
-            if (debug) System.out.println("generateIndirectObject(): plural: " + plural);
+            if (debug) System.out.println("generateIndirectObject(): plural: " + lfeat.pluralIndirect);
 
-            if (plural.attribute.equals("true"))
-                addSUMOplural(prop,lfeat.indirectType,plural,"?IO");
+            if (lfeat.pluralIndirect.attribute.equals("true"))
+                addSUMOplural(prop,lfeat.indirectType,lfeat.pluralIndirect,"?IO");
             else {
                 if (kbLite.isInstanceOf(lfeat.indirectType,"SocialRole"))
                     prop.append("(attribute ?IO ").append(lfeat.indirectType).append(") ");
@@ -1624,7 +1625,7 @@ public class GenSimpTestData {
                     }
                 }
             } else {
-                if (debug) System.out.println("runGenSentence() no acceptable verb frames for word: " + lfeat.verb);
+                if (debug) System.out.println("runGenSentence() no acceptable verb frames found for word: " + lfeat.verb);
             }
         } while (tryCount++ < 10 && prop.toString().equals(""));
         return false;

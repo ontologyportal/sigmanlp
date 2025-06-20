@@ -59,13 +59,14 @@ public class LFeatures {
     public String directType = null;  // the direct object
     public String directSUMO = null;
     public boolean directPlural = false;
-    public String directOther = null; // If the subj == dir object, add the word "another"
     public AVPair pluralDirect = null;
+    public String directOther = null; // If the subj == dir object, add the word "another"
     public int directCount = 1;
     public String directModifier = ""; // adjective
     public String indirectName = null; // the indirect object
     public String indirectType = null; // the indirect object
-    public boolean indirectPlural = false;
+    public boolean indirectPlural = false; // Is there indirect object plural?
+    public AVPair pluralIndirect = null; // Holds the plural form
     public int indirectCount = 1;
     public String indirectModifier = ""; // adjective
     public boolean question = false;
@@ -137,6 +138,7 @@ public class LFeatures {
         adverbSUMO = null;
         pluralDirect = null;
         directOther = null;
+        pluralIndirect = null;
     }
 
 
@@ -405,6 +407,100 @@ public class LFeatures {
                     else {
                         prop.append("(patient ?P ?DO) ");
                     }   break;
+            }
+        }
+
+        // INDIRECT OBJECT
+        if (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something")) {
+            english.append(indirectPrep).append(lfeat.indirectName);
+            if (pluralIndirect.attribute.equals("true"))
+                addSUMOplural(prop,lfeat.indirectType,pluralIndirect,"?IO");
+            else {
+                if (kbLite.isInstanceOf(lfeat.indirectType,"SocialRole"))
+                    prop.append("(attribute ?IO ").append(lfeat.indirectType).append(") ");
+                else
+                    prop.append("(instance ?IO ").append(lfeat.indirectType).append(") ");
+            }
+            // CHECKED UP TO HERE!!!!!!!!
+            if (lfeat.framePart.contains("somebody"))
+                prop.append(genSUMOForHuman(lfeat.indirectName,"?IO"));
+            else
+                prop.append("(instance ?IO ").append(lfeat.indirectType).append(")");
+
+            if (english.toString().endsWith(" "))
+                english.delete(english.length()-1,english.length());
+            if (lfeat.polite && !lfeat.politeFirst)
+                english.append(RandSet.listToEqualPairs(lfeatsets.endings).getNext());
+            if (lfeat.polite) //lfeat.subj.equals("You") && !english.toString().startsWith("Please") && rand.nextBoolean())
+                english.append("!");
+            else if (english.indexOf(" ") != -1 &&
+                    questionWord(english.toString().substring(0,english.toString().indexOf(" "))))
+                english.append("?");
+            else
+                english.append(".");
+            if (lfeat.attitude != null && lfeat.attitude.equals("says")) {
+                english.append("\"");
+            }
+            prop.append("(").append(prep).append(" ?P ?IO) ");
+
+            if (lfeat.subj != null && lfeat.subj.equals("You")) {
+                String newProp = prop.toString().replace(" ?H"," You");
+                prop.setLength(0);
+                prop.append(newProp);
+            }
+            prop.append(closeParens(lfeat));
+            if (debug) System.out.println("generateIndirectObject(): " + english);
+        }
+        else if (lfeat.framePart.contains("INFINITIVE")) {
+            getVerb(lfeat,true);
+            if (debug) System.out.println("generateIndirectObject(): word: " + lfeat.secondVerb);
+            if (debug) System.out.println("generateIndirectObject(): frame: " + lfeat.framePart);
+            if (lfeat.framePart.contains("to"))
+                lfeat.secondVerb = "to " + lfeat.secondVerb;
+            if (debug) System.out.println("generateIndirectObject(2): word: " + lfeat.secondVerb);
+            english.append(lfeat.secondVerb).append(" ");
+            if (lfeat.polite && !lfeat.politeFirst)
+                english.append(RandSet.listToEqualPairs(lfeatsets.endings).getNext());
+            if (english.toString().endsWith(" "))
+                english.delete(english.length()-1,english.length());
+            if (lfeat.subj.equals("You") && !english.toString().startsWith("Please") && rand.nextBoolean())
+                english.append("!");
+            else if (english.indexOf(" ") != -1 &&
+                    questionWord(english.toString().substring(0,english.toString().indexOf(" "))))
+                english.append("?");
+            else
+                english.append(".");
+            if (lfeat.attitude != null && lfeat.attitude.equals("says")) {
+                english.append("\"");
+            }
+            prop.append(closeParens(lfeat));
+            if (lfeat.subj != null && lfeat.subj.equals("You")) {
+                String newProp = prop.toString().replace(" ?H"," You");
+                prop.setLength(0);
+                prop.append(newProp);
+            }
+            if (debug) System.out.println("generateIndirectObject(): " + english);
+        }
+        else {  // close off the formula without an indirect object
+            if (debug) System.out.println("generateIndirectObject(): attitude: " + lfeat.attitude);
+            if (lfeat.polite && !lfeat.politeFirst)
+                english.append(RandSet.listToEqualPairs(lfeatsets.endings).getNext());
+            if (english.toString().endsWith(" "))
+                english.delete(english.length() - 1, english.length());
+            if (!StringUtil.emptyString(lfeat.subj) && lfeat.subj.equals("You") && rand.nextBoolean())
+                english.append("!");
+            else if (english.indexOf(" ") != -1 &&
+                    questionWord(english.toString().substring(0, english.toString().indexOf(" "))))
+                english.append("?");
+            else
+                english.append(".");
+            if (lfeat.attitude != null && lfeat.attitude.equals("says"))
+                english.append("\"");
+            prop.append(closeParens(lfeat));
+            if (lfeat.subj != null && lfeat.subj.equals("You")) {
+                String newProp = prop.toString().replace(" ?H", " You");
+                prop.setLength(0);
+                prop.append(newProp);
             }
         }
 
