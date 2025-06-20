@@ -950,7 +950,7 @@ public class GenSimpTestData {
      * Get a person or thing.  Fill in directName, directtype, preposition
      * as a side effect in lfeat
      */
-    public void getDirect(StringBuilder english, LFeatures lfeat) {
+    public void getDirect(LFeatures lfeat) {
 
         if (debug) System.out.println("getDirect(): lfeat.framePart: " + lfeat.framePart);
         if (lfeat.framePart.trim().startsWith("somebody") || lfeat.framePart.trim().startsWith("to somebody") ) {
@@ -972,12 +972,7 @@ public class GenSimpTestData {
                 lfeat.framePart = "";
         }
         else if (lfeat.framePart.trim().startsWith("something") || lfeat.framePart.trim().startsWith("on something")) {
-            // Thompson Start
             lfeat.directType = WordPairFrequency.getNounFromNounAndVerb(lfeatsets, lfeat);
-            /* Original code
-            lfeat.directType = lfeatsets.objects.getNext();
-            */
-            // Thompson End
             if (lfeat.framePart.contains("on something"))
                 lfeat.directPrep = "on ";
             int index = lfeat.framePart.indexOf("something");
@@ -998,7 +993,6 @@ public class GenSimpTestData {
             }
             else
                 lfeat.secondVerb = "to " + lfeat.secondVerb;
-//            lfeat.secondVerbType = lfeat.secondVerbType;
             int index = lfeat.framePart.indexOf("INFINITIVE");
             if (index + 10 < lfeat.framePart.length())
                 lfeat.framePart = lfeat.framePart.substring(index + 10);
@@ -1047,18 +1041,20 @@ public class GenSimpTestData {
             return;
         }
         String role = "patient";
-        String other = ""; // if there
+        lfeat.directOther = ""; // if there
         if (StringUtil.emptyString(lfeat.directType)) // allow pre-set objects for testing
-            getDirect(english,lfeat);
+            getDirect(lfeat);
         else
             System.out.println("generateDirectObject(): non-empty object, using specified input " + lfeat.directType);
         if (lfeat.directType != null && lfeat.directType.equals(lfeat.subj))
             if (!lfeat.directType.equals("Human") ||
                     (lfeat.directType.equals("Human") && lfeat.directName.equals(lfeat.subjName)))
-                other = RandSet.listToEqualPairs(lfeatsets.others).getNext() + " ";
-        if (lfeat.directType != null && lfeat.directType.equals("Human"))
-            prop.append(genSUMOForHuman(lfeat.directName, "?DO"));
-        AVPair plural = new AVPair();
+                lfeat.directOther = RandSet.listToEqualPairs(lfeatsets.others).getNext() + " ";
+        if (lfeat.directType != null && lfeat.directType.equals("Human")) {
+            lfeat.directSUMO = genSUMOForHuman(lfeat.directName, "?DO");
+            prop.append(lfeat.directSUMO);
+        }
+        lfeat.pluralDirect = new AVPair();
         if (!"".equals(lfeat.secondVerbType)) {
             addSecondVerb(english,prop,lfeat);
             if (debug) System.out.println("generateDirectObject(2): added second verb, english: " + english);
@@ -1067,12 +1063,17 @@ public class GenSimpTestData {
                 (kbLite.isSubclass(lfeat.directType,"Region") || kbLite.isSubclass(lfeat.directType,"StationaryObject"))) {
             //    (kb.isSubclass(dprep.noun,"Region") || kb.isSubclass(dprep.noun,"StationaryObject"))) {
             if (debug) System.out.println("generateDirectObject(3): location, region or object: " + english);
-            if (lfeat.directType.equals("Human"))
-                english.append("to ").append(other).append(nounFormFromTerm(lfeat.directName,plural,other)).append(" ");
-            else
-                english.append("to ").append(other).append(nounFormFromTerm(lfeat.directType,plural,other)).append(" ");
-            if (plural.attribute.equals("true"))
-                addSUMOplural(prop,lfeat.directType,plural,"?DO");
+            if (lfeat.directType.equals("Human")) {
+                System.out.println("DELETE ME> IS THIS LINE EVER EXECUTED?");
+                english.append("to ").append(lfeat.directOther).append(lfeat.directName).append(" ");
+                // I THINK THIS IS A BUG: english.append("to ").append(other).append(nounFormFromTerm(lfeat.directName, lfeat.pluralDirect, other)).append(" ");
+            }
+            else {
+                lfeat.directName = nounFormFromTerm(lfeat.directType, lfeat.pluralDirect, lfeat.directOther);
+                english.append("to ").append(lfeat.directOther).append(lfeat.directName).append(" ");
+            }
+            if (lfeat.pluralDirect.attribute.equals("true"))
+                addSUMOplural(prop,lfeat.directType,lfeat.pluralDirect,"?DO");
             else
                 prop.append("(instance ?DO ").append(lfeat.directType).append(") ");
             prop.append("(destination ?P ?DO) ");
@@ -1082,11 +1083,13 @@ public class GenSimpTestData {
             if (debug) System.out.println("generateDirectObject(4): some other type, english: " + english);
             if (debug) System.out.println("generateDirectObject(4): prep: " + lfeat.directPrep);
             if (lfeat.directType.equals("Human"))
-                english.append(lfeat.directPrep).append(other).append(lfeat.directName).append(" ");
-            else
-                english.append(lfeat.directPrep).append(other).append(nounFormFromTerm(lfeat.directType,plural,other)).append(" ");
-            if (plural.attribute.equals("true"))
-                addSUMOplural(prop,lfeat.directType,plural,"?DO");
+                english.append(lfeat.directPrep).append(lfeat.directOther).append(lfeat.directName).append(" ");
+            else {
+                lfeat.directName = nounFormFromTerm(lfeat.directType, lfeat.pluralDirect, lfeat.directOther);
+                english.append(lfeat.directPrep).append(lfeat.directOther).append(lfeat.directName).append(" ");
+            }
+            if (lfeat.pluralDirect.attribute.equals("true"))
+                addSUMOplural(prop,lfeat.directType,lfeat.pluralDirect,"?DO");
             else
                 prop.append("(instance ?DO ").append(lfeat.directType).append(") ");
 
@@ -1117,7 +1120,7 @@ public class GenSimpTestData {
         }
         if (debug) System.out.println("generateDirectObject(5): english: " + english);
         if (debug) System.out.println("generateDirectObject(5): prop: " + prop);
-        if (debug) System.out.println("generateDirectObject(5): plural: " + plural);
+        if (debug) System.out.println("generateDirectObject(5): plural: " + lfeat.pluralDirect);
         if (debug) System.out.println("generateDirectObject(5): lfeat.framePart: " + lfeat.framePart);
     }
 
@@ -1151,7 +1154,7 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("getPrepFromFrame(): frame: " + lfeat.frame);
         if (StringUtil.emptyString(lfeat.framePart)) {
-            System.out.println("Error in getPrepFromFrame(): empty frame");
+            System.out.println("Error in getPrepFromFrame(): empty frame: (verb, verbType) = (" + lfeat.verb + ", " + lfeat.verbType + ")");
             return;
         }
         int fnum = WordNetUtilities.verbFrameNum(lfeat.framePart);
@@ -1211,8 +1214,9 @@ public class GenSimpTestData {
             AVPair plural = new AVPair();
             if (lfeat.indirectType.equals("Human"))
                 english.append(lfeat.indirectPrep).append(lfeat.indirectName);
-            else
-                english.append(lfeat.indirectPrep).append(nounFormFromTerm(lfeat.indirectType,plural,""));
+            else {
+                english.append(lfeat.indirectPrep).append(nounFormFromTerm(lfeat.indirectType, plural, ""));
+            }
             if (debug) System.out.println("generateIndirectObject(): plural: " + plural);
 
             if (plural.attribute.equals("true"))
@@ -1602,7 +1606,6 @@ public class GenSimpTestData {
                     lfeat.hasdateORtime = true;
                     addTimeDate(english, prop, lfeat);
                 }
-                if (debug) System.out.println("genSentence(2) startOfSentence: " + startOfSentence);
                 generateSubject(english, prop, lfeat);
                 generateVerb(english, prop, lfeat);
                 if (prop.toString().equals("")) {

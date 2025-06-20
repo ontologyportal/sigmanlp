@@ -57,7 +57,10 @@ public class LFeatures {
     public String verbSynset = null;
     public String directName = null;  // the direct object
     public String directType = null;  // the direct object
+    public String directSUMO = null;
     public boolean directPlural = false;
+    public String directOther = null; // If the subj == dir object, add the word "another"
+    public AVPair pluralDirect = null;
     public int directCount = 1;
     public String directModifier = ""; // adjective
     public String indirectName = null; // the indirect object
@@ -104,6 +107,7 @@ public class LFeatures {
         subjectCount = 1;
         directName = null;  // the direct object
         directType = null;  // the direct object
+        directSUMO = null;
         directPlural = false;
         directPrep = "";
         directCount = 1;
@@ -131,6 +135,8 @@ public class LFeatures {
         pluralSubj = null;
         verbFrameCat = null;
         adverbSUMO = null;
+        pluralDirect = null;
+        directOther = null;
     }
 
 
@@ -163,7 +169,7 @@ public class LFeatures {
         return "";
     }
 
-    public void flushToEnglishLogic(KBLite kbLite) {
+    public LFeatures flushToEnglishLogic(KBLite kbLite) {
         boolean startOfSentence = true;
         StringBuilder english = new StringBuilder();
         StringBuilder prop = new StringBuilder();
@@ -355,10 +361,58 @@ public class LFeatures {
             prop.append("(before Now (BeginFn (WhenFn ?P))) ");
 
 
+        // ADD DIRECT OBJECT
+        if (directType != null && directType.equals("Human"))
+            prop.append(directSUMO);
+        if (!"".equals(secondVerbType)) {
+            if (!StringUtil.emptyString(directPrep))
+                english.append(directPrep).append(" ");
+            english.append(secondVerb).append(" ");
+            prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
+            prop.append("(refers ?DO ?V2) ");
+        }
+        else if (kbLite.isSubclass(verbType, "Translocation") &&
+                (kbLite.isSubclass(directType,"Region") || kbLite.isSubclass(directType,"StationaryObject"))) {
+
+            english.append("to ").append(directOther).append(directName).append(" ");
+            if (pluralDirect.attribute.equals("true"))
+                addSUMOplural(prop,directType,pluralDirect,"?DO");
+            else
+                prop.append("(instance ?DO ").append(directType).append(") ");
+            prop.append("(destination ?P ?DO) ");
+        }
+        else if (directType != null) {
+            if (directType.equals("Human"))
+                english.append(directPrep).append(directOther).append(directName).append(" ");
+            else
+                english.append(directPrep).append(directOther).append(directName).append(" ");
+            if (pluralDirect.attribute.equals("true"))
+                addSUMOplural(prop,directType,pluralDirect,"?DO");
+            else
+                prop.append("(instance ?DO ").append(directType).append(") ");
+
+            switch (directPrep) {
+                case "to ":
+                    prop.append("(destination ?P ?DO) ");
+                    break;
+                case "on ":
+                    prop.append("(orientation ?P ?DO On) ");
+                    break;
+                default:
+                    if (kbLite.isSubclass(verbType,"Transfer")) {
+                        prop.append("(objectTransferred ?P ?DO) ");
+                    }
+                    else {
+                        prop.append("(patient ?P ?DO) ");
+                    }   break;
+            }
+        }
+
 
         // FLUSH STRING BUILDER OBJECT
         englishSentence = english.toString();
         logicFormula = prop.toString();
+        return this; // returns a reference to this object
     }
 
 
