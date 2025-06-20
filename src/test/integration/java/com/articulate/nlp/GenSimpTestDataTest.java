@@ -61,7 +61,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         StringBuilder english = new StringBuilder();
         lfeat.testMode = true;
         lfeat.tense = tense;
-        String v = gstd.verbForm(term,negated, word, plural, english, lfeat);
+        String v = gstd.verbForm(term,negated, word, plural, lfeat.subjType, lfeat);
         System.out.println("testVerb(): verb form: " + v);
         if (!v.equalsIgnoreCase(expected)) {
             if (!v.replace("won't","will not").equalsIgnoreCase(expected)) {
@@ -244,15 +244,15 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         lfeat.tense = LFeatures.PAST;
         StringBuilder english = new StringBuilder();
         GenSimpTestData gstd = new GenSimpTestData();
-        System.out.println("testToy(): past tense Game/toy: " + gstd.verbForm("Game",false,word,false, english,lfeat));
+        System.out.println("testToy(): past tense Game/toy: " + gstd.verbForm("Game",false,word,false, lfeat.subjType,lfeat));
         word = "soccer";
-        System.out.println("testToy(): past tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false, english,lfeat));
+        System.out.println("testToy(): past tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false, lfeat.subjType,lfeat));
         lfeat.tense = LFeatures.PRESENT;
-        System.out.println("testToy(): present tense Game/toy: " + gstd.verbForm("Game",false,word,false, english,lfeat));
+        System.out.println("testToy(): present tense Game/toy: " + gstd.verbForm("Game",false,word,false,lfeat.subjType, lfeat));
         word = "soccer";
-        System.out.println("testToy(): present tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false, english,lfeat));
+        System.out.println("testToy(): present tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false,lfeat.subjType, lfeat));
         word = "walking";
-        System.out.println("testToy(): present tense Walking/walking: " + gstd.verbForm("Walking",false,word,false, english,lfeat));
+        System.out.println("testToy(): present tense Walking/walking: " + gstd.verbForm("Walking",false,word,false,lfeat.subjType, lfeat));
     }
 
     /** ***************************************************************

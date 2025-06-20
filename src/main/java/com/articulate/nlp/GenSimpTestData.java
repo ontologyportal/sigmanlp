@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 
 public class GenSimpTestData {
 
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static KB kb;
     public static KBLite kbLite;
     public static boolean printFrame = false;
@@ -209,7 +209,7 @@ public class GenSimpTestData {
         System.out.print(String.format("%.2f", value));
         System.out.print("% complete. ");
         System.out.print(sentCount + " of total " + sentMax);
-        System.out.print(sentCount + ". Discarded sentence attempts: " + badSentCount);
+        System.out.print(". Discarded sentence attempts: " + badSentCount);
         if (debug) System.out.println();
     }
 
@@ -308,7 +308,6 @@ public class GenSimpTestData {
 
         while (sentCount < sentMax) {
             progressPrint(sentCount, badSentCount);
-            System.out.println("Progress" + sentCount);
             english = new StringBuilder();
             prop = new StringBuilder();
             lfeat = new LFeatures();
@@ -354,8 +353,7 @@ public class GenSimpTestData {
      * Handle the auxilliary construction of "play X" when X is a Game
      * @param term is a SUMO term
      */
-    public String verbForm(String term, boolean negated, String word, boolean plural, StringBuilder english,
-                           LFeatures lfeat) {
+    public String verbForm(String term, boolean negated, String word, boolean plural, String nounType, LFeatures lfeat) {
 
         String adverb = "";
         if (!"".equals(lfeat.adverb)) {
@@ -393,12 +391,11 @@ public class GenSimpTestData {
         String neg = "";
         if (negated) {
             if (lfeat.subj != null && lfeat.subj.equals("You")) {
-                if (english.toString().contains("should")) {
+                if (lfeat.addShouldToSubj) {
                     if (rand.nextBoolean())
                         neg = "not ";
                     else {
                         neg = "n't ";
-                        english.deleteCharAt(english.length()-1);
                     }
                 }
                 else if (rand.nextBoolean())
@@ -432,7 +429,7 @@ public class GenSimpTestData {
         if (debug) System.out.println("verbForm(): root: " + root);
         if (debug) System.out.println("verbForm(): nounForm: " + nounForm);
         String copula = conjCopula(negated,lfeat.tense,plural);
-        if (english.toString().endsWith("is ") && copula.startsWith("is"))
+        if (nounType != null && nounType.endsWith("is ") && copula.startsWith("is"))
             copula = copula.substring(2);
         if (copula.endsWith("won't"))
             copula = copula + " ";
@@ -861,20 +858,20 @@ public class GenSimpTestData {
         }
     }
 
-    /** ***************************************************************
+    /** **********************************************************************
+     *  Adds the previously selected verb to the sentence in its proper form.
      */
-    public void generateVerb(boolean negated,StringBuilder english, StringBuilder prop,
-                                String proc, String word, LFeatures lfeat) {
+    public void generateVerb(StringBuilder english, StringBuilder prop, LFeatures lfeat) {
 
-        if (debug) System.out.println("generateVerb(): word,proc,subj: " + word + ", " + proc + ", " + lfeat.subj);
-        if (debug) System.out.println("generateVerb(): kb.isSubclass(proc,\"IntentionalProcess\"): " + kbLite.isSubclass(proc,"IntentionalProcess"));
-        String verb = verbForm(proc,negated,word,lfeat.subjectPlural,english,lfeat);
+        boolean negated = lfeat.negatedBody;
+        String word = lfeat.verb;
+        String verb = verbForm(lfeat.verbType,negated,word,lfeat.subjectPlural, lfeat.subjType, lfeat);
         String adverb = "";
-        String adverbSUMO = "";
+        lfeat.adverbSUMO = "";
         if (!"".equals(lfeat.adverb)) {
             adverb = lfeat.adverb + " ";
-            adverbSUMO = WSD.getBestDefaultSUMOsense(lfeat.adverb,4);
-            adverbSUMO = WordNetUtilities.getBareSUMOTerm(adverbSUMO);
+            lfeat.adverbSUMO = WSD.getBestDefaultSUMOsense(lfeat.adverb,4);
+            lfeat.adverbSUMO = WordNetUtilities.getBareSUMOTerm(lfeat.adverbSUMO);
         }
         if (lfeat.subj != null && !lfeat.subj.isEmpty() && lfeat.subj.equals("You")) {
             verb = verb.toLowerCase();
@@ -886,18 +883,21 @@ public class GenSimpTestData {
             }
         }
         english.append(verb).append(" ");
-        prop.append("(instance ?P ").append(proc).append(") ");
+        prop.append("(instance ?P ").append(lfeat.verbType).append(") ");
         if (!"".equals(lfeat.adverb)) {
-            prop.append("(manner ?P ").append(adverbSUMO).append(") ");
+            prop.append("(manner ?P ").append(lfeat.adverbSUMO).append(") ");
         }
         if (lfeat.framePart.startsWith("It") ) {
+            lfeat.verbFrameCat = "It";
             System.out.println("non-human subject for (prop,synset,word): " +
                     prop + ", " + lfeat.verbSynset + ", " + lfeat.verb);
         }
-        else if (lfeat.framePart.startsWith("Something"))
+        else if (lfeat.framePart.startsWith("Something")) {
+            lfeat.verbFrameCat = "Something";
             prop.append("(involvedInEvent ?P ?H) ");
+        }
         else if (lfeat.subj != null && lfeat.subj.equalsIgnoreCase("What") &&
-                !kbLite.isSubclass(proc,"IntentionalProcess")) {
+                !kbLite.isSubclass(lfeat.verbType,"IntentionalProcess")) {
             prop.append("(involvedInEvent ?P ?H) ");
         }
         else if (lfeat.subj != null &&
@@ -905,15 +905,17 @@ public class GenSimpTestData {
                    kbLite.isInstanceOf(lfeat.subj,"SocialRole") ||
                    lfeat.subj.equalsIgnoreCase("Who") ||
                    lfeat.subj.equals("You"))) {
-            if (kbLite.isSubclass(proc,"IntentionalProcess"))
+            if (kbLite.isSubclass(lfeat.verbType,"IntentionalProcess")) {
                 prop.append("(agent ?P ?H) ");
-            else if (kbLite.isSubclass(proc,"BiologicalProcess"))
+            }
+            else if (kbLite.isSubclass(lfeat.verbType,"BiologicalProcess")) {
                 prop.append("(experiencer ?P ?H) ");
-            else
+            }
+            else {
                 prop.append("(agent ?P ?H) ");
+            }
         }
         else {
-            if (debug) System.out.println("ERROR generateVerb() non-Agent, non-Role subject " + lfeat.subj + " for action " + proc);
             prop.delete(0,prop.length());
             return;
         }
@@ -1006,7 +1008,7 @@ public class GenSimpTestData {
         else if (lfeat.framePart.trim().startsWith("VERB-ing")) {
             getVerb(lfeat,true);
             lfeat.tense = LFeatures.PROGRESSIVE;
-            lfeat.secondVerb = verbForm(lfeat.secondVerbType,false,lfeat.secondVerb,false,english,lfeat);
+            lfeat.secondVerb = verbForm(lfeat.secondVerbType,false,lfeat.secondVerb,false, lfeat.directType, lfeat);
             if (lfeat.secondVerb.startsWith("is "))
                 lfeat.secondVerb = lfeat.secondVerb.substring(3);
             lfeat.framePart = "";
@@ -1586,7 +1588,7 @@ public class GenSimpTestData {
             getVerb(lfeat,false);
             getTense(english, lfeat);
             getFrame(lfeat);  // Get a verb frame from WordNet
-            if (lfeat.framePart != null) {
+            if (lfeat.framePart != null) { // An optimization would be to remove all the verbs that have null frameParts from lfeatset.
                 getPrepFromFrame(lfeat);
                 lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
                 lfeat.indirectType = WordPairFrequency.getNounFromNounAndVerb(lfeatsets, lfeat);
@@ -1602,7 +1604,7 @@ public class GenSimpTestData {
                 }
                 if (debug) System.out.println("genSentence(2) startOfSentence: " + startOfSentence);
                 generateSubject(english, prop, lfeat);
-                generateVerb(lfeat.negatedBody, english, prop, lfeat.verbType, lfeat.verb, lfeat);
+                generateVerb(english, prop, lfeat);
                 if (prop.toString().equals("")) {
                     if (debug) System.out.println("genSentence(): return b/c empty prop for " + english);
                 }

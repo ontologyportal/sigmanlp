@@ -40,12 +40,13 @@ public class LFeatures {
     public String secondVerb = ""; // the verb word that appears as INFINITIVE or VERB-ing or V-ing in the frame
     public String secondVerbType = ""; // the SUMO type of the second verb
     public String secondVerbSynset = "";
-    public String secondVerbModifier= ""; // adverb
+    public String secondVerbModifier= ""; // adverb to second verb
     public String subj = null;
     public String subjName = "";
     public String subjType = null;
     public String subjectModifier = ""; // adjective
-    public boolean subjectPlural = false;
+    public boolean subjectPlural = false; // Is the subject plural?
+    public AVPair pluralSubj = null;      // Form of the the plural subject
     public int subjectCount = 1;
 
     // Note that the frame is destructively modified as we proceed through the sentence
@@ -67,7 +68,9 @@ public class LFeatures {
     public boolean question = false;
     public String verb = "";
     public String verbType = ""; // the SUMO class of the verb
+    public String verbFrameCat = "";
     public String adverb = "";
+    public String adverbSUMO = "";
     public int tense = -1; // GenSimpTestData.NOTIME;
     boolean hastime = false; // has just a time
     boolean hasdate = false; // has just a date
@@ -87,7 +90,6 @@ public class LFeatures {
     public boolean addBodyPart = false; // add a body part to the subject
     public String bodyPart = null; // subject body part
     public AVPair pluralBodyPart = null;
-    public AVPair pluralSubj = null;
 
     public String englishSentence;
     public String logicFormula;
@@ -127,6 +129,8 @@ public class LFeatures {
         addBodyPart = false;
         pluralBodyPart = null;
         pluralSubj = null;
+        verbFrameCat = null;
+        adverbSUMO = null;
     }
 
 
@@ -159,7 +163,7 @@ public class LFeatures {
         return "";
     }
 
-    public void flushToEnglishLogic() {
+    public void flushToEnglishLogic(KBLite kbLite) {
         boolean startOfSentence = true;
         StringBuilder english = new StringBuilder();
         StringBuilder prop = new StringBuilder();
@@ -318,6 +322,39 @@ public class LFeatures {
             }
             startOfSentence = false;
         }
+
+        // ADD VERB
+        english.append(verb).append(" ");
+        prop.append("(instance ?P ").append(verbType).append(") ");
+        if (!"".equals(adverb)) {
+            prop.append("(manner ?P ").append(adverbSUMO).append(") ");
+        }
+        if (verbFrameCat.startsWith("Something"))
+            prop.append("(involvedInEvent ?P ?H) ");
+        else if (subj != null && subj.equalsIgnoreCase("What") &&
+                !kbLite.isSubclass(verbType,"IntentionalProcess")) {
+            prop.append("(involvedInEvent ?P ?H) ");
+        }
+        else if (subj != null &&
+                (kbLite.isSubclass(subj,"AutonomousAgent") ||
+                        kbLite.isInstanceOf(subj,"SocialRole") ||
+                        subj.equalsIgnoreCase("Who") ||
+                        subj.equals("You"))) {
+            if (kbLite.isSubclass(verbType,"IntentionalProcess"))
+                prop.append("(agent ?P ?H) ");
+            else if (kbLite.isSubclass(verbType,"BiologicalProcess"))
+                prop.append("(experiencer ?P ?H) ");
+            else
+                prop.append("(agent ?P ?H) ");
+        }
+        if (isPast())
+            prop.append("(before (EndFn (WhenFn ?P)) Now) ");
+        if (isPresent())
+            prop.append("(temporallyBetween (BeginFn (WhenFn ?P)) Now (EndFn (WhenFn ?P))) ");
+        if (isFuture())
+            prop.append("(before Now (BeginFn (WhenFn ?P))) ");
+
+
 
         // FLUSH STRING BUILDER OBJECT
         englishSentence = english.toString();
