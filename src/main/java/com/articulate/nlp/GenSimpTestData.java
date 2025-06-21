@@ -149,11 +149,13 @@ public class GenSimpTestData {
         if (name != null) {
             String gender = "Male";
             String g = lfeatsets.genders.get(name);
-            if (g.equalsIgnoreCase("F"))
-                gender = "Female";
-            //sb.append("(instance " + var + " Human) ");
-            sb.append("(attribute ").append(var).append(" ").append(gender).append(") ");
-            sb.append("(names \"").append(name).append("\" ").append(var).append(") ");
+            if (g != null) {
+                if (g.equalsIgnoreCase("F"))
+                    gender = "Female";
+                //sb.append("(instance " + var + " Human) ");
+                sb.append("(attribute ").append(var).append(" ").append(gender).append(") ");
+                sb.append("(names \"").append(name).append("\" ").append(var).append(") ");
+            }
         }
         return sb.toString();
     }
@@ -1205,18 +1207,17 @@ public class GenSimpTestData {
         if (debug) System.out.println("generateIndirectObject(): frame: " + lfeat.framePart);
         if (debug) System.out.println("generateIndirectObject(): indirect prep: " + lfeat.indirectPrep);
         if (!"".equals(lfeat.framePart) && lfeat.framePart.contains("somebody") || lfeat.framePart.contains("something")) {
-            String prep = null;
             getIndirect(lfeat);
             if (!StringUtil.emptyString(lfeat.indirectPrep))
-                prep = getCaseRoleFromPrep(lfeat.indirectPrep);
-            if (StringUtil.emptyString(prep))
-                prep = "patient";
+                lfeat.indirectCaseRole = getCaseRoleFromPrep(lfeat.indirectPrep);
+            if (StringUtil.emptyString(lfeat.indirectCaseRole))
+                lfeat.indirectCaseRole = "patient";
             lfeat.pluralIndirect = new AVPair();
             if (lfeat.indirectType.equals("Human"))
                 english.append(lfeat.indirectPrep).append(lfeat.indirectName);
             else {
                 lfeat.indirectName = nounFormFromTerm(lfeat.indirectType, lfeat.pluralIndirect, "");
-                english.append(lfeat.indirectPrep).append(lfeat.indirectName));
+                english.append(lfeat.indirectPrep).append(lfeat.indirectName);
             }
             if (debug) System.out.println("generateIndirectObject(): plural: " + lfeat.pluralIndirect);
 
@@ -1228,17 +1229,23 @@ public class GenSimpTestData {
                 else
                     prop.append("(instance ?IO ").append(lfeat.indirectType).append(") ");
             }
-            if (lfeat.framePart.contains("somebody"))
-                prop.append(genSUMOForHuman(lfeat.indirectName,"?IO"));
+            if (lfeat.framePart.contains("somebody")) {
+                lfeat.indirectSUMO = genSUMOForHuman(lfeat.indirectName, "?IO");
+                prop.append(lfeat.indirectSUMO);
+            }
             else
                 prop.append("(instance ?IO ").append(lfeat.indirectType).append(")");
 
             if (english.toString().endsWith(" "))
                 english.delete(english.length()-1,english.length());
-            if (lfeat.polite && !lfeat.politeFirst)
-                english.append(RandSet.listToEqualPairs(lfeatsets.endings).getNext());
-            if (lfeat.polite) //lfeat.subj.equals("You") && !english.toString().startsWith("Please") && rand.nextBoolean())
+            if (lfeat.polite && !lfeat.politeFirst) {
+                lfeat.politeWord = RandSet.listToEqualPairs(lfeatsets.endings).getNext();
+                english.append(lfeat.politeWord);
+            }
+            if (lfeat.polite) {//lfeat.subj.equals("You") && !english.toString().startsWith("Please") && rand.nextBoolean())
+                lfeat.exclamation = true;
                 english.append("!");
+            }
             else if (english.indexOf(" ") != -1 &&
                     questionWord(english.toString().substring(0,english.toString().indexOf(" "))))
                 english.append("?");
@@ -1247,7 +1254,7 @@ public class GenSimpTestData {
             if (lfeat.attitude != null && lfeat.attitude.equals("says")) {
                 english.append("\"");
             }
-            prop.append("(").append(prep).append(" ?P ?IO) ");
+            prop.append("(").append(lfeat.indirectCaseRole).append(" ?P ?IO) ");
 
             if (lfeat.subj != null && lfeat.subj.equals("You")) {
                 String newProp = prop.toString().replace(" ?H"," You");
@@ -1269,8 +1276,10 @@ public class GenSimpTestData {
                 english.append(RandSet.listToEqualPairs(lfeatsets.endings).getNext());
             if (english.toString().endsWith(" "))
                 english.delete(english.length()-1,english.length());
-            if (lfeat.subj.equals("You") && !english.toString().startsWith("Please") && rand.nextBoolean())
+            if (lfeat.subj.equals("You") && !english.toString().startsWith("Please") && rand.nextBoolean()) {
+                lfeat.exclamation = true;
                 english.append("!");
+            }
             else if (english.indexOf(" ") != -1 &&
                     questionWord(english.toString().substring(0,english.toString().indexOf(" "))))
                 english.append("?");
@@ -1293,8 +1302,10 @@ public class GenSimpTestData {
                 english.append(RandSet.listToEqualPairs(lfeatsets.endings).getNext());
             if (english.toString().endsWith(" "))
                 english.delete(english.length()-1,english.length());
-            if (!StringUtil.emptyString(lfeat.subj) && lfeat.subj.equals("You") && rand.nextBoolean())
+            if (!StringUtil.emptyString(lfeat.subj) && lfeat.subj.equals("You") && rand.nextBoolean()) {
+                lfeat.exclamation = true;
                 english.append("!");
+            }
             else if (english.indexOf(" ") != -1 &&
                     questionWord(english.toString().substring(0,english.toString().indexOf(" "))))
                 english.append("?");
