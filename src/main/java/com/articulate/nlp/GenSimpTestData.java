@@ -307,7 +307,8 @@ public class GenSimpTestData {
         LFeatures lfeat;
         int sentCount = 0;
         int badSentCount = 0;
-
+        int deletemeCountGood = 0;
+        int deletemeCountBad = 0;
         while (sentCount < sentMax) {
             progressPrint(sentCount, badSentCount);
             english = new StringBuilder();
@@ -315,6 +316,18 @@ public class GenSimpTestData {
             lfeat = new LFeatures();
             lfeatsets.prevHumans.clear();
             if (genSentence(english, prop, lfeat)) {
+                lfeat.flushToEnglishLogic(kbLite);
+                if (!english.toString().replace("that ", "").equals(lfeat.englishSentence.replace("that ", "")) || !prop.toString().equals(lfeat.logicFormula)) {
+                    deletemeCountBad++;
+                    System.out.println("English new: " + lfeat.englishSentence.replace("that ", ""));
+                    System.out.println("English old: " + english.toString().replace("that ", ""));
+                    System.out.println("Logic new: " + lfeat.logicFormula);
+                    System.out.println("Logic old: " + prop);
+                    System.out.println("good: " + deletemeCountGood + " bad:" + deletemeCountBad + " lfeat: " + lfeat + "\n\n");
+                }
+                else {
+                    deletemeCountGood++;
+                }
                 printSentenceToFiles(english, prop, lfeat);
                 sentCount++;
             }
@@ -884,6 +897,7 @@ public class GenSimpTestData {
                 System.out.println("Error: adverb is null or empty");
             }
         }
+        lfeat.verbConjugated = verb;
         english.append(verb).append(" ");
         prop.append("(instance ?P ").append(lfeat.verbType).append(") ");
         if (!"".equals(lfeat.adverb)) {
@@ -1526,7 +1540,7 @@ public class GenSimpTestData {
         }
         if (!lfeat.hastime && !lfeat.hasdate && lfeat.hasdatetime) { // sometimes add both
             lfeat.dateEng = capital("on ") + ldt.format(DateTimeFormatter.ofPattern(dateOption + " 'at' ha"));
-            lfeat.dayLog = day + "";  lfeat.monthLog = month + "";  lfeat.yearLog = year + "";
+            lfeat.hourLog = hour + "";  lfeat.dayLog = day + "";  lfeat.monthLog = month + "";  lfeat.yearLog = year + "";
             prop.append("(instance ?T (HourFn ").append(hour).append(" (DayFn ").append(day).append(" (MonthFn ").append(month).append(" (YearFn ").append(year).append("))))) (during ?P ?T) ");
             english.append(lfeat.dateEng).append(" ");
         }

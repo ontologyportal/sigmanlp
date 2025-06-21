@@ -53,8 +53,7 @@ public class LFeatures {
     public String frame = null; // the particular verb frame under consideration.
     public String framePart = null; // the frame that gets "consumed" during processing
     public List<String> frames = null;  // verb frames for the current process type
-    
-    public String verbSynset = null;
+
     public String directName = null;  // the direct object
     public String directType = null;  // the direct object
     public String directSUMO = null;
@@ -74,6 +73,8 @@ public class LFeatures {
     public boolean question = false;
     public boolean exclamation = false;
     public String verb = "";
+    public String verbConjugated = "";
+    public String verbSynset = null;
     public String verbType = ""; // the SUMO class of the verb
     public String verbFrameCat = "";
     public String adverb = "";
@@ -146,6 +147,7 @@ public class LFeatures {
         question = false;
         exclamation = false;
         indirectCaseRole = null;
+        verbConjugated = "";
     }
 
 
@@ -178,7 +180,7 @@ public class LFeatures {
         return "";
     }
 
-    public LFeatures flushToEnglishLogic(KBLite kbLite) {
+    public void flushToEnglishLogic(KBLite kbLite) {
         boolean startOfSentence = true;
         StringBuilder english = new StringBuilder();
         StringBuilder prop = new StringBuilder();
@@ -261,10 +263,10 @@ public class LFeatures {
         }
 
         // SUBJECT
-        if (subjType.equals("Human")) {
+        if (subjType != null && subjType.equals("Human")) {
             if (question) {
                 english.setLength(0);
-                english.append(subj).append(" ");
+                english.append(capital(subj, true)).append(" ");
                 startOfSentence = false;
             }
             else {
@@ -275,8 +277,8 @@ public class LFeatures {
                     prop.append("(names \"").append(subjName).append("\" ").append(var).append(") ");
                 }
                 else if (!subj.equals("You")) { // Its not a human, and its not a "You", so its a social role.
-                    english.append(subj).append(" ");
-                    prop.append("(attribute ").append(var).append(" ").append(subjName).append(") ");
+                    english.append(subjName).append(" ");
+                    prop.append("(attribute ").append(var).append(" ").append(subj).append(") ");
                 } //There is no appended english or logic for subj.equals("You")
             }
             if (!subj.equals("You"))
@@ -339,12 +341,12 @@ public class LFeatures {
         }
 
         // ADD VERB
-        english.append(verb).append(" ");
+        english.append(verbConjugated).append(" ");
         prop.append("(instance ?P ").append(verbType).append(") ");
         if (!"".equals(adverb)) {
             prop.append("(manner ?P ").append(adverbSUMO).append(") ");
         }
-        if (verbFrameCat.startsWith("Something"))
+        if (verbFrameCat != null && verbFrameCat.startsWith("Something"))
             prop.append("(involvedInEvent ?P ?H) ");
         else if (subj != null && subj.equalsIgnoreCase("What") &&
                 !kbLite.isSubclass(verbType,"IntentionalProcess")) {
@@ -375,8 +377,11 @@ public class LFeatures {
             prop.append(directSUMO);
         if (!"".equals(secondVerbType)) {
             if (!StringUtil.emptyString(directPrep))
-                english.append(directPrep).append(" ");
-            english.append(secondVerb).append(" ");
+                english.append(directPrep);
+            if (directName != null)
+                english.append(directName).append(" ");
+            else
+                english.append(secondVerb).append(" ");
             prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
             prop.append("(refers ?DO ?V2) ");
         }
@@ -435,7 +440,7 @@ public class LFeatures {
         }
         else if (framePart.contains("INFINITIVE")) {
             if (framePart.contains("to"))
-            english.append(secondVerb).append(" ");
+                english.append(secondVerb).append(" ");
         }
 
         // ADD ENDING
@@ -444,7 +449,6 @@ public class LFeatures {
         // FLUSH STRING BUILDER OBJECT
         englishSentence = english.toString();
         logicFormula = prop.toString();
-        return this; // returns a reference to this object
     }
 
 
@@ -531,11 +535,14 @@ public class LFeatures {
                 "attNeg=" + attNeg +
                 ", attPlural=" + attPlural +
                 ", attCount=" + attCount +
+                ", attSubjType='" + attSubjType + '\'' +
                 ", attSubj='" + attSubj + '\'' +
                 ", attitude='" + attitude + '\'' +
                 ", attitudeModifier='" + attitudeModifier + '\'' +
+                ", attWord=" + String.valueOf(attWord) +
                 ", negatedModal=" + negatedModal +
                 ", negatedBody=" + negatedBody +
+                ", modal=" + String.valueOf(modal) +
                 ", directPrep='" + directPrep + '\'' +
                 ", indirectPrep='" + indirectPrep + '\'' +
                 ", secondVerb='" + secondVerb + '\'' +
@@ -544,29 +551,59 @@ public class LFeatures {
                 ", secondVerbModifier='" + secondVerbModifier + '\'' +
                 ", subj='" + subj + '\'' +
                 ", subjName='" + subjName + '\'' +
+                ", subjType='" + subjType + '\'' +
                 ", subjectModifier='" + subjectModifier + '\'' +
                 ", subjectPlural=" + subjectPlural +
+                ", pluralSubj=" + String.valueOf(pluralSubj) +
                 ", subjectCount=" + subjectCount +
                 ", frame='" + frame + '\'' +
                 ", framePart='" + framePart + '\'' +
-                ", verbSynset='" + verbSynset + '\'' +
+                ", frames=" + String.valueOf(frames) +
                 ", directName='" + directName + '\'' +
                 ", directType='" + directType + '\'' +
+                ", directSUMO='" + directSUMO + '\'' +
                 ", directPlural=" + directPlural +
+                ", pluralDirect=" + String.valueOf(pluralDirect) +
+                ", directOther='" + directOther + '\'' +
                 ", directCount=" + directCount +
                 ", directModifier='" + directModifier + '\'' +
                 ", indirectName='" + indirectName + '\'' +
                 ", indirectType='" + indirectType + '\'' +
                 ", indirectPlural=" + indirectPlural +
+                ", indirectSUMO='" + indirectSUMO + '\'' +
+                ", pluralIndirect=" + String.valueOf(pluralIndirect) +
                 ", indirectCount=" + indirectCount +
                 ", indirectModifier='" + indirectModifier + '\'' +
+                ", indirectCaseRole='" + indirectCaseRole + '\'' +
                 ", question=" + question +
+                ", exclamation=" + exclamation +
                 ", verb='" + verb + '\'' +
+                ", verbConjugated='" + verbConjugated + '\'' +
+                ", verbSynset='" + verbSynset + '\'' +
                 ", verbType='" + verbType + '\'' +
+                ", verbFrameCat='" + verbFrameCat + '\'' +
                 ", adverb='" + adverb + '\'' +
+                ", adverbSUMO='" + adverbSUMO + '\'' +
                 ", tense=" + tense +
+                ", hastime=" + hastime +
+                ", hasdate=" + hasdate +
+                ", hasdatetime=" + hasdatetime +
+                ", hasdateORtime=" + hasdateORtime +
+                ", dateEng='" + dateEng + '\'' +
+                ", timeEng='" + timeEng + '\'' +
+                ", yearLog='" + yearLog + '\'' +
+                ", monthLog='" + monthLog + '\'' +
+                ", dayLog='" + dayLog + '\'' +
+                ", hourLog='" + hourLog + '\'' +
                 ", polite=" + polite +
                 ", politeFirst=" + politeFirst +
+                ", politeWord='" + politeWord + '\'' +
+                ", addPleaseToSubj=" + addPleaseToSubj +
+                ", addShouldToSubj=" + addShouldToSubj +
+                ", addBodyPart=" + addBodyPart +
+                ", bodyPart='" + bodyPart + '\'' +
+                ", pluralBodyPart=" + String.valueOf(pluralBodyPart) +
                 '}';
     }
+
 }
