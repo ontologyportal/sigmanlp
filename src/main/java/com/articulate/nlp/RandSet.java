@@ -6,6 +6,7 @@ import com.articulate.sigma.wordNet.WordNetUtilities;
 
 import java.util.*;
 
+
 /** A set of terms, sorted by frequency, and duplicated by log of frequency.
  * The idea is that more frequent terms will be retrieved more frequently.
  */
@@ -98,5 +99,12 @@ public class RandSet {
         RandSet r = new RandSet();
         r.terms.addAll(input);
         return r;
+    }
+
+    @Override
+    public String toString() {
+        Collections.sort(terms);
+        long uniqueCount = terms.stream().distinct().count();
+        return "Total Items: " + terms.size() + ".  Unique items: " + uniqueCount + ". Items: " + terms.toString();
     }
 }

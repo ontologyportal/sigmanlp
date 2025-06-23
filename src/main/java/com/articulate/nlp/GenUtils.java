@@ -1,6 +1,10 @@
 package com.articulate.nlp;
 
 
+import com.articulate.sigma.nlg.NLGUtils;
+import com.articulate.sigma.wordNet.WordNet;
+import com.articulate.sigma.*;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -8,11 +12,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.HashSet;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.util.Set;
 
 
 /** Utility methods useful for synthetically generating sentences.
@@ -77,6 +83,37 @@ public class GenUtils {
             }
         }
     }
+    
+    /** **************************************************************************
+     * Gets the best SUMO mapping for a word. Chooses a random equivalent mapping,
+     * if no equivalent mapping exists, return null.
+     */
+    public static String getBestSUMOMapping(Set<String> synsetOfTerm) {
+
+        ArrayList<String> equivalentTerms = new ArrayList();
+        for (String synset:synsetOfTerm) {
+            String sumoMapping = WordNet.wn.getSUMOMapping(synset);
+            if (sumoMapping != null) {
+                sumoMapping = sumoMapping.substring(2);
+                if (sumoMapping.charAt(sumoMapping.length() - 1) == '=') {
+                    equivalentTerms.add(sumoMapping.substring(0, sumoMapping.length() - 1));
+                }
+            }
+        }
+        if (!equivalentTerms.isEmpty()) {
+            // TODO: Do wordsense disambiguation
+            Random rand = new Random();
+            return equivalentTerms.get(rand.nextInt(equivalentTerms.size()));
+        }
+        return null;
+    }
+
+    public static String capitalizeFirstLetter(String sentenceToCapitalize) {
+            if (sentenceToCapitalize == null || sentenceToCapitalize.isEmpty()) {
+                return sentenceToCapitalize;
+            }
+            return sentenceToCapitalize.substring(0, 1).toUpperCase() + sentenceToCapitalize.substring(1);
+    }
 
     /** ***************************************************************
      *   Writes an english sentence and logic sentence to their
@@ -117,6 +154,17 @@ public class GenUtils {
         }
     }
 
+
+    /** ***************************************************************
+     * generate new SUMO statements for relations and output English
+     * paraphrase
+     */
+    public static String toEnglish(String form, KB kb) {
+
+        return NLGUtils.htmlParaphrase("", form, kb.getFormatMap("EnglishLanguage"),
+                kb.getTermFormatMap("EnglishLanguage"), kb, "EnglishLanguage");
+    }
+
     /** ***************************************************************
      *   Runs a bash command
      */
@@ -146,5 +194,5 @@ public class GenUtils {
         return output.toString().trim();
     }
 
-
+    
 }
