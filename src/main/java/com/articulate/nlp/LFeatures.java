@@ -375,25 +375,31 @@ public class LFeatures {
         // ADD DIRECT OBJECT
         if (directType != null && directType.equals("Human"))
             prop.append(directSUMO);
-        if (!"".equals(secondVerbType)) {
-            if (!StringUtil.emptyString(directPrep))
-                english.append(directPrep);
-            if (directName != null)
-                english.append(directName).append(" ");
-            else
-                english.append(secondVerb).append(" ");
-            prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
-            prop.append("(refers ?DO ?V2) ");
-        }
-        else if (kbLite.isSubclass(verbType, "Translocation") &&
+        if (kbLite.isSubclass(verbType, "Translocation") &&
                 (kbLite.isSubclass(directType,"Region") || kbLite.isSubclass(directType,"StationaryObject"))) {
 
-            english.append("to ").append(directOther).append(directName).append(" ");
+            if (directName != null)
+                english.append("to ").append(directOther).append(directName).append(" ");
+            //if (!"".equals(secondVerbType))
+            else
+                english.append(secondVerb).append(" ");
+
             if (pluralDirect.attribute.equals("true"))
                 addSUMOplural(prop,directType,pluralDirect,"?DO");
             else
                 prop.append("(instance ?DO ").append(directType).append(") ");
             prop.append("(destination ?P ?DO) ");
+        } else if (!"".equals(secondVerbType) ) { //&& secondVerbType.equals("Human")
+            if (!StringUtil.emptyString(directPrep))
+                english.append(directPrep);
+            if (directName != null) {
+                english.append(directOther).append(directName).append(" ");
+                prop.append("(instance ?DO Human) ");
+            }
+            else
+                english.append(secondVerb).append(" ");
+            prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
+            prop.append("(refers ?DO ?V2) ");
         }
         else if (directType != null) {
             if (directType.equals("Human"))
@@ -439,7 +445,7 @@ public class LFeatures {
                 prop.append("(instance ?IO ").append(indirectType).append(")");
         }
         else if (framePart.contains("INFINITIVE")) {
-            if (framePart.contains("to"))
+            //if (framePart.contains("to"))
                 english.append(secondVerb).append(" ");
         }
 

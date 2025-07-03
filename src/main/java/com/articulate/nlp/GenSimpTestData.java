@@ -309,6 +309,8 @@ public class GenSimpTestData {
         int badSentCount = 0;
         int deletemeCountGood = 0;
         int deletemeCountBad = 0;
+        int deletemeCountBadEnglish = 0;
+        int deletemeCountBadLogic = 0;
         while (sentCount < sentMax) {
             progressPrint(sentCount, badSentCount);
             english = new StringBuilder();
@@ -317,13 +319,27 @@ public class GenSimpTestData {
             lfeatsets.prevHumans.clear();
             if (genSentence(english, prop, lfeat)) {
                 lfeat.flushToEnglishLogic(kbLite);
-                if (!english.toString().replace("that ", "").equals(lfeat.englishSentence.replace("that ", "")) || !prop.toString().equals(lfeat.logicFormula)) {
+                if (!english.toString().replace("that ", "").replace("  ", " ").equals(lfeat.englishSentence.replace("that ", "").replace("  ", " "))) {
                     deletemeCountBad++;
+                    deletemeCountBadEnglish++;
+                    System.out.println("\n\nBad English:");
                     System.out.println("English new: " + lfeat.englishSentence.replace("that ", ""));
                     System.out.println("English old: " + english.toString().replace("that ", ""));
                     System.out.println("Logic new: " + lfeat.logicFormula);
                     System.out.println("Logic old: " + prop);
-                    System.out.println("good: " + deletemeCountGood + " bad:" + deletemeCountBad + " lfeat: " + lfeat + "\n\n");
+                    System.out.println("good: " + deletemeCountGood + "\nbad:" + deletemeCountBad + "\n english bad:" + deletemeCountBadEnglish + "\n logic bad:" + deletemeCountBadLogic + "\nlfeat: " + lfeat + "\n\n");
+                    System.exit(0);
+                }
+                else if(!prop.toString().equals(lfeat.logicFormula) && "".equals(lfeat.secondVerbType)) {
+                    deletemeCountBad++;
+                    deletemeCountBadLogic++;
+                    System.out.println("\n\nBad Logic:");
+                    System.out.println("English new: " + lfeat.englishSentence.replace("that ", ""));
+                    System.out.println("English old: " + english.toString().replace("that ", ""));
+                    System.out.println("Logic new: " + lfeat.logicFormula);
+                    System.out.println("Logic old: " + prop);
+                    System.out.println("good: " + deletemeCountGood + "\nbad:" + deletemeCountBad + "\n english bad:" + deletemeCountBadEnglish + "\n logic bad:" + deletemeCountBadLogic + "\nlfeat: " + lfeat + "\n\n");
+                    System.exit(0);
                 }
                 else {
                     deletemeCountGood++;
@@ -335,6 +351,8 @@ public class GenSimpTestData {
                 badSentCount++;
             }
         }
+        System.out.println("DELETEME good: " + deletemeCountGood + "\nbad:" + deletemeCountBad + "\n english bad:" + deletemeCountBadEnglish + "\n logic bad:" + deletemeCountBadLogic + "\n\n");
+
         System.out.println("Finished generating " + sentCount + " good sentences. The number of malformed sentences during generation: " + badSentCount);
     }
 
@@ -384,10 +402,6 @@ public class GenSimpTestData {
         if (debug) System.out.println("verbForm(): plural: " + plural);
         if (debug) System.out.println("verbForm(): negated: " + negated);
         if (debug) System.out.println("verbForm(): subj: " + lfeat.subj);
-        if (lfeat == null) {
-            System.out.println("Error! verbForm(): null lfeat");
-            return "";
-        }
         if (debug) System.out.println("verbForm(): subj: " + lfeat.subj);
         if (!StringUtil.emptyString(lfeat.subj) && lfeat.subj.equals("You")) {
             if (debug) System.out.println("verbForm(): using imperative tense for 'you'");
@@ -1004,7 +1018,7 @@ public class GenSimpTestData {
                 lfeat.directPrep = "to ";
             }
             else if (lfeat.framePart.trim().startsWith("whether")) {
-                lfeat.directPrep = "whether";
+                lfeat.directPrep = "whether ";
                 lfeat.secondVerb = "to " + lfeat.secondVerb;
             }
             else
@@ -1017,8 +1031,10 @@ public class GenSimpTestData {
         }
         else if (lfeat.framePart.trim().startsWith("VERB-ing")) {
             getVerb(lfeat,true);
+            int tenseTemp = lfeat.tense; // This is a bit of a hack. Ideally verbForm would be changed to distinguish first vs. second verb.
             lfeat.tense = LFeatures.PROGRESSIVE;
             lfeat.secondVerb = verbForm(lfeat.secondVerbType,false,lfeat.secondVerb,false, lfeat.directType, lfeat);
+            lfeat.tense = tenseTemp; // End of the bit of the hack.
             if (lfeat.secondVerb.startsWith("is "))
                 lfeat.secondVerb = lfeat.secondVerb.substring(3);
             lfeat.framePart = "";
