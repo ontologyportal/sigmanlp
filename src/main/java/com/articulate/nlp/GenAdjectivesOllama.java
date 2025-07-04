@@ -66,7 +66,7 @@ public class GenAdjectivesOllama {
             StringBuilder english = new StringBuilder();
             StringBuilder prop = new StringBuilder();
 
-            gstd.generateHumanSubject(english, prop, lfeat);
+            gstd.generateHumanSubject(lfeat);
             generated++;
         }
         System.out.println(GenUtils.askOllama("You are a helpful assistant. Always answer directly and do not use <think></think> tags. Take the following parts of speech and turn it into a coherent sentence. Use \"to be\" or \"to have\", and make the negative version of the sentence. {\"subject\": \"Carol\",\"attribute\":\"nurse\"}"));

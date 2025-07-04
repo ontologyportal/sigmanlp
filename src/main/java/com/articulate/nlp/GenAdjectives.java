@@ -153,7 +153,8 @@ public class GenAdjectives {
 
             lfeat.frame = WordNet.wn.VerbFrames.get(7);
             lfeat.framePart = WordNet.wn.VerbFrames.get(7);
-            gstd.generateHumanSubject(english, prop, lfeat);
+            gstd.generateHumanSubject(lfeat);
+
             String term = "";
             if (gstd.biasedBoolean(1, 3)) {
                 term = emoState.getNext();

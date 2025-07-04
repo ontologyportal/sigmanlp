@@ -181,13 +181,11 @@ public class LFeatures {
     }
 
     public void flushToEnglishLogic(KBLite kbLite) {
-        boolean startOfSentence = true;
         StringBuilder english = new StringBuilder();
         StringBuilder prop = new StringBuilder();
 
         // ATTITUDE
         if (!attitude.equals("None")) {
-            startOfSentence = false;
             // English portion
             english.append(attSubj).append(" ");
             String that = "";
@@ -224,13 +222,10 @@ public class LFeatures {
                 english.append(modal.value.substring(0,5) + " not" + modal.value.substring(5));
             else
                 english.append(modal.value);
-            if (startOfSentence)
-                english.replace(0,1,english.substring(0,1).toUpperCase());
             if (negatedModal)
                 prop.append("(not (modalAttribute ");
             else
                 prop.append("(modalAttribute ");
-            startOfSentence = false;
         }
 
         // DO POLITENESS (IF FIRST)
@@ -239,11 +234,9 @@ public class LFeatures {
         }
 
         // Set up logic for main part of sentence
-        if ((attitude.equals("None") && modal.attribute.equals("None")) || attitude.equals("says"))
-            startOfSentence = true;
         if (negatedBody)
             prop.append("(not ");
-        prop.append("(exists (?H ?P ?DO ?IO) (and ");
+        prop.append("(exists (?H ?P ?DO ?IO ?V2) (and ");
 
         // DATE & TIME
         if (hasdateORtime) {
@@ -259,15 +252,13 @@ public class LFeatures {
                 prop.append("(instance ?T (HourFn ").append(hourLog).append(" (DayFn ").append(dayLog).append(" (MonthFn ").append(monthLog).append(" (YearFn ").append(yearLog).append("))))) (during ?P ?T) ");
                 english.append(dateEng).append(" ");
             }
-            startOfSentence = false;
         }
 
         // SUBJECT
         if (subjType != null && subjType.equals("Human")) {
             if (question) {
                 english.setLength(0);
-                english.append(capital(subj, true)).append(" ");
-                startOfSentence = false;
+                english.append(subj).append(" ");
             }
             else {
                 String var = "?H";
@@ -281,16 +272,12 @@ public class LFeatures {
                     prop.append("(attribute ").append(var).append(" ").append(subj).append(") ");
                 } //There is no appended english or logic for subj.equals("You")
             }
-            if (!subj.equals("You"))
-                startOfSentence = false;
-            else {
+            if (subj.equals("You")) {
                 if (addPleaseToSubj) {
                     english.append("Please, ");
-                    startOfSentence = false;
                 }
                 else if (addShouldToSubj) {
                     english.append("You should ");
-                    startOfSentence = false;
                 }
             }
             if (attitude.equals("says") && subj.equals("You") && // remove "that" for says "You ..."
@@ -316,10 +303,10 @@ public class LFeatures {
         }
         else { // Subject is Something
             if (question) {
-                english.append(capital(subj, startOfSentence)).append(" ");
+                english.append(subj).append(" ");
             }
             else if (subjType.equals("Something")) {
-                english.append(capital(subj, startOfSentence)).append(" ");
+                english.append(subj).append(" ");
                 if (subjectPlural) {
                     addSUMOplural(prop, subjName, pluralSubj, "?H");
                 }
@@ -337,7 +324,6 @@ public class LFeatures {
                     english.append("It ");
                 }
             }
-            startOfSentence = false;
         }
 
         // ADD VERB
@@ -380,7 +366,6 @@ public class LFeatures {
 
             if (directName != null)
                 english.append("to ").append(directOther).append(directName).append(" ");
-            //if (!"".equals(secondVerbType))
             else
                 english.append(secondVerb).append(" ");
 
@@ -453,7 +438,8 @@ public class LFeatures {
         addEndingToEnglishLogic(english, prop);
 
         // FLUSH STRING BUILDER OBJECT
-        englishSentence = english.toString();
+        englishSentence = english.toString().replaceAll("  "," ");
+        englishSentence = capital(englishSentence);
         logicFormula = prop.toString();
     }
 
@@ -502,13 +488,10 @@ public class LFeatures {
 
     /** ***************************************************************
      */
-    public static String capital(String s, boolean startOfSentence) {
+    public static String capital(String s) {
 
-        if (debug) System.out.println("capital(): startOfSentence: " + startOfSentence);
         if (debug) System.out.println("capital(): s: " + s);
         if (StringUtil.emptyString(s))
-            return s;
-        if (!startOfSentence)
             return s;
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
@@ -533,6 +516,11 @@ public class LFeatures {
             if (attNeg) result.append(")");
         }
         return result.toString();
+    }
+
+    public boolean isModalAttitudeOrPolitefirst() {
+        return (!attitude.equals("None") || !attitude.equals("says")) ||
+                !modal.attribute.equals("None") || (isImperative() && polite && politeFirst);
     }
 
     @Override
