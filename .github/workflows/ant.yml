@@ -32,6 +32,12 @@ jobs:
         with:
           path: sigmanlp
 
+      - name: checkout sigmaAntlr
+        uses: actions/checkout@v4
+        with:
+          repository: 'ontologyportal/sigmaAntlr'
+          path: sigmaAntlr
+
       - name: checkout sigmakee
         uses: actions/checkout@v4
         with:
