@@ -185,7 +185,7 @@ public class LFeatures {
         StringBuilder prop = new StringBuilder();
 
         // ATTITUDE
-        if (!attitude.equals("None")) {
+        if (!attitude.equals("None") && !question) {
             // English portion
             english.append(attSubj).append(" ");
             String that = "";

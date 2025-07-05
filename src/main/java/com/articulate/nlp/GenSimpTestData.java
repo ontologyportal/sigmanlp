@@ -792,7 +792,13 @@ public class GenSimpTestData {
         else if (lfeat.framePart.startsWith("Something")) {
             lfeat.verbFrameCat = "Something";
         }
-        else {
+        else if (!(lfeat.subj != null && lfeat.subj.equalsIgnoreCase("What") &&
+                        !kbLite.isSubclass(lfeat.verbType,"IntentionalProcess"))
+                && !(lfeat.subj != null &&
+                        (kbLite.isSubclass(lfeat.subj,"AutonomousAgent") ||
+                        kbLite.isInstanceOf(lfeat.subj,"SocialRole") ||
+                        lfeat.subj.equalsIgnoreCase("Who") ||
+                        lfeat.subj.equals("You")))){
             return false;
         }
         if (lfeat.framePart.startsWith("----s")) {
@@ -1338,8 +1344,15 @@ public class GenSimpTestData {
                         generateIndirectObject(lfeat);
                         return true;
                     }
+                    //else {
+                      //  System.out.println("DELETEME: runGenSentence() generateDirectObject failed: " + lfeat);
+                    //}
                 }
+//                else {
+  //                  System.out.println("DELETEME: runGenSentence() generateVerb failed: " + lfeat);
+    //            }
             } else {
+                System.out.println("DELETEME: runGenSentence() no acceptable verb frames: " + lfeat.verb);
                 if (debug) System.out.println("runGenSentence() no acceptable verb frames found for word: " + lfeat.verb);
             }
         } while (tryCount++ < 10);
