@@ -32,22 +32,23 @@ import com.articulate.sigma.utils.StringUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class NaiveBayes {
 
-    public ArrayList<ArrayList<String>> input = null;
-    public ArrayList<String> labels = new ArrayList<>();
-    public ArrayList<String> types = new ArrayList<>();
+    public List<List<String>> input = null;
+    public List<String> labels = new ArrayList<>();
+    public List<String> types = new ArrayList<>();
 
     public HashMap<String,HashMap<String,Float>> means = new HashMap<>();
-    public HashMap<String,HashMap<String,Float>> ssd = new HashMap<>();
+    public Map<String,Map<String,Float>> ssd = new HashMap<>();
     public HashMap<String,HashMap<String,Float>> totals = new HashMap<>();
     public HashMap<String,HashMap<String,ArrayList<Float>>> numericValues = new HashMap<>();
 
     public HashMap<String,Integer> priorCounts = new HashMap<>();
-    public HashMap<String,HashMap<String,HashMap<String,Integer>>> conditionalCounts = new HashMap<>();
+    public Map<String,Map<String,Map<String,Integer>>> conditionalCounts = new HashMap<>();
     public HashMap<String,Float> priors = new HashMap<>();
-    public HashMap<String,HashMap<String,HashMap<String,Float>>> conds = new HashMap<>();
+    public Map<String,Map<String,Map<String,Float>>> conds = new HashMap<>();
 
     /** *************************************************************
      */
@@ -70,11 +71,11 @@ public class NaiveBayes {
 
     /** *************************************************************
      */
-    public NaiveBayes(ArrayList<ArrayList<String>> in,
-                      ArrayList<String> labels,
-                      ArrayList<String> types) {
+    public NaiveBayes(List<List<String>> in,
+                      List<String> labels,
+                      List<String> types) {
 
-        input = new ArrayList<ArrayList<String>>();
+        input = new ArrayList<>();
         //System.out.println("NaiveBayes with #input: " + in.size());
         input.addAll(in);
         this.types = types; // these can be discrete "disc", continuous "cont" or "class"
@@ -108,10 +109,11 @@ public class NaiveBayes {
 
         //System.out.println("NaiveBayes.createPriorCounts() : starting line: " + input.get(0));
         int classIndex = types.indexOf("class");
-        for (ArrayList<String> row : input) {
-            String clss = row.get(classIndex);
+        String clss;
+        for (List<String> row : input) {
+            clss = row.get(classIndex);
             if (!priorCounts.containsKey(clss))
-                priorCounts.put(clss,Integer.valueOf(0));
+                priorCounts.put(clss, 0);
             priorCounts.put(clss,priorCounts.get(clss) + 1);
         }
     }
@@ -126,13 +128,13 @@ public class NaiveBayes {
     public void createConditionalCounts() {
 
         //System.out.println("NaiveBayes.createConditionalCounts() : starting line: " + input.get(0));
-        for (ArrayList<String> row : input) {
+        for (List<String> row : input) {
             int classIndex = types.indexOf("class");
             String clss = row.get(classIndex);
             //System.out.println("in createConditionalCounts(): " + clss);
-            HashMap<String,HashMap<String,Integer>> classInfo = conditionalCounts.get(clss);
+            Map<String,Map<String,Integer>> classInfo = conditionalCounts.get(clss);
             if (classInfo == null) {
-                classInfo = new HashMap<String,HashMap<String,Integer>>();
+                classInfo = new HashMap<>();
                 conditionalCounts.put(clss,classInfo);
             }
             for (String label : labels) {
@@ -140,16 +142,16 @@ public class NaiveBayes {
                 if (!types.get(column).equals("disc"))
                     continue;
 
-                HashMap<String,Integer> values = classInfo.get(label);
+                Map<String,Integer> values = classInfo.get(label);
                 if (values == null)
-                    values = new HashMap<String,Integer>();
+                    values = new HashMap<>();
                 if (types.get(column).equals("disc")) {
                     String value = row.get(column);
                     if (values.containsKey(value))
                         values.put(value, values.get(value) + 1);
                     else
-                        values.put(value, Integer.valueOf(1));
-                    classInfo.put(label.toString(), values);
+                        values.put(value, 1);
+                    classInfo.put(label, values);
                 }
             }
             conditionalCounts.put(clss,classInfo);
@@ -165,12 +167,12 @@ public class NaiveBayes {
         System.out.println("NaiveBayes.createTotals() : types: " + types);
         System.out.println("NaiveBayes.createTotals() : labels: " + labels);
         System.out.println("NaiveBayes.createTotals() : starting line: " + input.get(0));
-        for (ArrayList<String> row : input) {
+        for (List<String> row : input) {
             int classIndex = types.indexOf("class");
             String clss = row.get(classIndex);
             HashMap<String, Float> classInfo = totals.get(clss);
             if (classInfo == null) {
-                classInfo = new HashMap<String, Float>();
+                classInfo = new HashMap<>();
                 totals.put(clss, classInfo);
             }
             for (int i = 0; i < row.size(); i++) {
@@ -193,7 +195,7 @@ public class NaiveBayes {
         for (String clss : totals.keySet()) {
             HashMap<String,Float> classMeanInfo = means.get(clss);
             if (classMeanInfo == null) {
-                classMeanInfo = new HashMap<String, Float>();
+                classMeanInfo = new HashMap<>();
                 means.put(clss, classMeanInfo);
             }
             HashMap<String,Float> classTotalsInfo = totals.get(clss);
@@ -212,13 +214,13 @@ public class NaiveBayes {
      */
     public void createStandardDeviation() {
 
-        for (ArrayList<String> row : input) {
+        for (List<String> row : input) {
             int classIndex = types.indexOf("class");
             String clss = row.get(classIndex);
-            HashMap<String, Float> classMeansInfo = means.get(clss);
-            HashMap<String, Float> classSsdInfo = ssd.get(clss);
+            Map<String, Float> classMeansInfo = means.get(clss);
+            Map<String, Float> classSsdInfo = ssd.get(clss);
             if (classSsdInfo == null) {
-                classSsdInfo = new HashMap<String, Float>();
+                classSsdInfo = new HashMap<>();
                 ssd.put(clss, classSsdInfo);
             }
             for (String label : classMeansInfo.keySet()) {
@@ -235,7 +237,7 @@ public class NaiveBayes {
             }
         }
         for (String clss : ssd.keySet()) {
-            HashMap<String, Float> classSsdInfo = ssd.get(clss);
+            Map<String, Float> classSsdInfo = ssd.get(clss);
             int classCount = priorCounts.get(clss);
             for (String label : classSsdInfo.keySet()) {
                 float variance = classSsdInfo.get(label) / ((float) (classCount - 1));
@@ -263,7 +265,7 @@ public class NaiveBayes {
     public void calcPriors(int sum) {
 
         for (String s : priorCounts.keySet())
-            priors.put(s,Float.valueOf((float) priorCounts.get(s) / (float) sum));
+            priors.put(s, (float) priorCounts.get(s) / (float) sum);
     }
 
     /** *************************************************************
@@ -278,13 +280,13 @@ public class NaiveBayes {
 
         for (String clss : conditionalCounts.keySet()) {
             int clssCount = priorCounts.get(clss);
-            HashMap<String,HashMap<String,Integer>> classCounts = conditionalCounts.get(clss);
-            HashMap<String,HashMap<String,Float>> classConditionals = new HashMap<>();
+            Map<String,Map<String,Integer>> classCounts = conditionalCounts.get(clss);
+            Map<String,Map<String,Float>> classConditionals = new HashMap<>();
             for (String col : classCounts.keySet()) {
-                HashMap<String,Integer> colValues = classCounts.get(col);
-                HashMap<String,Float> colConditionals = new HashMap<>();
+                Map<String,Integer> colValues = classCounts.get(col);
+                Map<String,Float> colConditionals = new HashMap<>();
                 for (String val : colValues.keySet()) {
-                    float posterior = (float) colValues.get(val).intValue() / clssCount;
+                    float posterior = (float) colValues.get(val) / clssCount;
                     // m-estimate of probability (Mitchell, Machine Learning, p 179, eq 6.22)
                     //float posterior = (float) colValues.get(val).intValue() + (float) 1.0 /
                     //        ((float) clssCount + (float) colValues.keySet().size());
@@ -308,14 +310,14 @@ public class NaiveBayes {
             return "";
         }
         int classIndex = types.indexOf("class");
-        int indexMod = 0;  // if class name is not the last element
+        int indexMod;  // if class name is not the last element
         if (classIndex == 0)
             indexMod = 1;
         float maxProb = 0;
         String maxClass = "";
-        HashMap<String,Float> probs = new HashMap<String,Float>();
+        Map<String,Float> probs = new HashMap<>();
         for (String clss : conds.keySet()) {
-            HashMap<String,HashMap<String,Float>> posteriors = conds.get(clss);
+            Map<String,Map<String,Float>> posteriors = conds.get(clss);
             float prior = priors.get(clss);
             float prob = prior;
             for (String label : labels) {
@@ -324,10 +326,10 @@ public class NaiveBayes {
                 int index = labels.indexOf(label);
                 String type = types.get(index);
                 if (type.equals("disc")) {
-                    HashMap<String, Float> conditCol = posteriors.get(label);
+                    Map<String, Float> conditCol = posteriors.get(label);
                     if (conditCol != null) { // trap unseen features
                         String value = values.get(index);
-                        if (value == null || value == "" || conditCol.get(value) == null) {
+                        if (value == null || "".equals(value) || conditCol.get(value) == null) {
                             System.out.println("Error in NaiveBayes.classify: " + label +
                                     " index: " + index + " values: " + values + " value: " + value);
                             System.out.println(conds.get(clss));
@@ -344,7 +346,7 @@ public class NaiveBayes {
                     prob = prob * conditional;
                 }
             }
-            probs.put(clss, Float.valueOf(prob));
+            probs.put(clss, prob);
             if (prob > maxProb) {
                 maxProb = prob;
                 maxClass = clss;
@@ -406,8 +408,8 @@ public class NaiveBayes {
         DocGen dg = DocGen.getInstance();
         //NaiveBayes nb = new NaiveBayes(System.getProperty("user.home") + "/IPsoft/NB/NBdata.txt");
         //NaiveBayes nb = new NaiveBayes(System.getProperty("user.home") + "/IPsoft/NB/house-votes-84.data");
-        NaiveBayes nb = null;
-        ArrayList<String> values = null;
+        NaiveBayes nb;
+        List<String> values;
         if (args.length >= 1) {
             nb = new NaiveBayes(args[0]);
             nb.initialize();

@@ -2,7 +2,7 @@ package com.articulate.nlp;
 
 import com.articulate.sigma.DocGen;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by apease and ported to Java on 10/6/15.  Original license for the
@@ -39,10 +39,10 @@ public class LinearRegression {
      */
     public static double compute_error_for_line_given_points(double b, double m, double[][] points) {
 
-        double totalError = 0;
-        for (int i = 0; i < points.length; i++) {
-            double x = points[i][0];
-            double y = points[i][1];
+        double totalError = 0, x, y;
+        for (double[] point : points) {
+            x = point[0];
+            y = point[1];
             totalError += (y - (m * x + b)) * (y - (m * x + b));
         }
         return totalError / (double) points.length;
@@ -54,10 +54,10 @@ public class LinearRegression {
 
         double b_gradient = 0;
         double m_gradient = 0;
-        double N = (double) points.length;
-        for (int i = 0; i < points.length; i++) {
-            double x = points[i][0];
-            double y = points[i][1];
+        double N = (double) points.length, x, y;
+        for (double[] point : points) {
+            x = point[0];
+            y = point[1];
             b_gradient += -(2 / N) * (y - ((m_current * x) + b_current));
             m_gradient += -(2 / N) * x * (y - ((m_current * x) + b_current));
         }
@@ -88,13 +88,13 @@ public class LinearRegression {
     public static void run() {
 
         DocGen dg = DocGen.getInstance();
-        ArrayList<ArrayList<String>> input = dg.readSpreadsheetFile(System.getProperty("user.home") + "/IPsoft/NB/LRdata.csv", ',');
+        List<List<String>> input = dg.readSpreadsheetFile(System.getProperty("user.home") + "/IPsoft/NB/LRdata.csv", ',');
         input.remove(0);  // eliminate the "start" line that DocGen adds in
         if (input.size() < 1)
             System.out.println("Error no rows in file");
         double[][] points = new double[input.size()][input.get(1).size()];
         for (int i = 0; i < input.size(); i++) {
-            ArrayList<String> row = input.get(i);
+            List<String> row = input.get(i);
             System.out.println(row);
             for (int j = 0; j < row.size(); j++)
                 points[i][j] = Double.parseDouble(row.get(j));
