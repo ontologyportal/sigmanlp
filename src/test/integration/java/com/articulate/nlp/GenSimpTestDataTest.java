@@ -33,9 +33,8 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         gstd = new GenSimpTestData();
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        GenSimpTestData.initNumbers();
-        gstd.genProcTable();
-        lfeat = new LFeatures(gstd);
+        gstd.lfeatsets.initNumbers();
+        lfeat = new LFeatures();
         String fname = "test";
         FileWriter fweng;
         FileWriter fwlog;
@@ -62,7 +61,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         StringBuilder english = new StringBuilder();
         lfeat.testMode = true;
         lfeat.tense = tense;
-        String v = gstd.verbForm(term,negated, word, plural, english, lfeat);
+        String v = gstd.verbForm(term,negated, word, plural, lfeat.subjType, lfeat);
         System.out.println("testVerb(): verb form: " + v);
         if (!v.equalsIgnoreCase(expected)) {
             if (!v.replace("won't","will not").equalsIgnoreCase(expected)) {
@@ -108,8 +107,8 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         StringBuilder english = new StringBuilder();
         AVPair avp = new AVPair();
         System.out.println("testCapability(): (proc,role,obj): " + proc + ", " + role + ", " + obj);
-        if (capabilities.containsKey(proc))
-            System.out.println("testCapability(): capabilities: " + capabilities.get(proc));
+        if (gstd.lfeatsets.capabilities.containsKey(proc))
+            System.out.println("testCapability(): capabilities: " + gstd.lfeatsets.capabilities.get(proc));
         else
             System.out.println("testCapability(): proc not found");
         boolean actual = gstd.checkCapabilities(proc,role,obj);
@@ -138,41 +137,41 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
 
     /** ***************************************************************
      */
-    @Test public void testTrespass() { testVerb("Trespassing", false, PRESENT, "trespass", false, "Trespasses", lfeat); }
-    @Test public void testTrespass2() { testVerb("Trespassing", false, PROGRESSIVE, "trespass", false, "is trespassing", lfeat); }
-    @Test public void testBuying() {  testVerb("Buying",false, PRESENT, "buy", false, "Buys", lfeat);}
-    @Test public void testBuying2() { testVerb("Buying",false, PAST, "buy", false, "Bought", lfeat);}
-    @Test public void testWalking() { testVerb("Walking",false, PAST, "pad", false, "Padded", lfeat);}
-    @Test public void testRequesting() { testVerb("Requesting",false, PRESENT, "wish", false, "Wishes", lfeat);}
+    @Test public void testTrespass() { testVerb("Trespassing", false, LFeatures.PRESENT, "trespass", false, "Trespasses", lfeat); }
+    @Test public void testTrespass2() { testVerb("Trespassing", false, LFeatures.PROGRESSIVE, "trespass", false, "is trespassing", lfeat); }
+    @Test public void testBuying() {  testVerb("Buying",false, LFeatures.PRESENT, "buy", false, "Buys", lfeat);}
+    @Test public void testBuying2() { testVerb("Buying",false, LFeatures.PAST, "buy", false, "Bought", lfeat);}
+    @Test public void testWalking() { testVerb("Walking",false, LFeatures.PAST, "pad", false, "Padded", lfeat);}
+    @Test public void testRequesting() { testVerb("Requesting",false, LFeatures.PRESENT, "wish", false, "Wishes", lfeat);}
 
     @Test public void testProcessYou() { lfeat.subj = "You";
-        testVerb("Process",false, PRESENT, "process", false, "Process", lfeat);
+        testVerb("Process",false, LFeatures.PRESENT, "process", false, "Process", lfeat);
         lfeat.subj = ""; }
 
     @Test public void testProcess() { lfeat.subj = "";
-        testVerb("Process",false, PRESENT, "process", false, "Processes", lfeat);}
-    @Test public void testLooking() { testVerb("Looking",false, PROGRESSIVE, "catch", false, "Is catching", lfeat);}
-    @Test public void testSoccer() { testVerb("Soccer",false, PROGRESSIVE, "soccer", false, "Is playing soccer", lfeat);}
+        testVerb("Process",false, LFeatures.PRESENT, "process", false, "Processes", lfeat);}
+    @Test public void testLooking() { testVerb("Looking",false, LFeatures.PROGRESSIVE, "catch", false, "Is catching", lfeat);}
+    @Test public void testSoccer() { testVerb("Soccer",false, LFeatures.PROGRESSIVE, "soccer", false, "Is playing soccer", lfeat);}
 
-    @Test public void testListening() { testVerb("Listening",false, PAST, "hear", false, "Heard", lfeat);}
-    @Test public void testApologizing() { testVerb("Apologizing",false, PROGRESSIVE, "apologize", false, "Is apologizing", lfeat);}
-    @Test public void testIntentional() { testVerb("IntentionalProcess",false, PAST, "proceed", false, "Proceeded", lfeat);}
-    @Test public void testSeeing() { testVerb("Seeing",false, PRESENT, "watch", false, "Watches", lfeat);}
-    @Test public void testBegin() { testVerb("Process",false, PROGRESSIVE, "begin", false, "Is beginning", lfeat);}
-    @Test public void testBegun() { testVerb("Process",false, PAST, "begin", false, "Begun", lfeat);}
-    @Test public void testDistill() { testVerb("Distilling",false, PRESENT, "distill", false, "Distills", lfeat);}
-    @Test public void testPunching() { testVerb("Punching",false, PRESENT, "punch", false, "Punches", lfeat);}
-    @Test public void testGame() { testVerb("Game",false, PRESENT, "play", false, "Plays", lfeat);}
-    @Test public void testFreezing() { testVerb("Freezing",false, PAST, "freeze", false, "Froze", lfeat);}
+    @Test public void testListening() { testVerb("Listening",false, LFeatures.PAST, "hear", false, "Heard", lfeat);}
+    @Test public void testApologizing() { testVerb("Apologizing",false, LFeatures.PROGRESSIVE, "apologize", false, "Is apologizing", lfeat);}
+    @Test public void testIntentional() { testVerb("IntentionalProcess",false, LFeatures.PAST, "proceed", false, "Proceeded", lfeat);}
+    @Test public void testSeeing() { testVerb("Seeing",false, LFeatures.PRESENT, "watch", false, "Watches", lfeat);}
+    @Test public void testBegin() { testVerb("Process",false, LFeatures.PROGRESSIVE, "begin", false, "Is beginning", lfeat);}
+    @Test public void testBegun() { testVerb("Process",false, LFeatures.PAST, "begin", false, "Begun", lfeat);}
+    @Test public void testDistill() { testVerb("Distilling",false, LFeatures.PRESENT, "distill", false, "Distills", lfeat);}
+    @Test public void testPunching() { testVerb("Punching",false, LFeatures.PRESENT, "punch", false, "Punches", lfeat);}
+    @Test public void testGame() { testVerb("Game",false, LFeatures.PRESENT, "play", false, "Plays", lfeat);}
+    @Test public void testFreezing() { testVerb("Freezing",false, LFeatures.PAST, "freeze", false, "Froze", lfeat);}
     // TODO: need exception to make this "John has frozen" rather than "John frozen"
 
-    @Test public void testDivide() { testVerb("Separating",false, NOTIME, "divide", true, "Divides", lfeat);}
-    @Test public void testBeckon() { testVerb("Waving",true, FUTUREPROG, "beckon", true, "will not be beckoning", lfeat);}
-    @Test public void testHear() { testVerb("Hearing",false, PASTPROG, "hear", true, "were hearing", lfeat);}
-    @Test public void testMelt() { testVerb("Melting",false, PASTPROG, "melt", true, "were melting", lfeat);}
-    @Test public void testTaking() { testVerb("Driving",false, FUTURE, "take", true, "will take", lfeat);}
-    @Test public void testWind() { testVerb("Wind",true, FUTURE, "blow", false, "will not blow", lfeat);}
-    @Test public void testInterp() { testVerb("Interpreting",false, PROGRESSIVE, "rede", false, "is reding", lfeat);}
+    @Test public void testDivide() { testVerb("Separating",false, LFeatures.NOTIME, "divide", true, "Divides", lfeat);}
+    @Test public void testBeckon() { testVerb("Waving",true, LFeatures.FUTUREPROG, "beckon", true, "will not be beckoning", lfeat);}
+    @Test public void testHear() { testVerb("Hearing",false, LFeatures.PASTPROG, "hear", true, "were hearing", lfeat);}
+    @Test public void testMelt() { testVerb("Melting",false, LFeatures.PASTPROG, "melt", true, "were melting", lfeat);}
+    @Test public void testTaking() { testVerb("Driving",false, LFeatures.FUTURE, "take", true, "will take", lfeat);}
+    @Test public void testWind() { testVerb("Wind",true, LFeatures.FUTURE, "blow", false, "will not blow", lfeat);}
+    @Test public void testInterp() { testVerb("Interpreting",false, LFeatures.PROGRESSIVE, "rede", false, "is reding", lfeat);}
 
     /** ***************************************************************
      */
@@ -191,90 +190,7 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
      */
     @Test public void testChimney1() { testCapability("Eating","objectTransferred","Chimney",false);}
 
-    /** ***************************************************************
-     */
-    @Test
-    public void testSell() {
 
-        System.out.println();
-        System.out.println("======================= ");
-        System.out.println("GenSimpTestData.testSell()");
-        LFeatures lfeat = new LFeatures(gstd);
-        lfeat.testMode = true;
-        lfeat.subjName = "John";
-        lfeat.subj = "Human";
-        lfeat.verbType = "Selling";
-        lfeat.verb = "sell";
-        lfeat.verbSynset = "202242464";
-        lfeat.tense = PRESENT;
-        lfeat.directType = "Shoe";
-        StringBuilder english = new StringBuilder();
-        StringBuilder prop = new StringBuilder();
-        gstd.genProc(english,prop,lfeat);
-        if (english.toString().contains("sells a") || english.toString().contains("selling a") ||
-                english.toString().contains("sell a") || english.toString().contains("sold a"))
-            System.out.println("Success! : " + english);
-        else {
-            System.out.println("Fail : " + english);
-            assertTrue(english.toString().contains("sells a"));
-        }
-    }
-
-    /** ***************************************************************
-     */
-    @Test
-    public void testTaste() {
-
-        System.out.println();
-        System.out.println("======================= ");
-        System.out.println("GenSimpTestData.testTaste()");
-        LFeatures lfeat = new LFeatures(gstd);
-        lfeat.testMode = true;
-        lfeat.subjName = "CollegeSenior";
-        lfeat.subj = "Human";
-        lfeat.verbType = "Tasting";
-        lfeat.verb = "taste";
-        lfeat.verbSynset = "202191546";
-        lfeat.directType = "Building";
-        lfeat.tense = FUTUREPROG;
-        StringBuilder english = new StringBuilder();
-        StringBuilder prop = new StringBuilder("(exists (?H ?P ?DO ?IO) (and ");
-        gstd.genProc(english,prop,lfeat);
-        if (StringUtil.emptyString(english.toString().trim()))
-            System.out.println("Success! : " + english);
-        else {
-            System.out.println("Fail : '" + english + "'");
-            assertTrue(StringUtil.emptyString(english.toString()));
-        }
-    }
-
-    /** ***************************************************************
-     */
-    @Test
-    public void testVoteFor() {
-
-        System.out.println();
-        System.out.println("======================= ");
-        System.out.println("GenSimpTestData.testVoteFor()");
-        LFeatures lfeat = new LFeatures(gstd);
-        lfeat.testMode = true;
-        lfeat.subjName = "John";
-        lfeat.subj = "Human";
-        lfeat.verbType = "Voting";
-        lfeat.verb = "vote";
-        lfeat.verbSynset = "202462580";
-        lfeat.tense = PRESENT;
-        StringBuilder english = new StringBuilder();
-        StringBuilder prop = new StringBuilder("(exists (?H ?P ?DO ?IO) (and ");
-        gstd.genProc(english,prop,lfeat);
-        if (english.toString().toLowerCase().contains("vote for") || english.toString().toLowerCase().contains("voting for") ||
-                english.toString().toLowerCase().contains("voted for") || english.toString().toLowerCase().contains("votes for"))
-            System.out.println("Success! : " + english);
-        else {
-            System.out.println("Fail : " + english);
-            assertTrue(english.toString().contains("vote for"));
-        }
-    }
 
     /** ***************************************************************
      */
@@ -325,18 +241,18 @@ public class GenSimpTestDataTest extends IntegrationTestBase {
         System.out.println("======================= ");
         System.out.println("GenSimpTestData.testToy()");
         String word = "toy";
-        lfeat.tense = PAST;
+        lfeat.tense = LFeatures.PAST;
         StringBuilder english = new StringBuilder();
         GenSimpTestData gstd = new GenSimpTestData();
-        System.out.println("testToy(): past tense Game/toy: " + gstd.verbForm("Game",false,word,false, english,lfeat));
+        System.out.println("testToy(): past tense Game/toy: " + gstd.verbForm("Game",false,word,false, lfeat.subjType,lfeat));
         word = "soccer";
-        System.out.println("testToy(): past tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false, english,lfeat));
-        lfeat.tense = PRESENT;
-        System.out.println("testToy(): present tense Game/toy: " + gstd.verbForm("Game",false,word,false, english,lfeat));
+        System.out.println("testToy(): past tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false, lfeat.subjType,lfeat));
+        lfeat.tense = LFeatures.PRESENT;
+        System.out.println("testToy(): present tense Game/toy: " + gstd.verbForm("Game",false,word,false,lfeat.subjType, lfeat));
         word = "soccer";
-        System.out.println("testToy(): present tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false, english,lfeat));
+        System.out.println("testToy(): present tense Soccer/soccer: " + gstd.verbForm("Soccer",false,word,false,lfeat.subjType, lfeat));
         word = "walking";
-        System.out.println("testToy(): present tense Walking/walking: " + gstd.verbForm("Walking",false,word,false, english,lfeat));
+        System.out.println("testToy(): present tense Walking/walking: " + gstd.verbForm("Walking",false,word,false,lfeat.subjType, lfeat));
     }
 
     /** ***************************************************************

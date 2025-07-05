@@ -1,7 +1,9 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.utils.AVPair;
+import com.articulate.sigma.utils.StringUtil;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -10,177 +12,95 @@ import java.util.*;
 public class LFeatures {
 
     private static final boolean debug = false;
-
     public boolean testMode = false;
+    private static final Random rand = new Random();
 
-    private final GenSimpTestData genSimpTestData;
+    public static final int NOTIME = -1;
+    public static final int PAST = 0;         // spoke, docked
+    public static final int PASTPROG = 1;     // was speaking, was docking
+    public static final int PRESENT = 2;      // speaks, docks
+    public static final int PROGRESSIVE = 3;  // is speaking, is docking
+    public static final int FUTURE = 4;       // will speak, will dock
+    public static final int FUTUREPROG = 5;   // will be speaking, will be docking
+    public static final int IMPERATIVE = 6;   // treat imperatives like a tense
+
     public boolean attNeg = false; // for propositional attitudes
     public boolean attPlural = false;
     public int attCount = 1;
+    public String attSubjType = null;
     public String attSubj = null; // the agent holding the attitude
     public String attitude = "None";
     public String attitudeModifier = ""; // adjective
+    public LFeatureSets.Word attWord = null;
     public boolean negatedModal = false;
     public boolean negatedBody = false;
-    public List<AVPair> modals = null;
     public AVPair modal = new AVPair("None", "none"); // attribute if SUMO ModalAttribute, value is English
-    public Map<String, String> genders = null;
-    public RandSet humans = null;
-    public RandSet socRoles = null;
-    public RandSet objects = null;
-    public RandSet bodyParts = null;
     public String directPrep = "";
     public String indirectPrep = "";
     public String secondVerb = ""; // the verb word that appears as INFINITIVE or VERB-ing or V-ing in the frame
     public String secondVerbType = ""; // the SUMO type of the second verb
     public String secondVerbSynset = "";
-    public String secondVerbModifier= ""; // adverb
-    public Set<String> prevHumans = new HashSet<>();
-    public String subj = "";
+    public String secondVerbModifier= ""; // adverb to second verb
+    public String subj = null;
     public String subjName = "";
+    public String subjType = null;
     public String subjectModifier = ""; // adjective
-    public boolean subjectPlural = false;
+    public boolean subjectPlural = false; // Is the subject plural?
+    public AVPair pluralSubj = null;      // Form of the the plural subject
     public int subjectCount = 1;
 
-    public RandSet processes = null;
-    public static boolean useCapabilities = true; // include process types from capabilities list
-
-    public List<String> frames = null;  // verb frames for the current process type
+    // Note that the frame is destructively modified as we proceed through the sentence
     public String frame = null; // the particular verb frame under consideration.
     public String framePart = null; // the frame that gets "consumed" during processing
-    // Note that the frame is destructively modified as we proceed through the sentence
-    public String verbSynset = null;
+    public List<String> frames = null;  // verb frames for the current process type
+
     public String directName = null;  // the direct object
     public String directType = null;  // the direct object
+    public String directSUMO = null;
     public boolean directPlural = false;
+    public AVPair pluralDirect = null;
+    public String directOther = null; // If the subj == dir object, add the word "another"
     public int directCount = 1;
     public String directModifier = ""; // adjective
     public String indirectName = null; // the indirect object
     public String indirectType = null; // the indirect object
-    public boolean indirectPlural = false;
+    public boolean indirectPlural = false; // Is there indirect object plural?
+    public String indirectSUMO = null;
+    public AVPair pluralIndirect = null; // Holds the plural form
     public int indirectCount = 1;
     public String indirectModifier = ""; // adjective
+    public String indirectCaseRole = null;
     public boolean question = false;
+    public boolean exclamation = false;
     public String verb = "";
+    public String verbConjugated = "";
+    public String verbSynset = null;
     public String verbType = ""; // the SUMO class of the verb
+    public String verbFrameCat = "";
     public String adverb = "";
-    public int tense = GenSimpTestData.NOTIME;
+    public String adverbSUMO = "";
+    public int tense = -1; // GenSimpTestData.NOTIME;
+    boolean hastime = false; // has just a time
+    boolean hasdate = false; // has just a date
+    boolean hasdatetime = false; // has both a date and a time
+    boolean hasdateORtime = false;
+    String dateEng = null;
+    String timeEng = null;
+    String yearLog = null;
+    String monthLog = null;
+    String dayLog = null;
+    String hourLog = null;
     public boolean polite = false;  // will a polite phrase be used for a sentence if it's an imperative
     public boolean politeFirst = true; // if true and an imperative and politness used, put it at the beginning of the sentence, otherwise at the end
+    public String politeWord = null;
+    public boolean addPleaseToSubj = false;
+    public boolean addShouldToSubj = false;
+    public boolean addBodyPart = false; // add a body part to the subject
+    public String bodyPart = null; // subject body part
+    public AVPair pluralBodyPart = null;
 
-    public LFeatures(GenSimpTestData genSimpTestData) {
-        this.genSimpTestData = genSimpTestData;
-
-        //  get capabilities from axioms like
-        //  (=> (instance ?GUN Gun) (capability Shooting instrument ?GUN))
-        // indirect = collectCapabilities(); // TODO: need to restore and combine this filter with verb frames
-        if (debug) System.out.println("LFeatures(): collect terms");
-        genders = GenSimpTestData.humans;
-        addUnknownsHumansOrgs(genders);
-        humans = RandSet.listToEqualPairs(genders.keySet());
-
-        modals = initModals();
-
-        Set<String> roles = GenSimpTestData.kbLite.getInstancesForType("SocialRole");
-        //if (debug) System.out.println("LFeatures(): SocialRoles: " + roles);
-        Collection<AVPair> roleFreqs = genSimpTestData.findWordFreq(roles);
-        socRoles = RandSet.create(roleFreqs);
-
-        Set<String> parts = GenSimpTestData.kbLite.getInstancesForType("BodyPart");
-        //if (debug) System.out.println("LFeatures(): BodyParts: " + parts);
-        Collection<AVPair> bodyFreqs = genSimpTestData.findWordFreq(parts);
-        bodyParts = RandSet.create(bodyFreqs);
-
-        Set<String> artInst = GenSimpTestData.kbLite.getInstancesForType("Artifact");
-        Set<String> artClass = GenSimpTestData.kbLite.getChildClasses("Artifact");
-
-        Set<String> processesSet = GenSimpTestData.kbLite.getChildClasses("Process");
-        Collection<AVPair> procFreqs = genSimpTestData.findWordFreq(processesSet);
-        processes = RandSet.create(procFreqs);
-
-        if (useCapabilities) {
-            RandSet rs = RandSet.listToEqualPairs(GenSimpTestData.capabilities.keySet());
-            processes.terms.addAll(rs.terms);
-        }
-
-        Set<String> orgInst = GenSimpTestData.kbLite.getInstancesForType("OrganicObject");
-        Set<String> orgClass = GenSimpTestData.kbLite.getChildClasses("OrganicObject");
-
-        HashSet<String> objs = new HashSet<>();
-        objs.addAll(orgClass);
-        objs.addAll(artClass);
-        HashSet<String> objs2 = new HashSet<>();
-        for (String s : objs)
-            if (!s.equals("Human") && !GenSimpTestData.kbLite.isSubclass(s, "Human"))
-                objs2.add(s);
-        if (debug) System.out.println("LFeatures(): OrganicObjects and Artifacts: " + objs);
-        Collection<AVPair> objFreqs = genSimpTestData.findWordFreq(objs2);
-        addUnknownsObjects(objFreqs);
-        if (debug) System.out.println("LFeatures(): create objects");
-        objects = RandSet.create(objFreqs);
-    }
-
-    /***************************************************************
-     * add UNK words to the list of objects
-     */
-    public void addUnknownsObjects(Collection<AVPair> objFreqs) {
-
-        int count = (int) Math.round(Math.log(200) + 1.0); // say that
-        // some unknowns occur same as words that show up 200 times in the Brown Corpus - WorndNet cntlist file
-        for (int i = 1; i <= 3; i++) {
-            AVPair avp = null;
-            avp = new AVPair("UNK_FAC_" + i, "10");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_GPE_" + i, "30");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_LANGUAGE_" + i, "10");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_LAW_" + i, "10");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_LOC_" + i, "30");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_NORP_" + i, "10");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_ORG_" + i, "10");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_PRODUCT_" + i, "10");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_WORK_OF_ART_" + i, "10");
-            objFreqs.add(avp);
-            avp = new AVPair("UNK_noun_" + i, "10");
-            objFreqs.add(avp);
-        }
-    }
-
-    /***************************************************************
-     * add UNK words to the list of objects
-     */
-    public void addUnknownsHumansOrgs(Map<String, String> humans) {
-
-        for (int i = 1; i <= 3; i++) {
-            humans.put("UNK_ORG_" + i,"N");
-            humans.put("UNK_PERSON_" + i,"M");
-        }
-    }
-
-    /** ***************************************************************
-     */
-    public List<AVPair> initModals() {
-
-        List<AVPair> modals = new ArrayList<>();
-        for (int i = 0; i < 50; i++)
-            modals.add(new AVPair("None",""));
-        if (!GenSimpTestData.suppress.contains("modal")) {
-            modals.add(new AVPair("Necessity", "it is necessary that "));
-            modals.add(new AVPair("Possibility", "it is possible that "));
-            modals.add(new AVPair("Obligation", "it is obligatory that "));
-            modals.add(new AVPair("Permission", "it is permitted that "));
-            modals.add(new AVPair("Prohibition", "it is prohibited that "));
-            modals.add(new AVPair("Likely", "it is likely that "));
-            modals.add(new AVPair("Unlikely", "it is unlikely that "));
-        }
-        return modals;
-    }
+    public String englishSentence;
+    public String logicFormula;
 
     /***************************************************************
      * clear basic flags in the non-modal part of the sentence
@@ -192,6 +112,7 @@ public class LFeatures {
         subjectCount = 1;
         directName = null;  // the direct object
         directType = null;  // the direct object
+        directSUMO = null;
         directPlural = false;
         directPrep = "";
         directCount = 1;
@@ -202,6 +123,404 @@ public class LFeatures {
         indirectCount = 1;
         secondVerb = "";
         secondVerbType = "";
+        hastime = false;
+        hasdate = false;
+        hasdatetime = false;
+        hasdateORtime = false;
+        dateEng = null;
+        timeEng = null;
+        yearLog = null;
+        monthLog = null;
+        dayLog = null;
+        hourLog = null;
+        addPleaseToSubj = false;
+        addShouldToSubj = false;
+        addBodyPart = false;
+        pluralBodyPart = null;
+        pluralSubj = null;
+        verbFrameCat = null;
+        adverbSUMO = null;
+        pluralDirect = null;
+        directOther = null;
+        pluralIndirect = null;
+        indirectSUMO = null;
+        question = false;
+        exclamation = false;
+        indirectCaseRole = null;
+        verbConjugated = "";
+    }
+
+
+    /** ***************************************************************
+     * Tense methods
+     */
+    public boolean isProgressive() {
+        return tense == PROGRESSIVE || tense == PASTPROG || tense == FUTUREPROG;
+    }
+    public boolean isPastProgressive() { return tense == PASTPROG; }
+    public boolean isPast() { return tense == PAST; }
+    public boolean isPresent() { return tense == PRESENT; }
+    public boolean isFuture() { return tense == FUTURE; }
+    public boolean isImperative() { return tense == IMPERATIVE; }
+    public boolean noTense() { return tense == NOTIME; }
+    public static int getRandomTense() { return rand.nextInt(IMPERATIVE+1) - 1; }
+
+    public String printTense() {
+
+        switch (tense) {
+            case -1: return "NOTIME";
+            case 0:  return "PAST";
+            case 1:  return "PASTPROG";
+            case 2:  return "PRESENT";
+            case 3:  return "PROGRESSIVE";
+            case 4:  return "FUTURE";
+            case 5:  return "FUTUREPROG";
+            case 6:  return "IMPERATIVE";
+        }
+        return "";
+    }
+
+    public void flushToEnglishLogic(KBLite kbLite) {
+        StringBuilder english = new StringBuilder();
+        StringBuilder prop = new StringBuilder();
+
+        // ATTITUDE
+        if (!attitude.equals("None") && !question) {
+            // English portion
+            english.append(attSubj).append(" ");
+            String that = "";
+            if (rand.nextBoolean() || attitude.equals("desires"))
+                that = "that ";
+            if (attNeg)
+                english.append("doesn't ").append(attWord.root).append(" ").append(that);
+            else
+                english.append(attWord.present).append(" ").append(that);
+            if (attWord.term.equals("says"))
+                english.append("\"");
+
+            // Logic portion
+            if (attNeg) {
+                prop.append("(not (exists (?HA) (and  ");
+            }
+            else {
+                prop.append("(exists (?HA) (and ");
+            }
+            String var = "?HA";
+            if (attSubjType != null && attSubjType.equals("Human")) {
+                prop.append("(instance ").append(var).append(" Human) ");
+                prop.append("(names \"").append(attSubj).append("\" ").append(var).append(") ");
+            }
+            else {
+                prop.append("(attribute ").append(var).append(" ").append(attSubjType).append(") ");
+            }
+            prop.append("(").append(attWord.term).append(" ?HA ");
+        }
+
+        // MODALS
+        if (!modal.attribute.equals("None")) {
+            if (negatedModal)
+                english.append(modal.value.substring(0,5) + " not" + modal.value.substring(5));
+            else
+                english.append(modal.value);
+            if (negatedModal)
+                prop.append("(not (modalAttribute ");
+            else
+                prop.append("(modalAttribute ");
+        }
+
+        // DO POLITENESS (IF FIRST)
+        if (isImperative() && polite && politeFirst) {
+            english.insert(0, politeWord + english);
+        }
+
+        // Set up logic for main part of sentence
+        if (negatedBody)
+            prop.append("(not ");
+        prop.append("(exists (?H ?P ?DO ?IO ?V2) (and ");
+
+        // DATE & TIME
+        if (hasdateORtime) {
+            if (hastime) {
+                english.append(timeEng).append(" ");
+                prop.append("(instance ?T (HourFn ").append(hourLog).append(")) (during ?P ?T) ");
+            }
+            if (!hastime && hasdate) {
+                english.append(dateEng).append(" ");
+                prop.append("(instance ?T (DayFn ").append(dayLog).append(" (MonthFn ").append(monthLog).append(" (YearFn ").append(yearLog).append(")))) (during ?P ?T) ");
+            }
+            if (!hastime && !hasdate && hasdatetime) { // sometimes add both
+                prop.append("(instance ?T (HourFn ").append(hourLog).append(" (DayFn ").append(dayLog).append(" (MonthFn ").append(monthLog).append(" (YearFn ").append(yearLog).append("))))) (during ?P ?T) ");
+                english.append(dateEng).append(" ");
+            }
+        }
+
+        // SUBJECT
+        if (subjType != null && subjType.equals("Human")) {
+            if (question) {
+                english.setLength(0);
+                english.append(subj).append(" ");
+            }
+            else {
+                String var = "?H";
+                if (subj.equals("Human")) {
+                    english.append(subjName).append(" ");
+                    prop.append("(instance ").append(var).append(" Human) ");
+                    prop.append("(names \"").append(subjName).append("\" ").append(var).append(") ");
+                }
+                else if (!subj.equals("You")) { // Its not a human, and its not a "You", so its a social role.
+                    english.append(subjName).append(" ");
+                    prop.append("(attribute ").append(var).append(" ").append(subj).append(") ");
+                } //There is no appended english or logic for subj.equals("You")
+            }
+            if (subj.equals("You")) {
+                if (addPleaseToSubj) {
+                    english.append("Please, ");
+                }
+                else if (addShouldToSubj) {
+                    english.append("You should ");
+                }
+            }
+            if (attitude.equals("says") && subj.equals("You") && // remove "that" for says "You ..."
+                    english.toString().endsWith("that \"")) {
+                english.delete(english.length() - 7, english.length());
+                english.append(" \""); // restore space and quote
+            }
+            else if (addBodyPart) {
+                if (!subj.equals("You") && !subj.equals("Human")) { // Social Role a plumber... etc
+                    english.deleteCharAt(english.length()-1); // delete trailing space
+                    english.append("'s ");
+                }
+                else if (subj.equals("Human")) {
+                    english.append("'s ");
+                }
+                english.append(bodyPart).append(" ");
+                if (pluralBodyPart.attribute.equals("true"))
+                    addSUMOplural(prop,bodyPart,pluralBodyPart,"?O");
+                else
+                    prop.append("(instance ?O ").append(bodyPart).append(") ");
+                prop.append("(possesses ?H ?O) ");
+            }
+        }
+        else { // Subject is Something
+            if (question) {
+                english.append(subj).append(" ");
+            }
+            else if (subjType.equals("Something")) {
+                english.append(subj).append(" ");
+                if (subjectPlural) {
+                    addSUMOplural(prop, subjName, pluralSubj, "?H");
+                }
+                else
+                    prop.append("(instance ?H ").append(subjName).append(") ");
+                if (subjType.equals("Something is")) {
+                    english.append("is ");
+                }
+            }
+            else {  // frame must be "It..."
+                if (subjType.equals("It is")) {
+                    english.append("It is ");
+                }
+                else {
+                    english.append("It ");
+                }
+            }
+        }
+
+        // ADD VERB
+        english.append(verbConjugated).append(" ");
+        prop.append("(instance ?P ").append(verbType).append(") ");
+        if (!"".equals(adverb)) {
+            prop.append("(manner ?P ").append(adverbSUMO).append(") ");
+        }
+        if (verbFrameCat != null && verbFrameCat.startsWith("Something"))
+            prop.append("(involvedInEvent ?P ?H) ");
+        else if (subj != null && subj.equalsIgnoreCase("What") &&
+                !kbLite.isSubclass(verbType,"IntentionalProcess")) {
+            prop.append("(involvedInEvent ?P ?H) ");
+        }
+        else if (subj != null &&
+                (kbLite.isSubclass(subj,"AutonomousAgent") ||
+                        kbLite.isInstanceOf(subj,"SocialRole") ||
+                        subj.equalsIgnoreCase("Who") ||
+                        subj.equals("You"))) {
+            if (kbLite.isSubclass(verbType,"IntentionalProcess"))
+                prop.append("(agent ?P ?H) ");
+            else if (kbLite.isSubclass(verbType,"BiologicalProcess"))
+                prop.append("(experiencer ?P ?H) ");
+            else
+                prop.append("(agent ?P ?H) ");
+        }
+        if (isPast())
+            prop.append("(before (EndFn (WhenFn ?P)) Now) ");
+        if (isPresent())
+            prop.append("(temporallyBetween (BeginFn (WhenFn ?P)) Now (EndFn (WhenFn ?P))) ");
+        if (isFuture())
+            prop.append("(before Now (BeginFn (WhenFn ?P))) ");
+
+
+        // ADD DIRECT OBJECT
+        if (directType != null && directType.equals("Human"))
+            prop.append(directSUMO);
+        if (kbLite.isSubclass(verbType, "Translocation") &&
+                (kbLite.isSubclass(directType,"Region") || kbLite.isSubclass(directType,"StationaryObject"))) {
+
+            if (directName != null)
+                english.append("to ").append(directOther).append(directName).append(" ");
+            else
+                english.append(secondVerb).append(" ");
+
+            if (pluralDirect.attribute.equals("true"))
+                addSUMOplural(prop,directType,pluralDirect,"?DO");
+            else
+                prop.append("(instance ?DO ").append(directType).append(") ");
+            prop.append("(destination ?P ?DO) ");
+        } else if (!"".equals(secondVerbType) ) { //&& secondVerbType.equals("Human")
+            if (!StringUtil.emptyString(directPrep))
+                english.append(directPrep);
+            if (directName != null) {
+                english.append(directOther).append(directName).append(" ");
+                prop.append("(instance ?DO Human) ");
+            }
+            else
+                english.append(secondVerb).append(" ");
+            prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
+            prop.append("(refers ?DO ?V2) ");
+        }
+        else if (directType != null) {
+            if (directType.equals("Human"))
+                english.append(directPrep).append(directOther).append(directName).append(" ");
+            else
+                english.append(directPrep).append(directOther).append(directName).append(" ");
+            if (pluralDirect.attribute.equals("true"))
+                addSUMOplural(prop,directType,pluralDirect,"?DO");
+            else
+                prop.append("(instance ?DO ").append(directType).append(") ");
+
+            switch (directPrep) {
+                case "to ":
+                    prop.append("(destination ?P ?DO) ");
+                    break;
+                case "on ":
+                    prop.append("(orientation ?P ?DO On) ");
+                    break;
+                default:
+                    if (kbLite.isSubclass(verbType,"Transfer")) {
+                        prop.append("(objectTransferred ?P ?DO) ");
+                    }
+                    else {
+                        prop.append("(patient ?P ?DO) ");
+                    }   break;
+            }
+        }
+
+        // INDIRECT OBJECT
+        if (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something")) {
+            english.append(indirectPrep).append(indirectName);
+            if (pluralIndirect.attribute.equals("true"))
+                addSUMOplural(prop,indirectType,pluralIndirect,"?IO");
+            else {
+                if (kbLite.isInstanceOf(indirectType,"SocialRole"))
+                    prop.append("(attribute ?IO ").append(indirectType).append(") ");
+                else
+                    prop.append("(instance ?IO ").append(indirectType).append(") ");
+            }
+            if (framePart.contains("somebody"))
+                prop.append(indirectSUMO);
+            else
+                prop.append("(instance ?IO ").append(indirectType).append(")");
+        }
+        else if (framePart.contains("INFINITIVE")) {
+            //if (framePart.contains("to"))
+                english.append(secondVerb).append(" ");
+        }
+
+        // ADD ENDING
+        addEndingToEnglishLogic(english, prop);
+
+        // FLUSH STRING BUILDER OBJECT
+        englishSentence = english.toString().replaceAll("  "," ");
+        englishSentence = capital(englishSentence);
+        logicFormula = prop.toString();
+    }
+
+
+    public void addEndingToEnglishLogic(StringBuilder english, StringBuilder prop) {
+        if (polite && !politeFirst)
+            english.append(politeWord);
+        if (english.toString().endsWith(" "))
+            english.delete(english.length() - 1, english.length());
+        if (exclamation)
+            english.append("!");
+        else if (english.indexOf(" ") != -1 &&
+                questionWord(english.toString().substring(0, english.toString().indexOf(" "))))
+            english.append("?");
+        else
+            english.append(".");
+        if (attitude != null && attitude.equals("says"))
+            english.append("\"");
+        if (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))
+            prop.append("(").append(indirectCaseRole).append(" ?P ?IO) ");
+        else
+            prop.append(closeParens());
+
+        if (subj != null && subj.equals("You")) {
+            String newProp = prop.toString().replace(" ?H", " You");
+            prop.setLength(0);
+            prop.append(newProp);
+        }
+        if (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))
+            prop.append(closeParens());
+    }
+
+
+    /** ***************************************************************
+     * Add SUMO content about a plural noun
+     * @param prop is the formula to append to
+     * @param term is the SUMO type of the noun
+     * @param plural is the count of the plural as a String integer in the value field
+     * @param var is the variable for the term in the formula
+     */
+    private static void addSUMOplural(StringBuilder prop, String term, AVPair plural, String var) {
+        prop.append("(memberType ").append(var).append(" ").append(term).append(") ");
+        prop.append("(memberCount ").append(var).append(" ").append(plural.value).append(") ");
+    }
+
+
+    /** ***************************************************************
+     */
+    public static String capital(String s) {
+
+        if (debug) System.out.println("capital(): s: " + s);
+        if (StringUtil.emptyString(s))
+            return s;
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    /** ***************************************************************
+     */
+    public boolean questionWord(String q) {
+
+        return q.equalsIgnoreCase("who") || q.equalsIgnoreCase("what") || q.equalsIgnoreCase("when did") ||
+                q.equalsIgnoreCase("did") || q.equalsIgnoreCase("where did") || q.equalsIgnoreCase("why did");
+    }
+
+    private String closeParens() {
+
+        StringBuilder result = new StringBuilder();
+        if (negatedBody) result.append(")");
+        result.append(")) "); // close off the starting 'exists' and 'and'
+        if (!modal.attribute.equals("None")) result.append(modal.attribute).append(")");
+        if (negatedModal && !modal.attribute.equals("None")) result.append(")");
+        if (!attitude.equals("None")) {
+            result.append(")))");
+            if (attNeg) result.append(")");
+        }
+        return result.toString();
+    }
+
+    public boolean isModalAttitudeOrPolitefirst() {
+        return (!attitude.equals("None") || !attitude.equals("says")) ||
+                !modal.attribute.equals("None") || (isImperative() && polite && politeFirst);
     }
 
     @Override
@@ -210,11 +529,14 @@ public class LFeatures {
                 "attNeg=" + attNeg +
                 ", attPlural=" + attPlural +
                 ", attCount=" + attCount +
+                ", attSubjType='" + attSubjType + '\'' +
                 ", attSubj='" + attSubj + '\'' +
                 ", attitude='" + attitude + '\'' +
                 ", attitudeModifier='" + attitudeModifier + '\'' +
+                ", attWord=" + String.valueOf(attWord) +
                 ", negatedModal=" + negatedModal +
                 ", negatedBody=" + negatedBody +
+                ", modal=" + String.valueOf(modal) +
                 ", directPrep='" + directPrep + '\'' +
                 ", indirectPrep='" + indirectPrep + '\'' +
                 ", secondVerb='" + secondVerb + '\'' +
@@ -223,29 +545,59 @@ public class LFeatures {
                 ", secondVerbModifier='" + secondVerbModifier + '\'' +
                 ", subj='" + subj + '\'' +
                 ", subjName='" + subjName + '\'' +
+                ", subjType='" + subjType + '\'' +
                 ", subjectModifier='" + subjectModifier + '\'' +
                 ", subjectPlural=" + subjectPlural +
+                ", pluralSubj=" + String.valueOf(pluralSubj) +
                 ", subjectCount=" + subjectCount +
                 ", frame='" + frame + '\'' +
                 ", framePart='" + framePart + '\'' +
-                ", verbSynset='" + verbSynset + '\'' +
+                ", frames=" + String.valueOf(frames) +
                 ", directName='" + directName + '\'' +
                 ", directType='" + directType + '\'' +
+                ", directSUMO='" + directSUMO + '\'' +
                 ", directPlural=" + directPlural +
+                ", pluralDirect=" + String.valueOf(pluralDirect) +
+                ", directOther='" + directOther + '\'' +
                 ", directCount=" + directCount +
                 ", directModifier='" + directModifier + '\'' +
                 ", indirectName='" + indirectName + '\'' +
                 ", indirectType='" + indirectType + '\'' +
                 ", indirectPlural=" + indirectPlural +
+                ", indirectSUMO='" + indirectSUMO + '\'' +
+                ", pluralIndirect=" + String.valueOf(pluralIndirect) +
                 ", indirectCount=" + indirectCount +
                 ", indirectModifier='" + indirectModifier + '\'' +
+                ", indirectCaseRole='" + indirectCaseRole + '\'' +
                 ", question=" + question +
+                ", exclamation=" + exclamation +
                 ", verb='" + verb + '\'' +
+                ", verbConjugated='" + verbConjugated + '\'' +
+                ", verbSynset='" + verbSynset + '\'' +
                 ", verbType='" + verbType + '\'' +
+                ", verbFrameCat='" + verbFrameCat + '\'' +
                 ", adverb='" + adverb + '\'' +
+                ", adverbSUMO='" + adverbSUMO + '\'' +
                 ", tense=" + tense +
+                ", hastime=" + hastime +
+                ", hasdate=" + hasdate +
+                ", hasdatetime=" + hasdatetime +
+                ", hasdateORtime=" + hasdateORtime +
+                ", dateEng='" + dateEng + '\'' +
+                ", timeEng='" + timeEng + '\'' +
+                ", yearLog='" + yearLog + '\'' +
+                ", monthLog='" + monthLog + '\'' +
+                ", dayLog='" + dayLog + '\'' +
+                ", hourLog='" + hourLog + '\'' +
                 ", polite=" + polite +
                 ", politeFirst=" + politeFirst +
+                ", politeWord='" + politeWord + '\'' +
+                ", addPleaseToSubj=" + addPleaseToSubj +
+                ", addShouldToSubj=" + addShouldToSubj +
+                ", addBodyPart=" + addBodyPart +
+                ", bodyPart='" + bodyPart + '\'' +
+                ", pluralBodyPart=" + String.valueOf(pluralBodyPart) +
                 '}';
     }
+
 }
