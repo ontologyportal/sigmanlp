@@ -24,8 +24,8 @@ public class LogisticRegression {
     public int dim; // number of dimensions
     public double alpha = 0.0001;
     public double[] betas;             // a set of coefficients the same length as the x vector
-    public ArrayList<String> labels = new ArrayList<>();
-    public ArrayList<String> types = new ArrayList<>();
+    public List<String> labels = new ArrayList<>();
+    public List<String> types = new ArrayList<>();
     public int epochBatch = 0;
     public static final int numBatches = 10;
     public boolean epochs = false; // sample the training space
@@ -52,9 +52,9 @@ public class LogisticRegression {
 
     /****************************************************************
      */
-    public LogisticRegression(ArrayList<ArrayList<String>> inputs,
-                              ArrayList<String> labels,
-                              ArrayList<String> types) {
+    public LogisticRegression(List<List<String>> inputs,
+                              List<String> labels,
+                              List<String> types) {
 
         this.types = types;  // these can be discrete "disc", continuous "cont" or "class"
         this.labels = labels;
@@ -68,7 +68,7 @@ public class LogisticRegression {
         x_train = new double[numpoints][numDimensions];
         y_train = new double[numpoints];
         for (int i = 0; i < numpoints; i++) {
-            ArrayList<String> row = inputs.get(i);
+            List<String> row = inputs.get(i);
             for (int j = 0; j < numDimensions; j++) {
                 x_train[i][j] = Double.parseDouble(row.get(j));
             }

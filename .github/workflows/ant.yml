@@ -23,12 +23,20 @@ jobs:
   build-test-upload:
     name: Built, Test & Upload
     runs-on: ubuntu-latest
+    env:
+      CATALINA_HOME: ${{ github.workspace }}/tomcat
 
     steps:
       - name: checkout sigmanlp
         uses: actions/checkout@v4
         with:
           path: sigmanlp
+
+      - name: checkout sigmaAntlr
+        uses: actions/checkout@v4
+        with:
+          repository: 'ontologyportal/sigmaAntlr'
+          path: sigmaAntlr
 
       - name: checkout sigmakee
         uses: actions/checkout@v4
@@ -73,6 +81,7 @@ jobs:
           echo "ONTOLOGYPORTAL_GIT: $ONTOLOGYPORTAL_GIT"
           echo "CORPORA: $CORPORA"
           mkdir -p $SIGMA_HOME/KBs/WordNetMappings
+          mkdir -p $CATALINA_HOME/webapps
           cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
           cp -R $ONTOLOGYPORTAL_GIT/sumo/* $SIGMA_HOME/KBs
           wget 'https://wordnetcode.princeton.edu/3.0/WordNet-3.0.tar.gz'

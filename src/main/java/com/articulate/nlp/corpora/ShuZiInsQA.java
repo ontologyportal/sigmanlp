@@ -380,14 +380,14 @@ public class ShuZiInsQA {
      * doubles - answer ID and then  a score for each feature, and a binary value for whether the answer
      * is in fact a valid answer for the question in dev
      */
-    private ArrayList<ArrayList<Double>> scoreOneDev(Dev dev,
+    private List<List<Double>> scoreOneDev(Dev dev,
                                                      TFIDF cb,
                                                      TokenOverlap to,
                                                      NGramOverlap ng,
                                                      SynsetOverlap so,
                                                      SUMOOverlap sumo) {
 
-        ArrayList<ArrayList<Double>> result = new ArrayList<>();
+        List<List<Double>> result = new ArrayList<>();
         //System.out.println("ShuZiInsQA.scoreOneDev(): " + dev);
 
         // key is the match score and value is the list of line numbers that have that score
@@ -430,7 +430,7 @@ public class ShuZiInsQA {
 
             //System.out.println("ShuZiInsQA.scoreOneDev(): score for ngram overlap: " + ngScore);
             ArrayList<Double> inputLine = new ArrayList<>();
-            inputLine.add(Double.parseDouble(ansID));
+            inputLine.add(Double.valueOf(ansID));
             inputLine.add(tfScore);
             inputLine.add(toScore);
             inputLine.add(ng2Score);
@@ -456,7 +456,7 @@ public class ShuZiInsQA {
             double sumoScore = scoreCandidate(sumoOverlap,ansID);
 
             ArrayList<Double> inputLine = new ArrayList<>();
-            inputLine.add(Double.parseDouble(ansID));
+            inputLine.add(Double.valueOf(ansID));
             inputLine.add(tfScore);
             inputLine.add(toScore);
             inputLine.add(ng2Score);
@@ -476,19 +476,19 @@ public class ShuZiInsQA {
      * term overlap and add to the table.  First element of each line
      * is the answer ID
      */
-    private ArrayList<ArrayList<Double>> devsToInputs(List<Dev> devs,
+    private List<List<Double>> devsToInputs(List<Dev> devs,
                                                       TFIDF cb,
                                                       TokenOverlap to,
                                                       NGramOverlap ng,
                                                       SynsetOverlap so,
                                                       SUMOOverlap sumo) {
 
-        ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
+        List<List<Double>> result = new ArrayList<>();
         ProgressPrinter pp = new ProgressPrinter(10);
         for (Dev dev : devs) {
             pp.tick();
-            ArrayList<ArrayList<Double>> res = scoreOneDev(dev, cb, to, ng, so, sumo);
-            for (ArrayList<Double> ar : res)
+            List<List<Double>> res = scoreOneDev(dev, cb, to, ng, so, sumo);
+            for (List<Double> ar : res)
                 ar.remove(0); // remove the answer number
             result.addAll(res);
         }
@@ -501,11 +501,11 @@ public class ShuZiInsQA {
      * @return an ArrayList of ArrayLists the same size as the input
      * but with Integer elements converted to String
      */
-    private ArrayList<ArrayList<String>> matrixDoubleToString(ArrayList<ArrayList<Double>> input) {
+    private List<List<String>> matrixDoubleToString(List<List<Double>> input) {
 
-        ArrayList<ArrayList<String>> result = new ArrayList<>();
-        for (ArrayList<Double> row : input) {
-            ArrayList<String> resultRow = new ArrayList<String>();
+        List<List<String>> result = new ArrayList<>();
+        for (List<Double> row : input) {
+            List<String> resultRow = new ArrayList<>();
             for (Double i : row)
                 resultRow.add(Double.toString(i));
             result.add(resultRow);
@@ -521,7 +521,7 @@ public class ShuZiInsQA {
                                                    NGramOverlap ng,
                                                    SynsetOverlap so,
                                                    SUMOOverlap sumo,
-                                                   ArrayList<ArrayList<Double>> inputs,
+                                                   List<List<Double>> inputs,
                                                    ArrayList<String> labels,
                                                    ArrayList<String> types) {
 
@@ -529,7 +529,7 @@ public class ShuZiInsQA {
         System.out.println("ShuZiInsQA.createTrainingClasses(): starting timer ");
         long t1 = System.currentTimeMillis();
         List<NaiveBayes> bayesList = new ArrayList<>();
-        ArrayList<ArrayList<String>> newinputs = matrixDoubleToString(inputs);
+        List<List<String>> newinputs = matrixDoubleToString(inputs);
         // add types header and labels header
         NaiveBayes nb = new NaiveBayes(newinputs,labels,types);
         nb.initialize();
@@ -579,14 +579,14 @@ public class ShuZiInsQA {
                                                              NGramOverlap ng,
                                                              SynsetOverlap so,
                                                              SUMOOverlap sumo,
-                                                             ArrayList<ArrayList<Double>> inputs,
+                                                             List<List<Double>> inputs,
                                                              ArrayList<String> labels,
                                                              ArrayList<String> types) {
 
         System.out.println("ShuZiInsQA.createTrainingClassesLR(): starting timer ");
         long t1 = System.currentTimeMillis();
         List<LogisticRegression> lrList = new ArrayList<>();
-        ArrayList<ArrayList<String>> newinputs = matrixDoubleToString(inputs);
+        List<List<String>> newinputs = matrixDoubleToString(inputs);
         // add types header and labels header
         LogisticRegression lr = new LogisticRegression(newinputs,labels,types);
         lr.init();
@@ -654,27 +654,27 @@ public class ShuZiInsQA {
         System.out.print("ShuZiInsQA.classify(): starting timer");
         long t1 = System.currentTimeMillis();
         ProgressPrinter pp = new ProgressPrinter(10);
-        ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
+        ArrayList<ArrayList<Double>> result = new ArrayList<>();
         for (int i = 0; i < 10; i++)
             System.out.println("ShuZiInsQA.classify(): " + test.get(i));
 
         for (Dev dev : test) {
             //System.out.println("ShuZiInsQA.classify(): dev: " + dev);
             pp.tick();
-            ArrayList<ArrayList<Double>> oneDev = scoreOneDev(dev, cb, to, ng, so,sumo);
-            ArrayList<ArrayList<String>> processedDev = matrixDoubleToString(oneDev);
-            for (ArrayList<String> line : processedDev) {
+            List<List<Double>> oneDev = scoreOneDev(dev, cb, to, ng, so,sumo);
+            List<List<String>> processedDev = matrixDoubleToString(oneDev);
+            for (List<String> line : processedDev) {
                 String answer = line.get(line.size()-1); // scoreOneDev returns the target answer
                 line.remove(line.size()-1);
                 ArrayList<Double> oneLine = new ArrayList<>();
                 String ansID = line.get(0);
                 line.remove(0);
-                oneLine.add(Double.parseDouble(line.get(0))); // tfidf
-                oneLine.add(Double.parseDouble(line.get(1))); // term overlap
-                oneLine.add(Double.parseDouble(line.get(2))); // bigram overlap
-                oneLine.add(Double.parseDouble(line.get(3))); // trigram overlap
-                oneLine.add(Double.parseDouble(line.get(4))); // synset overlap
-                oneLine.add(Double.parseDouble(line.get(5))); // sumo overlap
+                oneLine.add(Double.valueOf(line.get(0))); // tfidf
+                oneLine.add(Double.valueOf(line.get(1))); // term overlap
+                oneLine.add(Double.valueOf(line.get(2))); // bigram overlap
+                oneLine.add(Double.valueOf(line.get(3))); // trigram overlap
+                oneLine.add(Double.valueOf(line.get(4))); // synset overlap
+                oneLine.add(Double.valueOf(line.get(5))); // sumo overlap
                 ArrayList<String> shortened = new ArrayList<>(line);
                 for (NaiveBayes nb : nbList) {
                     //System.out.println("ShuZiInsQA.classify(): header: " + nb.labels);
@@ -722,12 +722,12 @@ public class ShuZiInsQA {
 
         for (Dev dev : test) {
             pp.tick();
-            ArrayList<ArrayList<Double>> oneDev = scoreOneDev(dev, cb, to, ng, so, sumo);
-            ArrayList<ArrayList<String>> processedDev = matrixDoubleToString(oneDev);
+            List<List<Double>> oneDev = scoreOneDev(dev, cb, to, ng, so, sumo);
+            List<List<String>> processedDev = matrixDoubleToString(oneDev);
             Map<String,Integer> oneQuestion = new HashMap<>();
 
             String ansID = "";
-            for (ArrayList<String> line : processedDev) {
+            for (List<String> line : processedDev) {
                 //System.out.println("ShuZiInsQA.top1(): original line: " + line);
                 String answer = line.get(line.size()-1); // scoreOneDev returns the target answer
                 // score one dev puts answerID first
@@ -960,7 +960,7 @@ public class ShuZiInsQA {
             ioe.printStackTrace();
         }
 
-        ArrayList<ArrayList<Double>> inputs = devsToInputs(devs, cb, to, ng, so, sumo);
+        List<List<Double>> inputs = devsToInputs(devs, cb, to, ng, so, sumo);
         // add types header and labels header
 
         System.out.println();
@@ -1001,10 +1001,7 @@ public class ShuZiInsQA {
      */
     public static void main(String[] args) {
 
-        if (args[0].equals("-reduce"))
-            reduceData = true;
-        else
-            reduceData = false;
+        reduceData = args[0].equals("-reduce");
         System.out.println("in ShuZiInsQA.main(): starting timer");
         long t1 = System.currentTimeMillis();
         ShuZiInsQA sziq = new ShuZiInsQA();
