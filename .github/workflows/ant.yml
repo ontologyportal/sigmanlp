@@ -24,7 +24,7 @@ jobs:
     name: Built, Test & Upload
     runs-on: ubuntu-latest
     env:
-      CATALINA_HOME: /usr/local/tomcat
+      CATALINA_HOME: ${{ github.workspace }}/tomcat
 
     steps:
       - name: checkout sigmanlp
