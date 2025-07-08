@@ -263,7 +263,7 @@ public class GenUtils {
     public static String askOllama(String prompt) {
         try {
             if (ollamaAPI == null) {
-                startOllamaServer(11435);
+                startOllamaServer(11436);
             }
             ollamaAPI.setRequestTimeoutSeconds(60);
             OllamaResult result =
@@ -271,6 +271,7 @@ public class GenUtils {
             return result.getResponse().toString();
         } catch (Exception e) {
             System.out.println("Error in GenUtils.askOllama(): " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

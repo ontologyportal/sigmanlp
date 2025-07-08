@@ -716,7 +716,7 @@ public class GenSimpTestData {
         }
         else if (lfeat.framePart.startsWith("Something")) {
             lfeat.subjType = "Something";
-            lfeat.subjName = GenWordSelector.getNounFromVerb(lfeatsets, lfeat);
+            lfeat.subjName = GenWordSelector.getNounFromVerb(lfeatsets, lfeat, kbLite);
             lfeat.pluralSubj = new AVPair();
             lfeat.subj = nounFormFromTerm(lfeat.subjName,lfeat.pluralSubj,"");
             if (lfeat.pluralSubj.attribute.equals("true")) {
@@ -846,7 +846,7 @@ public class GenSimpTestData {
                 lfeat.framePart = "";
         }
         else if (lfeat.framePart.trim().startsWith("something") || lfeat.framePart.trim().startsWith("on something")) {
-            lfeat.directType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat);
+            lfeat.directType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat, kbLite);
             if (lfeat.framePart.contains("on something"))
                 lfeat.directPrep = "on ";
             int index = lfeat.framePart.indexOf("something");
@@ -1096,7 +1096,7 @@ public class GenSimpTestData {
             }
         }
         else if (lfeat.framePart.endsWith("something")) {
-            lfeat.indirectType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat);
+            lfeat.indirectType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat, kbLite);
         }
         if (debug) System.out.println("getIndirect(): type: " + lfeat.indirectType);
     }
@@ -1333,7 +1333,7 @@ public class GenSimpTestData {
             if (lfeat.framePart != null) { // An optimization would be to remove all the verbs that have null frameParts from lfeatset.
                 getPrepFromFrame(lfeat);
                 lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
-                lfeat.indirectType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat);
+                lfeat.indirectType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat, kbLite);
                 if (biasedBoolean(1,10) && !lfeat.isModalAttitudeOrPolitefirst()) {
                     lfeat.hasdateORtime = true;
                     addTimeDate(lfeat);

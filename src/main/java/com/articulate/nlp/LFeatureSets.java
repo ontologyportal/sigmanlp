@@ -138,14 +138,24 @@ public class LFeatureSets {
         for (String obj:objects.terms) {
             TermInfo newTermInfo = new TermInfo();
             newTermInfo.termInSumo = obj;
-            newTermInfo.documentation = kbLite.getDocumentation(obj);
-            if (newTermInfo.documentation != null)
-                newTermInfo.documentation = newTermInfo.documentation.replaceAll("^\"|\"$|&%", "").replaceAll("\"", "'");
+            newTermInfo.documentation = processDocumentation(kbLite.getDocumentation(obj));
+
             newTermInfo.termFormats = kbLite.termFormats.get(obj);
             termInfos.add(newTermInfo);
         }
     }
 
+    public static String processDocumentation(String doc) {
+        if (doc != null) {
+            doc = doc.length() < 160 ? doc : doc.substring(0, 159) + "...";
+            doc = doc.replaceAll("^\"|\"$|&%", "").replaceAll("\"", "'");
+            doc = doc.replace("&%", "");
+            //Insert space before each uppercase letter that follows a lowercase letter or another uppercase letter (for acronyms)
+            doc = doc.replaceAll("([a-z])([A-Z])", "$1 $2").replaceAll("([A-Z]+)([A-Z][a-z])", "$1 $2");
+            doc = doc.replaceAll(" +", " ").trim();
+        }
+        return doc;
+    }
 
     /** ***************************************************************
      * estimate the number of sentences that will be produced
