@@ -1,6 +1,11 @@
 package com.articulate.nlp;
 
 
+import java.util.Random;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+
 /** ***************************************************************
  *   This code chooses words for generated sentences.
  *   There are four different methods to choose from:
@@ -12,7 +17,10 @@ package com.articulate.nlp;
 
 public class GenWordSelector {
 
-    private static final SelectionStrategy strategy = SelectionStrategy.RANDOM;
+    private static final SelectionStrategy strategy = SelectionStrategy.OLLAMA;
+    private static final int OBJ_SUBSET_SIZE = 20;
+    public static final Random rand = new Random();
+
 
     public enum SelectionStrategy {
         RANDOM, WORD_PAIR, FRAME_LITE, OLLAMA
@@ -27,7 +35,15 @@ public class GenWordSelector {
             case FRAME_LITE:
                 return "frameLiteNoun";
             case OLLAMA:
-                return "ollamaNoun";
+                String tInfoJSON = getJSONSetOfObjectsOfSize(OBJ_SUBSET_SIZE, lfeatset);
+                String prompt = "You are an expert linguist that only knows JSON format. " +
+                        "I need help choosing a subject that best goes with the verb <" + lfeat.verb + ">." +
+                        "Choose the top five terms that go with the verb from the following JSON list," +
+                        "and respond in JSON format: " + tInfoJSON;
+                System.out.println("DELETEME: " + tInfoJSON);
+                String response = GenUtils.askOllama(prompt);
+                System.out.println("\n\n" + response + "\n\n\n");
+                return lfeatset.objects.getNext();
             default:
                 throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
@@ -42,7 +58,7 @@ public class GenWordSelector {
             case FRAME_LITE:
                 return "frameLiteNoun";
             case OLLAMA:
-                return "ollamaNoun";
+                return lfeatset.objects.getNext();
             default:
                 throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
@@ -57,10 +73,35 @@ public class GenWordSelector {
             case FRAME_LITE:
                 return "frameLiteNoun";
             case OLLAMA:
-                return "ollamaNoun";
+                return lfeatset.objects.getNext();
             default:
                 throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
+    }
+
+
+    private static String getJSONSetOfObjectsOfSize(int n, LFeatureSets lfeatset) {
+        Collections.shuffle(lfeatset.termInfos);
+        List<LFeatureSets.TermInfo> subsetTermInfos = lfeatset.termInfos;
+        if (n <= subsetTermInfos.size()) {
+            subsetTermInfos = lfeatset.termInfos.subList(0, n);
+        }
+        String tInfoJSON = "{\n\"terms\":[";
+        for (LFeatureSets.TermInfo tInfo:subsetTermInfos) {
+            if (tInfo.termFormats != null) {
+                tInfoJSON += "\n\t{\n\t\t\"TermName\":\"" + tInfo.termInSumo + "\",";
+                tInfoJSON += "\n\t\t\"English\":\"" + tInfo.termFormats.get(rand.nextInt(tInfo.termFormats.size())) + "\"";
+                if (tInfo.documentation != null) {
+                    tInfoJSON += ",\n\t\t\"Definition\":\"" + tInfo.documentation + "\"";
+                }
+                tInfoJSON += "\n\t},";
+            }
+        }
+        if (tInfoJSON.endsWith(",")) {
+            tInfoJSON = tInfoJSON.substring(0, tInfoJSON.length() - 1);
+        }
+        tInfoJSON += "]\n}";
+        return tInfoJSON;
     }
 
 }

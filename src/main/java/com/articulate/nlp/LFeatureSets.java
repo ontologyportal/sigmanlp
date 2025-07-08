@@ -56,6 +56,12 @@ public class LFeatureSets {
         }
     }
 
+    public class TermInfo {
+        public String termInSumo = null;
+        public String documentation = null;
+        public List<String> termFormats = null;
+    }
+
     public List<AVPair> modals = null;
     public Map<String, String> genders = null;
     public RandSet humans = null;
@@ -65,6 +71,7 @@ public class LFeatureSets {
     public Set<String> prevHumans = new HashSet<>();
     public RandSet processes = null;
     private KBLite kbLite = null;
+    public ArrayList<TermInfo> termInfos = null;
 
     public static List<String> numbers = new ArrayList<>();
     public static List<String> requests = new ArrayList<>(); // polite phrase at start of sentence
@@ -125,7 +132,20 @@ public class LFeatureSets {
         addUnknownsObjects(objFreqs);
         if (debug) System.out.println("LFeatureSets(): create objects");
         objects = RandSet.create(objFreqs);
+
+        // Create termInfo datastructure
+        termInfos = new ArrayList();
+        for (String obj:objects.terms) {
+            TermInfo newTermInfo = new TermInfo();
+            newTermInfo.termInSumo = obj;
+            newTermInfo.documentation = kbLite.getDocumentation(obj);
+            if (newTermInfo.documentation != null)
+                newTermInfo.documentation = newTermInfo.documentation.replaceAll("^\"|\"$|&%", "").replaceAll("\"", "'");
+            newTermInfo.termFormats = kbLite.termFormats.get(obj);
+            termInfos.add(newTermInfo);
+        }
     }
+
 
     /** ***************************************************************
      * estimate the number of sentences that will be produced
@@ -472,6 +492,7 @@ public class LFeatureSets {
         if (debug) System.out.println("excludedVerb(): not excluded: " + v);
         return false;
     }
+
 
     /** ***************************************************************
      * also return true if there's no termFormat for the process

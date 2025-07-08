@@ -519,6 +519,15 @@ public class KBLite {
         return termFormatsForTerm.get(rand.nextInt(termFormatsForTerm.size()));
     }
 
+
+    /** ************************************************
+     *
+     * returns a documentation statement for a term.
+     */
+    public String getDocumentation(String term) {
+        return documentation.get(term);
+    }
+
     /***************************************************************
      * Returns an ArrayList containing the Formulas that match the request.
      *

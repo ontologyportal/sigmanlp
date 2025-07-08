@@ -262,6 +262,9 @@ public class GenUtils {
 
     public static String askOllama(String prompt) {
         try {
+            if (ollamaAPI == null) {
+                startOllamaServer(11435);
+            }
             ollamaAPI.setRequestTimeoutSeconds(60);
             OllamaResult result =
                     ollamaAPI.generate(OLLAMA_MODEL, prompt, false, options);
