@@ -8,6 +8,9 @@ import com.articulate.sigma.FormulaUtil;
 import com.articulate.sigma.wordNet.WordNetUtilities;
 import com.articulate.sigma.wordNet.WordNet;
 import java.util.*;
+import com.opencsv.CSVReader;
+import java.io.File;
+import java.io.FileReader;
 
 /**
  * **************************************************************
@@ -20,6 +23,7 @@ public class LFeatureSets {
             Arrays.asList("Acidification","Vending","OrganizationalProcess",
                     "NaturalProcess","Corkage","LinguisticCommunication"));
     public static boolean useCapabilities = false; // include process types from capabilities list
+
 
     /** *******************************************
      */
@@ -56,11 +60,49 @@ public class LFeatureSets {
         }
     }
 
+    /*
+        Holds information about a SUMO term.
+     */
     public class TermInfo {
         public String termInSumo = null;
         public String documentation = null;
         public List<String> termFormats = null;
     }
+
+    /** *****************************************************************
+        Used to store ProcessTypes from the ProcessType.csv file,
+        This is an optional word selection method. See WordSelection
+        for more details
+     */
+    public static class ProcessTypeEntry {
+        public String verb;
+        public String SubjectClass;
+        public String CaseRoleSubject;
+        public String ObjectClass;
+        public String CaseRoleObject;
+        public String PrepositionObject;
+        public String IndirectObjClass;
+        public String CaseRoleIndObj;
+        public String prepositionIndObj;
+        public String HelperVerb;
+
+        public ProcessTypeEntry(String verb, String SubjectClass, String CaseRoleSubject,
+                                String ObjectClass, String CaseRoleObject, String PrepositionObject,
+                                String IndirectObjClass, String CaseRoleIndObj, String prepositionIndObj,
+                                String HelperVerb) {
+            this.verb = verb;
+            this.SubjectClass = SubjectClass;
+            this.CaseRoleSubject = CaseRoleSubject;
+            this.ObjectClass = ObjectClass;
+            this.CaseRoleObject = CaseRoleObject;
+            this.PrepositionObject = PrepositionObject;
+            this.IndirectObjClass = IndirectObjClass;
+            this.CaseRoleIndObj = CaseRoleIndObj;
+            this.prepositionIndObj = prepositionIndObj;
+            this.HelperVerb = HelperVerb;
+        }
+    }
+
 
     public List<AVPair> modals = null;
     public Map<String, String> genders = null;
@@ -79,6 +121,7 @@ public class LFeatureSets {
     public static List<String> others = new ArrayList<>(); // when next noun is same as a previous one
     public static Map<String,String> prepPhrase = new HashMap<>();
     public static final List<Word> attitudes = new ArrayList<>();
+    public static Map<String, List<ProcessTypeEntry>> processTypes;
 
 
     public LFeatureSets(KBLite kbLiteParam) {
@@ -143,8 +186,15 @@ public class LFeatureSets {
             newTermInfo.termFormats = kbLite.termFormats.get(obj);
             termInfos.add(newTermInfo);
         }
+
+        // Load ProcessTypes
+        processTypes = loadProcessTypes(System.getenv("SIGMANLP_HOME") + "/ProcessTypes.csv");
+        printProcessTypeMap(processTypes);
     }
 
+    /** *********************************************
+     * Cleans up the SUMO documentation value
+     */
     public static String processDocumentation(String doc) {
         if (doc != null) {
             doc = doc.length() < 160 ? doc : doc.substring(0, 159) + "...";
@@ -155,6 +205,57 @@ public class LFeatureSets {
             doc = doc.replaceAll(" +", " ").trim();
         }
         return doc;
+    }
+
+    /** *****************************************************************
+     *  Load process types into a datastructure, if that selection
+     *  strategy is being used. See WordSelection.java for more info.
+     */
+    public static Map<String, List<ProcessTypeEntry>> loadProcessTypes(String csvPath) {
+        File file = new File(csvPath);
+        if (!file.exists()) {
+            System.out.println("File not found: " + csvPath);
+            return null;
+        }
+
+        Map<String, List<ProcessTypeEntry>> map = new HashMap<>();
+        try (CSVReader reader = new CSVReader(new FileReader(file))) {
+            String[] header = reader.readNext(); // skip header
+            String[] row;
+            while ((row = reader.readNext()) != null) {
+                // Adjust indices if columns are not in the exact order
+                ProcessTypeEntry entry = new ProcessTypeEntry(
+                        row[0], row[1], row[2], row[3], row[4],
+                        row[5], row[6], row[7], row[8], row[9]
+                );
+                map.computeIfAbsent(entry.verb, k -> new ArrayList<>()).add(entry);
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading or parsing file: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+        return map;
+    }
+
+    public static void printProcessTypeMap(Map<String, List<ProcessTypeEntry>> processTypeMap) {
+        for (Map.Entry<String, List<ProcessTypeEntry>> entry : processTypeMap.entrySet()) {
+            String verb = entry.getKey();
+            List<ProcessTypeEntry> entries = entry.getValue();
+            System.out.println("Verb: " + verb);
+            for (ProcessTypeEntry e : entries) {
+                System.out.println("  SubjectClass: " + e.SubjectClass
+                        + ", CaseRoleSubject: " + e.CaseRoleSubject
+                        + ", ObjectClass: " + e.ObjectClass
+                        + ", CaseRoleObject: " + e.CaseRoleObject
+                        + ", PrepositionObject: " + e.PrepositionObject
+                        + ", IndirectObjClass: " + e.IndirectObjClass
+                        + ", CaseRoleIndObj: " + e.CaseRoleIndObj
+                        + ", prepositionIndObj: " + e.prepositionIndObj
+                        + ", HelperVerb: " + e.HelperVerb);
+            }
+            System.out.println();
+        }
     }
 
     /** ***************************************************************
