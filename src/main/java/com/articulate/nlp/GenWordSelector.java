@@ -1,16 +1,11 @@
 package com.articulate.nlp;
 
 
-import java.util.Random;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
-
+import com.articulate.sigma.wordNet.WordNet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,7 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 public class GenWordSelector {
 
     public static boolean debug = true;
-    private static final SelectionStrategy strategy = SelectionStrategy.OLLAMA_SUBSET;
+    private static final SelectionStrategy strategy = SelectionStrategy.OLLAMA_JUST_ASK;
     private static final int OBJ_SUBSET_SIZE = 20;
     public static final Random rand = new Random();
 
@@ -40,6 +35,8 @@ public class GenWordSelector {
     }
 
     public static String getNounFromVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite) {
+
+        System.out.println("****************** getNounFromVerb *************************");
         switch (strategy) {
             case RANDOM:
                 return lfeatset.objects.getNext();
@@ -48,17 +45,16 @@ public class GenWordSelector {
             case FRAME_LITE:
                 return "frameLiteNoun";
             case OLLAMA_JUST_ASK:
-                return "Ollama Just Ask";
+                return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
-                System.out.println("****************** getNounFromVerb *************************");
-
-                return getObjectFromOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
+                return getObjectFromSubsetWithOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             default:
                 throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
     }
 
     public static String getNounInClassFromVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite, String className) {
+        System.out.println("++++++++++++++++++ getNounInClassFromVerb ++++++++++++++++++++++");
         switch (strategy) {
             case RANDOM:
                 return lfeatset.objects.getNext();
@@ -66,54 +62,60 @@ public class GenWordSelector {
                 return WordPairFrequency.getNounInClassFromVerb(lfeatset, lfeat, kbLite, className);
             case FRAME_LITE:
                 return "frameLiteNoun";
+            case OLLAMA_JUST_ASK:
+                return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
-                System.out.println("++++++++++++++++++ getNounInClassFromVerb ++++++++++++++++++++++");
-                return getObjectFromOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
+                return getObjectFromSubsetWithOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             default:
                 throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
     }
 
     public static String getNounFromNounAndVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite) {
+        System.out.println("========== getNounFromNounAndVerb ==================");
         switch (strategy) {
             case RANDOM:
                 return lfeatset.objects.getNext();
             case WORD_PAIR:
                 return WordPairFrequency.getNounFromNounAndVerb(lfeatset, lfeat);
             case FRAME_LITE:
-                return "frameLiteNoun";
+                return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
+            case OLLAMA_JUST_ASK:
+                return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
-                System.out.println("========== getNounFromNounAndVerb ==================");
-                return getObjectFromOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
+                return getObjectFromSubsetWithOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             default:
                 throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
     }
 
-    public static String getObjectFromOllama(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+
+    public static String getObjectJustAskOllama(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+        String prompt = getOllamaPromptPrefix(subject, dirObject, kbLite, lfeat, lfeatset) +
+                " and respond in the following JSON format, putting results in the \"TermName\" field: " +
+                "\n{\n\t\"terms\":[\n\t\t{\"TermName\"=\"term1\"},{\"TermName\"=\"term2\"},{\"TermName\"=\"term3\"},{\"TermName\"=\"term4\"},{\"TermName\"=\"term5\"}]";
+        System.out.println(prompt);
+        String response = GenUtils.askOllama(prompt);
+        List<String> returnedObjects = extractTermNames(response);
+        if (debug) System.out.println("\n\n" + response + "\n\n\n");
+        if (debug) System.out.println("Final Results: " + returnedObjects);
+        if (returnedObjects == null) return lfeatset.objects.getNext();
+        for (String obj:returnedObjects) {
+            Set<String> synsetOfTerm = WordNet.wn.getSynsetsFromWord(obj.toLowerCase());
+            String noun = GenUtils.getBestSUMOMapping(synsetOfTerm);
+            if (lfeatset.objects.terms.contains(noun)) {
+                System.out.println("Returning: " + noun + " for verb " + lfeat.verb);
+                return noun;
+            }
+        }
+        return lfeatset.objects.getNext();
+    }
+
+
+    public static String getObjectFromSubsetWithOllama(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
         String tInfoJSON = getJSONSetOfObjectsOfSize(OBJ_SUBSET_SIZE, lfeatset);
-        String verbDefinition = LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.verbType));
-        String objectToGet = "a subject";
-        String subjDef = "";
-        String dirObjDef = "";
-        String promptFirstPartEnding = ". ";
-        if (subject != null) {
-            objectToGet = "a direct object";
-            promptFirstPartEnding = " and the subject <" + subject + ">. ";
-            subjDef = "The definition of the subject \"" + subject + "\" is \"" + LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.subjType)) + "\". ";
-        }
-        if (dirObject != null) {
-            objectToGet = "an indirect object";
-            promptFirstPartEnding = ", the subject <" + subject + ">, and the direct object <" + dirObject + ">. ";
-            dirObjDef = "The definition of the direct object \"" + dirObject + "\" is \"" + LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.directType)) + "\". ";
-        }
-        String prompt = "You are an expert linguist that only knows JSON format. " +
-                "I need help choosing " + objectToGet + " that best goes with the verb <" + lfeat.verb + ">" +
-                promptFirstPartEnding +
-                "The definition of the verb \"" + lfeat.verb + "\" is \"" + verbDefinition + "\". " +
-                subjDef + dirObjDef +
-                "Choose the top five terms that go well as " + objectToGet + " from the following JSON list," +
-                "and respond in JSON format: " + tInfoJSON;
+        String prompt = getOllamaPromptPrefix(subject, dirObject, kbLite, lfeat, lfeatset) +
+                " from the following JSON list, and respond in JSON format: " + tInfoJSON;
         System.out.println(prompt);
         String response = GenUtils.askOllama(prompt);
         List<String> returnedObjects = extractTermNames(response);
@@ -129,6 +131,28 @@ public class GenWordSelector {
         return lfeatset.objects.getNext();
     }
 
+    private static String getOllamaPromptPrefix(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+        String verbDefinition = LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.verbType));
+        String objectToGet = "a subject";
+        String verbDef = "The definition of the verb \"" + lfeat.verb + "\" is \"" + verbDefinition + "\". ";
+        String subjDef = "";
+        String dirObjDef = "";
+        String promptFirstPartEnding = ". ";
+        if (subject != null) {
+            objectToGet = "a direct object";
+            promptFirstPartEnding = " and the subject <" + subject + ">. ";
+            subjDef = "The definition of the subject \"" + subject + "\" is \"" + LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.subjType)) + "\". ";
+        }
+        if (dirObject != null) {
+            objectToGet = "an indirect object";
+            promptFirstPartEnding = ", the subject <" + subject + ">, and the direct object <" + dirObject + ">. ";
+            dirObjDef = "The definition of the direct object \"" + dirObject + "\" is \"" + LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.directType)) + "\". ";
+        }
+        return "You are an expert linguist that only knows JSON format. " +
+                "I need help choosing " + objectToGet + " that best goes with the verb <" + lfeat.verb + ">" +
+                promptFirstPartEnding + verbDef + subjDef + dirObjDef +
+                "Give me the top five terms that go well as " + objectToGet;
+    }
 
     private static String getJSONSetOfObjectsOfSize(int n, LFeatureSets lfeatset) {
         Collections.shuffle(lfeatset.termInfos);
