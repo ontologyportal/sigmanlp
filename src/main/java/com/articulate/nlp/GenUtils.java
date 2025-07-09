@@ -41,7 +41,8 @@ public class GenUtils {
     private static final int MAX_VARIABLE_LENGTH = 2;
     static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     static final String NUMBERS = "0123456789";
-    static String OLLAMA_MODEL = "qwen3:1.7b";
+    //static String OLLAMA_MODEL = "qwen3:1.7b";
+    static String OLLAMA_MODEL = "llama3.2";
     static int OLLAMA_PORT;
     public static OllamaAPI ollamaAPI;
     public static Options options;
