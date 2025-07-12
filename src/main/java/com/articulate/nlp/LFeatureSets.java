@@ -11,6 +11,8 @@ import java.util.*;
 import com.opencsv.CSVReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.Random;
+
 
 /**
  * **************************************************************
@@ -23,7 +25,7 @@ public class LFeatureSets {
             Arrays.asList("Acidification","Vending","OrganizationalProcess",
                     "NaturalProcess","Corkage","LinguisticCommunication"));
     public static boolean useCapabilities = false; // include process types from capabilities list
-
+    public static Random rand = new Random();
 
     /** *******************************************
      */
@@ -122,7 +124,7 @@ public class LFeatureSets {
     public static Map<String,String> prepPhrase = new HashMap<>();
     public static final List<Word> attitudes = new ArrayList<>();
     public static Map<String, List<ProcessTypeEntry>> processTypes;
-
+    public static Map<String, List<String>> subclassMap = new HashMap<>(); // Its a list because we will get random items from it.
 
     public LFeatureSets(KBLite kbLiteParam) {
         kbLite = kbLiteParam;
@@ -143,6 +145,7 @@ public class LFeatureSets {
         socRoles = RandSet.create(roleFreqs);
 
         Set<String> parts = kbLite.getInstancesForType("BodyPart");
+        System.out.println("LFeatureSets(): BodyParts: " + parts);
         //if (debug) System.out.println("LFeatureSets(): BodyParts: " + parts);
         Collection<AVPair> bodyFreqs = findWordFreq(parts);
         bodyParts = RandSet.create(bodyFreqs);
@@ -188,8 +191,10 @@ public class LFeatureSets {
         }
 
         // Load ProcessTypes
-        processTypes = loadProcessTypes(System.getenv("SIGMANLP_HOME") + "/ProcessTypes.csv");
-        printProcessTypeMap(processTypes);
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            processTypes = loadProcessTypes(System.getenv("SIGMANLP_HOME") + "/ProcessTypes.csv");
+            if (debug) printProcessTypeMap(processTypes);
+        }
     }
 
     /** *********************************************
@@ -228,7 +233,9 @@ public class LFeatureSets {
                         row[0], row[1], row[2], row[3], row[4],
                         row[5], row[6], row[7], row[8], row[9]
                 );
-                map.computeIfAbsent(entry.verb, k -> new ArrayList<>()).add(entry);
+                if (!allFieldsExceptVerbBlank(entry)) {
+                    map.computeIfAbsent(entry.verb, k -> new ArrayList<>()).add(entry);
+                }
             }
         } catch (Exception e) {
             System.err.println("Error reading or parsing file: " + e.getMessage());
@@ -236,6 +243,36 @@ public class LFeatureSets {
             System.exit(1);
         }
         return map;
+    }
+
+    // Helper method to check if all fields except verb are blank
+    private static boolean allFieldsExceptVerbBlank(ProcessTypeEntry entry) {
+        return isBlank(entry.SubjectClass)
+                && isBlank(entry.CaseRoleSubject)
+                && isBlank(entry.ObjectClass)
+                && isBlank(entry.CaseRoleObject)
+                && isBlank(entry.PrepositionObject)
+                && isBlank(entry.IndirectObjClass)
+                && isBlank(entry.CaseRoleIndObj)
+                && isBlank(entry.prepositionIndObj)
+                && isBlank(entry.HelperVerb);
+    }
+
+    // Helper to check if a string is null or blank
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    /** *******************************************************
+     * Lazy load the subclasses
+     */
+    public String getRandomSubclassFrom(String SUMOClass) {
+        List<String> children = subclassMap.computeIfAbsent(SUMOClass, k -> {
+            Set<String> set = kbLite.getChildClasses(k);
+            return (set != null) ? new ArrayList<>(set) : Collections.emptyList();
+        });
+        if (children.isEmpty()) return null;
+        return children.get(rand.nextInt(children.size()));
     }
 
     public static void printProcessTypeMap(Map<String, List<ProcessTypeEntry>> processTypeMap) {

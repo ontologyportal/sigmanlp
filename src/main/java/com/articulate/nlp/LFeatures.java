@@ -414,7 +414,7 @@ public class LFeatures {
         }
 
         // INDIRECT OBJECT
-        if (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something")) {
+        if (indirectType != null && (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))) {
             english.append(indirectPrep).append(indirectName);
             if (pluralIndirect.attribute.equals("true"))
                 addSUMOplural(prop,indirectType,pluralIndirect,"?IO");

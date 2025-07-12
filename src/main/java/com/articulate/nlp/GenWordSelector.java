@@ -17,7 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
  *   There are four different methods to choose from:
  *   1. Random
  *   2. WordPair frequency (calculated using the COCA corpus)
- *   3. Frame-lite (requires frame-lite file)
+ *   3. Frame-lite (requires frame-lite ProcessTypes file)
  *   4. Ollama just ask - just asks for words and hopes they are in SUMO.
  *   5. Ollama subset - pulls best fit from a subset of random SUMO objects
  */
@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 public class GenWordSelector {
 
     public static boolean debug = true;
-    private static final SelectionStrategy strategy = SelectionStrategy.OLLAMA_JUST_ASK;
+    public static final SelectionStrategy strategy = SelectionStrategy.FRAME_LITE;
     private static final int OBJ_SUBSET_SIZE = 20;
     public static final Random rand = new Random();
 
@@ -34,16 +34,20 @@ public class GenWordSelector {
         RANDOM, WORD_PAIR, FRAME_LITE, OLLAMA_JUST_ASK, OLLAMA_SUBSET
     }
 
+    public static boolean isFrameLiteStrategy() {
+        return strategy == SelectionStrategy.FRAME_LITE;
+    }
+
     public static String getNounFromVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite) {
 
-        System.out.println("****************** getNounFromVerb *************************");
+        System.out.println("****************** getNounFromVerb " + strategy + " *************************");
         switch (strategy) {
             case RANDOM:
                 return lfeatset.objects.getNext();
             case WORD_PAIR:
                 return WordPairFrequency.getNounFromVerb(lfeatset, lfeat);
             case FRAME_LITE:
-                return "frameLiteNoun";
+                return getObjectFromProcessTypes(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_JUST_ASK:
                 return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
@@ -54,14 +58,14 @@ public class GenWordSelector {
     }
 
     public static String getNounInClassFromVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite, String className) {
-        System.out.println("++++++++++++++++++ getNounInClassFromVerb ++++++++++++++++++++++");
+        System.out.println("++++++++++++++++++ getNounInClassFromVerb  " + strategy + " ++++++++++++++++++++++");
         switch (strategy) {
             case RANDOM:
                 return lfeatset.objects.getNext();
             case WORD_PAIR:
                 return WordPairFrequency.getNounInClassFromVerb(lfeatset, lfeat, kbLite, className);
             case FRAME_LITE:
-                return "frameLiteNoun";
+                return getObjectFromProcessTypes(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_JUST_ASK:
                 return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
@@ -72,14 +76,14 @@ public class GenWordSelector {
     }
 
     public static String getNounFromNounAndVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite) {
-        System.out.println("========== getNounFromNounAndVerb ==================");
+        System.out.println("========== getNounFromNounAndVerb  " + strategy + " ==================");
         switch (strategy) {
             case RANDOM:
                 return lfeatset.objects.getNext();
             case WORD_PAIR:
                 return WordPairFrequency.getNounFromNounAndVerb(lfeatset, lfeat);
             case FRAME_LITE:
-                return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
+                return getObjectFromProcessTypes(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_JUST_ASK:
                 return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
@@ -89,7 +93,38 @@ public class GenWordSelector {
         }
     }
 
+    /*************************************************
+     * Frame-lite strategies
+     *             verb
+     *             SubjectClass
+     *             CaseRoleSubject
+     *             ObjectClass
+     *             CaseRoleObject
+     *             PrepositionObject
+     *             IndirectObjClass
+     *             CaseRoleIndObj
+     *             prepositionIndObj
+     *             HelperVerb = HelperVerb;
+     */
+    public static String getObjectFromProcessTypes(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+        List<LFeatureSets.ProcessTypeEntry> processes = lfeatset.processTypes.get(lfeat.verbType);
+        if (processes == null) return lfeatset.objects.getNext();
+        LFeatureSets.ProcessTypeEntry process = processes.get(new Random().nextInt(processes.size()));
+        System.out.println(process);
+        if (subject == null) {
+            return lfeatset.getRandomSubclassFrom(process.SubjectClass);
+        }
+        else if (dirObject == null) {
+            return lfeatset.getRandomSubclassFrom(process.ObjectClass);
+        }
+        else { // indirect object
+            return lfeatset.getRandomSubclassFrom(process.IndirectObjClass);
+        }
+    }
 
+    /*************************************************
+     * Ollama strategies
+     */
     public static String getObjectJustAskOllama(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
         String prompt = getOllamaPromptPrefix(subject, dirObject, kbLite, lfeat, lfeatset) +
                 " and respond in the following JSON format, putting results in the \"TermName\" field: " +

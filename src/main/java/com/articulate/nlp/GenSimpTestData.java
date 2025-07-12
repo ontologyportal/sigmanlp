@@ -537,6 +537,7 @@ public class GenSimpTestData {
      */
     public String nounFormFromTerm(String term, AVPair avp, String other) {
 
+        if (term == null) return term;
         if (term.startsWith("UNK"))
             return term;
         String word = kbLite.getTermFormat(term);
@@ -1028,6 +1029,7 @@ public class GenSimpTestData {
         if (debug) System.out.println("generateIndirectObject(): indirect prep: " + lfeat.indirectPrep);
         if (!"".equals(lfeat.framePart) && lfeat.framePart.contains("somebody") || lfeat.framePart.contains("something")) {
             getIndirect(lfeat);
+            if (lfeat.indirectType == null) return;
             if (!StringUtil.emptyString(lfeat.indirectPrep))
                 lfeat.indirectCaseRole = getCaseRoleFromPrep(lfeat.indirectPrep);
             if (StringUtil.emptyString(lfeat.indirectCaseRole))
@@ -1084,7 +1086,10 @@ public class GenSimpTestData {
     public void getIndirect(LFeatures lfeat) {
 
         if (debug) System.out.println("getIndirect(): frame: " + lfeat.framePart);
-        if (lfeat.framePart.endsWith("somebody")) {
+        if (lfeat.framePart.endsWith("something") || GenWordSelector.isFrameLiteStrategy() ) {
+            lfeat.indirectType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat, kbLite);
+        }
+        else if (lfeat.framePart.endsWith("somebody")) {
             if (rand.nextBoolean()) {
                 lfeat.indirectName = lfeatsets.humans.getNext();
                 lfeat.indirectType = "Human";
@@ -1094,9 +1099,6 @@ public class GenSimpTestData {
                 if (lfeat.indirectType == null)
                     lfeat.indirectType = lfeatsets.socRoles.getNext();
             }
-        }
-        else if (lfeat.framePart.endsWith("something")) {
-            lfeat.indirectType = GenWordSelector.getNounFromNounAndVerb(lfeatsets, lfeat, kbLite);
         }
         if (debug) System.out.println("getIndirect(): type: " + lfeat.indirectType);
     }
