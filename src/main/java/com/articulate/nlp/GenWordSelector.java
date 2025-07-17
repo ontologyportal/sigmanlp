@@ -104,20 +104,23 @@ public class GenWordSelector {
      *             IndirectObjClass
      *             CaseRoleIndObj
      *             prepositionIndObj
-     *             HelperVerb = HelperVerb;
+     *             HelperVerb;
      */
     public static String getObjectFromProcessTypes(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
         List<LFeatureSets.ProcessTypeEntry> processes = lfeatset.processTypes.get(lfeat.verbType);
         if (processes == null) return lfeatset.objects.getNext();
         LFeatureSets.ProcessTypeEntry process = processes.get(new Random().nextInt(processes.size()));
-        System.out.println(process);
+        System.out.println("GenWordSelector.getObjectFromProcessTypes(): " + lfeat.verbType);
+        LFeatureSets.printProcessTypeEntry(process);
         if (subject == null) {
             return lfeatset.getRandomSubclassFrom(process.SubjectClass);
         }
         else if (dirObject == null) {
+            lfeat.directPrep = process.PrepositionObject;
             return lfeatset.getRandomSubclassFrom(process.ObjectClass);
         }
         else { // indirect object
+            lfeat.indirectPrep = process.prepositionIndObj;
             return lfeatset.getRandomSubclassFrom(process.IndirectObjClass);
         }
     }

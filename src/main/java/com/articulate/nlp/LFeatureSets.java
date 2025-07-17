@@ -193,6 +193,7 @@ public class LFeatureSets {
         // Load ProcessTypes
         if (GenWordSelector.isFrameLiteStrategy()) {
             processTypes = loadProcessTypes(System.getenv("SIGMANLP_HOME") + "/ProcessTypes.csv");
+            processesSet = processTypes.keySet();
             if (debug) printProcessTypeMap(processTypes);
         }
     }
@@ -281,18 +282,21 @@ public class LFeatureSets {
             List<ProcessTypeEntry> entries = entry.getValue();
             System.out.println("Verb: " + verb);
             for (ProcessTypeEntry e : entries) {
-                System.out.println("  SubjectClass: " + e.SubjectClass
-                        + ", CaseRoleSubject: " + e.CaseRoleSubject
-                        + ", ObjectClass: " + e.ObjectClass
-                        + ", CaseRoleObject: " + e.CaseRoleObject
-                        + ", PrepositionObject: " + e.PrepositionObject
-                        + ", IndirectObjClass: " + e.IndirectObjClass
-                        + ", CaseRoleIndObj: " + e.CaseRoleIndObj
-                        + ", prepositionIndObj: " + e.prepositionIndObj
-                        + ", HelperVerb: " + e.HelperVerb);
+                printProcessTypeEntry(e);
             }
-            System.out.println();
         }
+    }
+
+    public static void printProcessTypeEntry(ProcessTypeEntry e) {
+        System.out.println("  SubjectClass: " + e.SubjectClass
+                + ", CaseRoleSubject: " + e.CaseRoleSubject
+                + ", ObjectClass: " + e.ObjectClass
+                + ", CaseRoleObject: " + e.CaseRoleObject
+                + ", PrepositionObject: " + e.PrepositionObject
+                + ", IndirectObjClass: " + e.IndirectObjClass
+                + ", CaseRoleIndObj: " + e.CaseRoleIndObj
+                + ", prepositionIndObj: " + e.prepositionIndObj
+                + ", HelperVerb: " + e.HelperVerb);
     }
 
     /** ***************************************************************

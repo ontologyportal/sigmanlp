@@ -684,7 +684,6 @@ public class GenSimpTestData {
             lfeat.addBodyPart = true;
             addBodyPart(lfeat);
         }
-        removeFrameSubject(lfeat);
     }
 
     /** ***************************************************************
@@ -737,7 +736,6 @@ public class GenSimpTestData {
                 lfeat.subjType = "It";
             }
         }
-        removeFrameSubject(lfeat);
     }
 
     /** ***************************************************************
@@ -753,13 +751,22 @@ public class GenSimpTestData {
      */
     public void generateSubject(LFeatures lfeat) {
 
-        if (lfeat.framePart.startsWith("It") || lfeat.framePart.startsWith("Something")) {
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            lfeat.subjType = GenWordSelector.getNounFromVerb(lfeatsets, lfeat, kbLite);
+            lfeat.pluralSubj = new AVPair();
+            lfeat.subjName = nounFormFromTerm(lfeat.subjType, lfeat.pluralSubj, "");
+            if (lfeat.pluralSubj.attribute.equals("true")) {
+                lfeat.subjectPlural = true;
+            }
+        }
+        else if (lfeat.framePart.startsWith("It") || lfeat.framePart.startsWith("Something")) {
             generateThingSubject(lfeat);
         }
         else { // Somebody
             lfeat.subjType = "Human";
             generateHumanSubject(lfeat);
         }
+        removeFrameSubject(lfeat);
     }
 
     /** **********************************************************************
@@ -800,7 +807,9 @@ public class GenSimpTestData {
                         kbLite.isInstanceOf(lfeat.subj,"SocialRole") ||
                         lfeat.subj.equalsIgnoreCase("Who") ||
                         lfeat.subj.equals("You")))){
-            return false;
+            System.out.println("\nDELETE ME: generateVerb() I'm failing here!!!!! ");
+            if (!GenWordSelector.isFrameLiteStrategy())
+                return false;
         }
         if (lfeat.framePart.startsWith("----s")) {
             if (lfeat.framePart.length() < 6)
@@ -976,6 +985,7 @@ public class GenSimpTestData {
     public static void getPrepFromFrame(LFeatures lfeat) {
 
         if (debug) System.out.println("getPrepFromFrame(): frame: " + lfeat.frame);
+        if (GenWordSelector.isFrameLiteStrategy()) return;
         if (StringUtil.emptyString(lfeat.framePart)) {
             System.out.println("Error in getPrepFromFrame(): empty frame: (verb, verbType) = (" + lfeat.verb + ", " + lfeat.verbType + ")");
             return;
@@ -1050,7 +1060,7 @@ public class GenSimpTestData {
                 lfeat.exclamation = true;
             }
         }
-        else if (lfeat.framePart.contains("INFINITIVE")) {
+        else if (!StringUtil.emptyString(lfeat.subj) && lfeat.framePart.contains("INFINITIVE")) {
             getVerb(lfeat,true);
             if (debug) System.out.println("generateIndirectObject(): word: " + lfeat.secondVerb);
             if (debug) System.out.println("generateIndirectObject(): frame: " + lfeat.framePart);
@@ -1341,23 +1351,24 @@ public class GenSimpTestData {
                     addTimeDate(lfeat);
                 }
                 generateSubject(lfeat);
+                System.out.println("DELETEME: lfeat right before calling generateVerb()" + lfeat);
                 if (generateVerb(lfeat))  {
                     if (generateDirectObject(lfeat)){
                         generateIndirectObject(lfeat);
                         return true;
                     }
-                    //else {
-                      //  System.out.println("DELETEME: runGenSentence() generateDirectObject failed: " + lfeat);
-                    //}
+                    else {
+                        System.out.println("DELETEME: FAILED generateSubject!!!!!!!!!!!");
+                    }
                 }
-//                else {
-  //                  System.out.println("DELETEME: runGenSentence() generateVerb failed: " + lfeat);
-    //            }
+                else
+                    System.out.println("DELETEME: FAILED generateVerb!!!!!!!!!!!");
             } else {
                 System.out.println("DELETEME: runGenSentence() no acceptable verb frames: " + lfeat.verb);
                 if (debug) System.out.println("runGenSentence() no acceptable verb frames found for word: " + lfeat.verb);
             }
         } while (tryCount++ < 10);
+        System.out.println("DELETEME: TRIED OVER 10 TIMES!!!!");
         return false;
     }
 

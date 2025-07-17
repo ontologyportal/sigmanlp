@@ -255,7 +255,16 @@ public class LFeatures {
         }
 
         // SUBJECT
-        if (subjType != null && subjType.equals("Human")) {
+        /****
+         * ToDo: The way that subjType is used for subj vs every other PoS is inconsistent.
+         * Everywhere else, ___Type is the SUMO term, except here. A good project would
+         * be to make it consistent.
+         */
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            english.append(subjName).append(" ");
+            prop.append("(instance ").append("?H ").append(subjType).append(")");
+        }
+        else if (subjType != null && subjType.equals("Human")) {
             if (question) {
                 english.setLength(0);
                 english.append(subj).append(" ");
@@ -526,7 +535,43 @@ public class LFeatures {
     @Override
     public String toString() {
         return "LFeatures{" +
-                "attNeg=" + attNeg +
+                "subj='" + subj + '\'' +
+                ", subjName='" + subjName + '\'' +
+                ", subjType='" + subjType + '\'' +
+                ", subjectModifier='" + subjectModifier + '\'' +
+                ", subjectPlural=" + subjectPlural +
+                ", pluralSubj=" + String.valueOf(pluralSubj) +
+                ", subjectCount=" + subjectCount +
+                ", \nverb='" + verb + '\'' +
+                ", verbConjugated='" + verbConjugated + '\'' +
+                ", verbSynset='" + verbSynset + '\'' +
+                ", verbType='" + verbType + '\'' +
+                ", verbFrameCat='" + verbFrameCat + '\'' +
+                ", adverb='" + adverb + '\'' +
+                ", \ndirectName='" + directName + '\'' +
+                ", directType='" + directType + '\'' +
+                ", directSUMO='" + directSUMO + '\'' +
+                ", adverbSUMO='" + adverbSUMO + '\'' +
+                ", directPrep='" + directPrep + '\'' +
+                ", directPlural=" + directPlural +
+                ", pluralDirect=" + String.valueOf(pluralDirect) +
+                ", directOther='" + directOther + '\'' +
+                ", directCount=" + directCount +
+                ", directModifier='" + directModifier + '\'' +
+                ", \nindirectName='" + indirectName + '\'' +
+                ", indirectType='" + indirectType + '\'' +
+                ", indirectPlural=" + indirectPlural +
+                ", indirectSUMO='" + indirectSUMO + '\'' +
+                ", indirectPrep='" + indirectPrep + '\'' +
+                ", pluralIndirect=" + String.valueOf(pluralIndirect) +
+                ", indirectCount=" + indirectCount +
+                ", indirectModifier='" + indirectModifier + '\'' +
+                ", indirectCaseRole='" + indirectCaseRole + '\'' +
+                ", \nsecondVerb='" + secondVerb + '\'' +
+                ", secondVerbType='" + secondVerbType + '\'' +
+                ", secondVerbSynset='" + secondVerbSynset + '\'' +
+                ", secondVerbModifier='" + secondVerbModifier + '\'' +
+                ", \nattNeg=" + attNeg +
                 ", attPlural=" + attPlural +
                 ", attCount=" + attCount +
                 ", attSubjType='" + attSubjType + '\'' +
@@ -534,51 +579,15 @@ public class LFeatures {
                 ", attitude='" + attitude + '\'' +
                 ", attitudeModifier='" + attitudeModifier + '\'' +
                 ", attWord=" + String.valueOf(attWord) +
-                ", negatedModal=" + negatedModal +
+                ", \nnegatedModal=" + negatedModal +
                 ", negatedBody=" + negatedBody +
-                ", modal=" + String.valueOf(modal) +
-                ", directPrep='" + directPrep + '\'' +
-                ", indirectPrep='" + indirectPrep + '\'' +
-                ", secondVerb='" + secondVerb + '\'' +
-                ", secondVerbType='" + secondVerbType + '\'' +
-                ", secondVerbSynset='" + secondVerbSynset + '\'' +
-                ", secondVerbModifier='" + secondVerbModifier + '\'' +
-                ", subj='" + subj + '\'' +
-                ", subjName='" + subjName + '\'' +
-                ", subjType='" + subjType + '\'' +
-                ", subjectModifier='" + subjectModifier + '\'' +
-                ", subjectPlural=" + subjectPlural +
-                ", pluralSubj=" + String.valueOf(pluralSubj) +
-                ", subjectCount=" + subjectCount +
-                ", frame='" + frame + '\'' +
+                ", \nmodal=" + String.valueOf(modal) +
+                ", \nframe='" + frame + '\'' +
                 ", framePart='" + framePart + '\'' +
                 ", frames=" + String.valueOf(frames) +
-                ", directName='" + directName + '\'' +
-                ", directType='" + directType + '\'' +
-                ", directSUMO='" + directSUMO + '\'' +
-                ", directPlural=" + directPlural +
-                ", pluralDirect=" + String.valueOf(pluralDirect) +
-                ", directOther='" + directOther + '\'' +
-                ", directCount=" + directCount +
-                ", directModifier='" + directModifier + '\'' +
-                ", indirectName='" + indirectName + '\'' +
-                ", indirectType='" + indirectType + '\'' +
-                ", indirectPlural=" + indirectPlural +
-                ", indirectSUMO='" + indirectSUMO + '\'' +
-                ", pluralIndirect=" + String.valueOf(pluralIndirect) +
-                ", indirectCount=" + indirectCount +
-                ", indirectModifier='" + indirectModifier + '\'' +
-                ", indirectCaseRole='" + indirectCaseRole + '\'' +
                 ", question=" + question +
                 ", exclamation=" + exclamation +
-                ", verb='" + verb + '\'' +
-                ", verbConjugated='" + verbConjugated + '\'' +
-                ", verbSynset='" + verbSynset + '\'' +
-                ", verbType='" + verbType + '\'' +
-                ", verbFrameCat='" + verbFrameCat + '\'' +
-                ", adverb='" + adverb + '\'' +
-                ", adverbSUMO='" + adverbSUMO + '\'' +
-                ", tense=" + tense +
+                ", \ntense=" + tense +
                 ", hastime=" + hastime +
                 ", hasdate=" + hasdate +
                 ", hasdatetime=" + hasdatetime +
@@ -589,12 +598,12 @@ public class LFeatures {
                 ", monthLog='" + monthLog + '\'' +
                 ", dayLog='" + dayLog + '\'' +
                 ", hourLog='" + hourLog + '\'' +
-                ", polite=" + polite +
+                ", \npolite=" + polite +
                 ", politeFirst=" + politeFirst +
                 ", politeWord='" + politeWord + '\'' +
                 ", addPleaseToSubj=" + addPleaseToSubj +
                 ", addShouldToSubj=" + addShouldToSubj +
-                ", addBodyPart=" + addBodyPart +
+                ", \naddBodyPart=" + addBodyPart +
                 ", bodyPart='" + bodyPart + '\'' +
                 ", pluralBodyPart=" + String.valueOf(pluralBodyPart) +
                 '}';
