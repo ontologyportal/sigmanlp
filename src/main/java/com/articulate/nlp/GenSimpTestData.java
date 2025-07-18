@@ -753,10 +753,15 @@ public class GenSimpTestData {
 
         if (GenWordSelector.isFrameLiteStrategy()) {
             lfeat.subjType = GenWordSelector.getNounFromVerb(lfeatsets, lfeat, kbLite);
-            lfeat.pluralSubj = new AVPair();
-            lfeat.subjName = nounFormFromTerm(lfeat.subjType, lfeat.pluralSubj, "");
-            if (lfeat.pluralSubj.attribute.equals("true")) {
-                lfeat.subjectPlural = true;
+            if (lfeat.subjType.equals("Human")) {
+                generateHumanSubject(lfeat);
+            }
+            else {
+                lfeat.pluralSubj = new AVPair();
+                lfeat.subjName = nounFormFromTerm(lfeat.subjType, lfeat.pluralSubj, "");
+                if (lfeat.pluralSubj.attribute.equals("true")) {
+                    lfeat.subjectPlural = true;
+                }
             }
         }
         else if (lfeat.framePart.startsWith("It") || lfeat.framePart.startsWith("Something")) {
@@ -1085,7 +1090,7 @@ public class GenSimpTestData {
      */
     public void printSentenceToFiles(String english, String prop, String lfeatString) {
         englishFile.println(english);
-        logicFile.println(prop);
+        logicFile.println(prop.replaceAll("[\\r\\n]+", " "));
         frameFile.println(lfeatString);
     }
 

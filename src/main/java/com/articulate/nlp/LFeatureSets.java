@@ -272,7 +272,7 @@ public class LFeatureSets {
             Set<String> set = kbLite.getChildClasses(k);
             return (set != null) ? new ArrayList<>(set) : Collections.emptyList();
         });
-        if (children.isEmpty()) return null;
+        if (children.isEmpty()) return SUMOClass;
         return children.get(rand.nextInt(children.size()));
     }
 

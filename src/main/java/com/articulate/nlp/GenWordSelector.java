@@ -113,13 +113,19 @@ public class GenWordSelector {
         System.out.println("GenWordSelector.getObjectFromProcessTypes(): " + lfeat.verbType);
         LFeatureSets.printProcessTypeEntry(process);
         if (subject == null) {
+            if (process.SubjectClass.equals("ComputerUser"))
+                return "Human";
             return lfeatset.getRandomSubclassFrom(process.SubjectClass);
         }
         else if (dirObject == null) {
+            if (process.ObjectClass.equals("ComputerUser"))
+                return "Human";
             lfeat.directPrep = process.PrepositionObject;
             return lfeatset.getRandomSubclassFrom(process.ObjectClass);
         }
         else { // indirect object
+            if (process.IndirectObjClass.equals("ComputerUser"))
+                return "Human";
             lfeat.indirectPrep = process.prepositionIndObj;
             return lfeatset.getRandomSubclassFrom(process.IndirectObjClass);
         }
