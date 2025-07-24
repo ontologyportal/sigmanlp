@@ -29,25 +29,39 @@ public class GenWordSelector {
     private static final int OBJ_SUBSET_SIZE = 20;
     public static final Random rand = new Random();
 
-
     public enum SelectionStrategy {
         RANDOM, WORD_PAIR, FRAME_LITE, OLLAMA_JUST_ASK, OLLAMA_SUBSET
+    }
+
+    public enum PoS {
+        SUBJECT, DIRECT, INDIRECT
     }
 
     public static boolean isFrameLiteStrategy() {
         return strategy == SelectionStrategy.FRAME_LITE;
     }
+    public static boolean isWordPairStrategy() { return strategy == SelectionStrategy.WORD_PAIR; }
 
-    public static String getNounFromVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite) {
+    public static String getNoun(PoS pos, LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite, String className) {
 
-        System.out.println("****************** getNounFromVerb " + strategy + " *************************");
         switch (strategy) {
             case RANDOM:
+                if (className != null && !className.equals(""))
+                    return lfeatset.getRandomSubclassFrom(className);
                 return lfeatset.objects.getNext();
             case WORD_PAIR:
+                switch (pos) {
+                    case SUBJECT:
+                        return WordPairFrequency.getNounFromVerb(lfeatset, lfeat);
+                    case DIRECT:
+                    case INDIRECT:
+                        return WordPairFrequency.getNounFromNounAndVerb(lfeatset, lfeat);
+                    default:
+                        throw new IllegalArgumentException("Unknown Part of Speech: " + pos);
+                }
                 return WordPairFrequency.getNounFromVerb(lfeatset, lfeat);
             case FRAME_LITE:
-                return getObjectFromProcessTypes(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
+                return getObjectFromProcessTypes(lfeat.subjType, lfeat.directType, kbLite, lfeat, lfeatset);
             case OLLAMA_JUST_ASK:
                 return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
@@ -57,15 +71,19 @@ public class GenWordSelector {
         }
     }
 
+    public static String getNounInClass() {
+
+    }
+
     public static String getNounInClassFromVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite, String className) {
-        System.out.println("++++++++++++++++++ getNounInClassFromVerb  " + strategy + " ++++++++++++++++++++++");
+
         switch (strategy) {
             case RANDOM:
                 return lfeatset.objects.getNext();
             case WORD_PAIR:
                 return WordPairFrequency.getNounInClassFromVerb(lfeatset, lfeat, kbLite, className);
             case FRAME_LITE:
-                return getObjectFromProcessTypes(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
+                return getObjectFromProcessTypes(lfeat.subjType, lfeat.directType, kbLite, lfeat, lfeatset);
             case OLLAMA_JUST_ASK:
                 return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
@@ -75,23 +93,6 @@ public class GenWordSelector {
         }
     }
 
-    public static String getNounFromNounAndVerb(LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite) {
-        System.out.println("========== getNounFromNounAndVerb  " + strategy + " ==================");
-        switch (strategy) {
-            case RANDOM:
-                return lfeatset.objects.getNext();
-            case WORD_PAIR:
-                return WordPairFrequency.getNounFromNounAndVerb(lfeatset, lfeat);
-            case FRAME_LITE:
-                return getObjectFromProcessTypes(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
-            case OLLAMA_JUST_ASK:
-                return getObjectJustAskOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
-            case OLLAMA_SUBSET:
-                return getObjectFromSubsetWithOllama(lfeat.subj, lfeat.directName, kbLite, lfeat, lfeatset);
-            default:
-                throw new IllegalArgumentException("Unknown strategy: " + strategy);
-        }
-    }
 
     /*************************************************
      * Frame-lite strategies
@@ -106,29 +107,31 @@ public class GenWordSelector {
      *             prepositionIndObj
      *             HelperVerb;
      */
-    public static String getObjectFromProcessTypes(String subject, String dirObject, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+    public static String getObjectFromProcessTypes(PoS pos, String subjectType, String dirObjectType, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
         List<LFeatureSets.ProcessTypeEntry> processes = lfeatset.processTypes.get(lfeat.verbType);
         if (processes == null) return lfeatset.objects.getNext();
         LFeatureSets.ProcessTypeEntry process = processes.get(new Random().nextInt(processes.size()));
         System.out.println("GenWordSelector.getObjectFromProcessTypes(): " + lfeat.verbType);
         LFeatureSets.printProcessTypeEntry(process);
-        if (subject == null) {
-            if (process.SubjectClass.equals("ComputerUser"))
+        if (pos == PoS.INDIRECT) { // indirect object
+            if (process.IndirectObjClass.equals("ComputerUser"))
                 return "Human";
-            return lfeatset.getRandomSubclassFrom(process.SubjectClass);
+            System.out.println("DELETEME!!!! ARE YOU EVER GETTING HERE?");
+            lfeat.indirectPrep = process.prepositionIndObj;
+            return lfeatset.getRandomSubclassFrom(process.IndirectObjClass);
         }
-        else if (dirObject == null) {
+        if (pos == PoS.DIRECT) {
             if (process.ObjectClass.equals("ComputerUser"))
                 return "Human";
             lfeat.directPrep = process.PrepositionObject;
             return lfeatset.getRandomSubclassFrom(process.ObjectClass);
         }
-        else { // indirect object
-            if (process.IndirectObjClass.equals("ComputerUser"))
+        if (pos == PoS.SUBJECT) {
+            if (process.SubjectClass.equals("ComputerUser"))
                 return "Human";
-            lfeat.indirectPrep = process.prepositionIndObj;
-            return lfeatset.getRandomSubclassFrom(process.IndirectObjClass);
+            return lfeatset.getRandomSubclassFrom(process.SubjectClass);
         }
+        return "ERROR in getObjectFromProcessTypes(). Unknown pos!"
     }
 
     /*************************************************
@@ -235,7 +238,5 @@ public class GenWordSelector {
         }
         return termNames;
     }
-
-
 
 }
