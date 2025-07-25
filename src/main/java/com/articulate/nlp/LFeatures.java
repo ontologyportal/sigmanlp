@@ -368,7 +368,13 @@ public class LFeatures {
 
 
         // ADD DIRECT OBJECT
-        if (directType != null && !directType.equals("")) {
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            if (directName != null && !directName.equals("") && directType != null && !directType.equals("")) {
+                english.append(directPrep).append(" ").append(directOther).append(directName).append(" ");
+                prop.append("(TODO: ADD DIRECT OBJECT LOGIC)");
+            }
+        }
+        else if (directType != null && !directType.equals("")) {
             if (directType != null && directType.equals("Human"))
                 prop.append(directSUMO);
             if (kbLite.isSubclass(verbType, "Translocation") &&
@@ -423,25 +429,29 @@ public class LFeatures {
         }
 
         // INDIRECT OBJECT
-        if (indirectType != null && indirectType != "") {
-            if (indirectType != null && (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))) {
-                english.append(indirectPrep).append(indirectName);
-                if (pluralIndirect.attribute.equals("true"))
-                    addSUMOplural(prop, indirectType, pluralIndirect, "?IO");
-                else {
-                    if (kbLite.isInstanceOf(indirectType, "SocialRole"))
-                        prop.append("(attribute ?IO ").append(indirectType).append(") ");
-                    else
-                        prop.append("(instance ?IO ").append(indirectType).append(") ");
-                }
-                if (framePart.contains("somebody"))
-                    prop.append(indirectSUMO);
-                else
-                    prop.append("(instance ?IO ").append(indirectType).append(")");
-            } else if (framePart.contains("INFINITIVE")) {
-                //if (framePart.contains("to"))
-                english.append(secondVerb).append(" ");
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            if (indirectType != null && !indirectType.equals("")) {
+                english.append(indirectPrep).append(" ").append(indirectName);
+                prop.append("(NEED TO ADD LOGIC FOR FRAMELITE STRATEGY)");
             }
+        }
+        else if (indirectType != null && (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))) {
+            english.append(indirectPrep).append(indirectName);
+            if (pluralIndirect.attribute.equals("true"))
+                addSUMOplural(prop, indirectType, pluralIndirect, "?IO");
+            else {
+                if (kbLite.isInstanceOf(indirectType, "SocialRole"))
+                    prop.append("(attribute ?IO ").append(indirectType).append(") ");
+                else
+                    prop.append("(instance ?IO ").append(indirectType).append(") ");
+            }
+            if (framePart.contains("somebody"))
+                prop.append(indirectSUMO);
+            else
+                prop.append("(instance ?IO ").append(indirectType).append(")");
+        } else if (framePart.contains("INFINITIVE")) {
+            //if (framePart.contains("to"))
+            english.append(secondVerb).append(" ");
         }
 
         // ADD ENDING

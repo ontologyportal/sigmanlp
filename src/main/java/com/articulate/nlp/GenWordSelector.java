@@ -95,13 +95,13 @@ public class GenWordSelector {
         if (pos == PoS.INDIRECT) { // indirect object
             if (process.IndirectObjClass.equals("ComputerUser"))
                 return "Human";
-            lfeat.indirectPrep = process.prepositionIndObj + " ";
+            lfeat.indirectPrep = process.prepositionIndObj;
             return lfeatset.getRandomSubclassFrom(process.IndirectObjClass);
         }
         if (pos == PoS.DIRECT) {
             if (process.ObjectClass.equals("ComputerUser"))
                 return "Human";
-            lfeat.directPrep = process.PrepositionObject + " ";
+            lfeat.directPrep = process.PrepositionObject;
             return lfeatset.getRandomSubclassFrom(process.ObjectClass);
         }
         if (pos == PoS.SUBJECT) {
