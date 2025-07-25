@@ -69,7 +69,7 @@ public class GenSimpTestData {
 
     public static long sentMax = 10000000;
     public static LFeatureSets lfeatsets;
-    public GenWordSelector gws = new GenWordSelector();
+    public static GenWordSelector gws = new GenWordSelector();
 
     // verb and noun keys with values that are the frequency of coocurence with a given
     // adjective or adverb
@@ -652,7 +652,7 @@ public class GenSimpTestData {
      */
     private void addBodyPart(LFeatures lfeat) {
 
-        lfeat.bodyPart = gws.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "BodyPart");
+        lfeat.bodyPart = gws.getNoun(GenWordSelector.PoS.SUBJECT, lfeatsets, lfeat, kbLite, "BodyPart");
         if (lfeat.bodyPart == null)
             lfeat.bodyPart = lfeatsets.bodyParts.getNext();
         lfeat.pluralBodyPart = new AVPair();
@@ -727,7 +727,7 @@ public class GenSimpTestData {
         }
         else if (lfeat.framePart.startsWith("Something")) {
             lfeat.subjType = "Something";
-            lfeat.subjName = gws.getNoun(gws.PoS.SUBJECT, lfeatsets, lfeat, kbLite, "");
+            lfeat.subjName = gws.getNoun(GenWordSelector.PoS.SUBJECT, lfeatsets, lfeat, kbLite, "");
             lfeat.pluralSubj = new AVPair();
             lfeat.subj = nounFormFromTerm(lfeat.subjName,lfeat.pluralSubj,"");
             if (lfeat.pluralSubj.attribute.equals("true")) {
@@ -763,7 +763,7 @@ public class GenSimpTestData {
     public void generateSubject(LFeatures lfeat) {
 
         if (gws.isFrameLiteStrategy()) {
-            lfeat.subjType = gws.getNoun(gws.PoS.SUBJECT, lfeatsets, lfeat, kbLite, "");
+            lfeat.subjType = gws.getNoun(GenWordSelector.PoS.SUBJECT, lfeatsets, lfeat, kbLite, "");
             if (lfeat.subjType.equals("Human")) {
                 generateHumanSubject(lfeat);
             }
@@ -853,7 +853,7 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("getDirect(): lfeat.framePart: " + lfeat.framePart);
         if (gws.isFrameLiteStrategy()) {
-            lfeat.directType = gws.getNoun(gws.PoS.DIRECT, lfeatset, lfeat, kbLite, ""));
+            lfeat.directType = gws.getNoun(GenWordSelector.PoS.DIRECT, lfeatsets, lfeat, kbLite, "");
             if (lfeat.directType.equals("Human")) {
                 lfeat.directName = lfeatsets.humans.getNext();
             }
@@ -864,7 +864,7 @@ public class GenSimpTestData {
                 lfeat.directType = "Human";
             }
             else {
-                lfeat.directType = gws.getNoun(gws.PoS.DIRECT, lfeatsets, lfeat, kbLite, "SocialRole");
+                lfeat.directType = gws.getNoun(GenWordSelector.PoS.DIRECT, lfeatsets, lfeat, kbLite, "SocialRole");
                 if (lfeat.directType == null)
                     lfeat.directType = lfeatsets.socRoles.getNext();
             }
@@ -877,7 +877,7 @@ public class GenSimpTestData {
                 lfeat.framePart = "";
         }
         else if (lfeat.framePart.trim().startsWith("something") || lfeat.framePart.trim().startsWith("on something")) {
-            lfeat.directType = gws.getNoun(gws.PoS.DIRECT, lfeatsets, lfeat, kbLite, "");
+            lfeat.directType = gws.getNoun(GenWordSelector.PoS.DIRECT, lfeatsets, lfeat, kbLite, "");
 
             if (lfeat.framePart.contains("on something"))
                 lfeat.directPrep = "on ";
@@ -1121,7 +1121,7 @@ public class GenSimpTestData {
 
         if (debug) System.out.println("getIndirect(): frame: " + lfeat.framePart);
         if (lfeat.framePart.endsWith("something") || gws.isFrameLiteStrategy() ) {
-            lfeat.indirectType = gws.getNoun(gws.PoS.INDIRECT, lfeatsets, lfeat, kbLite, "");
+            lfeat.indirectType = gws.getNoun(GenWordSelector.PoS.INDIRECT, lfeatsets, lfeat, kbLite, "");
         }
         else if (lfeat.framePart.endsWith("somebody")) {
             if (rand.nextBoolean()) {
@@ -1129,7 +1129,7 @@ public class GenSimpTestData {
                 lfeat.indirectType = "Human";
             }
             else {
-                lfeat.indirectType = gws.getNoun(gws.PoS.INDIRECT, lfeatsets, lfeat, kbLite, "SocialRole");
+                lfeat.indirectType = gws.getNoun(GenWordSelector.PoS.INDIRECT, lfeatsets, lfeat, kbLite, "SocialRole");
                 if (lfeat.indirectType == null)
                     lfeat.indirectType = lfeatsets.socRoles.getNext();
             }
@@ -1369,7 +1369,7 @@ public class GenSimpTestData {
             if (lfeat.framePart != null) { // An optimization would be to remove all the verbs that have null frameParts from lfeatset.
                 getPrepFromFrame(lfeat);
                 lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
-                lfeat.indirectType = gws.getNoun(gws.PoS.INDIRECT, lfeatsets, lfeat, kbLite, "");
+                // lfeat.indirectType = gws.getNoun(GenWordSelector.PoS.INDIRECT, lfeatsets, lfeat, kbLite, "");
                 if (biasedBoolean(1,10) && !lfeat.isModalAttitudeOrPolitefirst()) {
                     lfeat.hasdateORtime = true;
                     addTimeDate(lfeat);
@@ -1416,7 +1416,7 @@ public class GenSimpTestData {
                 if (debug) System.out.println("GenSimpTestData.generateHuman(): generated a You (understood)");
             }
             else if (val < 6) { // a role
-                socialRole = gws.getNounInClassFromVerb(lfeatsets, lfeat, kbLite, "SocialRole");
+                socialRole = gws.getNoun(GenWordSelector.PoS.SUBJECT, lfeatsets, lfeat, kbLite, "SocialRole");
                 if (socialRole == null)
                     socialRole = lfeatsets.socRoles.getNext();
                 type.append(socialRole);

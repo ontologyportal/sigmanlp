@@ -368,79 +368,80 @@ public class LFeatures {
 
 
         // ADD DIRECT OBJECT
-        if (directType != null && directType.equals("Human"))
-            prop.append(directSUMO);
-        if (kbLite.isSubclass(verbType, "Translocation") &&
-                (kbLite.isSubclass(directType,"Region") || kbLite.isSubclass(directType,"StationaryObject"))) {
+        if (directType != null && !directType.equals("")) {
+            if (directType != null && directType.equals("Human"))
+                prop.append(directSUMO);
+            if (kbLite.isSubclass(verbType, "Translocation") &&
+                    (kbLite.isSubclass(directType, "Region") || kbLite.isSubclass(directType, "StationaryObject"))) {
 
-            if (directName != null)
-                english.append("to ").append(directOther).append(directName).append(" ");
-            else
-                english.append(secondVerb).append(" ");
+                if (directName != null)
+                    english.append("to ").append(directOther).append(directName).append(" ");
+                else
+                    english.append(secondVerb).append(" ");
 
-            if (pluralDirect.attribute.equals("true"))
-                addSUMOplural(prop,directType,pluralDirect,"?DO");
-            else
-                prop.append("(instance ?DO ").append(directType).append(") ");
-            prop.append("(destination ?P ?DO) ");
-        } else if (!"".equals(secondVerbType) ) { //&& secondVerbType.equals("Human")
-            if (!StringUtil.emptyString(directPrep))
-                english.append(directPrep);
-            if (directName != null) {
-                english.append(directOther).append(directName).append(" ");
-                prop.append("(instance ?DO Human) ");
-            }
-            else
-                english.append(secondVerb).append(" ");
-            prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
-            prop.append("(refers ?DO ?V2) ");
-        }
-        else if (directType != null) {
-            if (directType.equals("Human"))
-                english.append(directPrep).append(directOther).append(directName).append(" ");
-            else
-                english.append(directPrep).append(directOther).append(directName).append(" ");
-            if (pluralDirect.attribute.equals("true"))
-                addSUMOplural(prop,directType,pluralDirect,"?DO");
-            else
-                prop.append("(instance ?DO ").append(directType).append(") ");
+                if (pluralDirect.attribute.equals("true"))
+                    addSUMOplural(prop, directType, pluralDirect, "?DO");
+                else
+                    prop.append("(instance ?DO ").append(directType).append(") ");
+                prop.append("(destination ?P ?DO) ");
+            } else if (!"".equals(secondVerbType)) { //&& secondVerbType.equals("Human")
+                if (!StringUtil.emptyString(directPrep))
+                    english.append(directPrep);
+                if (directName != null) {
+                    english.append(directOther).append(directName).append(" ");
+                    prop.append("(instance ?DO Human) ");
+                } else
+                    english.append(secondVerb).append(" ");
+                prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
+                prop.append("(refers ?DO ?V2) ");
+            } else if (directType != null) {
+                if (directType.equals("Human"))
+                    english.append(directPrep).append(directOther).append(directName).append(" ");
+                else
+                    english.append(directPrep).append(directOther).append(directName).append(" ");
+                if (pluralDirect.attribute.equals("true"))
+                    addSUMOplural(prop, directType, pluralDirect, "?DO");
+                else
+                    prop.append("(instance ?DO ").append(directType).append(") ");
 
-            switch (directPrep) {
-                case "to ":
-                    prop.append("(destination ?P ?DO) ");
-                    break;
-                case "on ":
-                    prop.append("(orientation ?P ?DO On) ");
-                    break;
-                default:
-                    if (kbLite.isSubclass(verbType,"Transfer")) {
-                        prop.append("(objectTransferred ?P ?DO) ");
-                    }
-                    else {
-                        prop.append("(patient ?P ?DO) ");
-                    }   break;
+                switch (directPrep) {
+                    case "to ":
+                        prop.append("(destination ?P ?DO) ");
+                        break;
+                    case "on ":
+                        prop.append("(orientation ?P ?DO On) ");
+                        break;
+                    default:
+                        if (kbLite.isSubclass(verbType, "Transfer")) {
+                            prop.append("(objectTransferred ?P ?DO) ");
+                        } else {
+                            prop.append("(patient ?P ?DO) ");
+                        }
+                        break;
+                }
             }
         }
 
         // INDIRECT OBJECT
-        if (indirectType != null && (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))) {
-            english.append(indirectPrep).append(indirectName);
-            if (pluralIndirect.attribute.equals("true"))
-                addSUMOplural(prop,indirectType,pluralIndirect,"?IO");
-            else {
-                if (kbLite.isInstanceOf(indirectType,"SocialRole"))
-                    prop.append("(attribute ?IO ").append(indirectType).append(") ");
+        if (indirectType != null && indirectType != "") {
+            if (indirectType != null && (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))) {
+                english.append(indirectPrep).append(indirectName);
+                if (pluralIndirect.attribute.equals("true"))
+                    addSUMOplural(prop, indirectType, pluralIndirect, "?IO");
+                else {
+                    if (kbLite.isInstanceOf(indirectType, "SocialRole"))
+                        prop.append("(attribute ?IO ").append(indirectType).append(") ");
+                    else
+                        prop.append("(instance ?IO ").append(indirectType).append(") ");
+                }
+                if (framePart.contains("somebody"))
+                    prop.append(indirectSUMO);
                 else
-                    prop.append("(instance ?IO ").append(indirectType).append(") ");
-            }
-            if (framePart.contains("somebody"))
-                prop.append(indirectSUMO);
-            else
-                prop.append("(instance ?IO ").append(indirectType).append(")");
-        }
-        else if (framePart.contains("INFINITIVE")) {
-            //if (framePart.contains("to"))
+                    prop.append("(instance ?IO ").append(indirectType).append(")");
+            } else if (framePart.contains("INFINITIVE")) {
+                //if (framePart.contains("to"))
                 english.append(secondVerb).append(" ");
+            }
         }
 
         // ADD ENDING
