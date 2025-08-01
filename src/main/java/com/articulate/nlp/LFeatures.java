@@ -255,7 +255,16 @@ public class LFeatures {
         }
 
         // SUBJECT
-        if (subjType != null && subjType.equals("Human")) {
+        /****
+         * ToDo: The way that subjType is used for subj vs every other PoS is inconsistent.
+         * Everywhere else, ___Type is the SUMO term, except here. A good project would
+         * be to make it consistent.
+         */
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            english.append(subjName).append(" ");
+            prop.append("(instance ").append("?H ").append(subjType).append(")");
+        }
+        else if (subjType != null && subjType.equals("Human")) {
             if (question) {
                 english.setLength(0);
                 english.append(subj).append(" ");
@@ -359,67 +368,79 @@ public class LFeatures {
 
 
         // ADD DIRECT OBJECT
-        if (directType != null && directType.equals("Human"))
-            prop.append(directSUMO);
-        if (kbLite.isSubclass(verbType, "Translocation") &&
-                (kbLite.isSubclass(directType,"Region") || kbLite.isSubclass(directType,"StationaryObject"))) {
-
-            if (directName != null)
-                english.append("to ").append(directOther).append(directName).append(" ");
-            else
-                english.append(secondVerb).append(" ");
-
-            if (pluralDirect.attribute.equals("true"))
-                addSUMOplural(prop,directType,pluralDirect,"?DO");
-            else
-                prop.append("(instance ?DO ").append(directType).append(") ");
-            prop.append("(destination ?P ?DO) ");
-        } else if (!"".equals(secondVerbType) ) { //&& secondVerbType.equals("Human")
-            if (!StringUtil.emptyString(directPrep))
-                english.append(directPrep);
-            if (directName != null) {
-                english.append(directOther).append(directName).append(" ");
-                prop.append("(instance ?DO Human) ");
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            if (directName != null && !directName.equals("") && directType != null && !directType.equals("")) {
+                english.append(directPrep).append(" ").append(directOther).append(directName).append(" ");
+                prop.append("(TODO: ADD DIRECT OBJECT LOGIC)");
             }
-            else
-                english.append(secondVerb).append(" ");
-            prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
-            prop.append("(refers ?DO ?V2) ");
         }
-        else if (directType != null) {
-            if (directType.equals("Human"))
-                english.append(directPrep).append(directOther).append(directName).append(" ");
-            else
-                english.append(directPrep).append(directOther).append(directName).append(" ");
-            if (pluralDirect.attribute.equals("true"))
-                addSUMOplural(prop,directType,pluralDirect,"?DO");
-            else
-                prop.append("(instance ?DO ").append(directType).append(") ");
+        else if (directType != null && !directType.equals("")) {
+            if (directType != null && directType.equals("Human"))
+                prop.append(directSUMO);
+            if (kbLite.isSubclass(verbType, "Translocation") &&
+                    (kbLite.isSubclass(directType, "Region") || kbLite.isSubclass(directType, "StationaryObject"))) {
 
-            switch (directPrep) {
-                case "to ":
-                    prop.append("(destination ?P ?DO) ");
-                    break;
-                case "on ":
-                    prop.append("(orientation ?P ?DO On) ");
-                    break;
-                default:
-                    if (kbLite.isSubclass(verbType,"Transfer")) {
-                        prop.append("(objectTransferred ?P ?DO) ");
-                    }
-                    else {
-                        prop.append("(patient ?P ?DO) ");
-                    }   break;
+                if (directName != null)
+                    english.append("to ").append(directOther).append(directName).append(" ");
+                else
+                    english.append(secondVerb).append(" ");
+
+                if (pluralDirect.attribute.equals("true"))
+                    addSUMOplural(prop, directType, pluralDirect, "?DO");
+                else
+                    prop.append("(instance ?DO ").append(directType).append(") ");
+                prop.append("(destination ?P ?DO) ");
+            } else if (!"".equals(secondVerbType)) { //&& secondVerbType.equals("Human")
+                if (!StringUtil.emptyString(directPrep))
+                    english.append(directPrep);
+                if (directName != null) {
+                    english.append(directOther).append(directName).append(" ");
+                    prop.append("(instance ?DO Human) ");
+                } else
+                    english.append(secondVerb).append(" ");
+                prop.append("(instance ?V2 ").append(secondVerbType).append(") ");
+                prop.append("(refers ?DO ?V2) ");
+            } else if (directType != null) {
+                if (directType.equals("Human"))
+                    english.append(directPrep).append(directOther).append(directName).append(" ");
+                else
+                    english.append(directPrep).append(directOther).append(directName).append(" ");
+                if (pluralDirect.attribute.equals("true"))
+                    addSUMOplural(prop, directType, pluralDirect, "?DO");
+                else
+                    prop.append("(instance ?DO ").append(directType).append(") ");
+
+                switch (directPrep) {
+                    case "to ":
+                        prop.append("(destination ?P ?DO) ");
+                        break;
+                    case "on ":
+                        prop.append("(orientation ?P ?DO On) ");
+                        break;
+                    default:
+                        if (kbLite.isSubclass(verbType, "Transfer")) {
+                            prop.append("(objectTransferred ?P ?DO) ");
+                        } else {
+                            prop.append("(patient ?P ?DO) ");
+                        }
+                        break;
+                }
             }
         }
 
         // INDIRECT OBJECT
-        if (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something")) {
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            if (indirectType != null && !indirectType.equals("")) {
+                english.append(indirectPrep).append(" ").append(indirectName);
+                prop.append("(NEED TO ADD LOGIC FOR FRAMELITE STRATEGY)");
+            }
+        }
+        else if (indirectType != null && (!"".equals(framePart) && framePart.contains("somebody") || framePart.contains("something"))) {
             english.append(indirectPrep).append(indirectName);
             if (pluralIndirect.attribute.equals("true"))
-                addSUMOplural(prop,indirectType,pluralIndirect,"?IO");
+                addSUMOplural(prop, indirectType, pluralIndirect, "?IO");
             else {
-                if (kbLite.isInstanceOf(indirectType,"SocialRole"))
+                if (kbLite.isInstanceOf(indirectType, "SocialRole"))
                     prop.append("(attribute ?IO ").append(indirectType).append(") ");
                 else
                     prop.append("(instance ?IO ").append(indirectType).append(") ");
@@ -428,10 +449,9 @@ public class LFeatures {
                 prop.append(indirectSUMO);
             else
                 prop.append("(instance ?IO ").append(indirectType).append(")");
-        }
-        else if (framePart.contains("INFINITIVE")) {
+        } else if (framePart.contains("INFINITIVE")) {
             //if (framePart.contains("to"))
-                english.append(secondVerb).append(" ");
+            english.append(secondVerb).append(" ");
         }
 
         // ADD ENDING
@@ -526,7 +546,43 @@ public class LFeatures {
     @Override
     public String toString() {
         return "LFeatures{" +
-                "attNeg=" + attNeg +
+                "subj='" + subj + '\'' +
+                ", subjName='" + subjName + '\'' +
+                ", subjType='" + subjType + '\'' +
+                ", subjectModifier='" + subjectModifier + '\'' +
+                ", subjectPlural=" + subjectPlural +
+                ", pluralSubj=" + String.valueOf(pluralSubj) +
+                ", subjectCount=" + subjectCount +
+                ", \nverb='" + verb + '\'' +
+                ", verbConjugated='" + verbConjugated + '\'' +
+                ", verbSynset='" + verbSynset + '\'' +
+                ", verbType='" + verbType + '\'' +
+                ", verbFrameCat='" + verbFrameCat + '\'' +
+                ", adverb='" + adverb + '\'' +
+                ", \ndirectName='" + directName + '\'' +
+                ", directType='" + directType + '\'' +
+                ", directSUMO='" + directSUMO + '\'' +
+                ", adverbSUMO='" + adverbSUMO + '\'' +
+                ", directPrep='" + directPrep + '\'' +
+                ", directPlural=" + directPlural +
+                ", pluralDirect=" + String.valueOf(pluralDirect) +
+                ", directOther='" + directOther + '\'' +
+                ", directCount=" + directCount +
+                ", directModifier='" + directModifier + '\'' +
+                ", \nindirectName='" + indirectName + '\'' +
+                ", indirectType='" + indirectType + '\'' +
+                ", indirectPlural=" + indirectPlural +
+                ", indirectSUMO='" + indirectSUMO + '\'' +
+                ", indirectPrep='" + indirectPrep + '\'' +
+                ", pluralIndirect=" + String.valueOf(pluralIndirect) +
+                ", indirectCount=" + indirectCount +
+                ", indirectModifier='" + indirectModifier + '\'' +
+                ", indirectCaseRole='" + indirectCaseRole + '\'' +
+                ", \nsecondVerb='" + secondVerb + '\'' +
+                ", secondVerbType='" + secondVerbType + '\'' +
+                ", secondVerbSynset='" + secondVerbSynset + '\'' +
+                ", secondVerbModifier='" + secondVerbModifier + '\'' +
+                ", \nattNeg=" + attNeg +
                 ", attPlural=" + attPlural +
                 ", attCount=" + attCount +
                 ", attSubjType='" + attSubjType + '\'' +
@@ -534,51 +590,15 @@ public class LFeatures {
                 ", attitude='" + attitude + '\'' +
                 ", attitudeModifier='" + attitudeModifier + '\'' +
                 ", attWord=" + String.valueOf(attWord) +
-                ", negatedModal=" + negatedModal +
+                ", \nnegatedModal=" + negatedModal +
                 ", negatedBody=" + negatedBody +
-                ", modal=" + String.valueOf(modal) +
-                ", directPrep='" + directPrep + '\'' +
-                ", indirectPrep='" + indirectPrep + '\'' +
-                ", secondVerb='" + secondVerb + '\'' +
-                ", secondVerbType='" + secondVerbType + '\'' +
-                ", secondVerbSynset='" + secondVerbSynset + '\'' +
-                ", secondVerbModifier='" + secondVerbModifier + '\'' +
-                ", subj='" + subj + '\'' +
-                ", subjName='" + subjName + '\'' +
-                ", subjType='" + subjType + '\'' +
-                ", subjectModifier='" + subjectModifier + '\'' +
-                ", subjectPlural=" + subjectPlural +
-                ", pluralSubj=" + String.valueOf(pluralSubj) +
-                ", subjectCount=" + subjectCount +
-                ", frame='" + frame + '\'' +
+                ", \nmodal=" + String.valueOf(modal) +
+                ", \nframe='" + frame + '\'' +
                 ", framePart='" + framePart + '\'' +
                 ", frames=" + String.valueOf(frames) +
-                ", directName='" + directName + '\'' +
-                ", directType='" + directType + '\'' +
-                ", directSUMO='" + directSUMO + '\'' +
-                ", directPlural=" + directPlural +
-                ", pluralDirect=" + String.valueOf(pluralDirect) +
-                ", directOther='" + directOther + '\'' +
-                ", directCount=" + directCount +
-                ", directModifier='" + directModifier + '\'' +
-                ", indirectName='" + indirectName + '\'' +
-                ", indirectType='" + indirectType + '\'' +
-                ", indirectPlural=" + indirectPlural +
-                ", indirectSUMO='" + indirectSUMO + '\'' +
-                ", pluralIndirect=" + String.valueOf(pluralIndirect) +
-                ", indirectCount=" + indirectCount +
-                ", indirectModifier='" + indirectModifier + '\'' +
-                ", indirectCaseRole='" + indirectCaseRole + '\'' +
                 ", question=" + question +
                 ", exclamation=" + exclamation +
-                ", verb='" + verb + '\'' +
-                ", verbConjugated='" + verbConjugated + '\'' +
-                ", verbSynset='" + verbSynset + '\'' +
-                ", verbType='" + verbType + '\'' +
-                ", verbFrameCat='" + verbFrameCat + '\'' +
-                ", adverb='" + adverb + '\'' +
-                ", adverbSUMO='" + adverbSUMO + '\'' +
-                ", tense=" + tense +
+                ", \ntense=" + tense +
                 ", hastime=" + hastime +
                 ", hasdate=" + hasdate +
                 ", hasdatetime=" + hasdatetime +
@@ -589,12 +609,12 @@ public class LFeatures {
                 ", monthLog='" + monthLog + '\'' +
                 ", dayLog='" + dayLog + '\'' +
                 ", hourLog='" + hourLog + '\'' +
-                ", polite=" + polite +
+                ", \npolite=" + polite +
                 ", politeFirst=" + politeFirst +
                 ", politeWord='" + politeWord + '\'' +
                 ", addPleaseToSubj=" + addPleaseToSubj +
                 ", addShouldToSubj=" + addShouldToSubj +
-                ", addBodyPart=" + addBodyPart +
+                ", \naddBodyPart=" + addBodyPart +
                 ", bodyPart='" + bodyPart + '\'' +
                 ", pluralBodyPart=" + String.valueOf(pluralBodyPart) +
                 '}';

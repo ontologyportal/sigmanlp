@@ -18,7 +18,7 @@ import java.util.Set;
 
 public class WordPairFrequency {
     public static boolean debug = false;
-    public static boolean WORDPAIR_OFF = true;
+    public static boolean WORDPAIR_OFF = false;
 
     private static String db_location = System.getenv("CORPORA") +"/COCA/word_pairs.db";
 
