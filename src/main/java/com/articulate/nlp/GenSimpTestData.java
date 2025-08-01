@@ -603,7 +603,7 @@ public class GenSimpTestData {
                         if (Arrays.asList("boy").contains(word)){
                             word = word + "s";
                         }
-                        else{
+                        else {
                             word = word.substring(0, word.length() - 1) + "ies";
                         }
                     }

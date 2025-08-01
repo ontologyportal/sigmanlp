@@ -25,12 +25,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 public class GenWordSelector {
 
     public static boolean debug = true;
-    public static final SelectionStrategy strategy = SelectionStrategy.FRAME_LITE;
+    public static final SelectionStrategy strategy = SelectionStrategy.FRAME_LITE_WITH_OLLAMA;
     private static final int OBJ_SUBSET_SIZE = 20;
     public static final Random rand = new Random();
 
     public enum SelectionStrategy {
-        RANDOM, WORD_PAIR, FRAME_LITE, OLLAMA_JUST_ASK, OLLAMA_SUBSET
+        RANDOM, WORD_PAIR, FRAME_LITE, FRAME_LITE_WITH_OLLAMA, OLLAMA_JUST_ASK, OLLAMA_SUBSET
     }
 
     public enum PoS {
@@ -38,7 +38,7 @@ public class GenWordSelector {
     }
 
     public static boolean isFrameLiteStrategy() {
-        return strategy == SelectionStrategy.FRAME_LITE;
+        return strategy == SelectionStrategy.FRAME_LITE_WITH_OLLAMA || strategy == SelectionStrategy.FRAME_LITE;
     }
     public static boolean isWordPairStrategy() { return strategy == SelectionStrategy.WORD_PAIR; }
 
@@ -60,12 +60,12 @@ public class GenWordSelector {
                 System.exit(0);
                 return WordPairFrequency.getNounFromVerb(lfeatset, lfeat);
             case FRAME_LITE:
+            case FRAME_LITE_WITH_OLLAMA:
                 return getObjectFromProcessTypes(pos, kbLite, lfeat, lfeatset);
             case OLLAMA_JUST_ASK:
                 return getObjectJustAskOllama(pos, lfeat.subj, lfeat.directName, lfeat.indirectName, kbLite, lfeat, lfeatset);
             case OLLAMA_SUBSET:
-                // Need to add className
-                return getObjectFromSubsetWithOllama(pos, lfeat.subj, lfeat.directName, lfeat.indirectName, kbLite, lfeat, lfeatset);
+                return getTermFromSubsetWithOllama(pos, kbLite, lfeat, lfeatset, null);
             default:
                 throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
@@ -90,23 +90,28 @@ public class GenWordSelector {
         List<LFeatureSets.ProcessTypeEntry> processes = lfeatset.processTypes.get(lfeat.verbType);
         if (processes == null) return lfeatset.objects.getNext();
         LFeatureSets.ProcessTypeEntry process = processes.get(new Random().nextInt(processes.size()));
-        System.out.println("GenWordSelector.getObjectFromProcessTypes(): " + lfeat.verbType);
         LFeatureSets.printProcessTypeEntry(process);
         if (pos == PoS.INDIRECT) { // indirect object
             if (process.IndirectObjClass.equals("ComputerUser"))
                 return "Human";
             lfeat.indirectPrep = process.prepositionIndObj;
+            if (strategy == SelectionStrategy.FRAME_LITE_WITH_OLLAMA)
+                return getTermFromSubsetWithOllama(PoS.INDIRECT, kbLite, lfeat, lfeatset, process.IndirectObjClass);
             return lfeatset.getRandomSubclassFrom(process.IndirectObjClass);
         }
         if (pos == PoS.DIRECT) {
             if (process.ObjectClass.equals("ComputerUser"))
                 return "Human";
             lfeat.directPrep = process.PrepositionObject;
+            if (strategy == SelectionStrategy.FRAME_LITE_WITH_OLLAMA)
+                return getTermFromSubsetWithOllama(PoS.DIRECT, kbLite, lfeat, lfeatset, process.ObjectClass);
             return lfeatset.getRandomSubclassFrom(process.ObjectClass);
         }
         if (pos == PoS.SUBJECT) {
             if (process.SubjectClass.equals("ComputerUser"))
                 return "Human";
+            if (strategy == SelectionStrategy.FRAME_LITE_WITH_OLLAMA)
+                return getTermFromSubsetWithOllama(PoS.SUBJECT, kbLite, lfeat, lfeatset, process.SubjectClass);
             return lfeatset.getRandomSubclassFrom(process.SubjectClass);
         }
         System.exit(0);
@@ -138,8 +143,17 @@ public class GenWordSelector {
     }
 
 
-    public static String getObjectFromSubsetWithOllama(PoS pos, String subject, String dirObject, String indirObj, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
-        String tInfoJSON = getJSONSetOfObjectsOfSize(OBJ_SUBSET_SIZE, lfeatset);
+    public static String getTermFromSubsetWithOllama(PoS pos, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset, String className) {
+        String subject = lfeat.subj;
+        String dirObject = lfeat.directName;
+        String indirObj = lfeat.indirectName;
+        String tInfoJSON = "";
+        if (className == null || !className.equals("")) {
+            tInfoJSON = getJSONSetOfSize(OBJ_SUBSET_SIZE, lfeatset.getSubclassAsTermInfos(className));
+        }
+        else {
+            tInfoJSON = getJSONSetOfSize(OBJ_SUBSET_SIZE, lfeatset.termInfos);
+        }
         String prompt = getOllamaPromptPrefix(pos, subject, dirObject,indirObj, kbLite, lfeat, lfeatset) +
                 " from the following JSON list, and respond in JSON format: " + tInfoJSON;
         System.out.println(prompt);
@@ -190,11 +204,11 @@ public class GenWordSelector {
                 "Give me the top five terms that go well as " + objectToGet;
     }
 
-    private static String getJSONSetOfObjectsOfSize(int n, LFeatureSets lfeatset) {
-        Collections.shuffle(lfeatset.termInfos);
-        List<LFeatureSets.TermInfo> subsetTermInfos = lfeatset.termInfos;
+    private static String getJSONSetOfSize(int n, ArrayList<LFeatureSets.TermInfo> termInfos) {
+        Collections.shuffle(termInfos);
+        List<LFeatureSets.TermInfo> subsetTermInfos = termInfos;
         if (n <= subsetTermInfos.size()) {
-            subsetTermInfos = lfeatset.termInfos.subList(0, n);
+            subsetTermInfos = termInfos.subList(0, n);
         }
         String tInfoJSON = "{\n\"terms\":[";
         for (LFeatureSets.TermInfo tInfo:subsetTermInfos) {

@@ -268,12 +268,29 @@ public class LFeatureSets {
      * Lazy load the subclasses
      */
     public String getRandomSubclassFrom(String SUMOClass) {
-        List<String> children = subclassMap.computeIfAbsent(SUMOClass, k -> {
+        List<String> children = getSubclassSet(SUMOClass);
+        if (children.isEmpty()) return SUMOClass;
+        return children.get(rand.nextInt(children.size()));
+    }
+
+    public List<String> getSubclassSet(String SUMOClass) {
+        return subclassMap.computeIfAbsent(SUMOClass, k -> {
             Set<String> set = kbLite.getChildClasses(k);
             return (set != null) ? new ArrayList<>(set) : Collections.emptyList();
         });
-        if (children.isEmpty()) return SUMOClass;
-        return children.get(rand.nextInt(children.size()));
+    }
+
+    public ArrayList<TermInfo> getSubclassAsTermInfos(String SUMOClass) {
+        List<String> children = getSubclassSet(SUMOClass);
+        ArrayList<TermInfo> returnList = new ArrayList();
+        for (String term:children) {
+            TermInfo newTermInfo = new TermInfo();
+            newTermInfo.termInSumo = term;
+            newTermInfo.documentation = processDocumentation(kbLite.getDocumentation(term));
+            newTermInfo.termFormats = kbLite.termFormats.get(term);
+            returnList.add(newTermInfo);
+        }
+        return returnList;
     }
 
     public static void printProcessTypeMap(Map<String, List<ProcessTypeEntry>> processTypeMap) {
