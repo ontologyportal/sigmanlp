@@ -8,6 +8,11 @@ import com.articulate.sigma.FormulaUtil;
 import com.articulate.sigma.wordNet.WordNetUtilities;
 import com.articulate.sigma.wordNet.WordNet;
 import java.util.*;
+import com.opencsv.CSVReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.Random;
+
 
 /**
  * **************************************************************
@@ -20,6 +25,7 @@ public class LFeatureSets {
             Arrays.asList("Acidification","Vending","OrganizationalProcess",
                     "NaturalProcess","Corkage","LinguisticCommunication"));
     public static boolean useCapabilities = false; // include process types from capabilities list
+    public static Random rand = new Random();
 
     /** *******************************************
      */
@@ -56,6 +62,50 @@ public class LFeatureSets {
         }
     }
 
+    /*
+        Holds information about a SUMO term.
+     */
+    public class TermInfo {
+        public String termInSumo = null;
+        public String documentation = null;
+        public List<String> termFormats = null;
+    }
+
+    /** *****************************************************************
+        Used to store ProcessTypes from the ProcessType.csv file,
+        This is an optional word selection method. See WordSelection
+        for more details
+     */
+    public static class ProcessTypeEntry {
+        public String verb;
+        public String SubjectClass;
+        public String CaseRoleSubject;
+        public String ObjectClass;
+        public String CaseRoleObject;
+        public String PrepositionObject;
+        public String IndirectObjClass;
+        public String CaseRoleIndObj;
+        public String prepositionIndObj;
+        public String HelperVerb;
+
+        public ProcessTypeEntry(String verb, String SubjectClass, String CaseRoleSubject,
+                                String ObjectClass, String CaseRoleObject, String PrepositionObject,
+                                String IndirectObjClass, String CaseRoleIndObj, String prepositionIndObj,
+                                String HelperVerb) {
+            this.verb = verb;
+            this.SubjectClass = SubjectClass;
+            this.CaseRoleSubject = CaseRoleSubject;
+            this.ObjectClass = ObjectClass;
+            this.CaseRoleObject = CaseRoleObject;
+            this.PrepositionObject = PrepositionObject;
+            this.IndirectObjClass = IndirectObjClass;
+            this.CaseRoleIndObj = CaseRoleIndObj;
+            this.prepositionIndObj = prepositionIndObj;
+            this.HelperVerb = HelperVerb;
+        }
+    }
+
+
     public List<AVPair> modals = null;
     public Map<String, String> genders = null;
     public RandSet humans = null;
@@ -65,6 +115,7 @@ public class LFeatureSets {
     public Set<String> prevHumans = new HashSet<>();
     public RandSet processes = null;
     private KBLite kbLite = null;
+    public ArrayList<TermInfo> termInfos = null;
 
     public static List<String> numbers = new ArrayList<>();
     public static List<String> requests = new ArrayList<>(); // polite phrase at start of sentence
@@ -72,7 +123,8 @@ public class LFeatureSets {
     public static List<String> others = new ArrayList<>(); // when next noun is same as a previous one
     public static Map<String,String> prepPhrase = new HashMap<>();
     public static final List<Word> attitudes = new ArrayList<>();
-
+    public static Map<String, List<ProcessTypeEntry>> processTypes;
+    public static Map<String, List<String>> subclassMap = new HashMap<>(); // Its a list because we will get random items from it.
 
     public LFeatureSets(KBLite kbLiteParam) {
         kbLite = kbLiteParam;
@@ -93,6 +145,7 @@ public class LFeatureSets {
         socRoles = RandSet.create(roleFreqs);
 
         Set<String> parts = kbLite.getInstancesForType("BodyPart");
+        System.out.println("LFeatureSets(): BodyParts: " + parts);
         //if (debug) System.out.println("LFeatureSets(): BodyParts: " + parts);
         Collection<AVPair> bodyFreqs = findWordFreq(parts);
         bodyParts = RandSet.create(bodyFreqs);
@@ -125,6 +178,142 @@ public class LFeatureSets {
         addUnknownsObjects(objFreqs);
         if (debug) System.out.println("LFeatureSets(): create objects");
         objects = RandSet.create(objFreqs);
+
+        // Create termInfo datastructure
+        termInfos = new ArrayList();
+        for (String obj:objects.terms) {
+            TermInfo newTermInfo = new TermInfo();
+            newTermInfo.termInSumo = obj;
+            newTermInfo.documentation = processDocumentation(kbLite.getDocumentation(obj));
+
+            newTermInfo.termFormats = kbLite.termFormats.get(obj);
+            termInfos.add(newTermInfo);
+        }
+
+        // Load ProcessTypes
+        if (GenWordSelector.isFrameLiteStrategy()) {
+            processTypes = loadProcessTypes(System.getenv("SIGMANLP_HOME") + "/ProcessTypes.csv");
+            processesSet = processTypes.keySet();
+            if (debug) printProcessTypeMap(processTypes);
+        }
+    }
+
+    /** *********************************************
+     * Cleans up the SUMO documentation value
+     */
+    public static String processDocumentation(String doc) {
+        if (doc != null) {
+            doc = doc.length() < 160 ? doc : doc.substring(0, 159) + "...";
+            doc = doc.replaceAll("^\"|\"$|&%", "").replaceAll("\"", "'");
+            doc = doc.replace("&%", "");
+            //Insert space before each uppercase letter that follows a lowercase letter or another uppercase letter (for acronyms)
+            doc = doc.replaceAll("([a-z])([A-Z])", "$1 $2").replaceAll("([A-Z]+)([A-Z][a-z])", "$1 $2");
+            doc = doc.replaceAll(" +", " ").trim();
+        }
+        return doc;
+    }
+
+    /** *****************************************************************
+     *  Load process types into a datastructure, if that selection
+     *  strategy is being used. See WordSelection.java for more info.
+     */
+    public static Map<String, List<ProcessTypeEntry>> loadProcessTypes(String csvPath) {
+        File file = new File(csvPath);
+        if (!file.exists()) {
+            System.out.println("File not found: " + csvPath);
+            return null;
+        }
+
+        Map<String, List<ProcessTypeEntry>> map = new HashMap<>();
+        try (CSVReader reader = new CSVReader(new FileReader(file))) {
+            String[] header = reader.readNext(); // skip header
+            String[] row;
+            while ((row = reader.readNext()) != null) {
+                // Adjust indices if columns are not in the exact order
+                ProcessTypeEntry entry = new ProcessTypeEntry(
+                        row[0], row[1], row[2], row[3], row[4],
+                        row[5], row[6], row[7], row[8], row[9]
+                );
+                if (!allFieldsExceptVerbBlank(entry)) {
+                    map.computeIfAbsent(entry.verb, k -> new ArrayList<>()).add(entry);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading or parsing file: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+        return map;
+    }
+
+    // Helper method to check if all fields except verb are blank
+    private static boolean allFieldsExceptVerbBlank(ProcessTypeEntry entry) {
+        return isBlank(entry.SubjectClass)
+                && isBlank(entry.CaseRoleSubject)
+                && isBlank(entry.ObjectClass)
+                && isBlank(entry.CaseRoleObject)
+                && isBlank(entry.PrepositionObject)
+                && isBlank(entry.IndirectObjClass)
+                && isBlank(entry.CaseRoleIndObj)
+                && isBlank(entry.prepositionIndObj)
+                && isBlank(entry.HelperVerb);
+    }
+
+    // Helper to check if a string is null or blank
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    /** *******************************************************
+     * Lazy load the subclasses
+     */
+    public String getRandomSubclassFrom(String SUMOClass) {
+        List<String> children = getSubclassSet(SUMOClass);
+        if (children.isEmpty()) return SUMOClass;
+        return children.get(rand.nextInt(children.size()));
+    }
+
+    public List<String> getSubclassSet(String SUMOClass) {
+        return subclassMap.computeIfAbsent(SUMOClass, k -> {
+            Set<String> set = kbLite.getChildClasses(k);
+            return (set != null) ? new ArrayList<>(set) : Collections.emptyList();
+        });
+    }
+
+    public ArrayList<TermInfo> getSubclassAsTermInfos(String SUMOClass) {
+        List<String> children = getSubclassSet(SUMOClass);
+        ArrayList<TermInfo> returnList = new ArrayList();
+        for (String term:children) {
+            TermInfo newTermInfo = new TermInfo();
+            newTermInfo.termInSumo = term;
+            newTermInfo.documentation = processDocumentation(kbLite.getDocumentation(term));
+            newTermInfo.termFormats = kbLite.termFormats.get(term);
+            returnList.add(newTermInfo);
+        }
+        return returnList;
+    }
+
+    public static void printProcessTypeMap(Map<String, List<ProcessTypeEntry>> processTypeMap) {
+        for (Map.Entry<String, List<ProcessTypeEntry>> entry : processTypeMap.entrySet()) {
+            String verb = entry.getKey();
+            List<ProcessTypeEntry> entries = entry.getValue();
+            System.out.println("Verb: " + verb);
+            for (ProcessTypeEntry e : entries) {
+                printProcessTypeEntry(e);
+            }
+        }
+    }
+
+    public static void printProcessTypeEntry(ProcessTypeEntry e) {
+        System.out.println("  SubjectClass: " + e.SubjectClass
+                + ", CaseRoleSubject: " + e.CaseRoleSubject
+                + ", ObjectClass: " + e.ObjectClass
+                + ", CaseRoleObject: " + e.CaseRoleObject
+                + ", PrepositionObject: " + e.PrepositionObject
+                + ", IndirectObjClass: " + e.IndirectObjClass
+                + ", CaseRoleIndObj: " + e.CaseRoleIndObj
+                + ", prepositionIndObj: " + e.prepositionIndObj
+                + ", HelperVerb: " + e.HelperVerb);
     }
 
     /** ***************************************************************
@@ -472,6 +661,7 @@ public class LFeatureSets {
         if (debug) System.out.println("excludedVerb(): not excluded: " + v);
         return false;
     }
+
 
     /** ***************************************************************
      * also return true if there's no termFormat for the process

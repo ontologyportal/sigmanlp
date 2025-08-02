@@ -12,10 +12,7 @@ import java.util.*;
  */
 public class RandSet {
 
-    ArrayList<String> terms = new ArrayList<String>();
-    HashSet<String> returned = new HashSet<>();
-
-    public static boolean avoidDup = false;
+    public ArrayList<String> terms = new ArrayList<String>();
     public Random rand = new Random();
 
     /** ***************************************************************
@@ -26,24 +23,13 @@ public class RandSet {
 
     /** ***************************************************************
      */
-    public void clearReturns() {
-        returned.clear();
-    }
-
-    /** ***************************************************************
-     */
     public String getNext() {
 
         if (this.terms.size() < 1) {
             System.out.println("RandSet.getNext(): empty set: " + terms);
             return "";
         }
-        int index = 0;
-        do {
-            index = rand.nextInt(this.terms.size());
-        } while (avoidDup && returned.contains(terms.get(index)));
-        returned.add(terms.get(index));
-        return terms.get(index);
+        return terms.get(rand.nextInt(this.terms.size()));
     }
 
     /** ***************************************************************
@@ -87,7 +73,6 @@ public class RandSet {
      */
     public void remove(String termToRemove) {
         if (terms != null) terms.remove(termToRemove);
-        if (returned != null) returned.remove(termToRemove);
     }
 
     /** ***************************************************************
