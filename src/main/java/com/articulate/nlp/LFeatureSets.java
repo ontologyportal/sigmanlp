@@ -293,6 +293,11 @@ public class LFeatureSets {
         return returnList;
     }
 
+    public boolean termInSubclass(String term, String SUMOClass) {
+        List<String> children = getSubclassSet(SUMOClass);
+        return children.contains(term) || SUMOClass.equals(term);
+    }
+
     public static void printProcessTypeMap(Map<String, List<ProcessTypeEntry>> processTypeMap) {
         for (Map.Entry<String, List<ProcessTypeEntry>> entry : processTypeMap.entrySet()) {
             String verb = entry.getKey();

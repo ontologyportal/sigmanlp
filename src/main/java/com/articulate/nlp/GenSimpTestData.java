@@ -319,6 +319,7 @@ public class GenSimpTestData {
             }
         }
         System.out.println("Finished generating " + sentCount + " good sentences. The number of malformed sentences during generation: " + badSentCount);
+        System.out.println("Ollama was used to find " + GenWordSelector.foundWordReturned + " words. Ollama failed to find a word " + GenWordSelector.randomWordReturned + " times.");
     }
 
 
@@ -543,7 +544,8 @@ public class GenSimpTestData {
             return term;
         String word = kbLite.getTermFormat(term);
         if (word == null) {
-            System.out.println("nounFormFromTerm(): no term format for " + term);
+            System.out.println("nounFormFromTerm(): no term format for: " + term);
+            Thread.dumpStack();
             return null;
         }
         if (kbLite.isInstance(term)) {
@@ -951,7 +953,7 @@ public class GenSimpTestData {
             lfeat.directName = nounFormFromTerm(lfeat.directType, lfeat.pluralDirect, lfeat.directOther);
             role = "destination";
         }
-        else if (lfeat.directType != null) {
+        else if (lfeat.directType != null && !lfeat.directType.equals("")) {
             if (debug) System.out.println("generateDirectObject(4): prep: " + lfeat.directPrep);
             if (!lfeat.directType.equals("Human"))
                 lfeat.directName = nounFormFromTerm(lfeat.directType, lfeat.pluralDirect, lfeat.directOther);
@@ -1063,7 +1065,7 @@ public class GenSimpTestData {
         if (gws.isFrameLiteStrategy()
                 || (!"".equals(lfeat.framePart) && lfeat.framePart.contains("somebody") || lfeat.framePart.contains("something"))) {
             getIndirect(lfeat);
-            if (lfeat.indirectType == null) return;
+            if (lfeat.indirectType == null || lfeat.indirectType.equals("")) return;
             if (!StringUtil.emptyString(lfeat.indirectPrep))
                 lfeat.indirectCaseRole = getCaseRoleFromPrep(lfeat.indirectPrep);
             if (StringUtil.emptyString(lfeat.indirectCaseRole))
