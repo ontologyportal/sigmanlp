@@ -69,6 +69,15 @@ public class LFeatureSets {
         public String termInSumo = null;
         public String documentation = null;
         public List<String> termFormats = null;
+
+        @Override
+        public String toString() {
+            return "TermInfo{" +
+                    "termInSumo='" + termInSumo + '\'' +
+                    ", documentation='" + documentation + '\'' +
+                    ", termFormats=" + termFormats +
+                    '}';
+        }
     }
 
     /** *****************************************************************
@@ -291,6 +300,11 @@ public class LFeatureSets {
             returnList.add(newTermInfo);
         }
         return returnList;
+    }
+
+    public boolean termInSubclass(String term, String SUMOClass) {
+        List<String> children = getSubclassSet(SUMOClass);
+        return children.contains(term) || SUMOClass.equals(term);
     }
 
     public static void printProcessTypeMap(Map<String, List<ProcessTypeEntry>> processTypeMap) {
