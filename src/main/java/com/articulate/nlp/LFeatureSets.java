@@ -69,6 +69,15 @@ public class LFeatureSets {
         public String termInSumo = null;
         public String documentation = null;
         public List<String> termFormats = null;
+
+        @Override
+        public String toString() {
+            return "TermInfo{" +
+                    "termInSumo='" + termInSumo + '\'' +
+                    ", documentation='" + documentation + '\'' +
+                    ", termFormats=" + termFormats +
+                    '}';
+        }
     }
 
     /** *****************************************************************

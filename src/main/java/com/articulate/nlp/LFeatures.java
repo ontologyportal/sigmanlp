@@ -261,7 +261,10 @@ public class LFeatures {
          * be to make it consistent.
          */
         if (GenWordSelector.isFrameLiteStrategy()) {
-            english.append(subjName).append(" ");
+            if (subjName == null || subjName.equals(""))
+                english.append(subj).append(" ");
+            else
+                english.append(subjName).append(" ");
             prop.append("(instance ").append("?H ").append(subjType).append(")");
         }
         else if (subjType != null && subjType.equals("Human")) {

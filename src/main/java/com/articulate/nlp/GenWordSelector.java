@@ -24,8 +24,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 public class GenWordSelector {
 
-    public static boolean debug = true;
-    public static final SelectionStrategy strategy = SelectionStrategy.FRAME_LITE_WITH_OLLAMA;
+    public static boolean debug = false;
+    public static SelectionStrategy strategy = SelectionStrategy.FRAME_LITE_WITH_OLLAMA;
     private static final int OBJ_SUBSET_SIZE = 20;
     public static final Random rand = new Random();
 
@@ -48,6 +48,8 @@ public class GenWordSelector {
     public static String getNoun(PoS pos, LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite, String className) {
         if (debug) System.out.println("\n\n");
         if (debug) Thread.dumpStack();
+        if (debug) System.out.println("Ollama has been used to find " + GenWordSelector.foundWordReturned + " words. Ollama failed to find a word " + GenWordSelector.randomWordReturned + " times.");
+
         switch (strategy) {
             case RANDOM:
                 if (className != null && !className.equals(""))
@@ -147,6 +149,8 @@ public class GenWordSelector {
             if (lfeatset.objects.terms.contains(noun)) {
                 if (debug) System.out.println("Returning: " + noun + " for verb " + lfeat.verb);
                 foundWordReturned++;
+                if (rand.nextBoolean() && kbLite.isSubclass(noun, "Human"))
+                    return "Human";
                 return noun;
             }
         }
@@ -175,19 +179,29 @@ public class GenWordSelector {
         if (debug) System.out.println("\n\n" + response + "\n\n\n");
         if (debug) System.out.println("Final Results: " + returnedTerms);
         if (returnedTerms == null) {
-            if (debug) System.out.println("returnedObjects is null. Returning a random object.")
+            if (debug) System.out.println("returnedObjects is null. Returning a random item from the subclass.");
             randomWordReturned++;
+            if (className != null && !className.equals(""))
+                return lfeatset.getRandomSubclassFrom(className);
             return lfeatset.objects.getNext();
         }
         for (String term:returnedTerms) {
-            if (className != null && !className.equals("") && lfeatset.termInSubclass(term, className)) {
-                if (debug) System.out.println("Returning: " + term + " in subclass " + className + " for verb " + lfeat.verb);
-                foundWordReturned++;
-                return term;
+            if (isFrameLiteStrategy()) {
+                if (className != null && !className.equals("") && lfeatset.termInSubclass(term, className)) {
+                    foundWordReturned++;
+                    if (rand.nextBoolean() && kbLite.isSubclass(term, "Human")) {
+                        if (debug) System.out.println("GenWordSelector.getTermFromSubsetWithOllama() returning a generic Human randomly");
+                        return "Human";
+                    }
+                    if (debug) System.out.println("Returning: " + term + " in subclass " + className + " for verb " + lfeat.verb);
+                    return term;
+                }
             }
-            if (lfeatset.objects.terms.contains(term)) {
+            else if (lfeatset.objects.terms.contains(term)) {
                 if (debug) System.out.println("Returning object: " + term + " for verb " + lfeat.verb);
                 foundWordReturned++;
+                if (rand.nextBoolean() && kbLite.isSubclass(term, "Human"))
+                    return "Human";
                 return term;
             }
         }
@@ -198,7 +212,6 @@ public class GenWordSelector {
 
 
     private static String getOllamaPromptPrefix(PoS pos, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
-        System.out.println("DELETEME: " + lfeat);
         String verbDefinition = LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.verbType));
         String objectToGet = "";
         String verbDef = "The definition of the verb \"" + lfeat.verb + "\" is \"" + verbDefinition + "\". ";

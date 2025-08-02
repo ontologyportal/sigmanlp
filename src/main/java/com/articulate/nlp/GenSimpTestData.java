@@ -101,6 +101,8 @@ public class GenSimpTestData {
 
     private void initGSTD() {
 
+        suppress.add("modal");
+        suppress.add("attitude");
         lfeatsets = new LFeatureSets(kbLite);
         lfeatsets.initNumbers();
         lfeatsets.initRequests();
@@ -1568,7 +1570,7 @@ public class GenSimpTestData {
         System.out.println("  -a <filename> - generate logic/language pairs for all statements in KB");
         System.out.println("  -g <filename> - generate ground statement pairs for all relations");
         System.out.println("  -i - generate English for all non-ground formulas");
-        System.out.println("  -s <filename> <optional count> - generate NL/logic compositional <count> sentences to <filename> (no extension)");
+        System.out.println("  -s <filename> <optional count> <optional word selection strategy> - generate NL/logic compositional <count> sentences to <filename> (no extension)");
         // System.out.println("  -p <filename> <optional count> - parallel generation of NL/logic compositional <count> sentences to <filename> (no extension)");
         System.out.println("  -n - generate term formats from term names in a file");
         System.out.println("  -u - other utility");
@@ -1602,8 +1604,37 @@ public class GenSimpTestData {
                     }
                 }
                 if (args.length > 1 && args[0].equals("-s")) { // create NL/logic synthetically
-                    if (args.length > 2)
-                        sentMax = Integer.parseInt(args[2]);
+                    if (args.length < 4) {
+                        System.out.println("Usage:  -s <filename> <count> <word selection strategy> - generate NL/logic compositional <count> sentences to <filename> (no extension)");
+                        System.out.println("Selection strategies: Strategies are RANDOM, WORD_PAIR, FRAME_LITE, FRAME_LITE_WITH_OLLAMA, OLLAMA_JUST_ASK, OLLAMA_SUBSET.");
+                        System.exit(0);
+                    }
+                    sentMax = Integer.parseInt(args[2]);
+                    switch (args[3]) {
+                        case "RANDOM":
+                            GenWordSelector.strategy = GenWordSelector.SelectionStrategy.RANDOM;
+                            break;
+                        case "WORD_PAIR":
+                            GenWordSelector.strategy = GenWordSelector.SelectionStrategy.WORD_PAIR;
+                            break;
+                        case "FRAME_LITE":
+                            GenWordSelector.strategy = GenWordSelector.SelectionStrategy.FRAME_LITE;
+                            break;
+                        case "FRAME_LITE_WITH_OLLAMA":
+                            GenWordSelector.strategy = GenWordSelector.SelectionStrategy.FRAME_LITE_WITH_OLLAMA;
+                            break;
+                        case "OLLAMA_JUST_ASK":
+                            GenWordSelector.strategy = GenWordSelector.SelectionStrategy.OLLAMA_JUST_ASK;
+                            break;
+                        case "OLLAMA_SUBSET":
+                            GenWordSelector.strategy = GenWordSelector.SelectionStrategy.OLLAMA_SUBSET;
+                            break;
+                        default:
+                            System.out.println("You must define a valid word selection strategy. Strategies are RANDOM, WORD_PAIR, FRAME_LITE, FRAME_LITE_WITH_OLLAMA, OLLAMA_JUST_ASK, OLLAMA_SUBSET.");
+                            System.exit(0);
+                            break;
+                    }
+
                     GenSimpTestData gstd = new GenSimpTestData(true);
                     gstd.runGenSentence();
                     englishFile.close();
