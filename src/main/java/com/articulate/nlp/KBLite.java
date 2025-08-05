@@ -119,9 +119,12 @@ public class KBLite {
 
     public void loadKifs() {
         for (String kifFile : kifFiles) {
-            File file = new File(KB_FILEPATH + File.separator + kifFile);
+            File file = new File(kifFile);
+            if (!file.isAbsolute()) {
+                file = new File(KB_FILEPATH, kifFile);
+            }
             if (!file.exists()) {
-                System.err.println("Error: File not found: " + file.getAbsolutePath());
+                System.err.println("Error: File specified in config.xml not found: " + file.getAbsolutePath());
                 continue;
             }
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
