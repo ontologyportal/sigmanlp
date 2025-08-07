@@ -17,9 +17,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
  *   There are four different methods to choose from:
  *   1. Random
  *   2. WordPair frequency (calculated using the COCA corpus)
- *   3. Frame-lite (requires frame-lite ProcessTypes file)
+ *   3. Frame-lite (requires frame-lite ProcessTypes.csv file)
  *   4. Ollama just ask - just asks for words and hopes they are in SUMO.
  *   5. Ollama subset - pulls best fit from a subset of random SUMO objects
+ *   6. Ollama with Frame-lite - Ollama selects from a set defined by ProcessTypes.csv
  */
 
 public class GenWordSelector {
@@ -45,7 +46,14 @@ public class GenWordSelector {
     }
     public static boolean isWordPairStrategy() { return strategy == SelectionStrategy.WORD_PAIR; }
 
+
+    /***************************************************************
+     *    getNoun is the entry point of GenWordSelector.
+     *    Based on the strategy defined, this method
+     *    will return a noun for the requested part of speech
+     */
     public static String getNoun(PoS pos, LFeatureSets lfeatset, LFeatures lfeat, KBLite kbLite, String className) {
+
         if (debug) System.out.println("\n\n");
         if (debug) Thread.dumpStack();
         if (debug) System.out.println("Ollama has been used to find " + GenWordSelector.foundWordReturned + " words. Ollama failed to find a word " + GenWordSelector.randomWordReturned + " times.");
@@ -93,6 +101,7 @@ public class GenWordSelector {
      *             HelperVerb;
      */
     public static String getObjectFromProcessTypes(PoS pos, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+
         List<LFeatureSets.ProcessTypeEntry> processes = lfeatset.processTypes.get(lfeat.verbType);
         if (processes == null) return lfeatset.objects.getNext();
         LFeatureSets.ProcessTypeEntry process = processes.get(new Random().nextInt(processes.size()));
@@ -127,10 +136,14 @@ public class GenWordSelector {
         return "ERROR in getObjectFromProcessTypes(). Unknown pos!";
     }
 
-    /*************************************************
-     * Ollama strategies
+
+    /** ******************************************************************
+     *   Ollama strategy. With this method, Ollama is asked what the best
+     *   part of speech should be, and then a determination must be made
+     *   what the best SUMO matching of the returned term is.
      */
     public static String getObjectJustAskOllama(PoS pos, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+
         String prompt = getOllamaPromptPrefix(pos, kbLite, lfeat, lfeatset) +
                 " and respond in the following JSON format, putting results in the \"TermName\" field: " +
                 "\n{\n\t\"terms\":[\n\t\t{\"TermName\"=\"term1\"},{\"TermName\"=\"term2\"},{\"TermName\"=\"term3\"},{\"TermName\"=\"term4\"},{\"TermName\"=\"term5\"}]";
@@ -158,8 +171,12 @@ public class GenWordSelector {
         return lfeatset.objects.getNext();
     }
 
-
+    /** *************************************************************
+     * Ollama strategy where a subset of SUMO terms are passed,
+     * and Ollama is asked to select the best SUMO term.
+     */
     public static String getTermFromSubsetWithOllama(PoS pos, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset, String className) {
+
         if (debug) System.out.println("Getting from class: " + className);
         String subject = lfeat.subj;
         String dirObject = lfeat.directName;
@@ -210,8 +227,11 @@ public class GenWordSelector {
         return lfeatset.objects.getNext();
     }
 
-
+    /******************************************************************
+     *   Used with ollama strategies to generate a prompt prefix.
+     */
     private static String getOllamaPromptPrefix(PoS pos, KBLite kbLite, LFeatures lfeat, LFeatureSets lfeatset) {
+
         String verbDefinition = LFeatureSets.processDocumentation(kbLite.getDocumentation(lfeat.verbType));
         String objectToGet = "";
         String verbDef = "The definition of the verb \"" + lfeat.verb + "\" is \"" + verbDefinition + "\". ";
@@ -249,7 +269,12 @@ public class GenWordSelector {
                 "Give me the top five terms that go well as " + objectToGet;
     }
 
+
+    /** *******************************************************************
+     *  Used with Ollama strategy to turn SUMO classes into JSON objects
+     */
     private static String getJSONSetOfSize(int n, ArrayList<LFeatureSets.TermInfo> termInfos) {
+
         Collections.shuffle(termInfos);
         List<LFeatureSets.TermInfo> subsetTermInfos = termInfos;
         if (n <= subsetTermInfos.size()) {
@@ -273,7 +298,13 @@ public class GenWordSelector {
         return tInfoJSON;
     }
 
+
+    /**************************************************************************
+     *  Used with Ollama strategies to extract SUMO classes from JSON objects
+     *  returned by Ollama.
+     */
     public static List<String> extractTermNames(String llmOutput) {
+
         // Step 1: Remove all <think>...</think> sections
         String cleaned = llmOutput.replaceAll("(?s)<think>.*?</think>", "");
 
