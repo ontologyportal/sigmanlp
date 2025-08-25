@@ -42,7 +42,8 @@ public class GenUtils {
     static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     static final String NUMBERS = "0123456789";
     //static String OLLAMA_MODEL = "qwen3:1.7b";
-    static String OLLAMA_MODEL = "llama3.2";
+    //static String OLLAMA_MODEL = "llama3.2";
+    static String OLLAMA_MODEL = "gpt-oss";
     static int OLLAMA_PORT;
     public static OllamaAPI ollamaAPI;
     public static Options options;
@@ -264,9 +265,9 @@ public class GenUtils {
     public static String askOllama(String prompt) {
         try {
             if (ollamaAPI == null) {
-                startOllamaServer(11436);
+                startOllamaServer(11434);
             }
-            ollamaAPI.setRequestTimeoutSeconds(60);
+            ollamaAPI.setRequestTimeoutSeconds(500);
             OllamaResult result =
                     ollamaAPI.generate(OLLAMA_MODEL, prompt, false, options);
             return result.getResponse().toString();
