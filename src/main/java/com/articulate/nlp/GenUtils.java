@@ -126,17 +126,46 @@ public class GenUtils {
     }
 
     public static String capitalizeFirstLetter(String sentenceToCapitalize) {
+
             if (sentenceToCapitalize == null || sentenceToCapitalize.isEmpty()) {
                 return sentenceToCapitalize;
             }
             return sentenceToCapitalize.substring(0, 1).toUpperCase() + sentenceToCapitalize.substring(1);
     }
 
+
+    /** ***************************************************************
+     *  Writes to a file, locks file during write, so thread safe.
+     */
+    public static void writeToFile(String fileName, String stringToWrite) {
+        FileChannel fileChannel1 = null;
+        FileLock lock1 = null;
+        try {
+            createFileIfDoesNotExists(fileName);
+            fileChannel1 = FileChannel.open(Paths.get(fileName), StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+            lock1 = fileChannel1.lock();
+            ByteBuffer buffer1 = ByteBuffer.wrap(stringToWrite);
+            fileChannel1.write(buffer1);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (lock1 != null) lock1.release();
+                if (fileChannel1 != null) fileChannel1.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
     /** ***************************************************************
      *   Writes an english sentence and logic sentence to their
      *   respective files.
      */
     public static void writeEnglishLogicPairToFile(String english, String logic, String outputFileEnglish, String outputFileLogic) {
+
         FileChannel fileChannel1 = null;
         FileChannel fileChannel2 = null;
         FileLock lock1 = null;
