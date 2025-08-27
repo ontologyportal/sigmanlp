@@ -44,6 +44,24 @@ public class GenMorphoDB {
         }
     }
 
+
+    /**
+     * Returns the indefinite article ("a" or "an")
+     * based only on the first letter of the given noun.
+     */
+    public static String getIndefiniteArticleFromRules(String noun) {
+        if (noun == null || noun.isEmpty()) {
+            return "";
+        }
+        char firstChar = Character.toLowerCase(noun.trim().charAt(0));
+        if ("aeiou".indexOf(firstChar) >= 0) {
+            return "an";
+        } else {
+            return "a";
+        }
+    }
+
+
     /** ***************************************************************
      *  Uses OLLAMA to determine the indefinite article of every noun
      *  in WordNet.
@@ -85,6 +103,7 @@ public class GenMorphoDB {
     // Pairing adjectives with nouns and adverbs with verbs. (List all the adverbs that go with this verb).
     // Out of all the adjectives, which one fits with this noun.
 
+    // Stative vs. Performative processes
 
     /**********************************************************************************
      *
