@@ -75,6 +75,8 @@ public class GenMorphoDB {
             JsonNode root = mapper.readTree(jsonString);
             String noun = null;
             String article = null;
+            String explanation = null;
+            String usage = null;
             Iterator<Map.Entry<String, JsonNode>> fields = root.fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> field = fields.next();
@@ -83,17 +85,22 @@ public class GenMorphoDB {
                     noun = field.getValue().asText();
                 } else if (key.equals("article")) {
                     article = field.getValue().asText();
+                } else if (key.equals("explanation")) {
+                    explanation = field.getValue().asText();
+                } else if (key.equals("usage")) {
+                    usage = field.getValue().asText();
                 }
             }
             if (noun == null || article == null) {
                 return null; // keys missing
             }
-            return new String[]{article, noun};
+            return new String[]{article, noun, explanation, usage};
         } catch (Exception e) {
             // Parsing error or any unexpected error
             return null;
         }
     }
+
 
     /** ***************************************************************
      *  Uses OLLAMA to determine the indefinite article of every noun
@@ -101,20 +108,22 @@ public class GenMorphoDB {
      */
     public static void genIndefiniteArticles() {
 
-        String indefFileName = "IndefArticles_" + GenUtils.OLLAMA_MODEL + ".txt";
+        String indefFileName = "IndefiniteArticles_" + GenUtils.OLLAMA_MODEL + ".txt";
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) continue;
             for (String sysnsetId : entry.getValue()) {
-                String definition = "Its definition is: \"" + nounDocumentationHash.get(sysnsetId) + "\". ";
+                String definition = nounDocumentationHash.get(sysnsetId);
+                String definitionStatement = (definition == null) ? "" : "Its definition is: \"" + nounDocumentationHash.get(sysnsetId) + "\". ";
                 String prompt = "You are an expert linguist of the English language. You are " +
                         "marking up nouns and noun phrases with their indefinite articles for later research. " +
-                        "The noun to markup is \"" + term + "\". " + definition +
-                        "Determine the indefinite article, either 'a', 'an', " +
-                        "or 'none' as appropriate. Only give the definite article 'the' if there is no case where " +
-                        "an indefinite article fits. The results need to be processed by a machine, so return the " +
+                        "The noun to markup is \"" + term + "\". " + definitionStatement +
+                        "Determine the indefinite article, either 'a', 'an', if there is any scenario where an indefinite article is appropriate. " +
+                        "Otherwise mark 'none'. Only give the definite article 'the' if there is no case where " +
+                        "an indefinite article fits. Provide an explanation for the classification and an example " +
+                        "sentence demonstrating article usage. The results need to be processed by a machine, so return the " +
                         "results in the following JSON format." +
-                        "\n\n{\n  \"article\": \"<article>\",\n  \"noun\": \"<noun>\"\n}";
+                        "\n\n{\n  \"article\": \"<article>\",\n  \"noun\": \"<noun>\",\n  \"explanation\":\"<rationale for classification>\"\n  \"usage\":\"<example sentence with article>\"\n \n}";
                 if (debug) System.out.println("GenMorphoDB.genIndefiniteArticles() Prompt: " + prompt);
                 String llmResponse = GenUtils.askOllama(prompt);
                 String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
@@ -123,15 +132,23 @@ public class GenMorphoDB {
                     String[] indefArticleArray = extractIndefArticleJson(jsonResponse);
                     if (indefArticleArray != null) {
                         ERROR_IN_RESPONSE = false;
-                        if (isIrregularIndefiniteArticle(indefArticleArray[0], indefArticleArray[1]))
-                            GenUtils.writeToFile(indefFileName, "Irregular:" + Arrays.toString(indefArticleArray) + "\n");
+                        String category;
+                        indefArticleArray[2] = "\"" + indefArticleArray[2] + "\""; //explanation
+                        indefArticleArray[3] = "\"" + indefArticleArray[2] + "\""; //usage
+                        if (indefArticleArray[0].equals("none"))
+                            category = "NA";
+                        else if (isIrregularIndefiniteArticle(indefArticleArray[0], indefArticleArray[1]))
+                            category = "Irregular";
                         else
-                            GenUtils.writeToFile(indefFileName, "Regular:  " + Arrays.toString(indefArticleArray) + "\n");
+                            category = "Regular";
 
+                        indefArticleArray = GenUtils.appendToStringArray(indefArticleArray, category);
+                        indefArticleArray = GenUtils.appendToStringArray(indefArticleArray, "\"" + definition + "\"");
+                        GenUtils.writeToFile(indefFileName, Arrays.toString(indefArticleArray) + "\n");
                     }
                 }
                 if (ERROR_IN_RESPONSE)
-                    GenUtils.writeToFile(indefFileName, "Error! term: " + term + " - response: " + llmResponse.replace("\n", "") + "\n");
+                    GenUtils.writeToFile(indefFileName, "ERROR! term: " + term + ". " + definitionStatement + " - LLM response: " + llmResponse.replace("\n", "") + "\n");
 
                 if (debug) System.out.println("\n\nGenMorphoDB.genIndefiniteArticles().LLMResponse: " + llmResponse + "\n\n**************\n");
             }

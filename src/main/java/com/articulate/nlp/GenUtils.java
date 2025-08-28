@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.Set;
+import java.util.Arrays;
 
 import io.github.ollama4j.OllamaAPI;
 import io.github.ollama4j.models.response.OllamaResult;
@@ -321,32 +322,36 @@ public class GenUtils {
         int startIndex = -1;
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            if (inString) {
-                if (c == stringChar && text.charAt(i - 1) != '\\') {
-                    inString = false;
+            if (c == '{') {
+                if (braceCount == 0) {
+                    startIndex = i;
                 }
-            } else {
-                if (c == '"' || c == '\'') {
-                    inString = true;
-                    stringChar = c;
-                } else if (c == '{') {
-                    if (braceCount == 0) {
-                        startIndex = i;
-                    }
-                    braceCount++;
-                } else if (c == '}') {
-                    braceCount--;
-                    if (braceCount == 0 && startIndex != -1) {
-                        return text.substring(startIndex, i + 1);
-                    } else if (braceCount < 0) {
-                        // Unbalanced braces
-                        return null;
-                    }
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+                if (braceCount == 0 && startIndex != -1) {
+                    return text.substring(startIndex, i + 1);
+                } else if (braceCount < 0) {
+                    // Unbalanced braces
+                    return null;
                 }
             }
         }
         // No balanced JSON object found
         return null;
+    }
+
+    /** *****************************************************************************
+     *
+     * Adds an element at the end of a String Array.
+     */
+    public static String[] appendToStringArray(String[] array, String element) {
+        if (array == null) {
+            return new String[] { element };
+        }
+        String[] newArray = Arrays.copyOf(array, array.length + 1);
+        newArray[array.length] = element;
+        return newArray;
     }
 
 }
