@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.Iterator;
+import java.util.Arrays;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -51,57 +52,17 @@ public class GenMorphoDB {
      * Returns the indefinite article ("a" or "an")
      * based only on the first letter of the given noun.
      */
-    public static String getIndefiniteArticleFromRules(String noun) {
-        if (noun == null || noun.isEmpty()) {
-            return "";
-        }
+    public static boolean isIrregularIndefiniteArticle(String article, String noun) {
+
         char firstChar = Character.toLowerCase(noun.trim().charAt(0));
         if ("aeiou".indexOf(firstChar) >= 0) {
-            return "an";
+            return "an".equals(article);
         } else {
-            return "a";
+            return "a".equals(article);
         }
     }
 
-    /**
-     *  Finds the first balanced JSON object substring (starting with '{' and ending with '}').
-     *  This handles nested braces and ignores braces in strings.
-     */
-    private static String extractFirstJsonObject(String text) {
 
-        int braceCount = 0;
-        boolean inString = false;
-        char stringChar = 0;
-        int startIndex = -1;
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            if (inString) {
-                if (c == stringChar && text.charAt(i - 1) != '\\') {
-                    inString = false;
-                }
-            } else {
-                if (c == '"' || c == '\'') {
-                    inString = true;
-                    stringChar = c;
-                } else if (c == '{') {
-                    if (braceCount == 0) {
-                        startIndex = i;
-                    }
-                    braceCount++;
-                } else if (c == '}') {
-                    braceCount--;
-                    if (braceCount == 0 && startIndex != -1) {
-                        return text.substring(startIndex, i + 1);
-                    } else if (braceCount < 0) {
-                        // Unbalanced braces
-                        return null;
-                    }
-                }
-            }
-        }
-        // No balanced JSON object found
-        return null;
-    }
 
     /** *********************************************************************
      *    Extracts the indefinite article from a JSON object returned by
@@ -109,7 +70,7 @@ public class GenMorphoDB {
     public static String[] extractIndefArticleJson(String jsonString) {
 
         try {
-            jsonString = extractFirstJsonObject(jsonString);
+            jsonString = GenUtils.extractFirstJsonObject(jsonString);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(jsonString);
             String noun = null;
@@ -140,19 +101,40 @@ public class GenMorphoDB {
      */
     public static void genIndefiniteArticles() {
 
+        String indefFileName = "IndefArticles_" + GenUtils.OLLAMA_MODEL + ".txt";
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) break;
-            String prompt = "You are an expert linguist of the English language. You are " +
-                    "marking up nouns and noun phrases with their indefinite articles for later research. " +
-                    "The noun to markup is \""+term+"\". Determine the indefinite article, either 'a', 'an', " +
-                    "or 'none' as appropriate. Only give the definite article 'the' if there is no case where " +
-                    "an indefinite article fits. The results need to be processed by a machine, so return the " +
-                    "results in the following JSON format." +
-                    "\n\n{\n  \"noun\": \"<noun>\",\n  \"article\": \"<article>\"\n}";
-            if (debug) System.out.println("GenMorphoDB.genIndefiniteArticles() Prompt: " + prompt);
-            String llmResponse = GenUtils.askOllama(prompt);
-            if (debug) System.out.println("\n\nGenMorphoDB.genIndefiniteArticles().LLMResponse: " + llmResponse + "\n\n**************\n");
+            if (term.length() < 2) continue;
+            for (String sysnsetId : entry.getValue()) {
+                String definition = "Its definition is: \"" + nounDocumentationHash.get(sysnsetId) + "\". ";
+                String prompt = "You are an expert linguist of the English language. You are " +
+                        "marking up nouns and noun phrases with their indefinite articles for later research. " +
+                        "The noun to markup is \"" + term + "\". " + definition +
+                        "Determine the indefinite article, either 'a', 'an', " +
+                        "or 'none' as appropriate. Only give the definite article 'the' if there is no case where " +
+                        "an indefinite article fits. The results need to be processed by a machine, so return the " +
+                        "results in the following JSON format." +
+                        "\n\n{\n  \"article\": \"<article>\",\n  \"noun\": \"<noun>\"\n}";
+                if (debug) System.out.println("GenMorphoDB.genIndefiniteArticles() Prompt: " + prompt);
+                String llmResponse = GenUtils.askOllama(prompt);
+                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
+                boolean ERROR_IN_RESPONSE = true;
+                if (jsonResponse != null) {
+                    String[] indefArticleArray = extractIndefArticleJson(jsonResponse);
+                    if (indefArticleArray != null) {
+                        ERROR_IN_RESPONSE = false;
+                        if (isIrregularIndefiniteArticle(indefArticleArray[0], indefArticleArray[1]))
+                            GenUtils.writeToFile(indefFileName, "Irregular:" + Arrays.toString(indefArticleArray) + "\n");
+                        else
+                            GenUtils.writeToFile(indefFileName, "Regular:  " + Arrays.toString(indefArticleArray) + "\n");
+
+                    }
+                }
+                if (ERROR_IN_RESPONSE)
+                    GenUtils.writeToFile(indefFileName, "Error! term: " + term + " - response: " + llmResponse.replace("\n", "") + "\n");
+
+                if (debug) System.out.println("\n\nGenMorphoDB.genIndefiniteArticles().LLMResponse: " + llmResponse + "\n\n**************\n");
+            }
         }
     }
 

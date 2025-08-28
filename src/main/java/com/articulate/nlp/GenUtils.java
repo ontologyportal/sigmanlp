@@ -32,7 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.io.OutputStream;
 
 
-/** Utility methods useful for synthetically generating sentences.
+/**
+ * Utility methods useful for synthetically generating sentences.
  */
 public class GenUtils {
 
@@ -42,8 +43,8 @@ public class GenUtils {
     static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     static final String NUMBERS = "0123456789";
     //static String OLLAMA_MODEL = "qwen3:1.7b";
-    //static String OLLAMA_MODEL = "llama3.2";
-    static String OLLAMA_MODEL = "gpt-oss";
+    static String OLLAMA_MODEL = "llama3.2";
+    //static String OLLAMA_MODEL = "gpt-oss";
     static int OLLAMA_PORT;
     public static OllamaAPI ollamaAPI;
     public static Options options;
@@ -144,7 +145,7 @@ public class GenUtils {
             createFileIfDoesNotExists(fileName);
             fileChannel1 = FileChannel.open(Paths.get(fileName), StandardOpenOption.WRITE, StandardOpenOption.APPEND);
             lock1 = fileChannel1.lock();
-            ByteBuffer buffer1 = ByteBuffer.wrap(stringToWrite);
+            ByteBuffer buffer1 = ByteBuffer.wrap(stringToWrite.getBytes());
             fileChannel1.write(buffer1);
 
         } catch (IOException e) {
@@ -305,6 +306,47 @@ public class GenUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+
+    /**
+     *  Finds the first balanced JSON object substring (starting with '{' and ending with '}').
+     *  This handles nested braces and ignores braces in strings.
+     */
+    public static String extractFirstJsonObject(String text) {
+
+        int braceCount = 0;
+        boolean inString = false;
+        char stringChar = 0;
+        int startIndex = -1;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inString) {
+                if (c == stringChar && text.charAt(i - 1) != '\\') {
+                    inString = false;
+                }
+            } else {
+                if (c == '"' || c == '\'') {
+                    inString = true;
+                    stringChar = c;
+                } else if (c == '{') {
+                    if (braceCount == 0) {
+                        startIndex = i;
+                    }
+                    braceCount++;
+                } else if (c == '}') {
+                    braceCount--;
+                    if (braceCount == 0 && startIndex != -1) {
+                        return text.substring(startIndex, i + 1);
+                    } else if (braceCount < 0) {
+                        // Unbalanced braces
+                        return null;
+                    }
+                }
+            }
+        }
+        // No balanced JSON object found
+        return null;
     }
 
 }
