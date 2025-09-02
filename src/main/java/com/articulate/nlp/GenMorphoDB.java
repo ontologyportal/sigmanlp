@@ -65,49 +65,56 @@ public class GenMorphoDB {
     }
 
 
-
-    /** *********************************************************************
-     *    Extracts the indefinite article from a JSON object returned by
+    /*****************************************************************************
+     * Determines if a plural returned is irregular
      */
-    public static String[] extractIndefArticleJson(String jsonString) {
-
-        try {
-            jsonString = GenUtils.extractFirstJsonObject(jsonString);
-            //jsonString = jsonString.replaceAll("(?<=:\\s*\".*?)(?<!\\\\)\"(?!,|\\s*})", "\\\\\"");
-            System.out.println("DELETEME: JSON String extracted: " + jsonString);
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(jsonString);
-            String noun = null;
-            String article = null;
-            String explanation = null;
-            String usage = null;
-            Iterator<Map.Entry<String, JsonNode>> fields = root.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
-                System.out.println("DELETEME Field Name: " + field.getKey());
-                System.out.println("DELETEME Field Value: " + field.getValue().toString());
-                String key = field.getKey().toLowerCase();
-                if (key.equals("noun")) {
-                    noun = field.getValue().asText();
-                } else if (key.equals("article")) {
-                    article = field.getValue().asText();
-                } else if (key.equals("explanation")) {
-                    explanation = field.getValue().asText();
-                } else if (key.equals("usage")) {
-                    usage = field.getValue().asText();
-                }
-            }
-            System.out.println(noun + article + explanation + usage);
-            if (noun == null || article == null) {
-                return null; // keys missing
-            }
-            return new String[]{article, noun, explanation, usage};
-        } catch (Exception e) {
-            // Parsing error or any unexpected error
-            return null;
+    public static boolean isIrregularPlural(String singular, String givenPlural) {
+        if (singular == null || singular.isEmpty() || givenPlural == null || givenPlural.isEmpty()) {
+            return false;
         }
+
+        String expectedPlural = pluralize(singular);
+        return !expectedPlural.equalsIgnoreCase(givenPlural);
     }
 
+    // Generic pluralization rules
+    private static String pluralize(String word) {
+        word = word.toLowerCase();
+        int len = word.length();
+
+        // consonant + y → ies
+        if (len > 1 && word.endsWith("y") && isConsonant(word.charAt(len - 2))) {
+            return word.substring(0, len - 1) + "ies";
+        }
+
+        // ends with s, sh, ch, x, z → es
+        if (word.endsWith("s") || word.endsWith("sh") || word.endsWith("ch") ||
+                word.endsWith("x") || word.endsWith("z")) {
+            return word + "es";
+        }
+
+        // ends with fe → ves
+        if (word.endsWith("fe")) {
+            return word.substring(0, len - 2) + "ves";
+        }
+
+        // ends with f → ves
+        if (word.endsWith("f")) {
+            return word.substring(0, len - 1) + "ves";
+        }
+
+        // ends with o → oes (simplified rule, many exceptions exist)
+        if (word.endsWith("o")) {
+            return word + "es";
+        }
+
+        // default: add s
+        return word + "s";
+    }
+
+    private static boolean isConsonant(char c) {
+        return "bcdfghjklmnpqrstvwxyz".indexOf(Character.toLowerCase(c)) != -1;
+    }
 
     /** ***************************************************************
      *  Uses OLLAMA to determine the indefinite article of every noun
@@ -121,6 +128,7 @@ public class GenMorphoDB {
             if (term.length() < 2) continue;
             for (String sysnsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(sysnsetId);
+                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(sysnsetId) + "\". ";
                 String prompt = "You are an expert linguist specializing in English noun phrase syntax and article usage. " +
                         "Your task is to determine the correct indefinite article usage for the given noun or noun phrase. \n\n" +
@@ -138,7 +146,7 @@ public class GenMorphoDB {
                         "  4. An example sentence showing the article in use (or stating why no article is used).\n\n" +
                         "Important formatting rules:\n" +
                         " * Output only valid JSON.\n" +
-                        " * Valid JSON requires escape sequences for quotation markings within strings in JSON fields.\n" +
+                        " * All JSON strings must escape quotation marks (\" → \\\") and (' → \\')\n" +
                         " * Do not include any commentary outside the JSON.\n\n" +
                         "Output strictly in this JSON format (all lowercase for the article):" +
                         "\n\n```json\n{\n  \"article\": \"<a|an|none>\",\n  \"noun\": \"<noun>\",\n  \"explanation\":\"<rationale for classification>\",\n  \"usage\":\"<example sentence with article>\" \n}";
@@ -147,7 +155,7 @@ public class GenMorphoDB {
                 String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean ERROR_IN_RESPONSE = true;
                 if (jsonResponse != null) {
-                    String[] indefArticleArray = extractIndefArticleJson(jsonResponse);
+                    String[] indefArticleArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("article", "noun", "explanation", "usage"));
                     if (indefArticleArray != null) {
                         ERROR_IN_RESPONSE = false;
                         String category;
@@ -177,27 +185,23 @@ public class GenMorphoDB {
     
 
     // Plurals
-    /*
+    /** **********************************************************************
+     *  Uses OLLAMA to determine the singular and plural form of every noun
+     *  in WordNet.
+     */
     public static void genPlurals() {
-        String indefFileName = "Plurals" + GenUtils.OLLAMA_MODEL + ".txt";
+        String pluralsFileName = "Plurals" + GenUtils.OLLAMA_MODEL + ".txt";
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) continue;
             for (String sysnsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(sysnsetId);
+                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(sysnsetId) + "\". ";
                 String prompt = "You are an expert linguist specializing in English noun phrase syntax and plural forms. " +
                         "Your task is to determine the singular and plural form of the given noun or noun phrase. \n\n" +
                         "The noun to classify: \"" + term + "\". \n" +
                         definitionStatement + "\n\n" +
-                        "Instructions: \n" +
-                        "- Decide whether the correct indefinite article is \"a\", \"an\", or \"none\".\n" +
-                        "- Base your decision on pronunciation and grammatical convention.\n" +
-                        "- If the noun is a scientific or proper name that normally does not take an article, return \"none\".\n" +
-                        "- If an article applies only in specific usage contexts, still provide the indefinite article.\n" +
-                        "- Always provide:\n" +
-                        "  1. The singular form of the noun.\n" +
-                        "  2. The plural form of the noun.\n\n" +
                         "Important formatting rules:\n" +
                         " * Output only valid JSON.\n" +
                         " * Do not include any commentary outside the JSON.\n" +
@@ -208,32 +212,28 @@ public class GenMorphoDB {
                 String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean ERROR_IN_RESPONSE = true;
                 if (jsonResponse != null) {
-                    String[] indefArticleArray = extractIndefArticleJson(jsonResponse);
-                    if (indefArticleArray != null) {
+                    String[] pluralsArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("singular", "plural"));
+                    if (pluralsArray != null) {
                         ERROR_IN_RESPONSE = false;
                         String category;
-                        indefArticleArray[2] = "\"" + indefArticleArray[2] + "\""; //explanation
-                        indefArticleArray[3] = "\"" + indefArticleArray[3] + "\""; //usage
-                        if (indefArticleArray[0].equals("none"))
-                            category = "NA";
-                        else if (isIrregularIndefiniteArticle(indefArticleArray[0], indefArticleArray[1]))
+                        if (!pluralsArray[1].equals(term) && isIrregularPlural(pluralsArray[0], pluralsArray[1]))
                             category = "Irregular";
                         else
                             category = "Regular";
 
-                        indefArticleArray = GenUtils.appendToStringArray(indefArticleArray, category);
-                        indefArticleArray = GenUtils.appendToStringArray(indefArticleArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(indefFileName, Arrays.toString(indefArticleArray) + "\n");
+                        pluralsArray = GenUtils.appendToStringArray(pluralsArray, category);
+                        pluralsArray = GenUtils.appendToStringArray(pluralsArray, "\"" + definition + "\"");
+                        GenUtils.writeToFile(pluralsFileName, Arrays.toString(pluralsArray) + "\n");
                     }
                 }
                 if (ERROR_IN_RESPONSE)
-                    GenUtils.writeToFile(indefFileName, "ERROR! term: " + term + ". " + definitionStatement + " - LLM response: " + llmResponse.replace("\n", "") + "\n");
+                    GenUtils.writeToFile(pluralsFileName, "ERROR! term: " + term + ". " + definitionStatement + " - LLM response: " + llmResponse.replace("\n", "") + "\n");
 
-                if (debug) System.out.println("\n\nGenMorphoDB.genIndefiniteArticles().LLMResponse: " + llmResponse + "\n\n**************\n");
+                if (debug) System.out.println("\n\nGenMorphoDB.genPlurals().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
-*/
+
     // Past tenses, other verb tenses
 
     // Progressives
@@ -265,14 +265,27 @@ public class GenMorphoDB {
         }
     }
 
+    /***************************************************************
+     *  Displays usage information
+     */
+    public static void printHelp() {
+
+        System.out.println("Usage: com.articulate.nlp.GenMorphoDB <gen-function> <model>");
+        System.out.println("gen-functions included:");
+        System.out.println("  -i to generate indefinite articles");
+        System.out.println("  -p to generate plurals");
+        System.out.println("Example: java -Xmx40g -classpath $SIGMANLP_CP com.articulate.nlp.GenMorphoDB -i llama3.2");
+    }
 
     public static void main(String [] args) {
 
         System.out.println("Starting Generate Morphological Database");
-        if (args.length > 0) {
-            GenUtils.setOllamaModel(args[0]);
+
+        if (args.length != 2) {
+            printHelp();
         }
 
+        GenUtils.setOllamaModel(args[1]);
         System.out.println("Using model: " + GenUtils.OLLAMA_MODEL);
         KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
         WordNet.initOnce();
@@ -298,6 +311,17 @@ public class GenMorphoDB {
         System.out.println("Adjective set size : " + adjectiveSynsetHash.size());
         System.out.println("Adverb set size    : " + adverbSynsetHash.size());
 
-        genIndefiniteArticles();
+        String genFunction = args[0];
+        switch (genFunction) {
+            case "-i":
+                genIndefiniteArticles();
+                break;
+            case "-p":
+                genPlurals();
+                break;
+            default:
+                printHelp();
+                break;
+        }
     }
 }

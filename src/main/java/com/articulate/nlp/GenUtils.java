@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.HashSet;
 import java.io.BufferedReader;
@@ -31,6 +32,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.io.OutputStream;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 /**
@@ -339,6 +343,34 @@ public class GenUtils {
         }
         // No balanced JSON object found
         return null;
+    }
+
+
+    /** *********************************************************************
+     *    Extracts the fields from a JSON object
+     *    Usage example: extractJsonFields(Arrays.asList("article", "noun", "explanation", "usage"))
+     */
+    public static String[] extractJsonFields(String jsonString, List<String> fieldsToExtract) {
+        try {
+            jsonString = GenUtils.extractFirstJsonObject(jsonString);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(jsonString);
+            String[] results = new String[fieldsToExtract.size()];
+
+            for (int i = 0; i < fieldsToExtract.size(); i++) {
+                String fieldName = fieldsToExtract.get(i).toLowerCase();
+                JsonNode valueNode = root.get(fieldName);
+                // If any field is missing or null, return null immediately
+                if (valueNode == null || valueNode.isNull()) {
+                    return null;
+                }
+                results[i] = valueNode.asText();
+            }
+            return results;
+        } catch (Exception e) {
+            // Parsing error or unexpected error
+            return null;
+        }
     }
 
     /** *****************************************************************************
