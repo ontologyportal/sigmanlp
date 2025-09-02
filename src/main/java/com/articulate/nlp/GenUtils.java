@@ -13,12 +13,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.HashSet;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.Set;
+import java.util.Arrays;
 
 import io.github.ollama4j.OllamaAPI;
 import io.github.ollama4j.models.response.OllamaResult;
@@ -31,8 +33,12 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.io.OutputStream;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** Utility methods useful for synthetically generating sentences.
+
+/**
+ * Utility methods useful for synthetically generating sentences.
  */
 public class GenUtils {
 
@@ -43,6 +49,7 @@ public class GenUtils {
     static final String NUMBERS = "0123456789";
     //static String OLLAMA_MODEL = "qwen3:1.7b";
     static String OLLAMA_MODEL = "llama3.2";
+    //static String OLLAMA_MODEL = "gpt-oss";
     static int OLLAMA_PORT;
     public static OllamaAPI ollamaAPI;
     public static Options options;
@@ -125,17 +132,46 @@ public class GenUtils {
     }
 
     public static String capitalizeFirstLetter(String sentenceToCapitalize) {
+
             if (sentenceToCapitalize == null || sentenceToCapitalize.isEmpty()) {
                 return sentenceToCapitalize;
             }
             return sentenceToCapitalize.substring(0, 1).toUpperCase() + sentenceToCapitalize.substring(1);
     }
 
+
+    /** ***************************************************************
+     *  Writes to a file, locks file during write, so thread safe.
+     */
+    public static void writeToFile(String fileName, String stringToWrite) {
+        FileChannel fileChannel1 = null;
+        FileLock lock1 = null;
+        try {
+            createFileIfDoesNotExists(fileName);
+            fileChannel1 = FileChannel.open(Paths.get(fileName), StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+            lock1 = fileChannel1.lock();
+            ByteBuffer buffer1 = ByteBuffer.wrap(stringToWrite.getBytes());
+            fileChannel1.write(buffer1);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (lock1 != null) lock1.release();
+                if (fileChannel1 != null) fileChannel1.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
     /** ***************************************************************
      *   Writes an english sentence and logic sentence to their
      *   respective files.
      */
     public static void writeEnglishLogicPairToFile(String english, String logic, String outputFileEnglish, String outputFileLogic) {
+
         FileChannel fileChannel1 = null;
         FileChannel fileChannel2 = null;
         FileLock lock1 = null;
@@ -257,16 +293,16 @@ public class GenUtils {
         }
     }
 
-    public static void changeOllamaModel(String new_model) {
+    public static void setOllamaModel(String new_model) {
         OLLAMA_MODEL = new_model;
     }
 
     public static String askOllama(String prompt) {
         try {
             if (ollamaAPI == null) {
-                startOllamaServer(11436);
+                startOllamaServer(11434);
             }
-            ollamaAPI.setRequestTimeoutSeconds(60);
+            ollamaAPI.setRequestTimeoutSeconds(500);
             OllamaResult result =
                     ollamaAPI.generate(OLLAMA_MODEL, prompt, false, options);
             return result.getResponse().toString();
@@ -275,6 +311,79 @@ public class GenUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+
+    /**
+     *  Finds the first balanced JSON object substring (starting with '{' and ending with '}').
+     *  This handles nested braces and ignores braces in strings.
+     */
+    public static String extractFirstJsonObject(String text) {
+
+        int braceCount = 0;
+        boolean inString = false;
+        char stringChar = 0;
+        int startIndex = -1;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '{') {
+                if (braceCount == 0) {
+                    startIndex = i;
+                }
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+                if (braceCount == 0 && startIndex != -1) {
+                    return text.substring(startIndex, i + 1);
+                } else if (braceCount < 0) {
+                    // Unbalanced braces
+                    return null;
+                }
+            }
+        }
+        // No balanced JSON object found
+        return null;
+    }
+
+
+    /** *********************************************************************
+     *    Extracts the fields from a JSON object
+     *    Usage example: extractJsonFields(Arrays.asList("article", "noun", "explanation", "usage"))
+     */
+    public static String[] extractJsonFields(String jsonString, List<String> fieldsToExtract) {
+        try {
+            jsonString = GenUtils.extractFirstJsonObject(jsonString);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(jsonString);
+            String[] results = new String[fieldsToExtract.size()];
+
+            for (int i = 0; i < fieldsToExtract.size(); i++) {
+                String fieldName = fieldsToExtract.get(i).toLowerCase();
+                JsonNode valueNode = root.get(fieldName);
+                // If any field is missing or null, return null immediately
+                if (valueNode == null || valueNode.isNull()) {
+                    return null;
+                }
+                results[i] = valueNode.asText();
+            }
+            return results;
+        } catch (Exception e) {
+            // Parsing error or unexpected error
+            return null;
+        }
+    }
+
+    /** *****************************************************************************
+     *
+     * Adds an element at the end of a String Array.
+     */
+    public static String[] appendToStringArray(String[] array, String element) {
+        if (array == null) {
+            return new String[] { element };
+        }
+        String[] newArray = Arrays.copyOf(array, array.length + 1);
+        newArray[array.length] = element;
+        return newArray;
     }
 
 }
