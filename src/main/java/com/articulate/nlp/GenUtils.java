@@ -289,7 +289,7 @@ public class GenUtils {
         }
     }
 
-    public static void changeOllamaModel(String new_model) {
+    public static void setOllamaModel(String new_model) {
         OLLAMA_MODEL = new_model;
     }
 
