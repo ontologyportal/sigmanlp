@@ -146,10 +146,11 @@ public class GenMorphoDB {
                         "  4. An example sentence showing the article in use (or stating why no article is used).\n\n" +
                         "Important formatting rules:\n" +
                         " * Output only valid JSON.\n" +
-                        " * All JSON strings must escape quotation marks (\" → \\\") and (' → \\')\n" +
+                        " * All JSON strings must escape sequences for quotation marks if necessary (\" → \\\") and (' → \\')\n" +
+                        " * Do not place the usage sentence itself inside quotation marks.\n" +
                         " * Do not include any commentary outside the JSON.\n\n" +
                         "Output strictly in this JSON format (all lowercase for the article):" +
-                        "\n\n```json\n{\n  \"article\": \"<a|an|none>\",\n  \"noun\": \"<noun>\",\n  \"explanation\":\"<rationale for classification>\",\n  \"usage\":\"<example sentence with article>\" \n}";
+                        "\n\n```json\n{\n  \"article\": \"<a|an|none>\",\n  \"noun\": \"<noun>\",\n  \"explanation\":\"<rationale for classification (escaped quotes if neccessary)>\",\n  \"usage\":\"<example sentence with article (escaped quotes if neccessary)>\" \n}";
                 if (debug) System.out.println("GenMorphoDB.genIndefiniteArticles() Prompt: " + prompt);
                 String llmResponse = GenUtils.askOllama(prompt);
                 String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
@@ -190,7 +191,7 @@ public class GenMorphoDB {
      *  in WordNet.
      */
     public static void genPlurals() {
-        String pluralsFileName = "Plurals" + GenUtils.OLLAMA_MODEL + ".txt";
+        String pluralsFileName = "Plurals_" + GenUtils.OLLAMA_MODEL + ".txt";
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) continue;
@@ -202,17 +203,26 @@ public class GenMorphoDB {
                         "Your task is to determine the singular and plural form of the given noun or noun phrase. \n\n" +
                         "The noun to classify: \"" + term + "\". \n" +
                         definitionStatement + "\n\n" +
+                        "Instructions:" +
+                        " - Always provide:" +
+                        "   1. The singular form.\n" +
+                        "   2. The plural form.\n" +
+                        "   3. The noun type, such as \"count noun\", \"mass noun\", \"proper noun\", \"collective noun\", etc.\n" +
+                        "   4. An explanation justifying the classification.\n\n" +
+                        " - If the noun is a proper noun or unique entity (e.g., personal names, places, institutions) that does not naturally pluralize, return the singular unchanged and \"none\" for the plural." +
+                        " - If the noun can pluralize in specific contexts (e.g., metaphorical or generic use), provide the most standard plural form." +
+                        " - The explanation must justify why the chosen plural is valid, \"none\", or context-dependent." +
                         "Important formatting rules:\n" +
-                        " * Output only valid JSON.\n" +
+                        " * Output only valid JSON and nothing else.\n" +
                         " * Do not include any commentary outside the JSON.\n" +
-                        "Output strictly in this JSON format (all lowercase for the article):" +
-                        "\n\n```json\n{\n  \"singular\": \"<noun in singular form>\",\n  \"plural\": \"<noun in plural form>\",\n  \"explanation\":\"<rationale for classification>\" \n}";
+                        "Output strictly in this JSON format:" +
+                        "\n\n```json\n{\n  \"singular\": \"<noun in singular form>\",\n  \"plural\": \"<noun in plural form>\",\n  \"type\": \"<count noun | mass noun | proper noun | collective noun | other>\",\n  \"explanation\":\"<rationale for classification>\" \n}";
                 if (debug) System.out.println("GenMorphoDB.genPlurals() Prompt: " + prompt);
                 String llmResponse = GenUtils.askOllama(prompt);
                 String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean ERROR_IN_RESPONSE = true;
                 if (jsonResponse != null) {
-                    String[] pluralsArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("singular", "plural"));
+                    String[] pluralsArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("singular", "plural", "type", "explanation"));
                     if (pluralsArray != null) {
                         ERROR_IN_RESPONSE = false;
                         String category;
@@ -248,6 +258,44 @@ public class GenMorphoDB {
 
     // Stative vs. Performative processes
     // Different types of verbs
+
+    // Noun types,
+    /*
+    {
+  "Noun": {
+    "By Countability": {
+      "Count noun": "Can be counted; has singular and plural forms (dog → dogs).",
+      "Mass noun": "Uncountable; typically no plural form (water, furniture)."
+    },
+    "By Naming": {
+      "Proper noun": "Unique name of a person, place, institution, or entity (Abraham Lincoln, Paris).",
+      "Common noun": "General category name (city, woman, dog)."
+    },
+    "By Abstraction": {
+      "Concrete noun": "Tangible, perceivable by the senses (chair, tree).",
+      "Abstract noun": "Intangible concept, idea, quality (freedom, beauty)."
+    },
+    "By Collectivity": {
+      "Collective noun": "Denotes a group as a single unit (team, jury, flock)."
+    },
+    "By Morphology": {
+      "Compound noun": "Made of two or more words (toothbrush, mother-in-law).",
+      "Possessive noun": "Shows ownership (the cat’s toy, students’ papers).",
+      "Plural-only noun": "Exist only in plural form (scissors, trousers).",
+      "Singular-only noun": "Exist only in singular form, often mass nouns (advice, furniture).",
+      "Irregular plural noun": "Plural form does not follow regular rules (child → children, goose → geese).",
+      "Zero plural noun": "Same form in singular and plural (sheep, deer, species)."
+    },
+    "By Semantic Role": {
+      "Animate noun": "Refers to living beings (dog, teacher).",
+      "Inanimate noun": "Refers to objects or non-living things (rock, table).",
+      "Agent noun": "Denotes the doer of an action (teacher, actor).",
+      "Deverbal noun": "Derived from a verb (decision, running, arrival).",
+      "Nominalization": "Noun formed from another part of speech (happiness, refusal)."
+    }
+  }
+}
+     */
 
     /**********************************************************************************
      *
