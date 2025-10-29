@@ -69,6 +69,7 @@ public class GenMorphoDB {
      * Determines if a plural returned is irregular
      */
     public static boolean isIrregularPlural(String singular, String givenPlural) {
+
         if (singular == null || singular.isEmpty() || givenPlural == null || givenPlural.isEmpty()) {
             return false;
         }
@@ -183,8 +184,85 @@ public class GenMorphoDB {
     }
 
 
-    
+    private static String normalizeCountabilityCategory(String rawCategory) {
 
+        if (rawCategory == null) {
+            return "Unknown";
+        }
+        String normalized = rawCategory.trim().toLowerCase();
+        if (normalized.isEmpty()) {
+            return "Unknown";
+        }
+        if (normalized.contains("count") && normalized.contains("mass")) {
+            return "Count and mass noun";
+        }
+        if (normalized.contains("count")) {
+            return "Count noun";
+        }
+        if (normalized.contains("uncount") || normalized.contains("mass") ||
+                normalized.contains("noncount") || normalized.contains("non-count")) {
+            return "Mass noun";
+        }
+        if (normalized.contains("proper")) {
+            return "Proper noun";
+        }
+        return GenUtils.capitalizeFirstLetter(normalized);
+    }
+
+    
+    /** ***************************************************************
+     *  Uses OLLAMA to classify nouns by countability.
+     */
+    public static void genCountability() {
+
+        String countabilityFileName = "Countability_" + GenUtils.OLLAMA_MODEL + ".txt";
+        for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
+            String term = entry.getKey().replace('_', ' ');
+            if (term.length() < 2) continue;
+            for (String sysnsetId : entry.getValue()) {
+                String definition = nounDocumentationHash.get(sysnsetId);
+                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(sysnsetId) + "\". ";
+                String prompt = "You are an expert lexicographer specializing in English noun countability. " +
+                        "Classify whether the noun is a count noun, mass noun, or can be used as both. " +
+                        "If it is a proper noun that typically does not pluralize, identify it as a proper noun. " +
+                        "If the countability genuinely cannot be determined, mark it as unknown.\n\n" +
+                        "The noun to classify: \"" + term + "\".\n" +
+                        definitionStatement + "\n\n" +
+                        "Instructions:\n" +
+                        " - Consider standard modern English usage.\n" +
+                        " - If the noun has both count and mass uses, classify it as \"count and mass noun\" and explain when each use applies.\n" +
+                        " - Provide one concise usage example illustrating the classification.\n\n" +
+                        "Important formatting rules:\n" +
+                        " * Output only valid JSON and nothing else.\n" +
+                        " * Use the following allowed values for the countability field: \"count noun\", \"mass noun\", \"count and mass noun\", \"proper noun\", \"unknown\".\n" +
+                        " * Escape quotation marks within strings.\n\n" +
+                        "Output strictly in this JSON format:\n" +
+                        "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"countability\": \"<count noun | mass noun | count and mass noun | proper noun | unknown>\",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```";
+                if (debug) System.out.println("GenMorphoDB.genCountability() Prompt: " + prompt);
+                String llmResponse = GenUtils.askOllama(prompt);
+                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
+                boolean ERROR_IN_RESPONSE = true;
+                if (jsonResponse != null) {
+                    String[] countabilityArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("noun", "countability", "explanation", "usage"));
+                    if (countabilityArray != null) {
+                        ERROR_IN_RESPONSE = false;
+                        countabilityArray[1] = normalizeCountabilityCategory(countabilityArray[1]);
+                        countabilityArray[2] = "\"" + countabilityArray[2] + "\"";
+                        countabilityArray[3] = "\"" + countabilityArray[3] + "\"";
+                        countabilityArray = GenUtils.appendToStringArray(countabilityArray, "\"" + definition + "\"");
+                        GenUtils.writeToFile(countabilityFileName, Arrays.toString(countabilityArray) + "\n");
+                    }
+                }
+                if (ERROR_IN_RESPONSE)
+                    GenUtils.writeToFile(countabilityFileName, "ERROR! term: " + term + ". " + definitionStatement + " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+
+                if (debug) System.out.println("\n\nGenMorphoDB.genCountability().LLMResponse: " + llmResponse + "\n\n**************\n");
+            }
+        }
+    }
+
+    
     // Plurals
     /** **********************************************************************
      *  Uses OLLAMA to determine the singular and plural form of every noun
@@ -321,6 +399,7 @@ public class GenMorphoDB {
         System.out.println("Usage: com.articulate.nlp.GenMorphoDB <gen-function> <model>");
         System.out.println("gen-functions included:");
         System.out.println("  -i to generate indefinite articles");
+        System.out.println("  -c to generate countability classifications");
         System.out.println("  -p to generate plurals");
         System.out.println("Example: java -Xmx40g -classpath $SIGMANLP_CP com.articulate.nlp.GenMorphoDB -i llama3.2");
     }
@@ -367,9 +446,13 @@ public class GenMorphoDB {
             case "-p":
                 genPlurals();
                 break;
+            case "-c":
+                genCountability();
+                break;
             default:
                 printHelp();
                 break;
         }
     }
+
 }
