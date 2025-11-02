@@ -297,6 +297,10 @@ public class GenUtils {
         OLLAMA_MODEL = new_model;
     }
 
+    public static String getOllamaModel() {
+        return OLLAMA_MODEL;
+    }
+
     public static String askOllama(String prompt) {
         try {
             if (ollamaAPI == null) {
