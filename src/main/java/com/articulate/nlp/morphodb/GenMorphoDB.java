@@ -30,7 +30,8 @@ public class GenMorphoDB {
         System.out.println("  -c to generate countability classifications");
         System.out.println("  -p to generate plurals");
         System.out.println("Verb gen-functions:");
-        System.out.println("  -t to classify verbs by transitivity");
+        System.out.println("  -v to classify verbs by valence");
+        System.out.println("  -c to classify verbs by causativity");
         System.out.println("Example: java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB noun -i llama3.2");
     }
