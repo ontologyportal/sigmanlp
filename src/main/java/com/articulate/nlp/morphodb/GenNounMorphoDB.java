@@ -8,7 +8,16 @@ import java.util.Set;
 
 /***************************************************************
  * Generates noun-related morphological data.
- ***************************************************************/
+ * 
+ *    •	Indefinite article (a/an/none)
+ *   •	Plural/non-plural form
+ *      o	Plural only (scissors, trousers)/Singular only (furniture, information)
+ *    •	Countable/Mass
+ *    •	Human/non-human nouns (persons name, or things like teacher/doctor/student)
+ *    •	Animate/non-animate nouns (living things/non-living things)
+ *    •	Collective nouns (i.e. team, family, flock, etc.)
+ *    •	Proper/common
+****************************************************************/
 public class GenNounMorphoDB {
 
     private final Map<String, Set<String>> nounSynsetHash;
