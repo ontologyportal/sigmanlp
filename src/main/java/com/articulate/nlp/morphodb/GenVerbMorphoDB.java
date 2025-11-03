@@ -165,7 +165,7 @@ public class GenVerbMorphoDB {
                         " - Supply an illustrative usage sentence that matches the classification.\n\n" +
                         "Example classifications:\n" +
                         "\"She broke the vase.\" → causative (agent causes change to patient)\n" +
-                        "\"The vase broke.\" → non-causative (intransitive change of state)\n" +
+                        "\"The baby slept.\" → non-causative (intransitive change of state)\n" +
                         "\"The door opened.\" / \"She opened the door.\" → mixed (verb alternates between causative and non-causative)\n\n" +
                         "Output only valid JSON with this shape:\n" +
                         "{\n" +
