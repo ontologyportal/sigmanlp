@@ -29,6 +29,7 @@ public class GenMorphoDB {
         System.out.println("  -i to generate indefinite articles");
         System.out.println("  -c to generate countability classifications");
         System.out.println("  -p to generate plurals");
+        System.out.println("  -h to classify human vs non-human nouns");
         System.out.println("Verb gen-functions:");
         System.out.println("  -v to classify verbs by valence");
         System.out.println("  -c to classify verbs by causativity");

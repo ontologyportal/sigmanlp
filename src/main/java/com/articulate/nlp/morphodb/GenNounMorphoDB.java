@@ -44,6 +44,9 @@ public class GenNounMorphoDB {
             case "-p":
                 genPlurals();
                 break;
+            case "-h":
+                genHumanness();
+                break;
             default:
                 System.out.println("Unsupported noun generation function: " + genFunction);
                 break;
@@ -190,6 +193,67 @@ public class GenNounMorphoDB {
     }
 
     /***************************************************************
+     * Uses OLLAMA to classify whether nouns typically refer to humans.
+     ***************************************************************/
+    private void genHumanness() {
+
+        String humannessFileName = "Humanness_" + GenUtils.getOllamaModel() + ".txt";
+        for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
+            String term = entry.getKey().replace('_', ' ');
+            if (term.length() < 2) {
+                continue;
+            }
+            for (String synsetId : entry.getValue()) {
+                String definition = nounDocumentationHash.get(synsetId);
+                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
+                String prompt = "You are an expert lexicographer specializing in the semantics of English nouns. " +
+                        "Classify whether the noun typically denotes a human being (including professions, roles, demonyms, and personal names), a non-human entity, or can refer to both. " +
+                        "If the reference cannot be determined, mark it as unknown.\n\n" +
+                        "The noun to classify: \"" + term + "\".\n" +
+                        definitionStatement + "\n\n" +
+                        "Instructions:\n" +
+                        " - Consider the most common contemporary usage.\n" +
+                        " - Treat words for animals, objects, abstractions, or organizations as non-human.\n" +
+                        " - Use \"human and non-human\" when the noun regularly refers to both (e.g., words like \"host\" or \"leader\").\n" +
+                        " - Provide one concise usage example that matches the classification.\n\n" +
+                        "Important formatting rules:\n" +
+                        " * Output only valid JSON and nothing else.\n" +
+                        " * Allowed values for the classification field: \"human\", \"non-human\", \"human and non-human\", \"unknown\".\n" +
+                        " * Escape quotation marks within strings.\n\n" +
+                        "Output strictly in this JSON format:\n" +
+                        "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"classification\": \"<human | non-human | human and non-human | unknown>\",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```";
+                if (GenMorphoUtils.debug) {
+                    System.out.println("GenNounMorphoDB.genHumanness() Prompt: " + prompt);
+                }
+                String llmResponse = GenUtils.askOllama(prompt);
+                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
+                boolean errorInResponse = true;
+                if (jsonResponse != null) {
+                    String[] humannessArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("noun", "classification", "explanation", "usage"));
+                    if (humannessArray != null) {
+                        errorInResponse = false;
+                        humannessArray[1] = normalizeHumannessCategory(humannessArray[1]);
+                        humannessArray[2] = "\"" + humannessArray[2] + "\"";
+                        humannessArray[3] = "\"" + humannessArray[3] + "\"";
+                        humannessArray = GenUtils.appendToStringArray(humannessArray, "\"" + definition + "\"");
+                        GenUtils.writeToFile(humannessFileName, Arrays.toString(humannessArray) + "\n");
+                    }
+                }
+                if (errorInResponse) {
+                    GenUtils.writeToFile(humannessFileName,
+                            "ERROR! term: " + term + ". " + definitionStatement +
+                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                }
+
+                if (GenMorphoUtils.debug) {
+                    System.out.println("\n\nGenNounMorphoDB.genHumanness().LLMResponse: " + llmResponse + "\n\n**************\n");
+                }
+            }
+        }
+    }
+
+    /***************************************************************
      * Uses OLLAMA to determine the singular and plural form of every noun
      * in WordNet.
      ***************************************************************/
@@ -325,6 +389,34 @@ public class GenNounMorphoDB {
         }
         if (normalized.contains("proper")) {
             return "Proper noun";
+        }
+        return GenUtils.capitalizeFirstLetter(normalized);
+    }
+
+    private static String normalizeHumannessCategory(String rawCategory) {
+
+        if (rawCategory == null) {
+            return "Unknown";
+        }
+        String normalized = rawCategory.trim().toLowerCase();
+        if (normalized.isEmpty()) {
+            return "Unknown";
+        }
+        String spacesNormalized = normalized.replace('-', ' ');
+        if (spacesNormalized.contains("both") || spacesNormalized.contains("human and non") ||
+                (spacesNormalized.contains("human") && spacesNormalized.contains("non human"))) {
+            return "Human and non-human";
+        }
+        if (spacesNormalized.contains("non human") || spacesNormalized.contains("nonhuman") ||
+                spacesNormalized.contains("not human")) {
+            return "Non-human";
+        }
+        if (spacesNormalized.contains("human") || spacesNormalized.contains("person") || spacesNormalized.contains("people")) {
+            return "Human";
+        }
+        if (spacesNormalized.contains("unknown") || spacesNormalized.contains("unclear") ||
+                spacesNormalized.contains("undetermined")) {
+            return "Unknown";
         }
         return GenUtils.capitalizeFirstLetter(normalized);
     }
