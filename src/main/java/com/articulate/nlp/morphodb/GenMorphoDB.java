@@ -33,6 +33,9 @@ public class GenMorphoDB {
         System.out.println("Verb gen-functions:");
         System.out.println("  -v to classify verbs by valence");
         System.out.println("  -c to classify verbs by causativity");
+        System.out.println("  -r to classify verbs by reflexive behavior");
+        System.out.println("  -p to classify verbs by reciprocal behavior");
+        System.out.println("  -t to generate full conjugation tables");
         System.out.println("Example: java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB noun -i llama3.2");
     }
