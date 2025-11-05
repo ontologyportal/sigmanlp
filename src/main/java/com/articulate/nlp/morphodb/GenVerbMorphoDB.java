@@ -174,24 +174,24 @@ public class GenVerbMorphoDB {
                 String prompt = "You are an expert lexicographer specializing in reflexive verb constructions. " +
                         "Determine whether the verb is obligatorily reflexive (must take a reflexive object when its subject acts on itself), " +
                         "optionally reflexive (can appear with or without a reflexive object), or never reflexive " +
-                        "(does not permit subject and object to be the same in standard usage).\\n\\n" +
-                        "Verb: \"" + term + "\".\\n" +
-                        definitionStatement + "\\n\\n" +
-                        "Instructions:\\n" +
-                        " - Return a JSON object with fields: verb, reflexivity, explanation, usage.\\n" +
-                        " - reflexivity must be one of: \"must be reflexive\", \"can be reflexive\", or \"never reflexive\".\\n" +
-                        " - Provide a concise explanation citing syntactic or semantic cues.\\n" +
-                        " - Supply an illustrative usage sentence that matches the classification.\\n\\n" +
-                        "Example classifications:\\n" +
-                        "\"He prides himself on his work.\" → must be reflexive (obligatory reflexive object).\\n" +
-                        "\"She dressed (herself).\" → can be reflexive (reflexive optional).\\n" +
-                        "\"She greeted him.\" → never reflexive (verb does not take reflexive object).\\n\\n" +
-                        "Output only valid JSON with this shape:\\n" +
-                        "{\\n" +
-                        "  \"verb\": \"<verb>\",\\n" +
-                        "  \"reflexivity\": \"<must be reflexive|can be reflexive|never reflexive>\",\\n" +
-                        "  \"explanation\": \"<reasoning>\",\\n" +
-                        "  \"usage\": \"<example sentence>\"\\n" +
+                        "(does not permit subject and object to be the same in standard usage).\n\n" +
+                        "Verb: \"" + term + "\".\n" +
+                        definitionStatement + "\n\n" +
+                        "Instructions:\n" +
+                        " - Return a JSON object with fields: verb, reflexivity, explanation, usage.\n" +
+                        " - reflexivity must be one of: \"must be reflexive\", \"can be reflexive\", or \"never reflexive\".\n" +
+                        " - Provide a concise explanation citing syntactic or semantic cues.\n" +
+                        " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                        "Example classifications:\n" +
+                        "\"He prides himself on his work.\" → must be reflexive (obligatory reflexive object).\n" +
+                        "\"She dressed (herself).\" → can be reflexive (reflexive optional).\n" +
+                        "\"She greeted him.\" → never reflexive (verb does not take reflexive object).\n\n" +
+                        "Output only valid JSON with this shape:\n" +
+                        "{\n" +
+                        "  \"verb\": \"<verb>\",\n" +
+                        "  \"reflexivity\": \"<must be reflexive|can be reflexive|never reflexive>\",\n" +
+                        "  \"explanation\": \"<reasoning>\",\n" +
+                        "  \"usage\": \"<example sentence>\"\n" +
                         "}";
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbReflexive() Prompt: " + prompt);
@@ -309,24 +309,24 @@ public class GenVerbMorphoDB {
                 String prompt = "You are an expert lexicographer specializing in reciprocal verb constructions. " +
                         "Determine whether the verb is obligatorily reciprocal (typically requires two agents acting on each other), " +
                         "optionally reciprocal (can describe mutual action but also allows non-reciprocal use), or never reciprocal " +
-                        "(does not naturally describe participants acting on each other).\\n\\n" +
-                        "Verb: \"" + term + "\".\\n" +
-                        definitionStatement + "\\n\\n" +
-                        "Instructions:\\n" +
-                        " - Return a JSON object with fields: verb, reciprocity, explanation, usage.\\n" +
-                        " - reciprocity must be one of: \"must be reciprocal\", \"can be reciprocal\", or \"never reciprocal\".\\n" +
-                        " - Provide a concise explanation referencing argument structure or semantic cues.\\n" +
-                        " - Supply an illustrative usage sentence that matches the classification.\\n\\n" +
-                        "Example classifications:\\n" +
-                        "\"They embraced each other tightly.\" → must be reciprocal (verb describes mutual action by default).\\n" +
-                        "\"They met (each other) at noon.\" → can be reciprocal (reciprocal available but not obligatory).\\n" +
-                        "\"She tutored him in chemistry.\" → never reciprocal (verb encodes asymmetric instruction).\\n\\n" +
-                        "Output only valid JSON with this shape:\\n" +
-                        "{\\n" +
-                        "  \"verb\": \"<verb>\",\\n" +
-                        "  \"reciprocity\": \"<must be reciprocal|can be reciprocal|never reciprocal>\",\\n" +
-                        "  \"explanation\": \"<reasoning>\",\\n" +
-                        "  \"usage\": \"<example sentence>\"\\n" +
+                        "(does not naturally describe participants acting on each other).\n\n" +
+                        "Verb: \"" + term + "\".\n" +
+                        definitionStatement + "\n\n" +
+                        "Instructions:\n" +
+                        " - Return a JSON object with fields: verb, reciprocity, explanation, usage.\n" +
+                        " - reciprocity must be one of: \"must be reciprocal\", \"can be reciprocal\", or \"never reciprocal\".\n" +
+                        " - Provide a concise explanation referencing argument structure or semantic cues.\n" +
+                        " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                        "Example classifications:\n" +
+                        "\"They embraced each other tightly.\" → must be reciprocal (verb describes mutual action by default).\n" +
+                        "\"They met (each other) at noon.\" → can be reciprocal (reciprocal available but not obligatory).\n" +
+                        "\"She tutored him in chemistry.\" → never reciprocal (verb encodes asymmetric instruction).\n\n" +
+                        "Output only valid JSON with this shape:\n" +
+                        "{\n" +
+                        "  \"verb\": \"<verb>\",\n" +
+                        "  \"reciprocity\": \"<must be reciprocal|can be reciprocal|never reciprocal>\",\n" +
+                        "  \"explanation\": \"<reasoning>\",\n" +
+                        "  \"usage\": \"<example sentence>\"\n" +
                         "}";
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbReciprocal() Prompt: " + prompt);
@@ -376,55 +376,55 @@ public class GenVerbMorphoDB {
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert English grammarian generating complete verb conjugation tables. " +
                         "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
-                        "across the tense/aspect categories below.\\n\\n" +
-                        "Verb: \"" + term + "\".\\n" +
-                        definitionStatement + "\\n\\n" +
-                        "Tenses to cover in this order:\\n" +
-                        "  1. Infinitive\\n" +
-                        "  2. Simple present\\n" +
-                        "  3. Simple past\\n" +
-                        "  4. Simple future\\n" +
-                        "  5. Present progressive (present continuous)\\n" +
-                        "  6. Past progressive (past continuous)\\n" +
-                        "  7. Future progressive (future continuous)\\n" +
-                        "  8. Present perfect\\n" +
-                        "  9. Past perfect\\n" +
-                        " 10. Future perfect\\n" +
-                        " 11. Present perfect progressive\\n" +
-                        " 12. Past perfect progressive\\n" +
-                        " 13. Future perfect progressive\\n" +
-                        " 14. Imperative\\n" +
-                        " 15. Gerund / present participle\\n" +
-                        " 16. Past participle\\n\\n" +
-                        "Instructions:\\n" +
-                        " - Return valid JSON with fields: verb, tenses, notes.\\n" +
-                        " - verb must match the infinitive/base form provided.\\n" +
-                        " - tenses must be an array of 16 objects, each containing:\\n" +
-                        "     • tense: the tense/aspect name\\n" +
-                        "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\\n" +
-                        "       (use the same form for all pronouns if a tense does not vary by subject)\\n" +
-                        "     • Optional fields example and notes are allowed.\\n" +
-                        " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\\n" +
-                        " - Provide a brief notes string highlighting any irregularities or alternations.\\n" +
-                        " - Do not include commentary outside the JSON object.\\n\\n" +
-                        "Example output schema:\\n" +
-                        "{\\n" +
-                        "  \"verb\": \"to sample\",\\n" +
-                        "  \"tenses\": [\\n" +
-                        "    {\\n" +
-                        "      \"tense\": \"Simple present\",\\n" +
-                        "      \"forms\": {\\n" +
-                        "        \"i\": \"I sample\",\\n" +
-                        "        \"you_singular\": \"You sample\",\\n" +
-                        "        \"he_she_it\": \"He samples\",\\n" +
-                        "        \"we\": \"We sample\",\\n" +
-                        "        \"you_plural\": \"You sample\",\\n" +
-                        "        \"they\": \"They sample\"\\n" +
-                        "      },\\n" +
-                        "      \"example\": \"I sample the sauce before serving.\"\\n" +
-                        "    }\\n" +
-                        "  ],\\n" +
-                        "  \"notes\": \"Third person singular present adds -s.\"\\n" +
+                        "across the tense/aspect categories below.\n\n" +
+                        "Verb: \"" + term + "\".\n" +
+                        definitionStatement + "\n\n" +
+                        "Tenses to cover in this order:\n" +
+                        "  1. Infinitive\n" +
+                        "  2. Simple present\n" +
+                        "  3. Simple past\n" +
+                        "  4. Simple future\n" +
+                        "  5. Present progressive (present continuous)\n" +
+                        "  6. Past progressive (past continuous)\n" +
+                        "  7. Future progressive (future continuous)\n" +
+                        "  8. Present perfect\n" +
+                        "  9. Past perfect\n" +
+                        " 10. Future perfect\n" +
+                        " 11. Present perfect progressive\n" +
+                        " 12. Past perfect progressive\n" +
+                        " 13. Future perfect progressive\n" +
+                        " 14. Imperative\n" +
+                        " 15. Gerund / present participle\n" +
+                        " 16. Past participle\n\n" +
+                        "Instructions:\n" +
+                        " - Return valid JSON with fields: verb, tenses, notes.\n" +
+                        " - verb must match the infinitive/base form provided.\n" +
+                        " - tenses must be an array of 16 objects, each containing:\n" +
+                        "     • tense: the tense/aspect name\n" +
+                        "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\n" +
+                        "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
+                        "     • Optional fields example and notes are allowed.\n" +
+                        " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
+                        " - Provide a brief notes string highlighting any irregularities or alternations.\n" +
+                        " - Do not include commentary outside the JSON object.\n\n" +
+                        "Example output schema:\n" +
+                        "{\n" +
+                        "  \"verb\": \"to sample\",\n" +
+                        "  \"tenses\": [\n" +
+                        "    {\n" +
+                        "      \"tense\": \"Simple present\",\n" +
+                        "      \"forms\": {\n" +
+                        "        \"i\": \"I sample\",\n" +
+                        "        \"you_singular\": \"You sample\",\n" +
+                        "        \"he_she_it\": \"He samples\",\n" +
+                        "        \"we\": \"We sample\",\n" +
+                        "        \"you_plural\": \"You sample\",\n" +
+                        "        \"they\": \"They sample\"\n" +
+                        "      },\n" +
+                        "      \"example\": \"I sample the sauce before serving.\"\n" +
+                        "    }\n" +
+                        "  ],\n" +
+                        "  \"notes\": \"Third person singular present adds -s.\"\n" +
                         "}";
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: " + prompt);
@@ -441,11 +441,11 @@ public class GenVerbMorphoDB {
                             errorInResponse = false;
                             ObjectNode record = JSON_MAPPER.createObjectNode();
                             record.put("verb", verbValue);
+                            record.put("definition", definition == null ? "" : definition);
                             record.set("tenses", tensesNode);
                             if (root.hasNonNull("notes")) {
                                 record.put("notes", root.get("notes").asText(""));
                             }
-                            record.put("definition", definition == null ? "" : definition);
                             GenUtils.writeToFile(conjugationFileName, JSON_MAPPER.writeValueAsString(record) + "\n");
                         }
                     } catch (Exception ignored) {
