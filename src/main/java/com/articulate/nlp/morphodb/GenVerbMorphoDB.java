@@ -17,13 +17,15 @@ import java.util.Set;
  * Verb-related morphological generation.
  * 
  * •	Transitivity
-*    o	Transitive/Instransitive/Ditransitive – takes a direct object
-*    o	Impersonal (no subject, like “to rain”)
-*    o	Reflexive (subject and object can be the same, i.e. “He hurt himself”)
-*    o	Reciprocal (Two subjects act on each other i.e. (They hugged each other)
-*  •	Verb conjugations
-*    o	Regular/irregular verbs
-* 
+ *    o	Transitive/Instransitive/Ditransitive – takes a direct object
+ *    o	Impersonal (no subject, like “to rain”)
+ *    o	Reflexive (subject and object can be the same, i.e. “He hurt himself”)
+ *    o	Reciprocal (Two subjects act on each other i.e. (They hugged each other)
+ * •	Lexical aspect
+ *    o	Achievement verbs (punctual change) vs Process verbs (unfolding events)
+ *  •	Verb conjugations
+ *    o	Regular/irregular verbs
+ * 
  ***************************************************************/
 public class GenVerbMorphoDB {
 
@@ -57,6 +59,9 @@ public class GenVerbMorphoDB {
                 break;
             case "-p":
                 genVerbReciprocal();
+                break;
+            case "-a":
+                genVerbAchievementProcess();
                 break;
             case "-t":
                 genVerbConjugations();
@@ -286,6 +291,73 @@ public class GenVerbMorphoDB {
 
                 if (GenMorphoUtils.debug) {
                     System.out.println("\n\nGenVerbMorphoDB.genVerbCausativity().LLMResponse: " + llmResponse + "\n\n**************\n");
+                }
+            }
+        }
+    }
+
+    /***************************************************************
+     * Uses OLLAMA to classify verbs as achievements or processes.
+     ***************************************************************/
+    private void genVerbAchievementProcess() {
+
+        String aspectFileName = "VerbAchievementProcess_" + GenUtils.getOllamaModel() + ".txt";
+        for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
+            String term = entry.getKey().replace('_', ' ');
+            if (term.length() < 2) {
+                continue;
+            }
+            for (String synsetId : entry.getValue()) {
+                String definition = verbDocumentationHash.get(synsetId);
+                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
+                String prompt = "You are an expert linguist specializing in lexical aspect (Aktionsart). " +
+                        "Classify the verb as either an achievement verb (a single, punctual change of state) or a process verb (an unfolding action with duration). " +
+                        "If the verb genuinely alternates between both readings, mark it as mixed. " +
+                        "If the classification cannot be determined, label it unknown.\n\n" +
+                        "Verb: \"" + term + "\".\n" +
+                        definitionStatement + "\n\n" +
+                        "Instructions:\n" +
+                        " - Consider the most common contemporary English usage.\n" +
+                        " - Interpret process verbs as activities or events that extend over time (e.g., \"run\", \"negotiate\").\n" +
+                        " - Interpret achievement verbs as punctual changes or instants (e.g., \"recognize\", \"reach\").\n" +
+                        " - Return a JSON object with fields: verb, aktionsart, explanation, usage.\n" +
+                        " - aktionsart must be one of: \"achievement\", \"process\", \"mixed\", \"unknown\".\n" +
+                        " - Provide a concise explanation referencing the temporal profile.\n" +
+                        " - Supply one illustrative usage sentence that matches the classification.\n\n" +
+                        "Output only valid JSON with this schema:\n" +
+                        "{\n" +
+                        "  \"verb\": \"<verb>\",\n" +
+                        "  \"aktionsart\": \"<achievement|process|mixed|unknown>\",\n" +
+                        "  \"explanation\": \"<short rationale>\",\n" +
+                        "  \"usage\": \"<example sentence>\"\n" +
+                        "}";
+                if (GenMorphoUtils.debug) {
+                    System.out.println("GenVerbMorphoDB.genVerbAchievementProcess() Prompt: " + prompt);
+                }
+                String llmResponse = GenUtils.askOllama(prompt);
+                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
+                boolean errorInResponse = true;
+                if (jsonResponse != null) {
+                    String[] aspectArray = GenUtils.extractJsonFields(jsonResponse,
+                            Arrays.asList("verb", "aktionsart", "explanation", "usage"));
+                    if (aspectArray != null) {
+                        errorInResponse = false;
+                        aspectArray[1] = normalizeAktionsartCategory(aspectArray[1]);
+                        aspectArray[2] = "\"" + aspectArray[2] + "\"";
+                        aspectArray[3] = "\"" + aspectArray[3] + "\"";
+                        aspectArray = GenUtils.appendToStringArray(aspectArray, "\"" + definition + "\"");
+                        GenUtils.writeToFile(aspectFileName, Arrays.toString(aspectArray) + "\n");
+                    }
+                }
+                if (errorInResponse) {
+                    GenUtils.writeToFile(aspectFileName,
+                            "ERROR! verb: " + term + ". " + definitionStatement +
+                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                }
+
+                if (GenMorphoUtils.debug) {
+                    System.out.println("\n\nGenVerbMorphoDB.genVerbAchievementProcess().LLMResponse: " + llmResponse + "\n\n**************\n");
                 }
             }
         }
@@ -810,6 +882,31 @@ public class GenVerbMorphoDB {
         }
         if (lower.contains("caus")) {
             return "Causative";
+        }
+        return GenUtils.capitalizeFirstLetter(lower);
+    }
+
+    private static String normalizeAktionsartCategory(String rawCategory) {
+
+        if (rawCategory == null || rawCategory.trim().isEmpty()) {
+            return "Unknown";
+        }
+        String lower = rawCategory.trim().toLowerCase();
+        if (lower.contains("mixed") || lower.contains("both") || lower.contains("depends") ||
+                lower.contains("context") || lower.contains("either")) {
+            return "Mixed";
+        }
+        if (lower.contains("achiev") || lower.contains("moment") || lower.contains("instant") ||
+                lower.contains("punctual") || lower.contains("point") || lower.contains("sudden")) {
+            return "Achievement";
+        }
+        if (lower.contains("process") || lower.contains("activity") || lower.contains("ongoing") ||
+                lower.contains("durative") || lower.contains("continuous") || lower.contains("unfold")) {
+            return "Process";
+        }
+        if (lower.contains("unknown") || lower.contains("uncertain") || lower.contains("unclear") ||
+                lower.contains("undetermined")) {
+            return "Unknown";
         }
         return GenUtils.capitalizeFirstLetter(lower);
     }
