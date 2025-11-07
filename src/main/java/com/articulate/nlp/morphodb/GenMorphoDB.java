@@ -30,6 +30,7 @@ public class GenMorphoDB {
         System.out.println("  -c to generate countability classifications");
         System.out.println("  -p to generate plurals");
         System.out.println("  -h to classify human vs non-human nouns");
+        System.out.println("  -a to classify nouns by agentivity (can the referent perform actions?)");
         System.out.println("  -l to classify collective nouns");
         System.out.println("Verb gen-functions:");
         System.out.println("  -v to classify verbs by valence");

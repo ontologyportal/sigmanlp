@@ -16,6 +16,7 @@ import java.util.Set;
  *    •	Countable/Mass
  *    •	Human/non-human nouns (persons name, or things like teacher/doctor/student)
  *    •	Animate/non-animate nouns (living things/non-living things)
+ *    •	Agentive vs non-agentive nouns (can the referent perform actions?)
  *    •	Collective nouns (i.e. team, family, flock, etc.)
 ****************************************************************/
 public class GenNounMorphoDB {
@@ -46,6 +47,9 @@ public class GenNounMorphoDB {
                 break;
             case "-h":
                 genHumanness();
+                break;
+            case "-a":
+                genAgentivity();
                 break;
             case "-l":
                 genCollectiveNouns();
@@ -319,6 +323,72 @@ public class GenNounMorphoDB {
     }
 
     /***************************************************************
+     * Uses OLLAMA to classify whether nouns can act as agents.
+     ***************************************************************/
+    private void genAgentivity() {
+
+        String agentivityFileName = "NounAgentivity_" + GenUtils.getOllamaModel() + ".txt";
+        for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
+            String term = entry.getKey().replace('_', ' ');
+            if (term.length() < 2) {
+                continue;
+            }
+            for (String synsetId : entry.getValue()) {
+                String definition = nounDocumentationHash.get(synsetId);
+                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
+                String prompt = "You are an expert lexicographer analyzing agentivity in English nouns. " +
+                        "Determine whether the noun typically denotes an entity capable of intentional action (agentive). " +
+                        "If it is agentive, indicate whether the agent is animate (living beings such as people or animals) or inanimate (institutions, organizations, artifacts, etc.).\n\n" +
+                        "The noun to classify: \"" + term + "\".\n" +
+                        definitionStatement + "\n\n" +
+                        "Instructions:\n" +
+                        " - Consider the noun's most common literal sense.\n" +
+                        " - Treat organizations, governments, and software that can act as inanimate agents.\n" +
+                        " - Mark the noun as non-agentive when it does not independently perform actions.\n" +
+                        " - Use 'unknown' if the evidence is insufficient.\n" +
+                        " - Provide a concise usage example that matches the classification.\n\n" +
+                        "Important formatting rules:\n" +
+                        " * Output only valid JSON and nothing else.\n" +
+                        " * Allowed values for agency: \"agentive\", \"non-agentive\", \"unknown\".\n" +
+                        " * For agentive nouns, agent_type must be \"animate agent\", \"inanimate agent\", or \"mixed agent type\".\n" +
+                        " * For non-agentive or unknown nouns, agent_type must be \"not applicable\" or \"unknown agent type\".\n" +
+                        " * Escape quotation marks inside strings.\n\n" +
+                        "Output strictly in this JSON format:\n" +
+                        "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"agency\": \"<agentive | non-agentive | unknown>\",\n  \"agent_type\": \"<animate agent | inanimate agent | mixed agent type | not applicable | unknown agent type>\",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```";
+                if (GenMorphoUtils.debug) {
+                    System.out.println("GenNounMorphoDB.genAgentivity() Prompt: " + prompt);
+                }
+                String llmResponse = GenUtils.askOllama(prompt);
+                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
+                boolean errorInResponse = true;
+                if (jsonResponse != null) {
+                    String[] agentivityArray = GenUtils.extractJsonFields(jsonResponse,
+                            Arrays.asList("noun", "agency", "agent_type", "explanation", "usage"));
+                    if (agentivityArray != null) {
+                        errorInResponse = false;
+                        agentivityArray[1] = normalizeAgencyCategory(agentivityArray[1]);
+                        agentivityArray[2] = normalizeAgentType(agentivityArray[2], agentivityArray[1]);
+                        agentivityArray[3] = "\"" + agentivityArray[3] + "\"";
+                        agentivityArray[4] = "\"" + agentivityArray[4] + "\"";
+                        agentivityArray = GenUtils.appendToStringArray(agentivityArray, "\"" + definition + "\"");
+                        GenUtils.writeToFile(agentivityFileName, Arrays.toString(agentivityArray) + "\n");
+                    }
+                }
+                if (errorInResponse) {
+                    GenUtils.writeToFile(agentivityFileName,
+                            "ERROR! term: " + term + ". " + definitionStatement +
+                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                }
+
+                if (GenMorphoUtils.debug) {
+                    System.out.println("\n\nGenNounMorphoDB.genAgentivity().LLMResponse: " + llmResponse + "\n\n**************\n");
+                }
+            }
+        }
+    }
+
+    /***************************************************************
      * Uses OLLAMA to determine the singular and plural form of every noun
      * in WordNet.
      ***************************************************************/
@@ -516,6 +586,80 @@ public class GenNounMorphoDB {
         }
         if (mentionsCollective) {
             return "Collective";
+        }
+        return GenUtils.capitalizeFirstLetter(normalized);
+    }
+
+    private static String normalizeAgencyCategory(String rawCategory) {
+
+        if (rawCategory == null) {
+            return "Unknown";
+        }
+        String normalized = rawCategory.trim().toLowerCase();
+        if (normalized.isEmpty()) {
+            return "Unknown";
+        }
+        String spacesNormalized = normalized.replace('-', ' ');
+        if (spacesNormalized.contains("non agent") || spacesNormalized.contains("not agent") ||
+                spacesNormalized.contains("nonagent") || spacesNormalized.contains("cannot act") ||
+                spacesNormalized.contains("inert") || spacesNormalized.contains("non acting") ||
+                spacesNormalized.contains("non-active")) {
+            return "Non-agentive";
+        }
+        if (spacesNormalized.contains("agentive") || spacesNormalized.contains("agent") ||
+                spacesNormalized.contains("actor") || spacesNormalized.contains("doer") ||
+                spacesNormalized.contains("can act") || spacesNormalized.contains("acting entity")) {
+            return "Agentive";
+        }
+        if (spacesNormalized.contains("unknown") || spacesNormalized.contains("uncertain") ||
+                spacesNormalized.contains("unclear") || spacesNormalized.contains("undetermined")) {
+            return "Unknown";
+        }
+        return GenUtils.capitalizeFirstLetter(normalized);
+    }
+
+    private static String normalizeAgentType(String rawType, String agencyCategory) {
+
+        if (agencyCategory == null || !"Agentive".equalsIgnoreCase(agencyCategory)) {
+            if (rawType == null || rawType.trim().isEmpty()) {
+                return "Not applicable";
+            }
+            String lower = rawType.trim().toLowerCase();
+            if (lower.contains("unknown") || lower.contains("uncertain") || lower.contains("unspecified")) {
+                return "Unknown agent type";
+            }
+            return "Not applicable";
+        }
+        if (rawType == null) {
+            return "Unknown agent type";
+        }
+        String normalized = rawType.trim().toLowerCase();
+        if (normalized.isEmpty()) {
+            return "Unknown agent type";
+        }
+        String spacesNormalized = normalized.replace('-', ' ');
+        if (spacesNormalized.contains("mixed") || spacesNormalized.contains("both") ||
+                (spacesNormalized.contains("animate") && spacesNormalized.contains("inanimate"))) {
+            return "Mixed agent type";
+        }
+        if (spacesNormalized.contains("animate") || spacesNormalized.contains("living") ||
+                spacesNormalized.contains("life form") || spacesNormalized.contains("human") ||
+                spacesNormalized.contains("animal") || spacesNormalized.contains("person") ||
+                spacesNormalized.contains("creature") || spacesNormalized.contains("organism")) {
+            return "Animate agent";
+        }
+        if (spacesNormalized.contains("inanimate") || spacesNormalized.contains("institution") ||
+                spacesNormalized.contains("organization") || spacesNormalized.contains("collective") ||
+                spacesNormalized.contains("corporate") || spacesNormalized.contains("company") ||
+                spacesNormalized.contains("government") || spacesNormalized.contains("software") ||
+                spacesNormalized.contains("machine") || spacesNormalized.contains("device") ||
+                spacesNormalized.contains("non living") || spacesNormalized.contains("nonliving") ||
+                spacesNormalized.contains("artificial")) {
+            return "Inanimate agent";
+        }
+        if (spacesNormalized.contains("unknown") || spacesNormalized.contains("uncertain") ||
+                spacesNormalized.contains("unspecified")) {
+            return "Unknown agent type";
         }
         return GenUtils.capitalizeFirstLetter(normalized);
     }

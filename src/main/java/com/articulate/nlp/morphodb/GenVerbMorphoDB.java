@@ -8,7 +8,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +37,16 @@ public class GenVerbMorphoDB {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static final List<String> PERSON_PRONOUN_KEYS =
             Arrays.asList("i", "you_singular", "he_she_it", "we", "you_plural", "they");
+    private static final List<String> CLAUSE_SUBJECT_CANDIDATES =
+            Arrays.asList("i", "you", "he", "she", "it", "we", "they");
+    private static final Set<String> LEADING_AUXILIARY_TOKENS = new HashSet<>(Arrays.asList(
+            "am", "m", "is", "s", "are", "re", "was", "were",
+            "be", "been", "being", "have", "has", "had", "having",
+            "do", "does", "did",
+            "will", "shall", "would", "should", "can", "could",
+            "may", "might", "must", "ought", "need", "dare",
+            "to", "not", "no", "ll", "ve", "d"
+    ));
 
     public GenVerbMorphoDB(Map<String, Set<String>> verbSynsetHash,
                            Map<String, String> verbDocumentationHash) {
@@ -469,7 +481,7 @@ public class GenVerbMorphoDB {
                         " 15. Gerund / present participle\n" +
                         " 16. Past participle\n\n" +
                         "Instructions:\n" +
-                        " - Return valid JSON with fields: verb, tenses, notes.\n" +
+                        " - Return valid JSON with fields: verb, tenses, regularity, notes.\n" +
                         " - verb must match the infinitive/base form provided.\n" +
                         " - tenses must be an array of 16 objects, each containing:\n" +
                         "     • tense: the tense/aspect name\n" +
@@ -477,11 +489,13 @@ public class GenVerbMorphoDB {
                         "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
                         "     • Optional fields example and notes are allowed.\n" +
                         " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
+                        " - regularity must be either \"Regular\" or \"Irregular\" and should reflect whether the simple past and past participle follow the standard -ed pattern.\n" +
                         " - Provide a brief notes string highlighting any irregularities or alternations.\n" +
                         " - Do not include commentary outside the JSON object.\n\n" +
                         "Example output schema:\n" +
                         "{\n" +
                         "  \"verb\": \"to sample\",\n" +
+                        "  \"regularity\": \"<Regular|Irregular>\",\n" +
                         "  \"tenses\": [\n" +
                         "    {\n" +
                         "      \"tense\": \"Simple present\",\n" +
@@ -514,6 +528,12 @@ public class GenVerbMorphoDB {
                             ObjectNode record = JSON_MAPPER.createObjectNode();
                             record.put("verb", verbValue);
                             record.put("definition", definition == null ? "" : definition);
+                            String providedRegularity = normalizeRegularity(root.path("regularity").asText(""));
+                            String resolvedRegularity = providedRegularity;
+                            if (resolvedRegularity.equals("Unknown")) {
+                                resolvedRegularity = inferVerbRegularity(verbValue, tensesNode);
+                            }
+                            record.put("regularity", resolvedRegularity);
                             record.set("tenses", tensesNode);
                             if (root.hasNonNull("notes")) {
                                 record.put("notes", root.get("notes").asText(""));
@@ -649,6 +669,144 @@ public class GenVerbMorphoDB {
         }
         forms.put("summary", rawForms.asText(""));
         return forms;
+    }
+
+    private static String inferVerbRegularity(String verb, ArrayNode tenses) {
+
+        if (tenses == null || tenses.isEmpty()) {
+            return "Unknown";
+        }
+        Set<String> simplePastForms = extractCanonicalFormsForTense(tenses, "Simple past");
+        Set<String> pastParticipleForms = extractCanonicalFormsForTense(tenses, "Past participle");
+        boolean hasEvidence = !simplePastForms.isEmpty() || !pastParticipleForms.isEmpty();
+        if (!hasEvidence) {
+            return "Unknown";
+        }
+        boolean pastLooksRegular = simplePastForms.isEmpty() || looksRegularForms(simplePastForms);
+        boolean participleLooksRegular = pastParticipleForms.isEmpty() || looksRegularForms(pastParticipleForms);
+        if (pastLooksRegular && participleLooksRegular) {
+            return "Regular";
+        }
+        return "Irregular";
+    }
+
+    private static Set<String> extractCanonicalFormsForTense(ArrayNode tenses, String targetTense) {
+
+        Set<String> forms = new LinkedHashSet<>();
+        if (tenses == null || tenses.isEmpty() || targetTense == null) {
+            return forms;
+        }
+        for (JsonNode tenseNode : tenses) {
+            if (tenseNode == null || !targetTense.equalsIgnoreCase(tenseNode.path("tense").asText(""))) {
+                continue;
+            }
+            JsonNode formsNode = tenseNode.get("forms");
+            if (formsNode != null && formsNode.isObject()) {
+                for (String pronoun : PERSON_PRONOUN_KEYS) {
+                    addCanonicalForm(forms, formsNode.path(pronoun).asText(""));
+                }
+                addCanonicalForm(forms, formsNode.path("summary").asText(""));
+                continue;
+            }
+            addCanonicalForm(forms, formsNode == null ? "" : formsNode.asText(""));
+        }
+        return forms;
+    }
+
+    private static void addCanonicalForm(Set<String> target, String clause) {
+
+        if (target == null) {
+            return;
+        }
+        String canonical = extractMainVerbToken(clause);
+        if (!canonical.isEmpty()) {
+            target.add(canonical);
+        }
+    }
+
+    private static boolean looksRegularForms(Set<String> forms) {
+
+        boolean sawValidForm = false;
+        if (forms == null || forms.isEmpty()) {
+            return false;
+        }
+        for (String form : forms) {
+            if (form == null) {
+                continue;
+            }
+            String lowered = form.trim().toLowerCase();
+            if (lowered.isEmpty()) {
+                continue;
+            }
+            sawValidForm = true;
+            if (!isLikelyRegularForm(lowered)) {
+                return false;
+            }
+        }
+        return sawValidForm;
+    }
+
+    private static boolean isLikelyRegularForm(String form) {
+
+        if (form == null || form.isEmpty()) {
+            return false;
+        }
+        return form.endsWith("ed");
+    }
+
+    private static String extractMainVerbToken(String clause) {
+
+        if (clause == null) {
+            return "";
+        }
+        String normalized = clause.trim().toLowerCase();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        normalized = normalized.replaceAll("[^a-z\\s'-]", " ");
+        normalized = normalized.replace("'", " ");
+        normalized = normalized.replaceAll("\\s+", " ").trim();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        for (String pronoun : CLAUSE_SUBJECT_CANDIDATES) {
+            if (normalized.equals(pronoun)) {
+                return "";
+            }
+            if (normalized.startsWith(pronoun + " ")) {
+                normalized = normalized.substring(pronoun.length()).trim();
+                break;
+            }
+        }
+        while (!normalized.isEmpty()) {
+            int spaceIndex = normalized.indexOf(' ');
+            String token = spaceIndex == -1 ? normalized : normalized.substring(0, spaceIndex);
+            if (!LEADING_AUXILIARY_TOKENS.contains(token)) {
+                break;
+            }
+            normalized = spaceIndex == -1 ? "" : normalized.substring(spaceIndex + 1).trim();
+        }
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        int spaceIndex = normalized.indexOf(' ');
+        String mainVerb = spaceIndex == -1 ? normalized : normalized.substring(0, spaceIndex);
+        return mainVerb.replaceAll("[^a-z]", "");
+    }
+
+    private static String normalizeRegularity(String rawRegularity) {
+
+        if (rawRegularity == null || rawRegularity.trim().isEmpty()) {
+            return "Unknown";
+        }
+        String lower = rawRegularity.trim().toLowerCase();
+        if (lower.contains("irregular")) {
+            return "Irregular";
+        }
+        if (lower.contains("regular")) {
+            return "Regular";
+        }
+        return GenUtils.capitalizeFirstLetter(lower);
     }
 
     private static String normalizeTenseName(String rawName) {
