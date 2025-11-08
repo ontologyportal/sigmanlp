@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-    /***************************************************************
-     * Entry point that delegates morphological database generation
-     * to word-type specific generators.
-     ***************************************************************/
+/***************************************************************
+ * Entry point that delegates morphological database generation
+ * to word-type specific generators.
+ ***************************************************************/
 public class GenMorphoDB {
 
     private static final String NO_WORD_TYPE_MESSAGE = "Please specify a word type (noun, verb, adjective, adverb).";
@@ -41,6 +41,8 @@ public class GenMorphoDB {
         System.out.println("  -t to generate full conjugation tables");
         System.out.println("Adjective gen-functions:");
         System.out.println("  -c to classify adjectives by semantic category");
+        System.out.println("Adverb gen-functions:");
+        System.out.println("  -c to classify adverbs by semantic category");
         System.out.println("Example: java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB noun -i llama3.2");
     }
