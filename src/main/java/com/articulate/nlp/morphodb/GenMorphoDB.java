@@ -47,6 +47,7 @@ public class GenMorphoDB {
                 + "com.articulate.nlp.morphodb.GenMorphoDB noun -i llama3.2");
     }
 
+    
     /***************************************************************
      * Entry point: validates CLI args, preps WordNet data, and
      * dispatches to word-type generators.
