@@ -1,5 +1,11 @@
 package com.articulate.nlp.morphodb;
 
+import com.articulate.nlp.GenUtils;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -10,6 +16,30 @@ import java.util.Set;
 public final class GenMorphoUtils {
 
     public static boolean debug = true;
+    private static final String OUTPUT_ROOT = "MorphologicalDatabase";
+
+    /***************************************************************
+     * Builds the standardized output path for morphology resources.
+     ***************************************************************/
+    public static String resolveOutputFile(String wordType, String classificationFileName) {
+
+        if (classificationFileName == null || classificationFileName.trim().isEmpty()) {
+            throw new IllegalArgumentException("classificationFileName cannot be null or empty.");
+        }
+        String normalizedWordType = (wordType == null || wordType.trim().isEmpty())
+                ? "misc"
+                : wordType.trim().toLowerCase();
+        String sanitizedModelName = GenUtils.getOllamaModel()
+                .replace('.', '_')
+                .replace(':', '_');
+        Path outputDir = Paths.get(OUTPUT_ROOT, sanitizedModelName, normalizedWordType);
+        try {
+            Files.createDirectories(outputDir);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to create output directory: " + outputDir, e);
+        }
+        return outputDir.resolve(classificationFileName).toString();
+    }
 
     /***************************************************************
      * Filters out non-English words and numbers from the provided map.

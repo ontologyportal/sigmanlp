@@ -40,7 +40,7 @@ public class GenAdverbMorphoDB {
      ***************************************************************/
     private void genAdverbSemanticClasses() {
 
-        String adverbFileName = "AdverbSemanticClasses_" + GenUtils.getOllamaModel() + ".txt";
+        String adverbFileName = GenMorphoUtils.resolveOutputFile("adverb", "AdverbSemanticClasses.txt");
         for (Map.Entry<String, Set<String>> entry : adverbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
