@@ -40,7 +40,7 @@ public class GenAdjectiveMorphoDB {
      ***************************************************************/
     private void genAdjectiveClasses() {
 
-        String adjectiveFileName = "AdjectiveSemanticClasses_" + GenUtils.getOllamaModel() + ".txt";
+        String adjectiveFileName = GenMorphoUtils.resolveOutputFile("adjective", "AdjectiveSemanticClasses.txt");
         for (Map.Entry<String, Set<String>> entry : adjectiveSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {

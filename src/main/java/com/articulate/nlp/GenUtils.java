@@ -98,12 +98,15 @@ public class GenUtils {
         Path filePath = Paths.get(fileName);
         if (Files.exists(filePath)) {
             return;
-        } else {
-            try {
-                Files.createFile(filePath);
-            } catch (IOException e) {
-                e.printStackTrace();
+        }
+        try {
+            Path parent = filePath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
             }
+            Files.createFile(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     

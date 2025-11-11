@@ -89,7 +89,7 @@ public class GenVerbMorphoDB {
      ***************************************************************/
     private void genVerbValence() {
 
-        String valenceFileName = "VerbValence_" + GenUtils.getOllamaModel() + ".txt";
+        String valenceFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbValence.txt");
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -178,7 +178,7 @@ public class GenVerbMorphoDB {
      ***************************************************************/
     private void genVerbReflexive() {
 
-        String reflexiveFileName = "VerbReflexive_" + GenUtils.getOllamaModel() + ".txt";
+        String reflexiveFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbReflexive.txt");
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -246,7 +246,7 @@ public class GenVerbMorphoDB {
      ***************************************************************/
     private void genVerbCausativity() {
 
-        String causativityFileName = "VerbCausativity_" + GenUtils.getOllamaModel() + ".txt";
+        String causativityFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbCausativity.txt");
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -313,7 +313,7 @@ public class GenVerbMorphoDB {
      ***************************************************************/
     private void genVerbAchievementProcess() {
 
-        String aspectFileName = "VerbAchievementProcess_" + GenUtils.getOllamaModel() + ".txt";
+        String aspectFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbAchievementProcess.txt");
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -380,7 +380,7 @@ public class GenVerbMorphoDB {
      ***************************************************************/
     private void genVerbReciprocal() {
 
-        String reciprocalFileName = "VerbReciprocal_" + GenUtils.getOllamaModel() + ".txt";
+        String reciprocalFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbReciprocal.txt");
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -448,7 +448,7 @@ public class GenVerbMorphoDB {
      ***************************************************************/
     private void genVerbConjugations() {
 
-        String conjugationFileName = "VerbConjugations_" + GenUtils.getOllamaModel() + ".txt";
+        String conjugationFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbConjugations.txt");
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {

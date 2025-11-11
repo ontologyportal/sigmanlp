@@ -66,7 +66,7 @@ public class GenNounMorphoDB {
      ***************************************************************/
     private void genIndefiniteArticles() {
 
-        String indefFileName = "IndefiniteArticles_" + GenUtils.getOllamaModel() + ".txt";
+        String indefFileName = GenMorphoUtils.resolveOutputFile("noun", "IndefiniteArticles.txt");
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -143,7 +143,7 @@ public class GenNounMorphoDB {
      ***************************************************************/
     private void genCollectiveNouns() {
 
-        String collectiveFileName = "CollectiveNouns_" + GenUtils.getOllamaModel() + ".txt";
+        String collectiveFileName = GenMorphoUtils.resolveOutputFile("noun", "CollectiveNouns.txt");
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -205,7 +205,7 @@ public class GenNounMorphoDB {
      ***************************************************************/
     private void genCountability() {
 
-        String countabilityFileName = "Countability_" + GenUtils.getOllamaModel() + ".txt";
+        String countabilityFileName = GenMorphoUtils.resolveOutputFile("noun", "Countability.txt");
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -266,7 +266,7 @@ public class GenNounMorphoDB {
      ***************************************************************/
     private void genHumanness() {
 
-        String humannessFileName = "Humanness_" + GenUtils.getOllamaModel() + ".txt";
+        String humannessFileName = GenMorphoUtils.resolveOutputFile("noun", "Humanness.txt");
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -327,7 +327,7 @@ public class GenNounMorphoDB {
      ***************************************************************/
     private void genAgentivity() {
 
-        String agentivityFileName = "NounAgentivity_" + GenUtils.getOllamaModel() + ".txt";
+        String agentivityFileName = GenMorphoUtils.resolveOutputFile("noun", "NounAgentivity.txt");
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -394,7 +394,7 @@ public class GenNounMorphoDB {
      ***************************************************************/
     private void genPlurals() {
 
-        String pluralsFileName = "Plurals_" + GenUtils.getOllamaModel() + ".txt";
+        String pluralsFileName = GenMorphoUtils.resolveOutputFile("noun", "Plurals.txt");
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
