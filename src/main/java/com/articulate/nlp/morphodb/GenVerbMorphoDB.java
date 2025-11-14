@@ -90,6 +90,7 @@ public class GenVerbMorphoDB {
     private void genVerbValence() {
 
         String valenceFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbValence.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(valenceFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -98,6 +99,13 @@ public class GenVerbMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = verbDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenVerbMorphoDB.genVerbValence() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in English verb valency and argument structure. " +
                         "Classify the verb into the most appropriate valency category from the hierarchy below. \n\n" +
@@ -144,26 +152,29 @@ public class GenVerbMorphoDB {
                     System.out.println("GenVerbMorphoDB.genVerbValence() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] valenceArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("verb", "valence", "subtype", "semantic_roles", "explanation", "usage"));
-                    if (valenceArray != null) {
-                        errorInResponse = false;
-                        valenceArray[1] = normalizeValenceCategory(valenceArray[1]);
-                        valenceArray[2] = normalizeSubtype(valenceArray[2]);
-                        valenceArray[3] = "\"" + normalizeSemanticRoles(valenceArray[3]) + "\"";
-                        valenceArray[4] = "\"" + valenceArray[4] + "\"";
-                        valenceArray[5] = "\"" + valenceArray[5] + "\"";
-                        valenceArray = GenUtils.appendToStringArray(valenceArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(valenceFileName, Arrays.toString(valenceArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("verb", "valence", "subtype", "semantic_roles", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("valence",
+                            normalizeValenceCategory(responseNode.path("valence").asText("")));
+                    responseNode.put("subtype", normalizeSubtype(responseNode.path("subtype").asText("")));
+                    responseNode.put("semantic_roles",
+                            normalizeSemanticRoles(responseNode.path("semantic_roles").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(valenceFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(valenceFileName,
-                            "ERROR! verb: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
+                            definition, llmResponse, "Unable to parse verb valence response.");
+                    GenUtils.writeToFile(valenceFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -179,6 +190,7 @@ public class GenVerbMorphoDB {
     private void genVerbReflexive() {
 
         String reflexiveFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbReflexive.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(reflexiveFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -187,6 +199,13 @@ public class GenVerbMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = verbDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenVerbMorphoDB.genVerbReflexive() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in reflexive verb constructions. " +
                         "Determine whether the verb is obligatorily reflexive (must take a reflexive object when its subject acts on itself), " +
@@ -214,24 +233,26 @@ public class GenVerbMorphoDB {
                     System.out.println("GenVerbMorphoDB.genVerbReflexive() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] reflexiveArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("verb", "reflexivity", "explanation", "usage"));
-                    if (reflexiveArray != null) {
-                        errorInResponse = false;
-                        reflexiveArray[1] = normalizeReflexivityCategory(reflexiveArray[1]);
-                        reflexiveArray[2] = "\"" + reflexiveArray[2] + "\"";
-                        reflexiveArray[3] = "\"" + reflexiveArray[3] + "\"";
-                        reflexiveArray = GenUtils.appendToStringArray(reflexiveArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(reflexiveFileName, Arrays.toString(reflexiveArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("verb", "reflexivity", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("reflexivity",
+                            normalizeReflexivityCategory(responseNode.path("reflexivity").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(reflexiveFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(reflexiveFileName,
-                            "ERROR! verb: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
+                            definition, llmResponse, "Unable to parse reflexive behavior response.");
+                    GenUtils.writeToFile(reflexiveFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -247,6 +268,7 @@ public class GenVerbMorphoDB {
     private void genVerbCausativity() {
 
         String causativityFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbCausativity.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(causativityFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -255,6 +277,13 @@ public class GenVerbMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = verbDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenVerbMorphoDB.genVerbCausativity() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert in lexical semantics focusing on causativity. " +
                         "Determine whether the verb denotes a causative action (the subject causes a change in a patient), " +
@@ -281,24 +310,26 @@ public class GenVerbMorphoDB {
                     System.out.println("GenVerbMorphoDB.genVerbCausativity() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] causativityArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("verb", "causativity", "explanation", "usage"));
-                    if (causativityArray != null) {
-                        errorInResponse = false;
-                        causativityArray[1] = normalizeCausativityCategory(causativityArray[1]);
-                        causativityArray[2] = "\"" + causativityArray[2] + "\"";
-                        causativityArray[3] = "\"" + causativityArray[3] + "\"";
-                        causativityArray = GenUtils.appendToStringArray(causativityArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(causativityFileName, Arrays.toString(causativityArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("verb", "causativity", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("causativity",
+                            normalizeCausativityCategory(responseNode.path("causativity").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(causativityFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(causativityFileName,
-                            "ERROR! verb: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
+                            definition, llmResponse, "Unable to parse causativity response.");
+                    GenUtils.writeToFile(causativityFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -314,6 +345,7 @@ public class GenVerbMorphoDB {
     private void genVerbAchievementProcess() {
 
         String aspectFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbAchievementProcess.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(aspectFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -322,6 +354,13 @@ public class GenVerbMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = verbDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenVerbMorphoDB.genVerbAchievementProcess() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert linguist specializing in lexical aspect (Aktionsart). " +
                         "Classify the verb as either an achievement verb (a single, punctual change of state) or a process verb (an unfolding action with duration). " +
@@ -348,24 +387,26 @@ public class GenVerbMorphoDB {
                     System.out.println("GenVerbMorphoDB.genVerbAchievementProcess() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] aspectArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("verb", "aktionsart", "explanation", "usage"));
-                    if (aspectArray != null) {
-                        errorInResponse = false;
-                        aspectArray[1] = normalizeAktionsartCategory(aspectArray[1]);
-                        aspectArray[2] = "\"" + aspectArray[2] + "\"";
-                        aspectArray[3] = "\"" + aspectArray[3] + "\"";
-                        aspectArray = GenUtils.appendToStringArray(aspectArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(aspectFileName, Arrays.toString(aspectArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("verb", "aktionsart", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("aktionsart",
+                            normalizeAktionsartCategory(responseNode.path("aktionsart").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(aspectFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(aspectFileName,
-                            "ERROR! verb: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
+                            definition, llmResponse, "Unable to parse aktionsart response.");
+                    GenUtils.writeToFile(aspectFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -381,6 +422,7 @@ public class GenVerbMorphoDB {
     private void genVerbReciprocal() {
 
         String reciprocalFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbReciprocal.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(reciprocalFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -389,6 +431,13 @@ public class GenVerbMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = verbDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenVerbMorphoDB.genVerbReciprocal() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in reciprocal verb constructions. " +
                         "Determine whether the verb is obligatorily reciprocal (typically requires two agents acting on each other), " +
@@ -416,24 +465,26 @@ public class GenVerbMorphoDB {
                     System.out.println("GenVerbMorphoDB.genVerbReciprocal() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] reciprocalArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("verb", "reciprocity", "explanation", "usage"));
-                    if (reciprocalArray != null) {
-                        errorInResponse = false;
-                        reciprocalArray[1] = normalizeReciprocityCategory(reciprocalArray[1]);
-                        reciprocalArray[2] = "\"" + reciprocalArray[2] + "\"";
-                        reciprocalArray[3] = "\"" + reciprocalArray[3] + "\"";
-                        reciprocalArray = GenUtils.appendToStringArray(reciprocalArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(reciprocalFileName, Arrays.toString(reciprocalArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("verb", "reciprocity", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("reciprocity",
+                            normalizeReciprocityCategory(responseNode.path("reciprocity").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(reciprocalFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(reciprocalFileName,
-                            "ERROR! verb: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
+                            definition, llmResponse, "Unable to parse reciprocity response.");
+                    GenUtils.writeToFile(reciprocalFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -449,6 +500,7 @@ public class GenVerbMorphoDB {
     private void genVerbConjugations() {
 
         String conjugationFileName = GenMorphoUtils.resolveOutputFile("verb", "VerbConjugations.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(conjugationFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -457,6 +509,13 @@ public class GenVerbMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = verbDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenVerbMorphoDB.genVerbConjugations() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert English grammarian generating complete verb conjugation tables. " +
                         "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
@@ -526,6 +585,7 @@ public class GenVerbMorphoDB {
                         if (!verbValue.isEmpty() && tensesNode != null && tensesNode.size() > 0) {
                             errorInResponse = false;
                             ObjectNode record = JSON_MAPPER.createObjectNode();
+                            record.put("synsetId", synsetId == null ? "" : synsetId);
                             record.put("verb", verbValue);
                             record.put("definition", definition == null ? "" : definition);
                             String providedRegularity = normalizeRegularity(root.path("regularity").asText(""));
@@ -538,16 +598,19 @@ public class GenVerbMorphoDB {
                             if (root.hasNonNull("notes")) {
                                 record.put("notes", root.get("notes").asText(""));
                             }
-                            GenUtils.writeToFile(conjugationFileName, JSON_MAPPER.writeValueAsString(record) + "\n");
+                            String serializedLine = JSON_MAPPER.writeValueAsString(record);
+                            GenUtils.writeToFile(conjugationFileName, serializedLine + "\n");
+                            GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                         }
                     } catch (Exception ignored) {
                         // fall through to error handling
                     }
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(conjugationFileName,
-                            "ERROR! verb: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
+                            definition, llmResponse, "Unable to parse verb conjugation response.");
+                    GenUtils.writeToFile(conjugationFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {

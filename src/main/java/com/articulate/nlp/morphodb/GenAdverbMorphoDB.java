@@ -1,8 +1,10 @@
 package com.articulate.nlp.morphodb;
 
 import com.articulate.nlp.GenUtils;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +43,7 @@ public class GenAdverbMorphoDB {
     private void genAdverbSemanticClasses() {
 
         String adverbFileName = GenMorphoUtils.resolveOutputFile("adverb", "AdverbSemanticClasses.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(adverbFileName);
         for (Map.Entry<String, Set<String>> entry : adverbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -49,6 +52,13 @@ public class GenAdverbMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = adverbDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenAdverbMorphoDB.genAdverbSemanticClasses() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" :
                         "Definition: \"" + adverbDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in English adverb classes. " +
@@ -95,24 +105,26 @@ public class GenAdverbMorphoDB {
                     System.out.println("GenAdverbMorphoDB.genAdverbSemanticClasses() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] adverbArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("adverb", "category", "explanation", "usage"));
-                    if (adverbArray != null) {
-                        errorInResponse = false;
-                        adverbArray[1] = normalizeAdverbCategory(adverbArray[1]);
-                        adverbArray[2] = "\"" + adverbArray[2] + "\"";
-                        adverbArray[3] = "\"" + adverbArray[3] + "\"";
-                        adverbArray = GenUtils.appendToStringArray(adverbArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(adverbFileName, Arrays.toString(adverbArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("adverb", "category", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("category",
+                            normalizeAdverbCategory(responseNode.path("category").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(adverbFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(adverbFileName,
-                            "ERROR! adverb: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("adverb", term, synsetId,
+                            definition, llmResponse, "Unable to parse adverb classification response.");
+                    GenUtils.writeToFile(adverbFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {

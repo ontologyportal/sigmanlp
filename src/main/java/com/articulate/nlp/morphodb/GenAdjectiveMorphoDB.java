@@ -1,8 +1,10 @@
 package com.articulate.nlp.morphodb;
 
 import com.articulate.nlp.GenUtils;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +43,7 @@ public class GenAdjectiveMorphoDB {
     private void genAdjectiveClasses() {
 
         String adjectiveFileName = GenMorphoUtils.resolveOutputFile("adjective", "AdjectiveSemanticClasses.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(adjectiveFileName);
         for (Map.Entry<String, Set<String>> entry : adjectiveSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -49,6 +52,13 @@ public class GenAdjectiveMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = adjectiveDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenAdjectiveMorphoDB.genAdjectiveClasses() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" :
                         "Definition: \"" + adjectiveDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in English adjective classes. " +
@@ -84,24 +94,26 @@ public class GenAdjectiveMorphoDB {
                     System.out.println("GenAdjectiveMorphoDB.genAdjectiveSemanticClasses() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] adjectiveArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("adjective", "category", "explanation", "usage"));
-                    if (adjectiveArray != null) {
-                        errorInResponse = false;
-                        adjectiveArray[1] = normalizeAdjectiveCategory(adjectiveArray[1]);
-                        adjectiveArray[2] = "\"" + adjectiveArray[2] + "\"";
-                        adjectiveArray[3] = "\"" + adjectiveArray[3] + "\"";
-                        adjectiveArray = GenUtils.appendToStringArray(adjectiveArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(adjectiveFileName, Arrays.toString(adjectiveArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("adjective", "category", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("category",
+                            normalizeAdjectiveCategory(responseNode.path("category").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(adjectiveFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(adjectiveFileName,
-                            "ERROR! adjective: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("adjective", term, synsetId,
+                            definition, llmResponse, "Unable to parse adjective classification response.");
+                    GenUtils.writeToFile(adjectiveFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {

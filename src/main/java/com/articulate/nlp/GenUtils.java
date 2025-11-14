@@ -307,7 +307,17 @@ public class GenUtils {
     public static String askOllama(String prompt) {
         try {
             if (ollamaAPI == null) {
-                startOllamaServer(11434);
+                int port = 11434;
+                String portEnv = System.getenv("OLLAMA_PORT");
+                if (portEnv != null && !portEnv.isEmpty()) {
+                    try {
+                        port = Integer.parseInt(portEnv);
+                        System.out.println("GenUtils: Using OLLAMA_PORT from environment: " + port);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid OLLAMA_PORT environment variable: " + portEnv);
+                    }
+                }
+                startOllamaServer(port);
             }
             ollamaAPI.setRequestTimeoutSeconds(500);
             OllamaResult result =
