@@ -53,6 +53,8 @@ public class GenUtils {
     static int OLLAMA_PORT;
     public static OllamaAPI ollamaAPI;
     public static Options options;
+    private static final int OLLAMA_MAX_ATTEMPTS = 3;
+    private static final long OLLAMA_RETRY_DELAY_MS = 5 * 60 * 1000L;
 
     /** ***************************************************************
      *   Creates a random unique variable name.
@@ -304,20 +306,47 @@ public class GenUtils {
         return OLLAMA_MODEL;
     }
 
+    /** ***************************************************************
+     *   Sends a prompt to the Ollama server and returns the response.
+     */
     public static String askOllama(String prompt) {
-        try {
-            if (ollamaAPI == null) {
-                startOllamaServer(11434);
+
+        for (int attempt = 1; attempt <= OLLAMA_MAX_ATTEMPTS; attempt++) {
+            try {
+                if (ollamaAPI == null) {
+                    int port = 11434;
+                    String portEnv = System.getenv("OLLAMA_PORT");
+                    if (portEnv != null && !portEnv.isEmpty()) {
+                        try {
+                            port = Integer.parseInt(portEnv);
+                            System.out.println("GenUtils: Using OLLAMA_PORT from environment: " + port);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Invalid OLLAMA_PORT environment variable: " + portEnv);
+                        }
+                    }
+                    startOllamaServer(port);
+                }
+                ollamaAPI.setRequestTimeoutSeconds(500);
+                OllamaResult result =
+                        ollamaAPI.generate(OLLAMA_MODEL, prompt, false, options);
+                return result.getResponse().toString();
+            } catch (Exception e) {
+                System.out.println("Error in GenUtils.askOllama() attempt " + attempt +
+                        " of " + OLLAMA_MAX_ATTEMPTS + ": " + e.getMessage());
+                e.printStackTrace();
+                ollamaAPI = null; // force reconnection on next attempt
+                if (attempt < OLLAMA_MAX_ATTEMPTS) {
+                    System.out.println("Retrying Ollama request in 5 minutes...");
+                    try {
+                        Thread.sleep(OLLAMA_RETRY_DELAY_MS);
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
             }
-            ollamaAPI.setRequestTimeoutSeconds(500);
-            OllamaResult result =
-                    ollamaAPI.generate(OLLAMA_MODEL, prompt, false, options);
-            return result.getResponse().toString();
-        } catch (Exception e) {
-            System.out.println("Error in GenUtils.askOllama(): " + e.getMessage());
-            e.printStackTrace();
-            return null;
         }
+        return null;
     }
 
 

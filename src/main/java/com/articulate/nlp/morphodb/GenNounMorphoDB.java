@@ -1,8 +1,10 @@
 package com.articulate.nlp.morphodb;
 
 import com.articulate.nlp.GenUtils;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,6 +69,7 @@ public class GenNounMorphoDB {
     private void genIndefiniteArticles() {
 
         String indefFileName = GenMorphoUtils.resolveOutputFile("noun", "IndefiniteArticles.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(indefFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -75,6 +78,13 @@ public class GenNounMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenNounMorphoDB.genIndefiniteArticles() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert linguist specializing in English noun phrase syntax and article usage. " +
                         "Your task is to determine the correct indefinite article usage for the given noun or noun phrase. \n\n" +
@@ -101,34 +111,37 @@ public class GenNounMorphoDB {
                     System.out.println("GenNounMorphoDB.genIndefiniteArticles() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] indefArticleArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("article", "noun", "explanation", "usage"));
-                    if (indefArticleArray != null) {
-                        errorInResponse = false;
-                        String category;
-                        indefArticleArray[2] = "\"" + indefArticleArray[2] + "\""; // explanation
-                        indefArticleArray[3] = "\"" + indefArticleArray[3] + "\""; // usage
-                        if (indefArticleArray[0].equals("none")) {
-                            category = "NA";
-                        }
-                        else if (isIrregularIndefiniteArticle(indefArticleArray[0], indefArticleArray[1])) {
-                            category = "Irregular";
-                        }
-                        else {
-                            category = "Regular";
-                        }
-
-                        indefArticleArray = GenUtils.appendToStringArray(indefArticleArray, category);
-                        indefArticleArray = GenUtils.appendToStringArray(indefArticleArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(indefFileName, Arrays.toString(indefArticleArray) + "\n");
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("article", "noun", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    String articleValue = responseNode.path("article").asText("");
+                    String nounValue = responseNode.path("noun").asText("");
+                    String category;
+                    if ("none".equals(articleValue)) {
+                        category = "NA";
                     }
+                    else if (isIrregularIndefiniteArticle(articleValue, nounValue)) {
+                        category = "Irregular";
+                    }
+                    else {
+                        category = "Regular";
+                    }
+                    responseNode.put("article_pattern", category);
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(indefFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(indefFileName,
-                            "ERROR! term: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + llmResponse.replace("\n", "") + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
+                            definition, llmResponse, "Unable to parse indefinite article response.");
+                    GenUtils.writeToFile(indefFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -144,6 +157,7 @@ public class GenNounMorphoDB {
     private void genCollectiveNouns() {
 
         String collectiveFileName = GenMorphoUtils.resolveOutputFile("noun", "CollectiveNouns.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(collectiveFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -152,6 +166,13 @@ public class GenNounMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenNounMorphoDB.genCollectiveNouns() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in English collective nouns. " +
                         "Determine whether the given noun typically refers to a collection of individuals or things acting as a single unit. " +
@@ -174,23 +195,26 @@ public class GenNounMorphoDB {
                     System.out.println("GenNounMorphoDB.genCollectiveNouns() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] collectiveArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("noun", "collective", "explanation", "usage"));
-                    if (collectiveArray != null) {
-                        errorInResponse = false;
-                        collectiveArray[1] = normalizeCollectiveCategory(collectiveArray[1]);
-                        collectiveArray[2] = "\"" + collectiveArray[2] + "\"";
-                        collectiveArray[3] = "\"" + collectiveArray[3] + "\"";
-                        collectiveArray = GenUtils.appendToStringArray(collectiveArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(collectiveFileName, Arrays.toString(collectiveArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("noun", "collective", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("collective",
+                            normalizeCollectiveCategory(responseNode.path("collective").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(collectiveFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(collectiveFileName,
-                            "ERROR! term: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
+                            definition, llmResponse, "Unable to parse collective noun response.");
+                    GenUtils.writeToFile(collectiveFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -206,6 +230,7 @@ public class GenNounMorphoDB {
     private void genCountability() {
 
         String countabilityFileName = GenMorphoUtils.resolveOutputFile("noun", "Countability.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(countabilityFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -214,6 +239,13 @@ public class GenNounMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenNounMorphoDB.genCountability() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in English noun countability. " +
                         "Classify whether the noun is a count noun, mass noun, or can be used as both. " +
@@ -235,23 +267,26 @@ public class GenNounMorphoDB {
                     System.out.println("GenNounMorphoDB.genCountability() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] countabilityArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("noun", "countability", "explanation", "usage"));
-                    if (countabilityArray != null) {
-                        errorInResponse = false;
-                        countabilityArray[1] = normalizeCountabilityCategory(countabilityArray[1]);
-                        countabilityArray[2] = "\"" + countabilityArray[2] + "\"";
-                        countabilityArray[3] = "\"" + countabilityArray[3] + "\"";
-                        countabilityArray = GenUtils.appendToStringArray(countabilityArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(countabilityFileName, Arrays.toString(countabilityArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("noun", "countability", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("countability",
+                            normalizeCountabilityCategory(responseNode.path("countability").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(countabilityFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(countabilityFileName,
-                            "ERROR! term: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
+                            definition, llmResponse, "Unable to parse countability response.");
+                    GenUtils.writeToFile(countabilityFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -267,6 +302,7 @@ public class GenNounMorphoDB {
     private void genHumanness() {
 
         String humannessFileName = GenMorphoUtils.resolveOutputFile("noun", "Humanness.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(humannessFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -275,6 +311,13 @@ public class GenNounMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenNounMorphoDB.genHumanness() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer specializing in the semantics of English nouns. " +
                         "Classify whether the noun typically denotes a human being (including professions, roles, demonyms, and personal names), a non-human entity, or can refer to both. " +
@@ -296,23 +339,26 @@ public class GenNounMorphoDB {
                     System.out.println("GenNounMorphoDB.genHumanness() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] humannessArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("noun", "classification", "explanation", "usage"));
-                    if (humannessArray != null) {
-                        errorInResponse = false;
-                        humannessArray[1] = normalizeHumannessCategory(humannessArray[1]);
-                        humannessArray[2] = "\"" + humannessArray[2] + "\"";
-                        humannessArray[3] = "\"" + humannessArray[3] + "\"";
-                        humannessArray = GenUtils.appendToStringArray(humannessArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(humannessFileName, Arrays.toString(humannessArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("noun", "classification", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("classification",
+                            normalizeHumannessCategory(responseNode.path("classification").asText("")));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(humannessFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(humannessFileName,
-                            "ERROR! term: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
+                            definition, llmResponse, "Unable to parse humanness response.");
+                    GenUtils.writeToFile(humannessFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -328,6 +374,7 @@ public class GenNounMorphoDB {
     private void genAgentivity() {
 
         String agentivityFileName = GenMorphoUtils.resolveOutputFile("noun", "NounAgentivity.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(agentivityFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -336,6 +383,13 @@ public class GenNounMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenNounMorphoDB.genAgentivity() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert lexicographer analyzing agentivity in English nouns. " +
                         "Determine whether the noun typically denotes an entity capable of intentional action (agentive). " +
@@ -360,25 +414,28 @@ public class GenNounMorphoDB {
                     System.out.println("GenNounMorphoDB.genAgentivity() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] agentivityArray = GenUtils.extractJsonFields(jsonResponse,
-                            Arrays.asList("noun", "agency", "agent_type", "explanation", "usage"));
-                    if (agentivityArray != null) {
-                        errorInResponse = false;
-                        agentivityArray[1] = normalizeAgencyCategory(agentivityArray[1]);
-                        agentivityArray[2] = normalizeAgentType(agentivityArray[2], agentivityArray[1]);
-                        agentivityArray[3] = "\"" + agentivityArray[3] + "\"";
-                        agentivityArray[4] = "\"" + agentivityArray[4] + "\"";
-                        agentivityArray = GenUtils.appendToStringArray(agentivityArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(agentivityFileName, Arrays.toString(agentivityArray) + "\n");
-                    }
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("noun", "agency", "agent_type", "explanation", "usage"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    String normalizedAgency = normalizeAgencyCategory(responseNode.path("agency").asText(""));
+                    responseNode.put("agency", normalizedAgency);
+                    responseNode.put("agent_type",
+                            normalizeAgentType(responseNode.path("agent_type").asText(""), normalizedAgency));
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    responseNode.put("usage", responseNode.path("usage").asText(""));
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(agentivityFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(agentivityFileName,
-                            "ERROR! term: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + (llmResponse == null ? "null" : llmResponse.replace("\n", "")) + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
+                            definition, llmResponse, "Unable to parse agentivity response.");
+                    GenUtils.writeToFile(agentivityFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {
@@ -395,6 +452,7 @@ public class GenNounMorphoDB {
     private void genPlurals() {
 
         String pluralsFileName = GenMorphoUtils.resolveOutputFile("noun", "Plurals.txt");
+        Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(pluralsFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
             if (term.length() < 2) {
@@ -403,6 +461,13 @@ public class GenNounMorphoDB {
             for (String synsetId : entry.getValue()) {
                 String definition = nounDocumentationHash.get(synsetId);
                 definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
+                    if (GenMorphoUtils.debug) {
+                        System.out.println("Skipping GenNounMorphoDB.genPlurals() for \"" + term +
+                                "\" (" + synsetId + ") - already classified.");
+                    }
+                    continue;
+                }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
                 String prompt = "You are an expert linguist specializing in English noun phrase syntax and plural forms. " +
                         "Your task is to determine the singular and plural form of the given noun or noun phrase. \n\n" +
@@ -426,29 +491,33 @@ public class GenNounMorphoDB {
                     System.out.println("GenNounMorphoDB.genPlurals() Prompt: " + prompt);
                 }
                 String llmResponse = GenUtils.askOllama(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    String[] pluralsArray = GenUtils.extractJsonFields(jsonResponse, Arrays.asList("singular", "plural", "type", "explanation"));
-                    if (pluralsArray != null) {
-                        errorInResponse = false;
-                        String category;
-                        if (!pluralsArray[1].equals(term) && isIrregularPlural(pluralsArray[0], pluralsArray[1])) {
-                            category = "Irregular";
-                        }
-                        else {
-                            category = "Regular";
-                        }
-
-                        pluralsArray = GenUtils.appendToStringArray(pluralsArray, category);
-                        pluralsArray = GenUtils.appendToStringArray(pluralsArray, "\"" + definition + "\"");
-                        GenUtils.writeToFile(pluralsFileName, Arrays.toString(pluralsArray) + "\n");
+                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                        Arrays.asList("singular", "plural", "type", "explanation"));
+                if (responseNode != null) {
+                    errorInResponse = false;
+                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                    responseNode.put("explanation", responseNode.path("explanation").asText(""));
+                    String singularValue = responseNode.path("singular").asText("");
+                    String pluralValue = responseNode.path("plural").asText("");
+                    String category;
+                    if (!pluralValue.equals(term) && isIrregularPlural(singularValue, pluralValue)) {
+                        category = "Irregular";
                     }
+                    else {
+                        category = "Regular";
+                    }
+                    responseNode.put("plural_pattern", category);
+                    responseNode.put("definition", definition == null ? "" : definition);
+                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                    GenUtils.writeToFile(pluralsFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
                 if (errorInResponse) {
-                    GenUtils.writeToFile(pluralsFileName,
-                            "ERROR! term: " + term + ". " + definitionStatement +
-                                    " - LLM response: " + llmResponse.replace("\n", "") + "\n");
+                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
+                            definition, llmResponse, "Unable to parse pluralization response.");
+                    GenUtils.writeToFile(pluralsFileName, errorLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
                 }
 
                 if (GenMorphoUtils.debug) {

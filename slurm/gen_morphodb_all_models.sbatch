@@ -2,13 +2,13 @@
 
 #SBATCH --job-name=gen-morphodb
 #SBATCH --output=slurm-%x-%j.out
-#SBATCH --nodes=${NODES:-1}          # Number of computers (nodes)
+#SBATCH --partition=fsg               # Use the FSG partition directly
+#SBATCH --nodes=1                     # fsg partition has 1 node
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=${CPUS:-8}
-#SBATCH --mem=${MEMORY:-64G}         # Memory per node
-#SBATCH --gpus-per-node=${GPUS:-0}   # GPUs per node (0 for CPU-only jobs)
-#SBATCH --time=24:00:00
-#SBATCH --partition=${PARTITION:-standard}
+#SBATCH --cpus-per-task=256           # Use all 256 CPUs
+#SBATCH --mem=0                       # 0 means "use all available memory"
+#SBATCH --gpus-per-node=8             # Use all 8 GPUs (l40s)
+#SBATCH --time=96:00:00               # Allow long run (fsg has infinite limit)
 
 set -euo pipefail
 
@@ -17,6 +17,26 @@ mkdir -p "$(dirname "$LOG_FILE")"
 exec > >(tee -a "$LOG_FILE")
 exec 2>&1
 
+# Use a unique port based on job ID to avoid conflicts
+export OLLAMA_PORT=$((12000 + SLURM_JOB_ID % 10000))
+export OLLAMA_HOST="127.0.0.1:${OLLAMA_PORT}"
+echo "Using Ollama on custom port: $OLLAMA_PORT"
+
+echo "Stopping any existing Ollama server..."
+pkill -f "ollama serve" 2>/dev/null || true
+sleep 3
+
+ollama --version
+
+echo "=== Starting Ollama server on port $OLLAMA_PORT==="
+ollama serve >> "$LOG_FILE" 2>&1 &
+OLLAMA_PID=$!
+
+# Give it time to start
+sleep 10
+
+# Stop Ollama automatically on exit
+trap 'echo "=== Stopping Ollama server ==="; kill $OLLAMA_PID' EXIT
 
 MODELS=(
     "gpt-oss:20b"
@@ -33,7 +53,7 @@ MODELS=(
     "gemma3:4b"
     "gemma2:27b"
     "qwen3:0.6b"
-    "qwen3:8b
+    "qwen3:8b"
     "qwen3:32b"
     "qwen3:235b"
 )
