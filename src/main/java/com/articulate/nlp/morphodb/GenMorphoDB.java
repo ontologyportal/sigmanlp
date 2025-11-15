@@ -61,7 +61,7 @@ public class GenMorphoDB {
      ***************************************************************/
     private static void printHelp() {
 
-        System.out.println("Usage: com.articulate.nlp.morphodb.GenMorphoDB <word-type> <gen-function> <model>");
+        System.out.println("Usage: com.articulate.nlp.morphodb.GenMorphoDB <word-type> <gen-function> <model> [ollama-port]");
         System.out.println("word-types supported: noun, verb, adjective, adverb, all");
         System.out.println("Noun gen-functions:");
         System.out.println("  -i to generate indefinite articles");
@@ -84,7 +84,8 @@ public class GenMorphoDB {
         System.out.println("All gen-functions:");
         System.out.println("  -a to run every morphology generator");
         System.out.println("Example: java -Xmx40g -classpath $SIGMANLP_CP "
-                + "com.articulate.nlp.morphodb.GenMorphoDB noun -i llama3.2");
+                + "com.articulate.nlp.morphodb.GenMorphoDB noun -i llama3.2 11434");
+        System.out.println("If no port is provided, the default 11434 will be used.");
     }
 
     
@@ -104,8 +105,19 @@ public class GenMorphoDB {
         String wordType = args[0].toLowerCase();
         String genFunction = args[1];
         String model = args[2];
+        Integer port = null;
+        if (args.length >= 4) {
+            try {
+                port = Integer.parseInt(args[3]);
+            } catch (NumberFormatException ex) {
+                System.err.println("Invalid port: " + args[3]);
+                printHelp();
+                return;
+            }
+        }
 
         GenUtils.setOllamaModel(model);
+        GenUtils.setOllamaPort(port);
         System.out.println("Using model: " + GenUtils.getOllamaModel());
 
         KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
