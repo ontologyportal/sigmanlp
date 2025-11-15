@@ -50,7 +50,7 @@ public class GenUtils {
     //static String OLLAMA_MODEL = "qwen3:1.7b";
     static String OLLAMA_MODEL = "llama3.2";
     //static String OLLAMA_MODEL = "gpt-oss";
-    static int OLLAMA_PORT;
+    static int OLLAMA_PORT = 11434;
     public static OllamaAPI ollamaAPI;
     public static Options options;
     private static final int OLLAMA_MAX_ATTEMPTS = 3;
@@ -282,7 +282,7 @@ public class GenUtils {
                     System.err.println("Failed to start Ollama server on port " + port);
                     System.exit(1);
                 }
-                OLLAMA_PORT = port;
+                setOllamaPort(port);
                 System.out.println("GenUtils: Ollama server started on port: " + port);
             } else { System.out.println("GenUtils: Ollama server already running on port: " + port);}
 
@@ -302,6 +302,13 @@ public class GenUtils {
         OLLAMA_MODEL = new_model;
     }
 
+    public static void setOllamaPort(Integer port) {
+        if (port == null) {
+            throw new IllegalArgumentException("OLLAMA_PORT must not be null");
+        }
+        OLLAMA_PORT = port;
+    }
+
     public static String getOllamaModel() {
         return OLLAMA_MODEL;
     }
@@ -314,22 +321,16 @@ public class GenUtils {
         for (int attempt = 1; attempt <= OLLAMA_MAX_ATTEMPTS; attempt++) {
             try {
                 if (ollamaAPI == null) {
-                    int port = 11434;
-                    String portEnv = System.getenv("OLLAMA_PORT");
-                    if (portEnv != null && !portEnv.isEmpty()) {
-                        try {
-                            port = Integer.parseInt(portEnv);
-                            System.out.println("GenUtils: Using OLLAMA_PORT from environment: " + port);
-                        } catch (NumberFormatException e) {
-                            System.err.println("Invalid OLLAMA_PORT environment variable: " + portEnv);
-                        }
-                    }
-                    startOllamaServer(port);
+                    startOllamaServer(OLLAMA_PORT);
                 }
                 ollamaAPI.setRequestTimeoutSeconds(500);
                 OllamaResult result =
                         ollamaAPI.generate(OLLAMA_MODEL, prompt, false, options);
-                return result.getResponse().toString();
+                Object response = result.getResponse();
+                if (response == null) {
+                    throw new IllegalStateException("Ollama returned a null response.");
+                }
+                return response.toString();
             } catch (Exception e) {
                 System.out.println("Error in GenUtils.askOllama() attempt " + attempt +
                         " of " + OLLAMA_MAX_ATTEMPTS + ": " + e.getMessage());
@@ -346,7 +347,9 @@ public class GenUtils {
                 }
             }
         }
-        return null;
+        System.err.println("GenUtils.askOllama(): Exhausted all retries without receiving a response. Exiting.");
+        System.exit(1);
+        throw new IllegalStateException("GenUtils.askOllama(): System exit failed to terminate process."); //required for compiler.
     }
 
 
