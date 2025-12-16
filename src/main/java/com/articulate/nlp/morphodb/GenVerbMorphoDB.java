@@ -85,6 +85,45 @@ public class GenVerbMorphoDB {
     }
 
     /***************************************************************
+     * Loads verb-related morphology files for quick lookup.
+     ***************************************************************/
+    public static Map<String, List<ObjectNode>> loadVerbValence() {
+
+        return loadVerbClassifications("VerbValence.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadVerbCausativity() {
+
+        return loadVerbClassifications("VerbCausativity.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadVerbReflexive() {
+
+        return loadVerbClassifications("VerbReflexive.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadVerbReciprocal() {
+
+        return loadVerbClassifications("VerbReciprocal.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadVerbAchievementProcess() {
+
+        return loadVerbClassifications("VerbAchievementProcess.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadVerbConjugations() {
+
+        return loadVerbClassifications("VerbConjugations.txt");
+    }
+
+    private static Map<String, List<ObjectNode>> loadVerbClassifications(String fileName) {
+
+        String verbFileName = GenMorphoUtils.computeOutputFilePath("verb", fileName);
+        return GenMorphoUtils.loadClassificationObjects(verbFileName);
+    }
+
+    /***************************************************************
      * Uses OLLAMA to classify verbs across valency categories.
      ***************************************************************/
     private void genVerbValence() {

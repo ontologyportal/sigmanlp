@@ -63,6 +63,45 @@ public class GenNounMorphoDB {
     }
 
     /***************************************************************
+     * Loads noun-related morphology files for quick lookup.
+     ***************************************************************/
+    public static Map<String, List<ObjectNode>> loadIndefiniteArticles() {
+
+        return loadNounClassifications("IndefiniteArticles.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadCountability() {
+
+        return loadNounClassifications("Countability.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadPlurals() {
+
+        return loadNounClassifications("Plurals.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadHumanness() {
+
+        return loadNounClassifications("Humanness.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadAgentivity() {
+
+        return loadNounClassifications("NounAgentivity.txt");
+    }
+
+    public static Map<String, List<ObjectNode>> loadCollectiveNouns() {
+
+        return loadNounClassifications("CollectiveNouns.txt");
+    }
+
+    private static Map<String, List<ObjectNode>> loadNounClassifications(String fileName) {
+
+        String nounFileName = GenMorphoUtils.computeOutputFilePath("noun", fileName);
+        return GenMorphoUtils.loadClassificationObjects(nounFileName);
+    }
+
+    /***************************************************************
      * Uses OLLAMA to determine the indefinite article of every noun
      * in WordNet.
      ***************************************************************/
