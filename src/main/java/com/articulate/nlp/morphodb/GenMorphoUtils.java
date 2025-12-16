@@ -30,7 +30,7 @@ public final class GenMorphoUtils {
     /***************************************************************
      * Builds the standardized output path for morphology resources.
      ***************************************************************/
-    public static String resolveOutputFile(String wordType, String classificationFileName) {
+    public static String computeOutputFilePath(String wordType, String classificationFileName) {
 
         if (classificationFileName == null || classificationFileName.trim().isEmpty()) {
             throw new IllegalArgumentException("classificationFileName cannot be null or empty.");
@@ -42,12 +42,24 @@ public final class GenMorphoUtils {
                 .replace('.', '_')
                 .replace(':', '_');
         Path outputDir = Paths.get(OUTPUT_ROOT, sanitizedModelName, normalizedWordType);
+        return outputDir.resolve(classificationFileName).toString();
+    }
+
+    /***************************************************************
+     * Builds (and ensures) the output file path for morphology resources.
+     ***************************************************************/
+    public static String resolveOutputFile(String wordType, String classificationFileName) {
+
+        String outputFilePath = computeOutputFilePath(wordType, classificationFileName);
+        Path outputDir = Paths.get(outputFilePath).getParent();
         try {
-            Files.createDirectories(outputDir);
+            if (outputDir != null) {
+                Files.createDirectories(outputDir);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Unable to create output directory: " + outputDir, e);
         }
-        return outputDir.resolve(classificationFileName).toString();
+        return outputFilePath;
     }
 
     /***************************************************************
@@ -121,6 +133,39 @@ public final class GenMorphoUtils {
             throw new RuntimeException("Unable to read morphology output file: " + outputFilePath, e);
         }
         return existing;
+    }
+
+    /***************************************************************
+     * Loads morphology output into a synsetId -> JSON object index.
+     ***************************************************************/
+    public static Map<String, List<ObjectNode>> loadClassificationObjects(String outputFilePath) {
+
+        Map<String, List<ObjectNode>> parsed = new HashMap<>();
+        if (outputFilePath == null || outputFilePath.trim().isEmpty()) {
+            return parsed;
+        }
+        Path path = Paths.get(outputFilePath);
+        if (!Files.exists(path)) {
+            return parsed;
+        }
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                ObjectNode node = parseJsonObjectLine(line);
+                if (node == null) {
+                    continue;
+                }
+                String synsetId = node.path("synsetId").asText("").trim();
+                if (synsetId.isEmpty()) {
+                    System.err.println("Missing synsetId in morphology output file '" + outputFilePath + "' line: " + line);
+                    System.exit(1);
+                }
+                parsed.computeIfAbsent(synsetId, key -> new ArrayList<>()).add(node);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to parse morphology output file: " + outputFilePath, e);
+        }
+        return parsed;
     }
 
     /***************************************************************
@@ -252,6 +297,23 @@ public final class GenMorphoUtils {
             return JSON_MAPPER.writeValueAsString(node);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Unable to serialize JSON.", e);
+        }
+    }
+
+    private static ObjectNode parseJsonObjectLine(String serializedLine) {
+
+        if (serializedLine == null) {
+            return null;
+        }
+        String trimmed = serializedLine.trim();
+        if (!trimmed.startsWith("{")) {
+            return null;
+        }
+        try {
+            JsonNode node = JSON_MAPPER.readTree(trimmed);
+            return (node instanceof ObjectNode) ? (ObjectNode) node : null;
+        } catch (IOException e) {
+            return null;
         }
     }
 }

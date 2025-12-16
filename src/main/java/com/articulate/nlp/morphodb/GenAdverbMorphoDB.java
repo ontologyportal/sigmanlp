@@ -38,6 +38,15 @@ public class GenAdverbMorphoDB {
     }
 
     /***************************************************************
+     * Loads adverb semantic classifications into memory.
+     ***************************************************************/
+    public static Map<String, List<ObjectNode>> loadAdverbSemanticClasses() {
+
+        String adverbFileName = GenMorphoUtils.computeOutputFilePath("adverb", "AdverbSemanticClasses.txt");
+        return GenMorphoUtils.loadClassificationObjects(adverbFileName);
+    }
+
+    /***************************************************************
      * Uses OLLAMA to classify adverbs by discourse and semantic role.
      ***************************************************************/
     private void genAdverbSemanticClasses() {
