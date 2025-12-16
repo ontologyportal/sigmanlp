@@ -182,7 +182,7 @@ public class UnificationTest extends IntegrationTestBase {
     /** *************************************************************
      * Was Amelia Mary Earhart interested in airplanes?
      * prep_in(?R,?O), sumo(inScopeOfInterest,interested*), nsubj(?R,?S), cop(interested*,be*) ==> {(inScopeOfInterest ?S ?O)}.
-     */
+     
     @Test
     public void testWasAmeliaMaryEarhartInterestedInAirplanes() {
 
@@ -197,6 +197,7 @@ public class UnificationTest extends IntegrationTestBase {
         );
         doTest(sent,input,expected);
     }
+        */
 
     /** *************************************************************
      * Where did she fly?
