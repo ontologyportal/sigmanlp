@@ -1,0 +1,251 @@
+[ {
+  "id" : 1,
+  "image_list" : [ "./images/The shelf is outside the hair dryer.Test1.png", "./images/The shelf is outside the hair dryer.Tes2t.png" ],
+  "language_description" : "The shelf is outside the hair dryer.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Shelf) (instance ?A2 HairDryer) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 2,
+  "image_list" : [ "./images/The holder is below the wing device.Test1.png", "./images/The holder is below the wing device.Tes2t.png" ],
+  "language_description" : "The holder is below the wing device.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Holder) (instance ?A2 WingDevice) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 3,
+  "image_list" : [ "./images/The fence is east the cloak.Test1.png", "./images/The fence is east the cloak.Tes2t.png" ],
+  "language_description" : "The fence is east the cloak.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Fence) (instance ?A2 Cloak) (orientation ?A1 ?A2 East)))"
+}, {
+  "id" : 4,
+  "image_list" : [ "./images/The doll is outside the historical account.Test1.png", "./images/The doll is outside the historical account.Tes2t.png" ],
+  "language_description" : "The doll is outside the historical account.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Doll) (instance ?A2 HistoricalAccount) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 5,
+  "image_list" : [ "./images/The collar is north the purchase order.Test1.png", "./images/The collar is north the purchase order.Tes2t.png" ],
+  "language_description" : "The collar is north the purchase order.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Collar) (instance ?A2 PurchaseOrder) (orientation ?A1 ?A2 North)))"
+}, {
+  "id" : 6,
+  "image_list" : [ "./images/The wall is below the kennel.Test1.png", "./images/The wall is below the kennel.Tes2t.png" ],
+  "language_description" : "The wall is below the kennel.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Wall) (instance ?A2 Kennel) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 7,
+  "image_list" : [ "./images/The furniture is upstairs the projectile launcher.Test1.png", "./images/The furniture is upstairs the projectile launcher.Tes2t.png" ],
+  "language_description" : "The furniture is upstairs the projectile launcher.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Furniture) (instance ?A2 ProjectileLauncher) (orientation ?A1 ?A2 Upstairs)))"
+}, {
+  "id" : 8,
+  "image_list" : [ "./images/The sprinkler is south the biography.Test1.png", "./images/The sprinkler is south the biography.Tes2t.png" ],
+  "language_description" : "The sprinkler is south the biography.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Sprinkler) (instance ?A2 Biography) (orientation ?A1 ?A2 South)))"
+}, {
+  "id" : 9,
+  "image_list" : [ "./images/The police facility is surrounded the military installation.Test1.png", "./images/The police facility is surrounded the military installation.Tes2t.png" ],
+  "language_description" : "The police facility is surrounded the military installation.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 PoliceFacility) (instance ?A2 MilitaryInstallation) (orientation ?A1 ?A2 Surrounded)))"
+}, {
+  "id" : 10,
+  "image_list" : [ "./images/The representational art work is west the coat.Test1.png", "./images/The representational art work is west the coat.Tes2t.png" ],
+  "language_description" : "The representational art work is west the coat.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 RepresentationalArtWork) (instance ?A2 Coat) (orientation ?A1 ?A2 West)))"
+}, {
+  "id" : 11,
+  "image_list" : [ "./images/The cloak is adjacent the gasoline engine.Test1.png", "./images/The cloak is adjacent the gasoline engine.Tes2t.png" ],
+  "language_description" : "The cloak is adjacent the gasoline engine.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Cloak) (instance ?A2 GasolineEngine) (orientation ?A1 ?A2 Adjacent)))"
+}, {
+  "id" : 12,
+  "image_list" : [ "./images/The self-service laundry is inside the pericardium.Test1.png", "./images/The self-service laundry is inside the pericardium.Tes2t.png" ],
+  "language_description" : "The self-service laundry is inside the pericardium.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 SelfServiceLaundry) (instance ?A2 Pericardium) (orientation ?A1 ?A2 Inside)))"
+}, {
+  "id" : 13,
+  "image_list" : [ "./images/The damaged vehicle is near the government building.Test1.png", "./images/The damaged vehicle is near the government building.Tes2t.png" ],
+  "language_description" : "The damaged vehicle is near the government building.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DamagedVehicle) (instance ?A2 GovernmentBuilding) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 14,
+  "image_list" : [ "./images/The taillight is north the grecian tub.Test1.png", "./images/The taillight is north the grecian tub.Tes2t.png" ],
+  "language_description" : "The taillight is north the grecian tub.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Taillight) (instance ?A2 GrecianTub) (orientation ?A1 ?A2 North)))"
+}, {
+  "id" : 15,
+  "image_list" : [ "./images/The anaerobic exercise device is below the bomb.Test1.png", "./images/The anaerobic exercise device is below the bomb.Tes2t.png" ],
+  "language_description" : "The anaerobic exercise device is below the bomb.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 AnaerobicExerciseDevice) (instance ?A2 Bomb) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 16,
+  "image_list" : [ "./images/The announcement is adjacent the uniform.Test1.png", "./images/The announcement is adjacent the uniform.Tes2t.png" ],
+  "language_description" : "The announcement is adjacent the uniform.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Announcement) (instance ?A2 UniformClothing) (orientation ?A1 ?A2 Adjacent)))"
+}, {
+  "id" : 17,
+  "image_list" : [ "./images/The christian bible is outside the gun trigger.Test1.png", "./images/The christian bible is outside the gun trigger.Tes2t.png" ],
+  "language_description" : "The christian bible is outside the gun trigger.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 ChristianBible) (instance ?A2 GunTrigger) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 18,
+  "image_list" : [ "./images/The camera is adjacent the shower.Test1.png", "./images/The camera is adjacent the shower.Tes2t.png" ],
+  "language_description" : "The camera is adjacent the shower.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Camera) (instance ?A2 Shower) (orientation ?A1 ?A2 Adjacent)))"
+}, {
+  "id" : 19,
+  "image_list" : [ "./images/The axle is above the gun muzzle.Test1.png", "./images/The axle is above the gun muzzle.Tes2t.png" ],
+  "language_description" : "The axle is above the gun muzzle.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Axle) (instance ?A2 GunMuzzle) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 20,
+  "image_list" : [ "./images/The device is south the rug.Test1.png", "./images/The device is south the rug.Tes2t.png" ],
+  "language_description" : "The device is south the rug.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Device) (instance ?A2 Rug) (orientation ?A1 ?A2 South)))"
+}, {
+  "id" : 21,
+  "image_list" : [ "./images/The karabiner is surrounded the gun stock.Test1.png", "./images/The karabiner is surrounded the gun stock.Tes2t.png" ],
+  "language_description" : "The karabiner is surrounded the gun stock.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Carabiner) (instance ?A2 GunStock) (orientation ?A1 ?A2 Surrounded)))"
+}, {
+  "id" : 22,
+  "image_list" : [ "./images/The farm is downstairs the filter.Test1.png", "./images/The farm is downstairs the filter.Tes2t.png" ],
+  "language_description" : "The farm is downstairs the filter.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Farm) (instance ?A2 Filter) (orientation ?A1 ?A2 Downstairs)))"
+}, {
+  "id" : 23,
+  "image_list" : [ "./images/The pistol is horizontal the toilet.Test1.png", "./images/The pistol is horizontal the toilet.Tes2t.png" ],
+  "language_description" : "The pistol is horizontal the toilet.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Pistol) (instance ?A2 Toilet) (orientation ?A1 ?A2 Horizontal)))"
+}, {
+  "id" : 24,
+  "image_list" : [ "./images/The wall is outside the camera.Test1.png", "./images/The wall is outside the camera.Tes2t.png" ],
+  "language_description" : "The wall is outside the camera.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Wall) (instance ?A2 Camera) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 25,
+  "image_list" : [ "./images/The place of worship is upstairs the paragraph.Test1.png", "./images/The place of worship is upstairs the paragraph.Tes2t.png" ],
+  "language_description" : "The place of worship is upstairs the paragraph.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 PlaceOfWorship) (instance ?A2 Paragraph) (orientation ?A1 ?A2 Upstairs)))"
+}, {
+  "id" : 26,
+  "image_list" : [ "./images/The dormitory is downstairs the audio recorder.Test1.png", "./images/The dormitory is downstairs the audio recorder.Tes2t.png" ],
+  "language_description" : "The dormitory is downstairs the audio recorder.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Dormitory) (instance ?A2 AudioRecorder) (orientation ?A1 ?A2 Downstairs)))"
+}, {
+  "id" : 27,
+  "image_list" : [ "./images/The audio recorder is south the whip.Test1.png", "./images/The audio recorder is south the whip.Tes2t.png" ],
+  "language_description" : "The audio recorder is south the whip.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 AudioRecorder) (instance ?A2 Whip) (orientation ?A1 ?A2 South)))"
+}, {
+  "id" : 28,
+  "image_list" : [ "./images/The summary is south the transportation device.Test1.png", "./images/The summary is south the transportation device.Tes2t.png" ],
+  "language_description" : "The summary is south the transportation device.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Summary) (instance ?A2 TransportationDevice) (orientation ?A1 ?A2 South)))"
+}, {
+  "id" : 29,
+  "image_list" : [ "./images/The ballot is west the land vehicle.Test1.png", "./images/The ballot is west the land vehicle.Tes2t.png" ],
+  "language_description" : "The ballot is west the land vehicle.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Ballot) (instance ?A2 LandVehicle) (orientation ?A1 ?A2 West)))"
+}, {
+  "id" : 30,
+  "image_list" : [ "./images/The major appliance is inside the letter.Test1.png", "./images/The major appliance is inside the letter.Tes2t.png" ],
+  "language_description" : "The major appliance is inside the letter.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 MajorAppliance) (instance ?A2 Letter) (orientation ?A1 ?A2 Inside)))"
+}, {
+  "id" : 31,
+  "image_list" : [ "./images/The drinking cup is north the dish.Test1.png", "./images/The drinking cup is north the dish.Tes2t.png" ],
+  "language_description" : "The drinking cup is north the dish.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Dish) (orientation ?A1 ?A2 North)))"
+}, {
+  "id" : 32,
+  "image_list" : [ "./images/The cleaning device is right the taillight.Test1.png", "./images/The cleaning device is right the taillight.Tes2t.png" ],
+  "language_description" : "The cleaning device is right the taillight.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 CleaningDevice) (instance ?A2 Taillight) (orientation ?A1 ?A2 Right)))"
+}, {
+  "id" : 33,
+  "image_list" : [ "./images/The cutting device is south the towel.Test1.png", "./images/The cutting device is south the towel.Tes2t.png" ],
+  "language_description" : "The cutting device is south the towel.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 CuttingDevice) (instance ?A2 Towel) (orientation ?A1 ?A2 South)))"
+}, {
+  "id" : 34,
+  "image_list" : [ "./images/The saddle is on the wash basin.Test1.png", "./images/The saddle is on the wash basin.Tes2t.png" ],
+  "language_description" : "The saddle is on the wash basin.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Saddle) (instance ?A2 WashBasin) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 35,
+  "image_list" : [ "./images/The christian gospel is east the wool.Test1.png", "./images/The christian gospel is east the wool.Tes2t.png" ],
+  "language_description" : "The christian gospel is east the wool.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 ChristianGospel) (instance ?A2 Wool) (orientation ?A1 ?A2 East)))"
+}, {
+  "id" : 36,
+  "image_list" : [ "./images/The purchase order is near the microphone.Test1.png", "./images/The purchase order is near the microphone.Tes2t.png" ],
+  "language_description" : "The purchase order is near the microphone.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 PurchaseOrder) (instance ?A2 Microphone) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 37,
+  "image_list" : [ "./images/The pass certificate is downstairs the veneer.Test1.png", "./images/The pass certificate is downstairs the veneer.Tes2t.png" ],
+  "language_description" : "The pass certificate is downstairs the veneer.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 PassCertificate) (instance ?A2 Veneer) (orientation ?A1 ?A2 Downstairs)))"
+}, {
+  "id" : 38,
+  "image_list" : [ "./images/The tub is above the stove.Test1.png", "./images/The tub is above the stove.Tes2t.png" ],
+  "language_description" : "The tub is above the stove.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 BathTub) (instance ?A2 Stove) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 39,
+  "image_list" : [ "./images/The holder is near the short story.Test1.png", "./images/The holder is near the short story.Tes2t.png" ],
+  "language_description" : "The holder is near the short story.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Holder) (instance ?A2 ShortStory) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 40,
+  "image_list" : [ "./images/The announcement is near the paper.Test1.png", "./images/The announcement is near the paper.Tes2t.png" ],
+  "language_description" : "The announcement is near the paper.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Announcement) (instance ?A2 Paper) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 41,
+  "image_list" : [ "./images/The key is upstairs the compartment.Test1.png", "./images/The key is upstairs the compartment.Tes2t.png" ],
+  "language_description" : "The key is upstairs the compartment.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Key) (instance ?A2 Compartment) (orientation ?A1 ?A2 Upstairs)))"
+}, {
+  "id" : 42,
+  "image_list" : [ "./images/The cloak is outside the wastebasket.Test1.png", "./images/The cloak is outside the wastebasket.Tes2t.png" ],
+  "language_description" : "The cloak is outside the wastebasket.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Cloak) (instance ?A2 Wastebasket) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 43,
+  "image_list" : [ "./images/The wire line is outside the military surplus.Test1.png", "./images/The wire line is outside the military surplus.Tes2t.png" ],
+  "language_description" : "The wire line is outside the military surplus.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 WireLine) (instance ?A2 MilitarySurplus) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 44,
+  "image_list" : [ "./images/The chest or cabinet is outside the easel.Test1.png", "./images/The chest or cabinet is outside the easel.Tes2t.png" ],
+  "language_description" : "The chest or cabinet is outside the easel.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 ChestOrCabinet) (instance ?A2 Easel) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 45,
+  "image_list" : [ "./images/The hot tub is adjacent the tie clothing.Test1.png", "./images/The hot tub is adjacent the tie clothing.Tes2t.png" ],
+  "language_description" : "The hot tub is adjacent the tie clothing.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 HotTub) (instance ?A2 TieClothing) (orientation ?A1 ?A2 Adjacent)))"
+}, {
+  "id" : 46,
+  "image_list" : [ "./images/The optical device is north the condominium unit.Test1.png", "./images/The optical device is north the condominium unit.Tes2t.png" ],
+  "language_description" : "The optical device is north the condominium unit.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 OpticalDevice) (instance ?A2 CondominiumUnit) (orientation ?A1 ?A2 North)))"
+}, {
+  "id" : 47,
+  "image_list" : [ "./images/The mobile structure is outside the coffin.Test1.png", "./images/The mobile structure is outside the coffin.Tes2t.png" ],
+  "language_description" : "The mobile structure is outside the coffin.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 MobileStructure) (instance ?A2 Coffin) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 48,
+  "image_list" : [ "./images/The shirt is outside the documentary.Test1.png", "./images/The shirt is outside the documentary.Tes2t.png" ],
+  "language_description" : "The shirt is outside the documentary.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Shirt) (instance ?A2 Documentary) (orientation ?A1 ?A2 Outside)))"
+}, {
+  "id" : 49,
+  "image_list" : [ "./images/The king-sized bed is below the gun muzzle.Test1.png", "./images/The king-sized bed is below the gun muzzle.Tes2t.png" ],
+  "language_description" : "The king-sized bed is below the gun muzzle.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 KingBed) (instance ?A2 GunMuzzle) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 50,
+  "image_list" : [ "./images/The door is near the string.Test1.png", "./images/The door is near the string.Tes2t.png" ],
+  "language_description" : "The door is near the string.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Door) (instance ?A2 String) (orientation ?A1 ?A2 Near)))"
+} ]
