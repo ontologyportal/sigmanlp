@@ -37,6 +37,7 @@ public class GenOrientations {
     public static String filepath;
     public static List<String> imageList = new ArrayList<>();
     public static ArrayNode rootArray;
+    public static List<String> SUMOOrientationExlcusionList; 
     public static int id; 
     public static String key;
     public static int max;
@@ -65,6 +66,8 @@ public class GenOrientations {
         System.out.println("Number in allSUMOArtifactSet "+allSUMOArtifactSet.size());
         //Set<String> allSUMOVariableAritySet = kbLite.getAllInstances("VariableArityRelation");
         Set<String> allSUMOOrientationSet = kbLite.getAllInstances("PositionalAttribute");
+        SUMOOrientationExlcusionList = new ArrayList<>(Arrays.asList("Downstairs", "North", "East", "South", "West", "Horizontal", "Upstairs", "Vertical"));
+        allSUMOOrientationSet.removeAll(SUMOOrientationExlcusionList);
         System.out.println("Number in allSUMOOrientationSet "+allSUMOOrientationSet.size());
         //missing on
         //allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
@@ -134,6 +137,7 @@ public class GenOrientations {
         }
 
         // Create new JSON object
+        //edit format for image list strings
         ObjectNode newEntry = mapper.createObjectNode();
         newEntry.put("id", id);
         newEntry.putPOJO("image_list", imageList);
@@ -211,8 +215,10 @@ public class GenOrientations {
             System.out.println(logicPhrase);            
             GenUtils.writeEnglishLogicPairToFile(englishSentence, logicPhrase, outputFileEnglish, outputFileLogic);
             //add write to .json file here
-            imageList.add("./images/"+englishSentence+"Test1.png");
-            imageList.add("./images/"+englishSentence +"Tes2t.png");
+            String englishSentenceImageFormat = englishSentence.replace(" ","_").replace(".", "");
+            //System.out.println(englishSentenceImageFormat);
+            imageList.add("./images/"+englishSentenceImageFormat+"_Test1.png");
+            imageList.add("./images/"+englishSentenceImageFormat +"_Test2.png");
             //need to append image to list, so need to fix input as string and figure out id problem
             /*addEntry(
                 "data.json",
@@ -228,6 +234,11 @@ public class GenOrientations {
             id ++;
             imageList.clear();
         }
+        System.out.println(allSUMOOrientationRandSet.toString());
     }
 
 }
+/* need to take english sentence from here, combine it with wrappers from word doc (this will change),
+feed it into an llm, save image to correct directory and save name to .json file here 
+change image list to empty list, create a java file to access json file, read eng sent 
+creat image, save image, cerate image title, save to json image list*/
