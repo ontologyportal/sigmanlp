@@ -64,5 +64,14 @@
         <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
         <dependency org="org.xerial" name="sqlite-jdbc" rev="3.47.2.0" conf="api->default"/>
         <dependency org="junit" name="junit" rev="4.13.2" conf="test->default"/>
+        <dependency org="com.openai" name="openai-java" rev="4.17.0" conf="api->default"/>
+        <dependency org="com.openai" name="openai-java-client-okhttp" rev="4.17.0" conf="api->default"/>
+        
+
+        <dependency org="com.fasterxml.jackson.module" name="jackson-module-kotlin" rev="2.17.2" conf="api->default"/>
+        <dependency org="com.fasterxml.jackson.datatype" name="jackson-datatype-jdk8" rev="2.17.2" conf="api->default"/>
+        <dependency org="com.fasterxml.jackson.datatype" name="jackson-datatype-jsr310" rev="2.17.2" conf="api->default"/>
+
+        <dependency org="org.jetbrains.kotlin" name="kotlin-stdlib" rev="1.9.22" conf="api->default"/>
     </dependencies>
 </ivy-module>
