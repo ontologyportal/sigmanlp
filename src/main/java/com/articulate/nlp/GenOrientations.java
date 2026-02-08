@@ -217,8 +217,8 @@ public class GenOrientations {
             //add write to .json file here
             String englishSentenceImageFormat = englishSentence.replace(" ","_").replace(".", "");
             //System.out.println(englishSentenceImageFormat);
-            imageList.add("./images/"+englishSentenceImageFormat+"_Test1.png");
-            imageList.add("./images/"+englishSentenceImageFormat +"_Test2.png");
+            // imageList.add("./images/"+englishSentenceImageFormat+"_Test1.png");
+            // imageList.add("./images/"+englishSentenceImageFormat +"_Test2.png");
             //need to append image to list, so need to fix input as string and figure out id problem
             /*addEntry(
                 "data.json",
