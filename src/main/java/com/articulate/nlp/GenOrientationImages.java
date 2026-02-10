@@ -124,7 +124,8 @@ public class GenOrientationImages {
     public static String generateImage(String prompt, String content) {
 
         String endpoint = "https://llm-agents-east-resource.openai.azure.com/openai/v1/";
-        String deploymentName = "gpt-image-1-mini";
+        // String deploymentName = "gpt-image-1-mini";
+        String deploymentName = "gpt-image-1.5";
         String apiKey = content;
         String savepath = ("images/"+prompt.replace(" ","_")+"png");
         // System.out.println(savepath);

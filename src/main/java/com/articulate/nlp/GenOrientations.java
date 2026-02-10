@@ -255,8 +255,9 @@ public class GenOrientations {
                 //sentenceGeneratedCounter ++;
                 id ++;
                 imageList.clear();
+                sentenceGeneratedCounter ++;
             }
-            sentenceGeneratedCounter ++;
+            // sentenceGeneratedCounter ++;
         }
         //System.out.println(allSUMOOrientationRandSet.toString());
     }
