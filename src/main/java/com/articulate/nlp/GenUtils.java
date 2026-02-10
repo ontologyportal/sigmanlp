@@ -324,9 +324,7 @@ public class GenUtils {
     /** ***************************************************************
      *   Sends a prompt to the Ollama server and returns the response.
      */
-    int numAskOllamaCalls = 0;
     public static String askOllama(String prompt) {
-        System.out.println("GenUtils.askOllama() called. numAskOllamaCalls: " + (++numAskOllamaCalls));
         for (int attempt = 1; attempt <= OLLAMA_MAX_ATTEMPTS; attempt++) {
             try {
                 if (ollamaAPI == null) {
