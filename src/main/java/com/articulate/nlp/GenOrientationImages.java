@@ -127,8 +127,8 @@ public class GenOrientationImages {
         String deploymentName = "gpt-image-1-mini";
         String apiKey = content;
         String savepath = ("images/"+prompt.replace(" ","_")+"png");
-        System.out.println(savepath);
-        System.out.println("Entered Gen image method");
+        // System.out.println(savepath);
+        
         //System.out.println(apiKey);
         OpenAIClient client = OpenAIOkHttpClient.builder()
                 .baseUrl(endpoint)
@@ -152,6 +152,10 @@ public class GenOrientationImages {
         });
         return savepath;
     }
+   
+    public static String concatenateStrings(String first, String second) {
+        return first + second;
+    }
     
     public static void main(String[] args) {
         
@@ -163,7 +167,20 @@ try {
                     jsonFile,
                     new TypeReference<List<ImageRecord>>() {}
             );
-
+            List<String> wrappers = new ArrayList<>();
+            wrappers.add("Generate a realistic image of ");
+            wrappers.add("Generate a photo-realistic image of ");
+            wrappers.add("Generate a low light image of ");
+            wrappers.add("Generate an image of in darkness of ");
+            wrappers.add("Generate a dark image of ");
+            wrappers.add("Generate a bright image of ");
+            wrappers.add("Generate a sharp image of ");
+            wrappers.add("Generate a high contrast image of ");
+            wrappers.add("Generate a low contrast image of ");
+            wrappers.add("Generate a murky image of ");
+            wrappers.add("Generate a cloudy image of ");
+            wrappers.add("Generate a shady image of ");
+            wrappers.add("Generate a brightly lit image of ");
             for (ImageRecord record : records) {
                 System.out.println("ID: " + record.getId());
                 System.out.println("Images: " + record.getImage_list());
@@ -171,7 +188,11 @@ try {
                 System.out.println("Logical: " + record.getLogical_description());
                 System.out.println("----");
                 // generateImage(record.getLanguage_description(), readStringFromFile() );
-                addImageToRecord(record.getId(), generateImage(record.getLanguage_description(), readStringFromFile() ), "data.json");
+                for(String wrapper:wrappers ){
+                    String wrappedPrompt = concatenateStrings(wrapper, record.getLanguage_description());
+                    System.out.println("Prompt: "+wrappedPrompt);
+                    addImageToRecord(record.getId(), generateImage(wrappedPrompt, readStringFromFile() ), "data.json");
+                }
                 // System.out.println("ID: " + record.getId());
                 // System.out.println("Images: " + record.getImage_list());
                 // System.out.println("Language: " + record.getLanguage_description());
