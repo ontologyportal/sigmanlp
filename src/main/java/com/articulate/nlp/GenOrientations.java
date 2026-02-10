@@ -157,6 +157,22 @@ public class GenOrientations {
         }
     }
     
+    public static String coherenceDetector() {
+        Scanner scanner = new Scanner(System.in);
+        String input;
+
+        while (true) {
+            System.out.print("Enter \"a\" for coherent sentence or \"d\" for an incoherent sentence and then hit enter: ");
+            input = scanner.nextLine().trim().toLowerCase();
+
+            if (input.equals("a") || input.equals("d")) {
+                return input;
+            }
+
+            System.out.println("Invalid input. Please type a or d.");
+        }
+    }
+
     public static int getMaxIntValue(String filePath) {
         ObjectMapper mapper = new ObjectMapper();
         int max = Integer.MIN_VALUE;
@@ -211,30 +227,38 @@ public class GenOrientations {
             //need to add prepostion to account for different orientations
             englishSentence = "The " +randEngArtifact1+" is "+randEngOrientation+" the "+randEngArtifact2+".";
             logicPhrase = "(exists (?A1 ?A2) (and (instance ?A1 "+randSUMOArtifact1+") (instance ?A2 "+randSUMOArtifact2+") (orientation ?A1 ?A2 "+randSUMOOrientation+")))";
+            System.out.println();
             System.out.println(englishSentence);
-            System.out.println(logicPhrase);            
-            GenUtils.writeEnglishLogicPairToFile(englishSentence, logicPhrase, outputFileEnglish, outputFileLogic);
-            //add write to .json file here
-            String englishSentenceImageFormat = englishSentence.replace(" ","_").replace(".", "");
-            //System.out.println(englishSentenceImageFormat);
-            // imageList.add("./images/"+englishSentenceImageFormat+"_Test1.png");
-            // imageList.add("./images/"+englishSentenceImageFormat +"_Test2.png");
-            //need to append image to list, so need to fix input as string and figure out id problem
-            /*addEntry(
-                "data.json",
-                2,
-                List.of("./images/book.png"),
-                "A book resting on a table.",
-                "The book object is positioned on a flat surface."
-            );
-            */
-            
-            addEntry(filepath, id, imageList, englishSentence, logicPhrase);
+            System.out.println();
+            //System.out.println(logicPhrase);
+            //insert coherence detector here
+            String coherence =  coherenceDetector();   
+            if (coherence.equals("a")){
+                //System.out.println("in if statement");
+                GenUtils.writeEnglishLogicPairToFile(englishSentence, logicPhrase, outputFileEnglish, outputFileLogic);
+                //add write to .json file here
+                String englishSentenceImageFormat = englishSentence.replace(" ","_").replace(".", "");
+                //System.out.println(englishSentenceImageFormat);
+                // imageList.add("./images/"+englishSentenceImageFormat+"_Test1.png");
+                // imageList.add("./images/"+englishSentenceImageFormat +"_Test2.png");
+                //need to append image to list, so need to fix input as string and figure out id problem
+                /*addEntry(
+                    "data.json",
+                    2,
+                    List.of("./images/book.png"),
+                    "A book resting on a table.",
+                    "The book object is positioned on a flat surface."
+                );
+                */
+                
+                addEntry(filepath, id, imageList, englishSentence, logicPhrase);
+                //sentenceGeneratedCounter ++;
+                id ++;
+                imageList.clear();
+            }
             sentenceGeneratedCounter ++;
-            id ++;
-            imageList.clear();
         }
-        System.out.println(allSUMOOrientationRandSet.toString());
+        //System.out.println(allSUMOOrientationRandSet.toString());
     }
 
 }

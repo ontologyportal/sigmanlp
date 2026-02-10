@@ -172,11 +172,11 @@ try {
                 System.out.println("----");
                 // generateImage(record.getLanguage_description(), readStringFromFile() );
                 addImageToRecord(record.getId(), generateImage(record.getLanguage_description(), readStringFromFile() ), "data.json");
-                System.out.println("ID: " + record.getId());
-                System.out.println("Images: " + record.getImage_list());
-                System.out.println("Language: " + record.getLanguage_description());
-                System.out.println("Logical: " + record.getLogical_description());
-                System.out.println("----");
+                // System.out.println("ID: " + record.getId());
+                // System.out.println("Images: " + record.getImage_list());
+                // System.out.println("Language: " + record.getLanguage_description());
+                // System.out.println("Logical: " + record.getLogical_description());
+                // System.out.println("----");
             }
 
         } catch (Exception e) {
