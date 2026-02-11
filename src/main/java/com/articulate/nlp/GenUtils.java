@@ -53,7 +53,7 @@ public class GenUtils {
     static int OLLAMA_PORT = 11434;
     public static OllamaAPI ollamaAPI;
     public static Options options;
-    private static final int OLLAMA_MAX_ATTEMPTS = 3;
+    private static final int OLLAMA_MAX_ATTEMPTS = 12;
     private static final long OLLAMA_RETRY_DELAY_MS = 5 * 60 * 1000L;
 
     /** ***************************************************************
@@ -257,12 +257,20 @@ public class GenUtils {
      * @return true if the server is running, false otherwise
      */
     public static boolean isOllamaServerRunning(int port) {
-        try (Socket s = new Socket("localhost", port)) {
-            return true;
-        } catch (IOException e) {
+        try {
+            URL url = new URL("http://127.0.0.1:" + port + "/api/version");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(2000);  // 2 sec: fast probe
+            conn.setReadTimeout(2000);
+            
+            int code = conn.getResponseCode();
+            return code == 200;
+        } catch (Exception e) {
             return false;
         }
     }
+
 
     /**
      * Starts the Ollama server on the specified port if it is not already running.
@@ -271,9 +279,9 @@ public class GenUtils {
      * @throws InterruptedException if the process is interrupted
      */
     public static void startOllamaServer(int port) {
-        System.out.println("GenUtils: Starting Ollama Server on port: " + port);
         try {
             if (!isOllamaServerRunning(port)) {
+                System.out.println("GenUtils: Starting Ollama Server on port: " + port);
                 ProcessBuilder pb = new ProcessBuilder("ollama", "serve");
                 pb.environment().put("OLLAMA_HOST", "0.0.0.0:" + port);
                 Process process = pb.start();
@@ -293,7 +301,7 @@ public class GenUtils {
             System.out.println("GenUtils: Connected to Ollama server");
         } catch (Exception e) {
             System.err.println("Failed to start Ollama server on port " + port);
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("aError: " + e.getMessage());
             System.exit(1);
         }
     }
@@ -317,7 +325,6 @@ public class GenUtils {
      *   Sends a prompt to the Ollama server and returns the response.
      */
     public static String askOllama(String prompt) {
-
         for (int attempt = 1; attempt <= OLLAMA_MAX_ATTEMPTS; attempt++) {
             try {
                 if (ollamaAPI == null) {

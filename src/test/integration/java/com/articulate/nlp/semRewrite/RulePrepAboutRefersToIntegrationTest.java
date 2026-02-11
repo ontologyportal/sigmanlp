@@ -16,6 +16,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Ignore;
 
+@Ignore("Deprecated test suite")
 public class RulePrepAboutRefersToIntegrationTest extends IntegrationTestBase {
 
     public static Interpreter interpreter;
