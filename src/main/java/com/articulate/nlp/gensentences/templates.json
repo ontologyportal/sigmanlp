@@ -9,11 +9,6 @@
         "freq":0.1,
         "neg_freq":0.2
       },
-      "question":{
-        "on":true,
-        "freq":0.1,
-        "neg_freq":0.2
-      },
       "tense":{
         "on":true,
         "none":0.1, // none means tense is not encoded in logic and defalut tense is used in the sentence.
@@ -21,7 +16,9 @@
         "present":0.3,
         "future":0.1
       },
-      "num_to_gen":100    
+      "num_to_gen":100,
+      "neg_freq":0.2,
+      "question_freq":0.1
   },
   "templates":[
     {
@@ -30,17 +27,17 @@
       "english":{
         "example":"The book is on the table.",
         "frame":{
-            "tense_default":["%1 <verb=be> %n{not} %2 %3."]
+            "tense_default":["The %1 <verb=be> %n{not} %2 the %3."]
         },
         "frame_question":{
-            "tense_default":["<verb=be> %1 %n{not} %2 %3?"],
-            "tense_future":["Will %1 %n{not} be %2 %3?"]
+            "tense_default":["<verb=be> the %1 %n{not} %2 the %3?"],
+            "tense_future":["Will the %1 %n{not} be %2 the %3?"]
         },
         "%1":{
-            "sumo_terms":[{"name":"Artifact","weight":6},
-                          {"name":"AnatomicalStructure","weight":3},
-                          {"name":"Human","weight":6},
-                          {"name":"Animal","weight":2}],
+            "sumo_terms":[{"name":"Artifact","weight":50},
+                          {"name":"AnatomicalStructure","weight":10},
+                          {"name":"Human","weight":5},
+                          {"name":"Animal","weight":5}],
             "type":"subclass",
             "countable":{"possible":true, "freq":0.1}
         },

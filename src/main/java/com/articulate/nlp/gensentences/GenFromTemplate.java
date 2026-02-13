@@ -111,6 +111,25 @@ public class GenFromTemplate {
     }
 
     /***************************************************************
+     * Apply negation markers of the form %n{...} based on one decision.
+     ***************************************************************/
+    private static String handleNegation(String frame, boolean negate) {
+
+        Pattern pattern = Pattern.compile("%n\\{([^}]*)\\}");
+        Matcher matcher = pattern.matcher(frame);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String replacement = negate ? matcher.group(1) : "";
+            matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(result);
+        return result.toString()
+                .replaceAll(" {2,}", " ")
+                .replaceAll("\\s+([,.;!?])", "$1")
+                .trim();
+    }
+
+    /***************************************************************
      * Processes a single template and writes default outputs.
      ***************************************************************/
     public static void processTemplate(Templates.Template template) {
@@ -121,10 +140,18 @@ public class GenFromTemplate {
         String logicFrame = template.getLogic();
         int slotCount = template.getSlots().length;
         for (int i = 0; i < numToGen; i++) {
-            String englishFrame = template.getEnglishFrame().get(Templates.Tense.DEFAULT);
+            boolean asQuestion = Math.random() < template.getQuestionFreq();
+            String englishFrame;
+            if (asQuestion) {
+                englishFrame = template.getEnglishFrameQuestion().get(Templates.Tense.DEFAULT);
+            }
+            else {
+                englishFrame = template.getEnglishFrame().get(Templates.Tense.DEFAULT);
+            }
             if (englishFrame == null) {
                 System.err.println("Error: template '" + template.getName()
-                        + "' is missing english.frame.tense_default.");
+                        + "' is missing "
+                        + (asQuestion ? "english.frame_question.tense_default" : "english.frame.tense_default") + ".");
                 System.exit(1);
             }
             Map<Integer, String> logicSlotValues = new HashMap<>();
@@ -144,8 +171,9 @@ public class GenFromTemplate {
                 }
                 englishSlotValues.put(slotNum, termFormat);
             }
-            String logic = replaceSlots(logicFrame, logicSlotValues);
-            String english = replaceSlots(englishFrame, englishSlotValues);
+            boolean negate = Math.random() < template.getNegFreq();
+            String logic = handleNegation(replaceSlots(logicFrame, logicSlotValues), negate);
+            String english = handleNegation(replaceSlots(englishFrame, englishSlotValues), negate);
             GenUtils.writeEnglishLogicPairToFile(english, logic, outputFileEnglish, outputFileLogic);
         }
     }
@@ -177,8 +205,7 @@ public class GenFromTemplate {
             Templates.Template template;
             int i = 0;
             while ((template = templates.getNext()) != null) {
-                System.out.println("Generating from template " + i + " of " + templates.size() + ": " + template.getName()
-                + " (slots=" + template.getSlots().length + ")");
+                System.out.println("Generating from template " + i + " of " + templates.size() + ": " + template.getName());
                 processTemplate(template);
                 i++;
             }

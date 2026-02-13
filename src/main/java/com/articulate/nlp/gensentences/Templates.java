@@ -95,7 +95,7 @@ public class Templates {
         private final double modalFreq;
         private final double modalNegFreq;
         private final double questionFreq;
-        private final double questionNegFreq;
+        private final double negFreq;
         private final int numToGen;
         private final boolean modalOn;
         private final boolean questionOn;
@@ -109,7 +109,7 @@ public class Templates {
                         double modalFreq,
                         double modalNegFreq,
                         double questionFreq,
-                        double questionNegFreq,
+                        double negFreq,
                         int numToGen,
                         boolean modalOn,
                         boolean questionOn,
@@ -122,7 +122,7 @@ public class Templates {
             this.modalFreq = modalFreq;
             this.modalNegFreq = modalNegFreq;
             this.questionFreq = questionFreq;
-            this.questionNegFreq = questionNegFreq;
+            this.negFreq = negFreq;
             this.numToGen = numToGen;
             this.modalOn = modalOn;
             this.questionOn = questionOn;
@@ -171,10 +171,10 @@ public class Templates {
         }
 
         /***************************************************************
-         * Returns the question negative frequency for this template.
+         * Returns the general negation frequency for this template.
          ***************************************************************/
-        public double getQuestionNegFreq() {
-            return questionNegFreq;
+        public double getNegFreq() {
+            return negFreq;
         }
 
         /***************************************************************
@@ -212,7 +212,7 @@ public class Templates {
             builder.append(", modalFreq=").append(modalFreq);
             builder.append(", modalNegFreq=").append(modalNegFreq);
             builder.append(", questionFreq=").append(questionFreq);
-            builder.append(", questionNegFreq=").append(questionNegFreq);
+            builder.append(", negFreq=").append(negFreq);
             builder.append(", numToGen=").append(numToGen);
             builder.append(", modalOn=").append(modalOn);
             builder.append(", questionOn=").append(questionOn);
@@ -312,7 +312,7 @@ public class Templates {
     private final double defaultModalFreq;
     private final double defaultModalNegFreq;
     private final double defaultQuestionFreq;
-    private final double defaultQuestionNegFreq;
+    private final double defaultNegFreq;
     private final int defaultNumToGen;
     private final boolean defaultModalOn;
     private final boolean defaultQuestionOn;
@@ -323,7 +323,7 @@ public class Templates {
     private Templates(double defaultModalFreq,
                       double defaultModalNegFreq,
                       double defaultQuestionFreq,
-                      double defaultQuestionNegFreq,
+                      double defaultNegFreq,
                       int defaultNumToGen,
                       boolean defaultModalOn,
                       boolean defaultQuestionOn,
@@ -332,7 +332,7 @@ public class Templates {
         this.defaultModalFreq = defaultModalFreq;
         this.defaultModalNegFreq = defaultModalNegFreq;
         this.defaultQuestionFreq = defaultQuestionFreq;
-        this.defaultQuestionNegFreq = defaultQuestionNegFreq;
+        this.defaultNegFreq = defaultNegFreq;
         this.defaultNumToGen = defaultNumToGen;
         this.defaultModalOn = defaultModalOn;
         this.defaultQuestionOn = defaultQuestionOn;
@@ -348,19 +348,18 @@ public class Templates {
         JsonNode root = readTemplatesFile(templateFilePath);
         JsonNode defaults = root.path("default_settings");
         JsonNode modal = defaults.path("modal");
-        JsonNode question = defaults.path("question");
         JsonNode tense = defaults.path("tense");
         double modalFreq = modal.path("freq").asDouble();
         double modalNegFreq = modal.path("neg_freq").asDouble();
-        double questionFreq = question.path("freq").asDouble();
-        double questionNegFreq = question.path("neg_freq").asDouble();
+        double questionFreq = defaults.path("question_freq").asDouble();
+        double negFreq = defaults.path("neg_freq").asDouble();
         int numToGen = defaults.path("num_to_gen").asInt();
         boolean modalOn = modal.path("on").asBoolean();
-        boolean questionOn = question.path("on").asBoolean();
+        boolean questionOn = defaults.path("question_on").asBoolean(true);
         boolean tenseOn = tense.path("on").asBoolean();
         List<Template> templates = loadTemplates(root, modalFreq, modalNegFreq,
-                questionFreq, questionNegFreq, numToGen, modalOn, questionOn, tenseOn);
-        return new Templates(modalFreq, modalNegFreq, questionFreq, questionNegFreq, numToGen,
+                questionFreq, negFreq, numToGen, modalOn, questionOn, tenseOn);
+        return new Templates(modalFreq, modalNegFreq, questionFreq, negFreq, numToGen,
                 modalOn, questionOn, tenseOn, templates);
     }
 
@@ -404,7 +403,7 @@ public class Templates {
                                                 double defaultModalFreq,
                                                 double defaultModalNegFreq,
                                                 double defaultQuestionFreq,
-                                                double defaultQuestionNegFreq,
+                                                double defaultNegFreq,
                                                 int defaultNumToGen,
                                                 boolean defaultModalOn,
                                                 boolean defaultQuestionOn,
@@ -420,17 +419,17 @@ public class Templates {
             String logic = english.path("logic").asText();
             Double modalFreq = readOptionalDouble(templateNode, "modal", "freq");
             Double modalNegFreq = readOptionalDouble(templateNode, "modal", "neg_freq");
-            Double questionFreq = readOptionalDouble(templateNode, "question", "freq");
-            Double questionNegFreq = readOptionalDouble(templateNode, "question", "neg_freq");
+            Double questionFreq = readOptionalDouble(templateNode, "question_freq");
+            Double negFreq = readOptionalDouble(templateNode, "neg_freq");
             Integer numToGen = readOptionalInt(templateNode, "num_to_gen");
             Boolean modalOn = readOptionalBoolean(templateNode, "modal", "on");
-            Boolean questionOn = readOptionalBoolean(templateNode, "question", "on");
+            Boolean questionOn = readOptionalBoolean(templateNode, "question_on");
             Boolean tenseOn = readOptionalBoolean(templateNode, "tense", "on");
             templates.add(new Template(name, frame, frameQuestion, slots, logic,
                     modalFreq != null ? modalFreq : defaultModalFreq,
                     modalNegFreq != null ? modalNegFreq : defaultModalNegFreq,
                     questionFreq != null ? questionFreq : defaultQuestionFreq,
-                    questionNegFreq != null ? questionNegFreq : defaultQuestionNegFreq,
+                    negFreq != null ? negFreq : defaultNegFreq,
                     numToGen != null ? numToGen : defaultNumToGen,
                     modalOn != null ? modalOn : defaultModalOn,
                     questionOn != null ? questionOn : defaultQuestionOn,
@@ -611,6 +610,20 @@ public class Templates {
     }
 
     /***************************************************************
+     * Reads a double override if present at the current object level.
+     ***************************************************************/
+    private static Double readOptionalDouble(JsonNode node, String field) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        JsonNode value = node.get(field);
+        if (value == null || value.isMissingNode() || value.isNull()) {
+            return null;
+        }
+        return value.asDouble();
+    }
+
+    /***************************************************************
      * Reads an integer override if present.
      ***************************************************************/
     private static Integer readOptionalInt(JsonNode node, String field) {
@@ -636,6 +649,20 @@ public class Templates {
             return null;
         }
         JsonNode value = parent.get(field);
+        if (value == null || value.isMissingNode() || value.isNull()) {
+            return null;
+        }
+        return value.asBoolean();
+    }
+
+    /***************************************************************
+     * Reads a boolean override if present at the current object level.
+     ***************************************************************/
+    private static Boolean readOptionalBoolean(JsonNode node, String field) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        JsonNode value = node.get(field);
         if (value == null || value.isMissingNode() || value.isNull()) {
             return null;
         }
