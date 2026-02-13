@@ -156,10 +156,10 @@ public class GenAdjectives {
             gstd.generateHumanSubject(lfeat);
 
             String term = "";
-            if (gstd.biasedBoolean(1, 3)) {
+            if (GenUtils.biasedBoolean(1, 3)) {
                 term = emoState.getNext();
                 val = Lists.EMO;
-            } else if (gstd.biasedBoolean(1, 3)) {
+            } else if (GenUtils.biasedBoolean(1, 3)) {
                 term = consc.getNext();
                 val = Lists.CONSC;
             } else {

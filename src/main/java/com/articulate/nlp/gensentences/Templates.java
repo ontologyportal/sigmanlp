@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +21,48 @@ import java.util.regex.Pattern;
  * Loads and iterates synthetic sentence generation templates.
  ***************************************************************/
 public class Templates {
+
+    public static class RandomFrameMap {
+        private final Map<Tense, List<String>> frames;
+        private static final Random RAND = new Random();
+
+        public RandomFrameMap(Map<Tense, List<String>> frames) {
+            this.frames = frames;
+        }
+
+        public String get(Tense tense) {
+            if (tense == null || frames == null) {
+                return null;
+            }
+            List<String> values = frames.get(tense);
+            if (values == null || values.isEmpty()) {
+                return null;
+            }
+            return values.get(RAND.nextInt(values.size()));
+        }
+
+        public boolean isEmpty() {
+            return frames == null || frames.isEmpty();
+        }
+
+        public String getFirstAvailable() {
+            if (frames == null || frames.isEmpty()) {
+                return "";
+            }
+            for (Tense tense : Tense.values()) {
+                String value = get(tense);
+                if (value != null) {
+                    return value;
+                }
+            }
+            return "";
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(frames);
+        }
+    }
 
     public enum Tense {
         DEFAULT("tense_default"),
@@ -45,8 +88,8 @@ public class Templates {
 
     public static class Template {
         private final String name;
-        private final Map<Tense, String> frame;
-        private final Map<Tense, String> frameQuestion;
+        private final RandomFrameMap englishFrame;
+        private final RandomFrameMap englishFrameQuestion;
         private final Slot[] slots;
         private final String logic;
         private final double modalFreq;
@@ -59,8 +102,8 @@ public class Templates {
         private final boolean tenseOn;
 
         public Template(String name,
-                        Map<Tense, String> frame,
-                        Map<Tense, String> frameQuestion,
+                        RandomFrameMap englishFrame,
+                        RandomFrameMap englishFrameQuestion,
                         Slot[] slots,
                         String logic,
                         double modalFreq,
@@ -72,8 +115,8 @@ public class Templates {
                         boolean questionOn,
                         boolean tenseOn) {
             this.name = name;
-            this.frame = frame;
-            this.frameQuestion = frameQuestion;
+            this.englishFrame = englishFrame;
+            this.englishFrameQuestion = englishFrameQuestion;
             this.slots = slots;
             this.logic = logic;
             this.modalFreq = modalFreq;
@@ -90,12 +133,12 @@ public class Templates {
             return name;
         }
 
-        public Map<Tense, String> getFrame() {
-            return frame;
+        public RandomFrameMap getEnglishFrame() {
+            return englishFrame;
         }
 
-        public Map<Tense, String> getFrameQuestion() {
-            return frameQuestion;
+        public RandomFrameMap getEnglishFrameQuestion() {
+            return englishFrameQuestion;
         }
 
         public Slot[] getSlots() {
@@ -174,8 +217,8 @@ public class Templates {
             builder.append(", modalOn=").append(modalOn);
             builder.append(", questionOn=").append(questionOn);
             builder.append(", tenseOn=").append(tenseOn);
-            builder.append(", frame=").append(frame);
-            builder.append(", frameQuestion=").append(frameQuestion);
+            builder.append(", englishFrame=").append(englishFrame);
+            builder.append(", englishFrameQuestion=").append(englishFrameQuestion);
             builder.append(", slots=").append(formatSlots());
             builder.append(", logic='").append(logic).append('\'');
             builder.append('}');
@@ -198,6 +241,7 @@ public class Templates {
                     continue;
                 }
                 builder.append("{sumoTerms=").append(slot.getSumoTerms());
+                builder.append(", type=").append(slot.getType());
                 builder.append(", countablePossible=").append(slot.isCountablePossible());
                 builder.append(", countableFreq=").append(slot.getCountableFreq());
                 builder.append('}');
@@ -208,18 +252,29 @@ public class Templates {
     }
 
     public static class Slot {
-        private final List<String> sumoTerms;
+        public enum TermSelectionType {
+            SUBCLASS,
+            INSTANCE
+        }
+
+        private final List<WeightedSumoTerm> sumoTerms;
+        private final TermSelectionType type;
         private final boolean countablePossible;
         private final double countableFreq;
 
-        public Slot(List<String> sumoTerms, boolean countablePossible, double countableFreq) {
+        public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type, boolean countablePossible, double countableFreq) {
             this.sumoTerms = sumoTerms;
+            this.type = type;
             this.countablePossible = countablePossible;
             this.countableFreq = countableFreq;
         }
 
-        public List<String> getSumoTerms() {
+        public List<WeightedSumoTerm> getSumoTerms() {
             return sumoTerms;
+        }
+
+        public TermSelectionType getType() {
+            return type;
         }
 
         public boolean isCountablePossible() {
@@ -228,6 +283,29 @@ public class Templates {
 
         public double getCountableFreq() {
             return countableFreq;
+        }
+    }
+
+    public static class WeightedSumoTerm {
+        private final String name;
+        private final int weight;
+
+        public WeightedSumoTerm(String name, int weight) {
+            this.name = name;
+            this.weight = weight;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getWeight() {
+            return weight;
+        }
+
+        @Override
+        public String toString() {
+            return "{name='" + name + "', weight=" + weight + "}";
         }
     }
 
@@ -336,9 +414,9 @@ public class Templates {
         for (JsonNode templateNode : templateNodes) {
             String name = templateNode.path("name").asText();
             JsonNode english = templateNode.path("english");
-            Map<Tense, String> frame = loadFrame(english.path("frame"));
-            Map<Tense, String> frameQuestion = loadFrame(english.path("frame_question"));
-            Slot[] slots = loadSlots(english);
+            RandomFrameMap frame = loadFrame(english.path("frame"));
+            RandomFrameMap frameQuestion = loadFrame(english.path("frame_question"));
+            Slot[] slots = loadSlots(name, english);
             String logic = english.path("logic").asText();
             Double modalFreq = readOptionalDouble(templateNode, "modal", "freq");
             Double modalNegFreq = readOptionalDouble(templateNode, "modal", "neg_freq");
@@ -364,26 +442,40 @@ public class Templates {
     /***************************************************************
      * Loads frame or frame_question text into a map keyed by tense.
      ***************************************************************/
-    private static Map<Tense, String> loadFrame(JsonNode frameNode) {
-        Map<Tense, String> frame = new EnumMap<>(Tense.class);
+    private static RandomFrameMap loadFrame(JsonNode frameNode) {
+        Map<Tense, List<String>> frame = new EnumMap<>(Tense.class);
         if (frameNode == null || frameNode.isMissingNode() || frameNode.isNull()) {
-            return frame;
+            return new RandomFrameMap(frame);
         }
         Iterator<Map.Entry<String, JsonNode>> fields = frameNode.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
             Tense key = Tense.fromJsonKey(field.getKey());
-            frame.put(key, field.getValue().asText());
+            JsonNode valueNode = field.getValue();
+            List<String> values = new ArrayList<>();
+            if (valueNode.isTextual()) { // Backward compatible with old single-string format.
+                values.add(valueNode.asText());
+            }
+            else if (valueNode.isArray()) {
+                for (JsonNode textNode : valueNode) {
+                    if (textNode.isTextual()) {
+                        values.add(textNode.asText());
+                    }
+                }
+            }
+            if (!values.isEmpty()) {
+                frame.put(key, values);
+            }
         }
-        return frame;
+        return new RandomFrameMap(frame);
     }
 
     /***************************************************************
      * Loads %1, %2, %3... entries into a flexible array.
      ***************************************************************/
-    private static Slot[] loadSlots(JsonNode english) {
+    private static Slot[] loadSlots(String templateName, JsonNode english) {
         if (english == null || english.isMissingNode() || english.isNull()) {
-            System.err.println("templates.json is missing the 'english' section for a template.");
+            System.err.println("Template '" + templateName + "' is missing the 'english' section.");
             System.exit(1);
         }
         Pattern pattern = Pattern.compile("^%(\\d+)$");
@@ -397,7 +489,7 @@ public class Templates {
                 continue;
             }
             int index = Integer.parseInt(matcher.group(1));
-            slotMap.put(index, parseSlot(field.getKey(), field.getValue()));
+            slotMap.put(index, parseSlot(templateName, field.getKey(), field.getValue()));
             if (index > maxIndex) {
                 maxIndex = index;
             }
@@ -415,37 +507,89 @@ public class Templates {
     /***************************************************************
      * Parses a single slot definition.
      ***************************************************************/
-    private static Slot parseSlot(String slotKey, JsonNode slotNode) {
+    private static Slot parseSlot(String templateName, String slotKey, JsonNode slotNode) {
         if (slotNode == null || slotNode.isMissingNode() || slotNode.isNull()) {
-            System.err.println("Slot " + slotKey + " is missing a definition.");
+            System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing a definition.");
             System.exit(1);
         }
         JsonNode sumoTermsNode = slotNode.get("sumo_terms");
         if (sumoTermsNode == null || !sumoTermsNode.isArray()) {
-            System.err.println("Slot " + slotKey + " is missing required sumo_terms array.");
+            System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing required sumo_terms array.");
             System.exit(1);
         }
-        List<String> sumoTerms = new ArrayList<>();
+        List<WeightedSumoTerm> sumoTerms = new ArrayList<>();
         for (JsonNode termNode : sumoTermsNode) {
-            if (!termNode.isTextual()) {
-                System.err.println("Slot " + slotKey + " has non-string sumo_terms value.");
+            if (termNode == null || !termNode.isObject()) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey
+                        + " has invalid sumo_terms item " + termNode
+                        + "; expected object with name and weight.");
                 System.exit(1);
             }
-            sumoTerms.add(termNode.asText());
+            JsonNode nameNode = termNode.get("name");
+            JsonNode weightNode = termNode.get("weight");
+            if (nameNode == null || !nameNode.isTextual()) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey
+                        + " has sumo_terms item missing name (string).");
+                System.exit(1);
+            }
+            if (weightNode == null || !weightNode.isIntegralNumber()) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey + " sumo_terms item '" + nameNode.asText()
+                        + "' is missing weight (integer).");
+                System.exit(1);
+            }
+            int weight = weightNode.asInt();
+            if (weight < 0) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey + " sumo_terms item '" + nameNode.asText()
+                        + "' has invalid weight " + weight + "; weight must be >= 0.");
+                System.exit(1);
+            }
+            sumoTerms.add(new WeightedSumoTerm(nameNode.asText(), weight));
+        }
+        JsonNode typeNode = slotNode.get("type");
+        if (typeNode == null || !typeNode.isTextual()) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " is missing required type (\"subclass\" or \"instance\").");
+            System.exit(1);
+        }
+        String typeString = typeNode.asText().trim().toLowerCase();
+        Slot.TermSelectionType type;
+        if ("subclass".equals(typeString)) {
+            type = Slot.TermSelectionType.SUBCLASS;
+        }
+        else if ("instance".equals(typeString)) {
+            type = Slot.TermSelectionType.INSTANCE;
+        }
+        else {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " has invalid type '" + typeNode.asText() + "'. Expected \"subclass\" or \"instance\".");
+            System.exit(1);
+            return null;
         }
         JsonNode countableNode = slotNode.get("countable");
         if (countableNode == null || !countableNode.isObject()) {
-            System.err.println("Slot " + slotKey + " is missing required countable object.");
+            System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing required countable object.");
             System.exit(1);
         }
         JsonNode possibleNode = countableNode.get("possible");
         JsonNode freqNode = countableNode.get("freq");
-        if (possibleNode == null || !possibleNode.isBoolean()
-                || freqNode == null || !freqNode.isNumber()) {
-            System.err.println("Slot " + slotKey + " countable requires possible (boolean) and freq (number).");
+        if (possibleNode == null || !possibleNode.isBoolean()) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey + " countable requires possible (boolean).");
             System.exit(1);
         }
-        return new Slot(sumoTerms, possibleNode.asBoolean(), freqNode.asDouble());
+        boolean countablePossible = possibleNode.asBoolean();
+        double countableFreq = 0.0;
+        if (countablePossible) {
+            if (freqNode == null || !freqNode.isNumber()) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey
+                        + " countable requires freq (number) when possible=true.");
+                System.exit(1);
+            }
+            countableFreq = freqNode.asDouble();
+        }
+        else if (freqNode != null && freqNode.isNumber()) {
+            countableFreq = freqNode.asDouble();
+        }
+        return new Slot(sumoTerms, type, countablePossible, countableFreq);
     }
 
     /***************************************************************

@@ -53,6 +53,7 @@ public class GenUtils {
     static int OLLAMA_PORT = 11434;
     public static OllamaAPI ollamaAPI;
     public static Options options;
+    private static final Random rand = new Random();
     private static final int OLLAMA_MAX_ATTEMPTS = 12;
     private static final long OLLAMA_RETRY_DELAY_MS = 5 * 60 * 1000L;
 
@@ -142,6 +143,35 @@ public class GenUtils {
                 return sentenceToCapitalize;
             }
             return sentenceToCapitalize.substring(0, 1).toUpperCase() + sentenceToCapitalize.substring(1);
+    }
+
+    /** ***************************************************************
+     * Generate a boolean true value randomly num out of max times.
+     * So biasedBoolean(8,10) generates a true most of the time
+     * (8 out of 10 times on average)
+     */
+    public static boolean biasedBoolean(int num, int max) {
+
+        int val = rand.nextInt(max);
+        return val < num;
+    }
+
+    /** ***************************************************************
+     * Initialize LFeatureSets and default suppression flags used by generators.
+     */
+    public static LFeatureSets initLFeatureSets(KBLite kbLite, Set<String> suppress) {
+
+        suppress.add("modal");
+        suppress.add("attitude");
+        LFeatureSets lfeatsets = new LFeatureSets(kbLite);
+        lfeatsets.initNumbers();
+        lfeatsets.initRequests();
+        lfeatsets.initAttitudes(suppress.contains("attitude"));
+        lfeatsets.initOthers();
+        lfeatsets.initPrepPhrase();
+        lfeatsets.initEndings();
+        lfeatsets.genProcTable();
+        return lfeatsets;
     }
 
 

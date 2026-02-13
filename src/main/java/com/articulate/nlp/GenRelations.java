@@ -132,8 +132,8 @@ public class GenRelations {
      */
     public static void resetGenParams() {
 
-        isQuestion = GenSimpTestData.biasedBoolean(1, 2);
-        isNegated = GenSimpTestData.biasedBoolean(1, 2);
+        isQuestion = GenUtils.biasedBoolean(1, 2);
+        isNegated = GenUtils.biasedBoolean(1, 2);
         genUtils.resetVariables();
         logicPhrase = "";
         englishSentence = "";

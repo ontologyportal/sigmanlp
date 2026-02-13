@@ -1,7 +1,9 @@
+/*
+  templates.json - templates for synthetic sentence generation
+*/
 {
-  "overview":"Templates for synthetic sentence generation",
   "default_settings":{
-      // These settings can be over-ridden in individual templates.",
+      // These settings can be over-ridden in individual templates."
       "modal":{
         "on":true,
         "freq":0.1,
@@ -14,7 +16,7 @@
       },
       "tense":{
         "on":true,
-        "none":0.1, // will use default tense in frame
+        "none":0.1, // none means tense is not encoded in logic and defalut tense is used in the sentence.
         "past":0.3,
         "present":0.3,
         "future":0.1
@@ -28,22 +30,28 @@
       "english":{
         "example":"The book is on the table.",
         "frame":{
-            "tense_default":"%1 <verb=be> %n{not} %2 %3."
+            "tense_default":["%1 <verb=be> %n{not} %2 %3."]
         },
         "frame_question":{
-            "tense_default":"<verb=be> %1 %n{not} %2 %3?",
-            "tense_future":"Will %1 %n{not} be %2 %3?"
+            "tense_default":["<verb=be> %1 %n{not} %2 %3?"],
+            "tense_future":["Will %1 %n{not} be %2 %3?"]
         },
         "%1":{
-            "sumo_terms":["Artifact","AnatomicalStructure"],
+            "sumo_terms":[{"name":"Artifact","weight":6},
+                          {"name":"AnatomicalStructure","weight":3},
+                          {"name":"Human","weight":6},
+                          {"name":"Animal","weight":2}],
+            "type":"subclass",
             "countable":{"possible":true, "freq":0.1}
         },
         "%2":{
-            "sumo_terms":["Orientation"],
-            "countable":{"possible":false, "freq":0.0}
+            "sumo_terms":[{"name":"PositionalAttribute","weight":1}],
+            "type":"instance",
+            "countable":{"possible":false}
         },
         "%3":{
-            "sumo_terms":["Object"],
+            "sumo_terms":[{"name":"Object","weight":1}],
+            "type":"subclass",
             "countable":{"possible":true, "freq":0.1}
         },
         "logic":"(exists (?A1 ?O2) (and (instance ?A1 %1) (instance ?O2 %3)) %tense{%n{not(}(orientation ?A1 ?O2 %2)%n{)}}))"
