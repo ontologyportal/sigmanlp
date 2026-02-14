@@ -15,9 +15,9 @@
       },
       "tense":{
         "on":true,
-        "none":1, // none means tense is not encoded in logic and default tense is used in the sentence.
+        "none":5, // none means tense is not encoded in logic and default tense is used in the sentence.
         "past":1,
-        "present":5,
+        "present":1,
         "future":1
       },
       "num_to_gen":100,
@@ -61,7 +61,7 @@
         "%v1":{
             "verbs":[{"lemma":"be","weight":1}]
         },
-        "logic":"(exists (?A1 ?O2) (and (instance ?A1 %1) (instance ?O2 %3)) %t{%n{not(}(orientation ?A1 ?O2 %2)%n{)}}))"
+        "logic":"(exists (?A1 ?O2 ?T) (and (instance ?A1 %1) (instance ?O2 %3)) %t{%n{not(}(orientation ?A1 ?O2 %2)%n{)}}))"
       }
     }
   ]

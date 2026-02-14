@@ -244,20 +244,42 @@ public class GenFromTemplate {
 
     private static String wrapLogicFuture(String internalText) {
 
-        // TODO: Apply future tense logic wrapper once specification is provided.
-        return internalText;
+        return "(instance ?T TimeDuration) (before Now (BeginFn(WhenFn ?T)) " + //
+                        "(holdsDuring ?T (" + internalText + ")) ?T)";
     }
 
     private static String wrapLogicPresent(String internalText) {
 
-        // TODO: Apply present tense logic wrapper once specification is provided.
-        return internalText;
+        return "(instance ?T TimeDuration) "+ //
+                        "(temporallyBetween (BeginFn (WhenFn ?T)) Now (EndFn (WhenFn ?T))) " + //
+                        "(holdsDuring ?T (" + internalText + "))";
     }
 
     private static String wrapLogicPast(String internalText) {
 
-        // TODO: Apply past tense logic wrapper once specification is provided.
-        return internalText;
+        return "(instance ?T TimeDuration) (before (EndFn (WhenFn ?T)) Now) " + //
+                        "(holdsDuring ?T (" + internalText + "))";
+    }
+
+    /***************************************************************
+     * Maps selected template tense to MorphoDB tense labels.
+     ***************************************************************/
+    private static String getMorphoVerbTense(Templates.Tense selectedTense) {
+
+        if (selectedTense == null) {
+            return DEFAULT_VERB_TENSE;
+        }
+        switch (selectedTense) {
+            case PAST:
+                return "Simple past";
+            case FUTURE:
+                return "Simple future";
+            case PRESENT:
+                return "Simple present";
+            case NONE:
+            default:
+                return DEFAULT_VERB_TENSE;
+        }
     }
 
     /***************************************************************
@@ -306,11 +328,14 @@ public class GenFromTemplate {
      * Samples slot terms and builds logic/English slot value maps.
      * A slot is %1, %2, etc. and a verb slot is %v1, %v2, etc.
      ***************************************************************/
-    private static SlotValues getSlotValues(Templates.Template template, int slotCount) {
+    private static SlotValues getSlotValues(Templates.Template template,
+                                            int slotCount,
+                                            Templates.Tense selectedTense) {
 
         Map<Integer, String> logicSlotValues = new HashMap<>();
         Map<Integer, String> englishSlotValues = new HashMap<>();
         Map<Integer, String> englishVerbValues = new HashMap<>();
+        String morphoVerbTense = getMorphoVerbTense(selectedTense);
         for (int slotNum = 1; slotNum <= slotCount; slotNum++) {
             WeightedSampler slotSampler = slotSamplers.get(slotNum);
             if (slotSampler == null) {
@@ -335,8 +360,11 @@ public class GenFromTemplate {
                 System.exit(1);
             }
             String lemma = verbSampler.sampleTerm(template.getName(), verbSlotNum);
-            String conjugated = morphoDB.getVerbConjugation(lemma, DEFAULT_VERB_TENSE, DEFAULT_GRAMMATICAL_PERSON);
+            String conjugated = morphoDB.getVerbConjugation(lemma, morphoVerbTense, DEFAULT_GRAMMATICAL_PERSON);
             if (conjugated == null || conjugated.trim().isEmpty()) {
+                System.out.println("Warning: unable to find conjugation for verb '" + lemma + "' with tense='"
+                        + morphoVerbTense + "' and grammatical person='" + DEFAULT_GRAMMATICAL_PERSON
+                        + "'. Using lemma as fallback.");
                 conjugated = lemma;
             }
             englishVerbValues.put(verbSlotNum, conjugated);
@@ -362,7 +390,7 @@ public class GenFromTemplate {
                 selectedTense = Templates.Tense.valueOf(tenseSampler.sampleTerm());
             }
             String englishFrame = handleQuestion(template);
-            SlotValues slotValues = getSlotValues(template, slotCount);
+            SlotValues slotValues = getSlotValues(template, slotCount, selectedTense);
             boolean negate = Math.random() < template.getNegFreq();
             String logic = replaceSlots(logicFrame, slotValues.logicSlotValues);
             logic = handleNegation(logic, negate);
