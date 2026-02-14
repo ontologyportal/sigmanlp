@@ -91,6 +91,7 @@ public class Templates {
         private final RandomFrameMap englishFrame;
         private final RandomFrameMap englishFrameQuestion;
         private final Slot[] slots;
+        private final VerbSlot[] verbSlots;
         private final String logic;
         private final double modalFreq;
         private final double modalNegFreq;
@@ -105,6 +106,7 @@ public class Templates {
                         RandomFrameMap englishFrame,
                         RandomFrameMap englishFrameQuestion,
                         Slot[] slots,
+                        VerbSlot[] verbSlots,
                         String logic,
                         double modalFreq,
                         double modalNegFreq,
@@ -118,6 +120,7 @@ public class Templates {
             this.englishFrame = englishFrame;
             this.englishFrameQuestion = englishFrameQuestion;
             this.slots = slots;
+            this.verbSlots = verbSlots;
             this.logic = logic;
             this.modalFreq = modalFreq;
             this.modalNegFreq = modalNegFreq;
@@ -143,6 +146,10 @@ public class Templates {
 
         public Slot[] getSlots() {
             return slots;
+        }
+
+        public VerbSlot[] getVerbSlots() {
+            return verbSlots;
         }
 
         public String getLogic() {
@@ -220,6 +227,7 @@ public class Templates {
             builder.append(", englishFrame=").append(englishFrame);
             builder.append(", englishFrameQuestion=").append(englishFrameQuestion);
             builder.append(", slots=").append(formatSlots());
+            builder.append(", verbSlots=").append(formatVerbSlots());
             builder.append(", logic='").append(logic).append('\'');
             builder.append('}');
             return builder.toString();
@@ -245,6 +253,27 @@ public class Templates {
                 builder.append(", countablePossible=").append(slot.isCountablePossible());
                 builder.append(", countableFreq=").append(slot.getCountableFreq());
                 builder.append('}');
+            }
+            builder.append(']');
+            return builder.toString();
+        }
+
+        private String formatVerbSlots() {
+            if (verbSlots == null) {
+                return "null";
+            }
+            StringBuilder builder = new StringBuilder();
+            builder.append('[');
+            for (int i = 0; i < verbSlots.length; i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+                VerbSlot slot = verbSlots[i];
+                if (slot == null) {
+                    builder.append("null");
+                    continue;
+                }
+                builder.append("{verbs=").append(slot.getVerbs()).append('}');
             }
             builder.append(']');
             return builder.toString();
@@ -306,6 +335,41 @@ public class Templates {
         @Override
         public String toString() {
             return "{name='" + name + "', weight=" + weight + "}";
+        }
+    }
+
+    public static class VerbSlot {
+        private final List<WeightedVerb> verbs;
+
+        public VerbSlot(List<WeightedVerb> verbs) {
+            this.verbs = verbs;
+        }
+
+        public List<WeightedVerb> getVerbs() {
+            return verbs;
+        }
+    }
+
+    public static class WeightedVerb {
+        private final String lemma;
+        private final int weight;
+
+        public WeightedVerb(String lemma, int weight) {
+            this.lemma = lemma;
+            this.weight = weight;
+        }
+
+        public String getLemma() {
+            return lemma;
+        }
+
+        public int getWeight() {
+            return weight;
+        }
+
+        @Override
+        public String toString() {
+            return "{lemma='" + lemma + "', weight=" + weight + "}";
         }
     }
 
@@ -416,6 +480,7 @@ public class Templates {
             RandomFrameMap frame = loadFrame(english.path("frame"));
             RandomFrameMap frameQuestion = loadFrame(english.path("frame_question"));
             Slot[] slots = loadSlots(name, english);
+            VerbSlot[] verbSlots = loadVerbSlots(name, english);
             String logic = english.path("logic").asText();
             Double modalFreq = readOptionalDouble(templateNode, "modal", "freq");
             Double modalNegFreq = readOptionalDouble(templateNode, "modal", "neg_freq");
@@ -425,7 +490,7 @@ public class Templates {
             Boolean modalOn = readOptionalBoolean(templateNode, "modal", "on");
             Boolean questionOn = readOptionalBoolean(templateNode, "question_on");
             Boolean tenseOn = readOptionalBoolean(templateNode, "tense", "on");
-            templates.add(new Template(name, frame, frameQuestion, slots, logic,
+            templates.add(new Template(name, frame, frameQuestion, slots, verbSlots, logic,
                     modalFreq != null ? modalFreq : defaultModalFreq,
                     modalNegFreq != null ? modalNegFreq : defaultModalNegFreq,
                     questionFreq != null ? questionFreq : defaultQuestionFreq,
@@ -495,6 +560,40 @@ public class Templates {
         }
         Slot[] slots = new Slot[maxIndex];
         for (Map.Entry<Integer, Slot> entry : slotMap.entrySet()) {
+            int index = entry.getKey();
+            if (index >= 1 && index <= maxIndex) {
+                slots[index - 1] = entry.getValue();
+            }
+        }
+        return slots;
+    }
+
+    /***************************************************************
+     * Loads %v1, %v2, %v3... entries into a flexible array.
+     ***************************************************************/
+    private static VerbSlot[] loadVerbSlots(String templateName, JsonNode english) {
+        if (english == null || english.isMissingNode() || english.isNull()) {
+            System.err.println("Template '" + templateName + "' is missing the 'english' section.");
+            System.exit(1);
+        }
+        Pattern pattern = Pattern.compile("^%v(\\d+)$");
+        Map<Integer, VerbSlot> slotMap = new HashMap<>();
+        int maxIndex = 0;
+        Iterator<Map.Entry<String, JsonNode>> fields = english.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            Matcher matcher = pattern.matcher(field.getKey());
+            if (!matcher.matches()) {
+                continue;
+            }
+            int index = Integer.parseInt(matcher.group(1));
+            slotMap.put(index, parseVerbSlot(templateName, field.getKey(), field.getValue()));
+            if (index > maxIndex) {
+                maxIndex = index;
+            }
+        }
+        VerbSlot[] slots = new VerbSlot[maxIndex];
+        for (Map.Entry<Integer, VerbSlot> entry : slotMap.entrySet()) {
             int index = entry.getKey();
             if (index >= 1 && index <= maxIndex) {
                 slots[index - 1] = entry.getValue();
@@ -589,6 +688,50 @@ public class Templates {
             countableFreq = freqNode.asDouble();
         }
         return new Slot(sumoTerms, type, countablePossible, countableFreq);
+    }
+
+    /***************************************************************
+     * Parses a single verb slot definition.
+     ***************************************************************/
+    private static VerbSlot parseVerbSlot(String templateName, String slotKey, JsonNode slotNode) {
+        if (slotNode == null || slotNode.isMissingNode() || slotNode.isNull()) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing a definition.");
+            System.exit(1);
+        }
+        JsonNode verbsNode = slotNode.get("verbs");
+        if (verbsNode == null || !verbsNode.isArray()) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing required verbs array.");
+            System.exit(1);
+        }
+        List<WeightedVerb> verbs = new ArrayList<>();
+        for (JsonNode verbNode : verbsNode) {
+            if (verbNode == null || !verbNode.isObject()) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey
+                        + " has invalid verbs item " + verbNode
+                        + "; expected object with lemma and weight.");
+                System.exit(1);
+            }
+            JsonNode lemmaNode = verbNode.get("lemma");
+            JsonNode weightNode = verbNode.get("weight");
+            if (lemmaNode == null || !lemmaNode.isTextual()) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey
+                        + " has verbs item missing lemma (string).");
+                System.exit(1);
+            }
+            if (weightNode == null || !weightNode.isIntegralNumber()) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey + " verbs item '" + lemmaNode.asText()
+                        + "' is missing weight (integer).");
+                System.exit(1);
+            }
+            int weight = weightNode.asInt();
+            if (weight < 0) {
+                System.err.println("Template '" + templateName + "', slot " + slotKey + " verbs item '" + lemmaNode.asText()
+                        + "' has invalid weight " + weight + "; weight must be >= 0.");
+                System.exit(1);
+            }
+            verbs.add(new WeightedVerb(lemmaNode.asText(), weight));
+        }
+        return new VerbSlot(verbs);
     }
 
     /***************************************************************

@@ -1,5 +1,9 @@
 /*
   templates.json - templates for synthetic sentence generation
+
+    %<number> - indicates an entity drawn from Sumo
+    %v<number> - indicates a verb corresponding to %<number>
+
 */
 {
   "default_settings":{
@@ -11,7 +15,7 @@
       },
       "tense":{
         "on":true,
-        "none":0.1, // none means tense is not encoded in logic and defalut tense is used in the sentence.
+        "none":0.1, // none means tense is not encoded in logic and default tense is used in the sentence.
         "past":0.3,
         "present":0.3,
         "future":0.1
@@ -27,11 +31,14 @@
       "english":{
         "example":"The book is on the table.",
         "frame":{
-            "tense_default":["The %1 <verb=be> %n{not} %2 the %3."]
+            "tense_default":["The %1 %v1 %n{not} %2 the %3.",
+                             "The %1 %v1 %n{not} situated %2 the %3.",
+                             "The %1 %v1 %n{not} located %2 the %3."]
         },
         "frame_question":{
-            "tense_default":["<verb=be> the %1 %n{not} %2 the %3?"],
-            "tense_future":["Will the %1 %n{not} be %2 the %3?"]
+            "tense_default":["%v1 the %1 %n{not} %2 the %3?"],
+            "tense_future":["Will the %1 %n{not} be %2 the %3?",
+                            "%v1 the %1 %n{not} going to be %2 the %3?"]
         },
         "%1":{
             "sumo_terms":[{"name":"Artifact","weight":50},
@@ -50,6 +57,9 @@
             "sumo_terms":[{"name":"Object","weight":1}],
             "type":"subclass",
             "countable":{"possible":true, "freq":0.1}
+        },
+        "%v1":{
+            "verbs":[{"lemma":"be","weight":1}]
         },
         "logic":"(exists (?A1 ?O2) (and (instance ?A1 %1) (instance ?O2 %3)) %tense{%n{not(}(orientation ?A1 ?O2 %2)%n{)}}))"
       }

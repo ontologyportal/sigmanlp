@@ -38,15 +38,6 @@ public class GenAdjectiveMorphoDB {
     }
 
     /***************************************************************
-     * Loads adjective semantic classifications into memory.
-     ***************************************************************/
-    public static Map<String, List<ObjectNode>> loadAdjectiveClasses() {
-
-        String adjectiveFileName = GenMorphoUtils.computeOutputFilePath("adjective", "AdjectiveSemanticClasses.txt");
-        return GenMorphoUtils.loadClassificationObjects(adjectiveFileName);
-    }
-
-    /***************************************************************
      * Uses OLLAMA to classify adjectives by function.
      ***************************************************************/
     private void genAdjectiveClasses() {
