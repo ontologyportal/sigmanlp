@@ -65,7 +65,7 @@ public class Templates {
     }
 
     public enum Tense {
-        DEFAULT("tense_default"),
+        NONE("tense_none"),
         FUTURE("tense_future"),
         PAST("tense_past"),
         PRESENT("tense_present");
@@ -77,6 +77,9 @@ public class Templates {
         }
 
         public static Tense fromJsonKey(String jsonKey) {
+            if ("tense_default".equals(jsonKey)) {
+                return NONE;
+            }
             for (Tense key : Tense.values()) {
                 if (key.jsonKey.equals(jsonKey)) {
                     return key;
@@ -101,6 +104,10 @@ public class Templates {
         private final boolean modalOn;
         private final boolean questionOn;
         private final boolean tenseOn;
+        private final int tenseNoneWeight;
+        private final int tensePastWeight;
+        private final int tensePresentWeight;
+        private final int tenseFutureWeight;
 
         public Template(String name,
                         RandomFrameMap englishFrame,
@@ -115,7 +122,11 @@ public class Templates {
                         int numToGen,
                         boolean modalOn,
                         boolean questionOn,
-                        boolean tenseOn) {
+                        boolean tenseOn,
+                        int tenseNoneWeight,
+                        int tensePastWeight,
+                        int tensePresentWeight,
+                        int tenseFutureWeight) {
             this.name = name;
             this.englishFrame = englishFrame;
             this.englishFrameQuestion = englishFrameQuestion;
@@ -130,6 +141,10 @@ public class Templates {
             this.modalOn = modalOn;
             this.questionOn = questionOn;
             this.tenseOn = tenseOn;
+            this.tenseNoneWeight = tenseNoneWeight;
+            this.tensePastWeight = tensePastWeight;
+            this.tensePresentWeight = tensePresentWeight;
+            this.tenseFutureWeight = tenseFutureWeight;
         }
 
         public String getName() {
@@ -212,6 +227,22 @@ public class Templates {
             return tenseOn;
         }
 
+        public int getTenseNoneWeight() {
+            return tenseNoneWeight;
+        }
+
+        public int getTensePastWeight() {
+            return tensePastWeight;
+        }
+
+        public int getTensePresentWeight() {
+            return tensePresentWeight;
+        }
+
+        public int getTenseFutureWeight() {
+            return tenseFutureWeight;
+        }
+
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
@@ -224,6 +255,10 @@ public class Templates {
             builder.append(", modalOn=").append(modalOn);
             builder.append(", questionOn=").append(questionOn);
             builder.append(", tenseOn=").append(tenseOn);
+            builder.append(", tenseNoneWeight=").append(tenseNoneWeight);
+            builder.append(", tensePastWeight=").append(tensePastWeight);
+            builder.append(", tensePresentWeight=").append(tensePresentWeight);
+            builder.append(", tenseFutureWeight=").append(tenseFutureWeight);
             builder.append(", englishFrame=").append(englishFrame);
             builder.append(", englishFrameQuestion=").append(englishFrameQuestion);
             builder.append(", slots=").append(formatSlots());
@@ -381,6 +416,10 @@ public class Templates {
     private final boolean defaultModalOn;
     private final boolean defaultQuestionOn;
     private final boolean defaultTenseOn;
+    private final int defaultTenseNoneWeight;
+    private final int defaultTensePastWeight;
+    private final int defaultTensePresentWeight;
+    private final int defaultTenseFutureWeight;
     private final List<Template> templates;
     private int nextIndex;
 
@@ -392,6 +431,10 @@ public class Templates {
                       boolean defaultModalOn,
                       boolean defaultQuestionOn,
                       boolean defaultTenseOn,
+                      int defaultTenseNoneWeight,
+                      int defaultTensePastWeight,
+                      int defaultTensePresentWeight,
+                      int defaultTenseFutureWeight,
                       List<Template> templates) {
         this.defaultModalFreq = defaultModalFreq;
         this.defaultModalNegFreq = defaultModalNegFreq;
@@ -401,6 +444,10 @@ public class Templates {
         this.defaultModalOn = defaultModalOn;
         this.defaultQuestionOn = defaultQuestionOn;
         this.defaultTenseOn = defaultTenseOn;
+        this.defaultTenseNoneWeight = defaultTenseNoneWeight;
+        this.defaultTensePastWeight = defaultTensePastWeight;
+        this.defaultTensePresentWeight = defaultTensePresentWeight;
+        this.defaultTenseFutureWeight = defaultTenseFutureWeight;
         this.templates = templates;
         this.nextIndex = 0;
     }
@@ -421,10 +468,17 @@ public class Templates {
         boolean modalOn = modal.path("on").asBoolean();
         boolean questionOn = defaults.path("question_on").asBoolean(true);
         boolean tenseOn = tense.path("on").asBoolean();
+        int tenseNoneWeight = tense.path("none").asInt(0);
+        int tensePastWeight = tense.path("past").asInt(0);
+        int tensePresentWeight = tense.path("present").asInt(0);
+        int tenseFutureWeight = tense.path("future").asInt(0);
         List<Template> templates = loadTemplates(root, modalFreq, modalNegFreq,
-                questionFreq, negFreq, numToGen, modalOn, questionOn, tenseOn);
+                questionFreq, negFreq, numToGen, modalOn, questionOn, tenseOn,
+                tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight);
         return new Templates(modalFreq, modalNegFreq, questionFreq, negFreq, numToGen,
-                modalOn, questionOn, tenseOn, templates);
+                modalOn, questionOn, tenseOn,
+                tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
+                templates);
     }
 
     /***************************************************************
@@ -471,7 +525,11 @@ public class Templates {
                                                 int defaultNumToGen,
                                                 boolean defaultModalOn,
                                                 boolean defaultQuestionOn,
-                                                boolean defaultTenseOn) {
+                                                boolean defaultTenseOn,
+                                                int defaultTenseNoneWeight,
+                                                int defaultTensePastWeight,
+                                                int defaultTensePresentWeight,
+                                                int defaultTenseFutureWeight) {
         JsonNode templateNodes = root.path("templates");
         List<Template> templates = new ArrayList<>(templateNodes.size());
         for (JsonNode templateNode : templateNodes) {
@@ -490,6 +548,10 @@ public class Templates {
             Boolean modalOn = readOptionalBoolean(templateNode, "modal", "on");
             Boolean questionOn = readOptionalBoolean(templateNode, "question_on");
             Boolean tenseOn = readOptionalBoolean(templateNode, "tense", "on");
+            Integer tenseNoneWeight = readOptionalInt(templateNode, "tense", "none");
+            Integer tensePastWeight = readOptionalInt(templateNode, "tense", "past");
+            Integer tensePresentWeight = readOptionalInt(templateNode, "tense", "present");
+            Integer tenseFutureWeight = readOptionalInt(templateNode, "tense", "future");
             templates.add(new Template(name, frame, frameQuestion, slots, verbSlots, logic,
                     modalFreq != null ? modalFreq : defaultModalFreq,
                     modalNegFreq != null ? modalNegFreq : defaultModalNegFreq,
@@ -498,7 +560,11 @@ public class Templates {
                     numToGen != null ? numToGen : defaultNumToGen,
                     modalOn != null ? modalOn : defaultModalOn,
                     questionOn != null ? questionOn : defaultQuestionOn,
-                    tenseOn != null ? tenseOn : defaultTenseOn));
+                    tenseOn != null ? tenseOn : defaultTenseOn,
+                    tenseNoneWeight != null ? tenseNoneWeight : defaultTenseNoneWeight,
+                    tensePastWeight != null ? tensePastWeight : defaultTensePastWeight,
+                    tensePresentWeight != null ? tensePresentWeight : defaultTensePresentWeight,
+                    tenseFutureWeight != null ? tenseFutureWeight : defaultTenseFutureWeight));
         }
         return templates;
     }
@@ -774,6 +840,24 @@ public class Templates {
             return null;
         }
         JsonNode value = node.get(field);
+        if (value == null || value.isMissingNode() || value.isNull()) {
+            return null;
+        }
+        return value.asInt();
+    }
+
+    /***************************************************************
+     * Reads a nested integer override if present.
+     ***************************************************************/
+    private static Integer readOptionalInt(JsonNode node, String parentField, String field) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        JsonNode parent = node.get(parentField);
+        if (parent == null || parent.isMissingNode() || parent.isNull()) {
+            return null;
+        }
+        JsonNode value = parent.get(field);
         if (value == null || value.isMissingNode() || value.isNull()) {
             return null;
         }

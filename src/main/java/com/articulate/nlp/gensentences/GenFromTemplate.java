@@ -9,7 +9,6 @@ import com.articulate.sigma.wordNet.WordNet;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,25 +67,6 @@ public class GenFromTemplate {
     }
 
     /***************************************************************
-     * Adds one weighted class with concrete candidates to a sampler.
-     ***************************************************************/
-    private static void addWeightedClass(WeightedSampler sampler,
-                                         String className,
-                                         int weight,
-                                         Collection<String> candidates) {
-
-        if (weight <= 0) {
-            return;
-        }
-        WeightedClass weightedClass = new WeightedClass();
-        weightedClass.className = className;
-        weightedClass.weight = weight;
-        weightedClass.candidates = new java.util.ArrayList<>(candidates);
-        sampler.weightedClasses.add(weightedClass);
-        sampler.totalWeight += weightedClass.weight;
-    }
-
-    /***************************************************************
      * Initializes generation resources.
      ***************************************************************/
     public static void init(String filePrefix, String morphoDbPath) {
@@ -136,7 +116,7 @@ public class GenFromTemplate {
                             + slot.getType().name().toLowerCase() + " but weight=" + sumoTerm.getWeight() + ".");
                     System.exit(1);
                 }
-                addWeightedClass(slotSampler, sumoTerm.getName(), sumoTerm.getWeight(), candidates);
+                slotSampler.addWeightedClass(sumoTerm.getName(), sumoTerm.getWeight(), candidates);
             }
             return slotSampler;
         });
@@ -157,8 +137,8 @@ public class GenFromTemplate {
                 if (weightedVerb.getWeight() <= 0) {
                     continue;
                 }
-                addWeightedClass(verbSampler, weightedVerb.getLemma(), weightedVerb.getWeight(),
-                        Arrays.asList(weightedVerb.getLemma()));
+                verbSampler.addSingleCandidate(weightedVerb.getLemma(), weightedVerb.getWeight(),
+                        weightedVerb.getLemma());
             }
             return verbSampler;
         });
@@ -204,6 +184,83 @@ public class GenFromTemplate {
     }
 
     /***************************************************************
+     * Applies tense handling to logic markers of the form %t{...}.
+     * NONE leaves internal text unchanged.
+     ***************************************************************/
+    private static String handleTense(String frame, Templates.Tense selectedTense) {
+
+        Pattern pattern = Pattern.compile("%t\\{([^}]*)\\}");
+        Matcher matcher = pattern.matcher(frame);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String internalText = matcher.group(1);
+            String replacement = internalText;
+            switch (selectedTense) {
+                case FUTURE:
+                    replacement = wrapLogicFuture(internalText);
+                    break;
+                case PRESENT:
+                    replacement = wrapLogicPresent(internalText);
+                    break;
+                case PAST:
+                    replacement = wrapLogicPast(internalText);
+                    break;
+                case NONE:
+                    replacement = internalText;
+                    break;
+                default:
+                    System.err.println("Error: unrecognized tense '" + selectedTense.name() + "' for template tense handling.");
+                    System.exit(1);
+            }
+            matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    /***************************************************************
+     * Builds a weighted tense sampler once per template.
+     ***************************************************************/
+    private static WeightedSampler buildTenseSampler(Templates.Template template) {
+
+        if (template == null || !template.isTenseOn()) {
+            return null;
+        }
+        WeightedSampler sampler = new WeightedSampler();
+        sampler.addSingleCandidate(Templates.Tense.NONE.name(), template.getTenseNoneWeight(),
+                Templates.Tense.NONE.name());
+        sampler.addSingleCandidate(Templates.Tense.PAST.name(), template.getTensePastWeight(),
+                Templates.Tense.PAST.name());
+        sampler.addSingleCandidate(Templates.Tense.PRESENT.name(), template.getTensePresentWeight(),
+                Templates.Tense.PRESENT.name());
+        sampler.addSingleCandidate(Templates.Tense.FUTURE.name(), template.getTenseFutureWeight(),
+                Templates.Tense.FUTURE.name());
+        if (sampler.totalWeight <= 0) {
+            return null;
+        }
+        return sampler;
+    }
+
+
+    private static String wrapLogicFuture(String internalText) {
+
+        // TODO: Apply future tense logic wrapper once specification is provided.
+        return internalText;
+    }
+
+    private static String wrapLogicPresent(String internalText) {
+
+        // TODO: Apply present tense logic wrapper once specification is provided.
+        return internalText;
+    }
+
+    private static String wrapLogicPast(String internalText) {
+
+        // TODO: Apply past tense logic wrapper once specification is provided.
+        return internalText;
+    }
+
+    /***************************************************************
      * Replace %v1, %v2, ... verb slots in a template.
      ***************************************************************/
     private static String handleVerbs(String frame, Map<Integer, String> verbValues) {
@@ -231,15 +288,15 @@ public class GenFromTemplate {
         boolean asQuestion = Math.random() < template.getQuestionFreq();
         String englishFrame;
         if (asQuestion) {
-            englishFrame = template.getEnglishFrameQuestion().get(Templates.Tense.DEFAULT);
+            englishFrame = template.getEnglishFrameQuestion().get(Templates.Tense.NONE);
         }
         else {
-            englishFrame = template.getEnglishFrame().get(Templates.Tense.DEFAULT);
+            englishFrame = template.getEnglishFrame().get(Templates.Tense.NONE);
         }
         if (englishFrame == null) {
             System.err.println("Error: template '" + template.getName()
                     + "' is missing "
-                    + (asQuestion ? "english.frame_question.tense_default" : "english.frame.tense_default") + ".");
+                    + (asQuestion ? "english.frame_question.tense_none" : "english.frame.tense_none") + ".");
             System.exit(1);
         }
         return englishFrame;
@@ -247,6 +304,7 @@ public class GenFromTemplate {
 
     /***************************************************************
      * Samples slot terms and builds logic/English slot value maps.
+     * A slot is %1, %2, etc. and a verb slot is %v1, %v2, etc.
      ***************************************************************/
     private static SlotValues getSlotValues(Templates.Template template, int slotCount) {
 
@@ -293,20 +351,24 @@ public class GenFromTemplate {
 
         slotSamplers = buildSlotSamplers(template);
         verbSamplers = buildVerbSamplers(template);
+        WeightedSampler tenseSampler = buildTenseSampler(template);
         int numToGen = template.getNumToGen();
         System.out.println("Generating " + numToGen + " sentence(s) from template '" + template.getName() + "'");
         String logicFrame = template.getLogic();
         int slotCount = template.getSlots().length;
         for (int i = 0; i < numToGen; i++) {
+            Templates.Tense selectedTense = Templates.Tense.NONE;
+            if (template.isTenseOn() && tenseSampler != null) {
+                selectedTense = Templates.Tense.valueOf(tenseSampler.sampleTerm());
+            }
             String englishFrame = handleQuestion(template);
             SlotValues slotValues = getSlotValues(template, slotCount);
-            Map<Integer, String> logicSlotValues = slotValues.logicSlotValues;
-            Map<Integer, String> englishSlotValues = slotValues.englishSlotValues;
-            Map<Integer, String> englishVerbValues = slotValues.englishVerbValues;
             boolean negate = Math.random() < template.getNegFreq();
-            String logic = handleNegation(replaceSlots(logicFrame, logicSlotValues), negate);
-            String english = replaceSlots(englishFrame, englishSlotValues);
-            english = handleVerbs(english, englishVerbValues);
+            String logic = replaceSlots(logicFrame, slotValues.logicSlotValues);
+            logic = handleNegation(logic, negate);
+            logic = handleTense(logic, selectedTense);
+            String english = replaceSlots(englishFrame, slotValues.englishSlotValues);
+            english = handleVerbs(english, slotValues.englishVerbValues);
             english = handleNegation(english, negate);
             GenUtils.writeEnglishLogicPairToFile(english, logic, outputFileEnglish, outputFileLogic);
         }

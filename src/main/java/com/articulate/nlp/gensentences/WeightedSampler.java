@@ -1,6 +1,7 @@
 package com.articulate.nlp.gensentences;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -13,6 +14,49 @@ public class WeightedSampler {
     public int totalWeight = 0;
     private static final Random rand = new Random();
 
+    /**
+     * Adds one weighted class with multiple candidate terms.
+     * Entries with non-positive weight or empty candidates are ignored.
+     */
+    public void addWeightedClass(String className, int weight, Collection<String> candidates) {
+
+        if (weight <= 0 || candidates == null || candidates.isEmpty()) {
+            return;
+        }
+        WeightedClass weightedClass = new WeightedClass();
+        weightedClass.className = className;
+        weightedClass.weight = weight;
+        weightedClass.candidates = new ArrayList<>(candidates);
+        weightedClasses.add(weightedClass);
+        totalWeight += weightedClass.weight;
+    }
+
+    /**
+     * Convenience helper for adding a class with exactly one candidate term.
+     */
+    public void addSingleCandidate(String className, int weight, String candidate) {
+
+        if (candidate == null || candidate.trim().isEmpty()) {
+            return;
+        }
+        List<String> candidates = new ArrayList<>();
+        candidates.add(candidate);
+        addWeightedClass(className, weight, candidates);
+    }
+
+    /**
+     * Samples one term using generic error context.
+     */
+    public String sampleTerm() {
+
+        return sampleTerm("unspecified", 0);
+    }
+
+    /**
+     * Samples one term by:
+     * 1) selecting a weighted class by cumulative weight,
+     * 2) selecting a random candidate from that class.
+     */
     public String sampleTerm(String templateName, int slotNum) {
 
         if (weightedClasses.isEmpty() || totalWeight <= 0) {
@@ -41,7 +85,10 @@ public class WeightedSampler {
  * Weighted class candidate used by WeightedSampler.
  ***************************************************************/
 class WeightedClass {
+    /** Logical class label used for diagnostics. */
     public String className;
+    /** Weight used during class-level sampling. */
     public int weight;
+    /** Concrete terms that can be selected once the class is chosen. */
     public List<String> candidates;
 }

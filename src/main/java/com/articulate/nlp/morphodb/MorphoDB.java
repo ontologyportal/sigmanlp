@@ -70,7 +70,4 @@ public class MorphoDB {
         return null;
     }
 
-    /***************************************************************
-     * Lookup verb conjugation for a specific model directory.
-     ***************************************************************/
 }
