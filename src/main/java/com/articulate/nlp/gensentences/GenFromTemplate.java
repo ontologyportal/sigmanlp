@@ -27,8 +27,7 @@ public class GenFromTemplate {
     public static KBLite kbLite;
     public static LFeatureSets lfeatsets;
     public static MorphoDB morphoDB;
-    public static final String DEFAULT_VERB_TENSE = "Simple present";
-    public static final String DEFAULT_GRAMMATICAL_PERSON = "he_she_it";
+    public static GenVerbHelper verbHelper;
     public static final Set<String> suppress = new HashSet<>(Arrays.asList());
     public static Map<Integer, WeightedSampler> slotSamplers = new HashMap<>();
     public static Map<Integer, WeightedSampler> verbSamplers = new HashMap<>();
@@ -37,13 +36,26 @@ public class GenFromTemplate {
         private final Map<Integer, String> logicSlotValues;
         private final Map<Integer, String> englishSlotValues;
         private final Map<Integer, String> englishVerbValues;
+        private final boolean logicNegate;
 
         private SlotValues(Map<Integer, String> logicSlotValues,
                            Map<Integer, String> englishSlotValues,
-                           Map<Integer, String> englishVerbValues) {
+                           Map<Integer, String> englishVerbValues,
+                           boolean logicNegate) {
             this.logicSlotValues = logicSlotValues;
             this.englishSlotValues = englishSlotValues;
             this.englishVerbValues = englishVerbValues;
+            this.logicNegate = logicNegate;
+        }
+    }
+
+    private static class QuestionHandlingResult {
+        private final boolean asQuestion;
+        private final String englishFrame;
+
+        private QuestionHandlingResult(boolean asQuestion, String englishFrame) {
+            this.asQuestion = asQuestion;
+            this.englishFrame = englishFrame;
         }
     }
 
@@ -80,6 +92,7 @@ public class GenFromTemplate {
         }
         lfeatsets = GenUtils.initLFeatureSets(kbLite, suppress);
         morphoDB = MorphoDB.loadMorphoDatabase(morphoDbPath);
+        verbHelper = new GenVerbHelper(morphoDB);
         System.out.println("Loaded " + morphoDB.size() + " morphology DB snapshot(s) from: " + morphoDbPath);
         GenUtils.createFileIfDoesNotExists(outputFileEnglish);
         GenUtils.createFileIfDoesNotExists(outputFileLogic);
@@ -177,9 +190,20 @@ public class GenFromTemplate {
             matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(result);
-        return result.toString()
+        return result.toString();
+    }
+
+    /***************************************************************
+     * English surface cleanup after all slot/negation substitutions.
+     ***************************************************************/
+    private static String cleanEnglishSurface(String english) {
+
+        if (english == null) {
+            return null;
+        }
+        return english
                 .replaceAll(" {2,}", " ")
-                .replaceAll("\\s+([,.;!?])", "$1")
+                .replaceAll("\\s+([,.;!])", "$1")
                 .trim();
     }
 
@@ -261,67 +285,34 @@ public class GenFromTemplate {
                         "(holdsDuring ?T (" + internalText + "))";
     }
 
-    /***************************************************************
-     * Maps selected template tense to MorphoDB tense labels.
-     ***************************************************************/
-    private static String getMorphoVerbTense(Templates.Tense selectedTense) {
+    private static String selectFrameForTense(Templates.RandomFrameMap map, Templates.Tense selectedTense) {
 
-        if (selectedTense == null) {
-            return DEFAULT_VERB_TENSE;
+        if (map == null || map.isEmpty()) {
+            return null;
         }
-        switch (selectedTense) {
-            case PAST:
-                return "Simple past";
-            case FUTURE:
-                return "Simple future";
-            case PRESENT:
-                return "Simple present";
-            case NONE:
-            default:
-                return DEFAULT_VERB_TENSE;
+        String frame = map.get(selectedTense);
+        if (frame != null) {
+            return frame;
         }
+        return map.get(Templates.Tense.NONE);
     }
 
     /***************************************************************
-     * Replace %v1, %v2, ... verb slots in a template.
+     * Resolves question mode and selects the matching frame for tense.
      ***************************************************************/
-    private static String handleVerbs(String frame, Map<Integer, String> verbValues) {
+    private static QuestionHandlingResult handleQuestion(Templates.Template template, Templates.Tense selectedTense) {
 
-        Pattern pattern = Pattern.compile("%v(\\d+)");
-        Matcher matcher = pattern.matcher(frame);
-        StringBuffer result = new StringBuffer();
-        while (matcher.find()) {
-            int slotNum = Integer.parseInt(matcher.group(1));
-            String value = verbValues.get(slotNum);
-            if (value == null) {
-                value = matcher.group(0);
-            }
-            matcher.appendReplacement(result, Matcher.quoteReplacement(value));
-        }
-        matcher.appendTail(result);
-        return result.toString();
-    }
-
-    /***************************************************************
-     * Resolves whether to generate a question and selects the matching frame.
-     ***************************************************************/
-    private static String handleQuestion(Templates.Template template) {
-
-        boolean asQuestion = Math.random() < template.getQuestionFreq();
-        String englishFrame;
-        if (asQuestion) {
-            englishFrame = template.getEnglishFrameQuestion().get(Templates.Tense.NONE);
-        }
-        else {
-            englishFrame = template.getEnglishFrame().get(Templates.Tense.NONE);
-        }
+        boolean asQuestion = template.isQuestionOn() && Math.random() < template.getQuestionFreq();
+        Templates.RandomFrameMap frameMap = asQuestion ? template.getEnglishFrameQuestion() : template.getEnglishFrame();
+        String englishFrame = selectFrameForTense(frameMap, selectedTense);
         if (englishFrame == null) {
             System.err.println("Error: template '" + template.getName()
-                    + "' is missing "
-                    + (asQuestion ? "english.frame_question.tense_none" : "english.frame.tense_none") + ".");
+                    + "' is missing a "
+                    + (asQuestion ? "frame_question" : "frame")
+                    + " for tense '" + selectedTense.name().toLowerCase() + "' and fallback 'tense_none'.");
             System.exit(1);
         }
-        return englishFrame;
+        return new QuestionHandlingResult(asQuestion, englishFrame);
     }
 
     /***************************************************************
@@ -330,12 +321,13 @@ public class GenFromTemplate {
      ***************************************************************/
     private static SlotValues getSlotValues(Templates.Template template,
                                             int slotCount,
-                                            Templates.Tense selectedTense) {
+                                            Templates.Tense selectedTense,
+                                            boolean asQuestion) {
 
         Map<Integer, String> logicSlotValues = new HashMap<>();
         Map<Integer, String> englishSlotValues = new HashMap<>();
         Map<Integer, String> englishVerbValues = new HashMap<>();
-        String morphoVerbTense = getMorphoVerbTense(selectedTense);
+        boolean logicNegate = false;
         for (int slotNum = 1; slotNum <= slotCount; slotNum++) {
             WeightedSampler slotSampler = slotSamplers.get(slotNum);
             if (slotSampler == null) {
@@ -353,23 +345,25 @@ public class GenFromTemplate {
         }
         int verbSlotCount = template.getVerbSlots().length;
         for (int verbSlotNum = 1; verbSlotNum <= verbSlotCount; verbSlotNum++) {
+            Templates.VerbSlot verbSlot = template.getVerbSlots()[verbSlotNum - 1];
             WeightedSampler verbSampler = verbSamplers.get(verbSlotNum);
-            if (verbSampler == null) {
+            if (verbSlot == null || verbSampler == null) {
                 System.err.println("Error: template '" + template.getName()
                         + "' slot %v" + verbSlotNum + " has no verbs to sample.");
                 System.exit(1);
             }
             String lemma = verbSampler.sampleTerm(template.getName(), verbSlotNum);
-            String conjugated = morphoDB.getVerbConjugation(lemma, morphoVerbTense, DEFAULT_GRAMMATICAL_PERSON);
-            if (conjugated == null || conjugated.trim().isEmpty()) {
-                System.out.println("Warning: unable to find conjugation for verb '" + lemma + "' with tense='"
-                        + morphoVerbTense + "' and grammatical person='" + DEFAULT_GRAMMATICAL_PERSON
-                        + "'. Using lemma as fallback.");
-                conjugated = lemma;
-            }
-            englishVerbValues.put(verbSlotNum, conjugated);
+            boolean negateVerb = verbSlot.isNegationOn() && Math.random() < verbSlot.getNegFreq();
+            logicNegate = logicNegate || negateVerb;
+            GenVerbHelper.VerbFeatures features = new GenVerbHelper.VerbFeatures(
+                    lemma,
+                    selectedTense,
+                    GenVerbHelper.DEFAULT_GRAMMATICAL_PERSON,
+                    negateVerb,
+                    asQuestion);
+            englishVerbValues.put(verbSlotNum, verbHelper.realizeVerbPhrase(features));
         }
-        return new SlotValues(logicSlotValues, englishSlotValues, englishVerbValues);
+        return new SlotValues(logicSlotValues, englishSlotValues, englishVerbValues, logicNegate);
     }
 
     /***************************************************************
@@ -389,15 +383,20 @@ public class GenFromTemplate {
             if (template.isTenseOn() && tenseSampler != null) {
                 selectedTense = Templates.Tense.valueOf(tenseSampler.sampleTerm());
             }
-            String englishFrame = handleQuestion(template);
-            SlotValues slotValues = getSlotValues(template, slotCount, selectedTense);
-            boolean negate = Math.random() < template.getNegFreq();
+            QuestionHandlingResult questionHandlingResult = handleQuestion(template, selectedTense);
+            if (questionHandlingResult.englishFrame.contains("%n{")) {
+                System.err.println("Error: template '" + template.getName()
+                        + "' english frame contains %n{...}. English negation must be handled in %v slots.");
+                System.exit(1);
+            }
+            SlotValues slotValues = getSlotValues(template, slotCount, selectedTense, questionHandlingResult.asQuestion);
             String logic = replaceSlots(logicFrame, slotValues.logicSlotValues);
-            logic = handleNegation(logic, negate);
+            logic = handleNegation(logic, slotValues.logicNegate);
             logic = handleTense(logic, selectedTense);
-            String english = replaceSlots(englishFrame, slotValues.englishSlotValues);
-            english = handleVerbs(english, slotValues.englishVerbValues);
-            english = handleNegation(english, negate);
+            String english = replaceSlots(questionHandlingResult.englishFrame, slotValues.englishSlotValues);
+            english = GenVerbHelper.replaceVerbSlots(english, slotValues.englishVerbValues);
+            english = cleanEnglishSurface(english);
+            english = GenUtils.capitalizeFirstLetter(english);
             GenUtils.writeEnglishLogicPairToFile(english, logic, outputFileEnglish, outputFileLogic);
         }
     }

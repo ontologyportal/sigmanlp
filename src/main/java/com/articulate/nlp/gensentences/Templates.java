@@ -308,7 +308,10 @@ public class Templates {
                     builder.append("null");
                     continue;
                 }
-                builder.append("{verbs=").append(slot.getVerbs()).append('}');
+                builder.append("{verbs=").append(slot.getVerbs());
+                builder.append(", negationOn=").append(slot.isNegationOn());
+                builder.append(", negFreq=").append(slot.getNegFreq());
+                builder.append('}');
             }
             builder.append(']');
             return builder.toString();
@@ -375,13 +378,25 @@ public class Templates {
 
     public static class VerbSlot {
         private final List<WeightedVerb> verbs;
+        private final boolean negationOn;
+        private final double negFreq;
 
-        public VerbSlot(List<WeightedVerb> verbs) {
+        public VerbSlot(List<WeightedVerb> verbs, boolean negationOn, double negFreq) {
             this.verbs = verbs;
+            this.negationOn = negationOn;
+            this.negFreq = negFreq;
         }
 
         public List<WeightedVerb> getVerbs() {
             return verbs;
+        }
+
+        public boolean isNegationOn() {
+            return negationOn;
+        }
+
+        public double getNegFreq() {
+            return negFreq;
         }
     }
 
@@ -765,8 +780,40 @@ public class Templates {
             System.exit(1);
         }
         JsonNode verbsNode = slotNode.get("verbs");
+        JsonNode negationNode = slotNode.get("negation");
+        JsonNode negFreqNode = slotNode.get("neg_freq");
         if (verbsNode == null || !verbsNode.isArray()) {
             System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing required verbs array.");
+            System.exit(1);
+        }
+        if (negationNode == null || !negationNode.isTextual()) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " is missing required negation setting (\"on\" or \"off\").");
+            System.exit(1);
+        }
+        String negationValue = negationNode.asText().trim().toLowerCase();
+        boolean negationOn;
+        if ("on".equals(negationValue)) {
+            negationOn = true;
+        }
+        else if ("off".equals(negationValue)) {
+            negationOn = false;
+        }
+        else {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " has invalid negation value '" + negationNode.asText() + "'. Expected \"on\" or \"off\".");
+            System.exit(1);
+            return null;
+        }
+        if (negFreqNode == null || !negFreqNode.isNumber()) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " is missing required neg_freq (number).");
+            System.exit(1);
+        }
+        double negFreq = negFreqNode.asDouble();
+        if (negFreq < 0.0 || negFreq > 1.0) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " has invalid neg_freq " + negFreq + "; expected range [0.0, 1.0].");
             System.exit(1);
         }
         List<WeightedVerb> verbs = new ArrayList<>();
@@ -797,7 +844,7 @@ public class Templates {
             }
             verbs.add(new WeightedVerb(lemmaNode.asText(), weight));
         }
-        return new VerbSlot(verbs);
+        return new VerbSlot(verbs, negationOn, negFreq);
     }
 
     /***************************************************************

@@ -15,30 +15,29 @@
       },
       "tense":{
         "on":true,
-        "none":5, // none means tense is not encoded in logic and default tense is used in the sentence.
-        "past":1,
-        "present":1,
-        "future":1
+        "none":1, // none means tense is not encoded in logic and default tense is used in the sentence.
+        "past":5,
+        "present":5,
+        "future":5
       },
       "num_to_gen":100,
-      "neg_freq":0.2,
       "question_freq":0.1
   },
   "templates":[
     {
       "name":"Orientation",
       "num_to_gen":50,
+      // Negation is configured per %v slot and is shared by english + logic.
       "english":{
         "example":"The book is on the table.",
         "frame":{
-            "tense_default":["The %1 %v1 %n{not} %2 the %3.",
-                             "The %1 %v1 %n{not} situated %2 the %3.",
-                             "The %1 %v1 %n{not} located %2 the %3."]
+            "tense_none":["The %1 %v1 %2 the %3.",
+                          "The %1 %v1 situated %2 the %3.",
+                          "The %1 %v1 located %2 the %3."]
         },
         "frame_question":{
-            "tense_default":["%v1 the %1 %n{not} %2 the %3?"],
-            "tense_future":["Will the %1 %n{not} be %2 the %3?",
-                            "%v1 the %1 %n{not} going to be %2 the %3?"]
+            "tense_none":["%v1 the %1 %2 the %3?"],
+            "tense_future":["Will the %1 %v1 %2 the %3?"]
         },
         "%1":{
             "sumo_terms":[{"name":"Artifact","weight":50},
@@ -59,6 +58,8 @@
             "countable":{"possible":true, "freq":0.1}
         },
         "%v1":{
+            "negation":"on",
+            "neg_freq":0.5,
             "verbs":[{"lemma":"be","weight":1}]
         },
         "logic":"(exists (?A1 ?O2 ?T) (and (instance ?A1 %1) (instance ?O2 %3)) %t{%n{not(}(orientation ?A1 ?O2 %2)%n{)}}))"
