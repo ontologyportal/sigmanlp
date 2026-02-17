@@ -79,6 +79,14 @@ public class GenOrientations {
         allSUMOOrientationSet.removeAll(SUMOOrientationExlcusionList);
         System.out.println("Number in allSUMOOrientationSet "+allSUMOOrientationSet.size());
         System.out.println(allSUMOOrientationSet);
+        allSUMOOrientationSet.remove("Adjacent");
+        allSUMOOrientationSet.add("Adjacent to");
+        allSUMOOrientationSet.remove("Left");
+        allSUMOOrientationSet.add("Left of");
+        allSUMOOrientationSet.remove("Right");
+        allSUMOOrientationSet.add("Right of");
+        System.out.println(allSUMOOrientationSet);
+
         //missing on
         //allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
         //allSUMORelationsSet.removeAll(allSUMOVariableAritySet);
