@@ -37,7 +37,8 @@ public class GenOrientations {
     public static String filepath;
     public static List<String> imageList = new ArrayList<>();
     public static ArrayNode rootArray;
-    public static List<String> SUMOOrientationExlcusionList; 
+    public static List<String> SUMOOrientationExlcusionList;
+    public static List<String> SUMOArtifactRetainList;
     public static int id; 
     public static String key;
     public static int max;
@@ -63,12 +64,21 @@ public class GenOrientations {
         WordNet.initOnce();
         //Organizing the set of all things you want from SUMO
         Set<String> allSUMOArtifactSet = kbLite.getChildClasses("Artifact");
+
+        // System.out.println("Number in allSUMOArtifactSet "+allSUMOArtifactSet.size());
+        // System.out.println(allSUMOArtifactSet);
+        //code to select certain artifacts from the original list of all artifacts.
+        SUMOArtifactRetainList = new ArrayList<>(Arrays.asList("DrinkingCup", "Book", "Table", "Chair"));
+        allSUMOArtifactSet.retainAll(SUMOArtifactRetainList);
         System.out.println("Number in allSUMOArtifactSet "+allSUMOArtifactSet.size());
+        System.out.println(allSUMOArtifactSet);
         //Set<String> allSUMOVariableAritySet = kbLite.getAllInstances("VariableArityRelation");
         Set<String> allSUMOOrientationSet = kbLite.getAllInstances("PositionalAttribute");
-        SUMOOrientationExlcusionList = new ArrayList<>(Arrays.asList("Downstairs", "North", "East", "South", "West", "Horizontal", "Upstairs", "Vertical"));
+       
+        SUMOOrientationExlcusionList = new ArrayList<>(Arrays.asList("Downstairs", "North", "East", "South", "West", "Horizontal", "Upstairs", "Vertical", "Inside", "Outside", "Surrounded"));
         allSUMOOrientationSet.removeAll(SUMOOrientationExlcusionList);
         System.out.println("Number in allSUMOOrientationSet "+allSUMOOrientationSet.size());
+        System.out.println(allSUMOOrientationSet);
         //missing on
         //allSUMORelationsSet.removeAll(allSUMOFunctionsSet);
         //allSUMORelationsSet.removeAll(allSUMOVariableAritySet);
