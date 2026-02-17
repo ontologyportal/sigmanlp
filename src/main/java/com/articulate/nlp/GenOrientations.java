@@ -239,7 +239,10 @@ public class GenOrientations {
             randEngOrientation = kbLite.getTermFormat(randSUMOOrientation);
             randEngArtifact1 = kbLite.getTermFormat(randSUMOArtifact1);
             randEngArtifact2 = kbLite.getTermFormat(randSUMOArtifact2);
-        
+            //work around for bad grammar 
+            randEngOrientation = randSUMOOrientation;
+            randEngArtifact1 = randSUMOArtifact1;
+            randEngArtifact2 = randSUMOArtifact2;
             //randOreintationFormats = allFormats.get(randOrientation);formats are specific to relations
             //template "The <artifact1> is <orientation> the <artifact 2>."\
             //need to add prepostion to account for different orientations
