@@ -180,6 +180,7 @@ try {
             wrappers.add("Generate a low contrast image of ");
             wrappers.add("Generate a murky image of ");
             wrappers.add("Generate a cloudy image of ");
+            wrappers.add("Generate a foggy image of ");
             wrappers.add("Generate a shady image of ");
             wrappers.add("Generate a brightly lit image of ");
             for (ImageRecord record : records) {

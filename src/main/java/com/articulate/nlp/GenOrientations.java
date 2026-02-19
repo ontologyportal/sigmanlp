@@ -80,11 +80,11 @@ public class GenOrientations {
         System.out.println("Number in allSUMOOrientationSet "+allSUMOOrientationSet.size());
         System.out.println(allSUMOOrientationSet);
         allSUMOOrientationSet.remove("Adjacent");
-        allSUMOOrientationSet.add("Adjacent to");
+        allSUMOOrientationSet.add("adjacent to");
         allSUMOOrientationSet.remove("Left");
-        allSUMOOrientationSet.add("Left of");
+        allSUMOOrientationSet.add("left of");
         allSUMOOrientationSet.remove("Right");
-        allSUMOOrientationSet.add("Right of");
+        allSUMOOrientationSet.add("right of");
         System.out.println(allSUMOOrientationSet);
 
         //missing on
@@ -126,8 +126,7 @@ public class GenOrientations {
     }
 
 
-    
-    
+
     public static void addEntry(
             String filePath,
             int id, 
@@ -235,6 +234,12 @@ public class GenOrientations {
             randSUMOOrientation = allSUMOOrientationRandSet.getNext();
             randSUMOArtifact1 = allSUMOArtifactRandSet.getNext();
             randSUMOArtifact2 = allSUMOArtifactRandSet.getNext();
+
+            //sample without replacement
+            while (randSUMOArtifact1==randSUMOArtifact2) {
+                randSUMOArtifact2 = allSUMOArtifactRandSet.getNext();
+                
+            }
             //the below takes the sumo object and gets a random english format of it (usually only one)
             randEngOrientation = kbLite.getTermFormat(randSUMOOrientation);
             randEngArtifact1 = kbLite.getTermFormat(randSUMOArtifact1);
