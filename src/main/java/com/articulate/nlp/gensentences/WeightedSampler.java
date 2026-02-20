@@ -3,6 +3,7 @@ package com.articulate.nlp.gensentences;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /***************************************************************
@@ -17,11 +18,12 @@ public class WeightedSampler {
     /**
      * Adds one weighted class with multiple candidate terms.
      * Entries with non-positive weight or empty candidates are ignored.
+     * @return this sampler for method chaining
      */
-    public void addWeightedClass(String className, int weight, Collection<String> candidates) {
+    public WeightedSampler addWeightedClass(String className, int weight, Collection<String> candidates) {
 
         if (weight <= 0 || candidates == null || candidates.isEmpty()) {
-            return;
+            return this;
         }
         WeightedClass weightedClass = new WeightedClass();
         weightedClass.className = className;
@@ -29,19 +31,60 @@ public class WeightedSampler {
         weightedClass.candidates = new ArrayList<>(candidates);
         weightedClasses.add(weightedClass);
         totalWeight += weightedClass.weight;
+        return this;
     }
 
     /**
      * Convenience helper for adding a class with exactly one candidate term.
+     * @return this sampler for method chaining
      */
-    public void addSingleCandidate(String className, int weight, String candidate) {
+    public WeightedSampler addSingleCandidate(String className, int weight, String candidate) {
 
         if (candidate == null || candidate.trim().isEmpty()) {
-            return;
+            return this;
         }
         List<String> candidates = new ArrayList<>();
         candidates.add(candidate);
-        addWeightedClass(className, weight, candidates);
+        return addWeightedClass(className, weight, candidates);
+    }
+
+    /**
+     * Fluent API alias for addWeightedClass.
+     * @return this sampler for method chaining
+     */
+    public WeightedSampler withClass(String className, int weight, Collection<String> candidates) {
+        return addWeightedClass(className, weight, candidates);
+    }
+
+    /**
+     * Fluent API alias for addSingleCandidate.
+     * @return this sampler for method chaining
+     */
+    public WeightedSampler withCandidate(String className, int weight, String candidate) {
+        return addSingleCandidate(className, weight, candidate);
+    }
+
+    /**
+     * Bulk add candidates from a map where the key serves as both className and candidate.
+     * Useful for enum-based samplers where the value is its own identifier.
+     * @return this sampler for method chaining
+     */
+    public WeightedSampler addFromMap(Map<String, Integer> weightMap) {
+        if (weightMap == null) {
+            return this;
+        }
+        for (Map.Entry<String, Integer> entry : weightMap.entrySet()) {
+            addSingleCandidate(entry.getKey(), entry.getValue(), entry.getKey());
+        }
+        return this;
+    }
+
+    /**
+     * Creates a WeightedSampler from a map where keys are both className and candidate.
+     * @return new WeightedSampler instance
+     */
+    public static WeightedSampler fromMap(Map<String, Integer> weightMap) {
+        return new WeightedSampler().addFromMap(weightMap);
     }
 
     /**

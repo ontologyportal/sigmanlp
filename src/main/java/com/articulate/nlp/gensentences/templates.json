@@ -1,24 +1,35 @@
 /*
   templates.json - templates for synthetic sentence generation
 
+    Notes: 
+    default_settings can be over-ridden in individual templates."
+
+    %1 - indicates an entity variable (e.g., ?A1) that is drawn from Sumo based on the sumo_terms and other settings.
     %<number> - indicates an entity drawn from Sumo
     %v<number> - indicates a verb corresponding to %<number>
-
 */
 {
   "default_settings":{
-      // These settings can be over-ridden in individual templates."
       "modal":{
         "on":true,
         "freq":0.1,
-        "neg_freq":0.2
+        "neg_freq":0.2,
+        "values":[
+          {"sumo_term":"Necessity",   "text":"it is %n{not} necessary that ",   "weight":1},
+          {"sumo_term":"Possibility", "text":"it is %n{not} possible that ",    "weight":1},
+          {"sumo_term":"Obligation",  "text":"it is %n{not} obligatory that ",  "weight":1},
+          {"sumo_term":"Permission",  "text":"it is %n{not} permitted that ",   "weight":1},
+          {"sumo_term":"Prohibition", "text":"it is %n{not} prohibited that ",  "weight":1},
+          {"sumo_term":"Likely",      "text":"it is %n{not} likely that ",      "weight":1},
+          {"sumo_term":"Unlikely",    "text":"it is %n{not} unlikely that ",    "weight":1}
+        ]
       },
       "tense":{
         "on":true,
-        "none":1, // none means tense is not encoded in logic and default tense is used in the sentence.
-        "past":5,
-        "present":5,
-        "future":5
+        "none":10, // none means tense is not encoded in logic and default tense is used in the sentence.
+        "past":1,
+        "present":1,
+        "future":1
       },
       "num_to_gen":100,
       "question_freq":0.1
@@ -27,7 +38,6 @@
     {
       "name":"Orientation",
       "num_to_gen":50,
-      // Negation is configured per %v slot and is shared by english + logic.
       "english":{
         "example":"The book is on the table.",
         "frame":{
@@ -40,6 +50,8 @@
             "tense_future":["Will the %1 %v1 %2 the %3?"]
         },
         "%1":{
+            "variable":"?A1",
+            "definite_freq":0.9,
             "sumo_terms":[{"name":"Artifact","weight":50},
                           {"name":"AnatomicalStructure","weight":10},
                           {"name":"Human","weight":5},
@@ -53,6 +65,8 @@
             "countable":{"possible":false}
         },
         "%3":{
+            "variable":"?O2",
+            "definite_freq":0.9,
             "sumo_terms":[{"name":"Object","weight":1}],
             "type":"subclass",
             "countable":{"possible":true, "freq":0.1}
@@ -62,7 +76,13 @@
             "neg_freq":0.5,
             "verbs":[{"lemma":"be","weight":1}]
         },
-        "logic":"(exists (?A1 ?O2 ?T) (and (instance ?A1 %1) (instance ?O2 %3)) %t{%n{not(}(orientation ?A1 ?O2 %2)%n{)}}))"
+        "logic":{
+            "clauses":[
+                "(instance %?1 %1)",
+                "(instance %?3 %3)",
+                "%t{%n{(not }(orientation %?1 %?3 %2)%n{)}}"
+            ]
+        }
       }
     }
   ]

@@ -145,6 +145,14 @@ public class GenUtils {
             return sentenceToCapitalize.substring(0, 1).toUpperCase() + sentenceToCapitalize.substring(1);
     }
 
+    public static String lowercaseFirstLetter(String s) {
+
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        return s.substring(0, 1).toLowerCase() + s.substring(1);
+    }
+
     /** ***************************************************************
      * Generate a boolean true value randomly num out of max times.
      * So biasedBoolean(8,10) generates a true most of the time
@@ -371,6 +379,7 @@ public class GenUtils {
             } catch (Exception e) {
                 System.out.println("Error in GenUtils.askOllama() attempt " + attempt +
                         " of " + OLLAMA_MAX_ATTEMPTS + ": " + e.getMessage());
+                System.out.println("Errored out prompt: " + prompt);
                 e.printStackTrace();
                 ollamaAPI = null; // force reconnection on next attempt
                 if (attempt < OLLAMA_MAX_ATTEMPTS) {

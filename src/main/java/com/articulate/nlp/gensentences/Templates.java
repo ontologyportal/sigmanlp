@@ -95,7 +95,7 @@ public class Templates {
         private final RandomFrameMap englishFrameQuestion;
         private final Slot[] slots;
         private final VerbSlot[] verbSlots;
-        private final String logic;
+        private final LogicTemplate logicTemplate;
         private final double modalFreq;
         private final double modalNegFreq;
         private final double questionFreq;
@@ -108,13 +108,14 @@ public class Templates {
         private final int tensePastWeight;
         private final int tensePresentWeight;
         private final int tenseFutureWeight;
+        private final List<WeightedModal> modalValues;
 
         public Template(String name,
                         RandomFrameMap englishFrame,
                         RandomFrameMap englishFrameQuestion,
                         Slot[] slots,
                         VerbSlot[] verbSlots,
-                        String logic,
+                        LogicTemplate logicTemplate,
                         double modalFreq,
                         double modalNegFreq,
                         double questionFreq,
@@ -126,13 +127,14 @@ public class Templates {
                         int tenseNoneWeight,
                         int tensePastWeight,
                         int tensePresentWeight,
-                        int tenseFutureWeight) {
+                        int tenseFutureWeight,
+                        List<WeightedModal> modalValues) {
             this.name = name;
             this.englishFrame = englishFrame;
             this.englishFrameQuestion = englishFrameQuestion;
             this.slots = slots;
             this.verbSlots = verbSlots;
-            this.logic = logic;
+            this.logicTemplate = logicTemplate;
             this.modalFreq = modalFreq;
             this.modalNegFreq = modalNegFreq;
             this.questionFreq = questionFreq;
@@ -145,6 +147,7 @@ public class Templates {
             this.tensePastWeight = tensePastWeight;
             this.tensePresentWeight = tensePresentWeight;
             this.tenseFutureWeight = tenseFutureWeight;
+            this.modalValues = modalValues != null ? modalValues : new ArrayList<>();
         }
 
         public String getName() {
@@ -167,8 +170,8 @@ public class Templates {
             return verbSlots;
         }
 
-        public String getLogic() {
-            return logic;
+        public LogicTemplate getLogicTemplate() {
+            return logicTemplate;
         }
 
         /***************************************************************
@@ -243,6 +246,10 @@ public class Templates {
             return tenseFutureWeight;
         }
 
+        public List<WeightedModal> getModalValues() {
+            return modalValues;
+        }
+
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
@@ -259,11 +266,12 @@ public class Templates {
             builder.append(", tensePastWeight=").append(tensePastWeight);
             builder.append(", tensePresentWeight=").append(tensePresentWeight);
             builder.append(", tenseFutureWeight=").append(tenseFutureWeight);
+            builder.append(", modalValues=").append(modalValues);
             builder.append(", englishFrame=").append(englishFrame);
             builder.append(", englishFrameQuestion=").append(englishFrameQuestion);
             builder.append(", slots=").append(formatSlots());
             builder.append(", verbSlots=").append(formatVerbSlots());
-            builder.append(", logic='").append(logic).append('\'');
+            builder.append(", logicTemplate=").append(logicTemplate);
             builder.append('}');
             return builder.toString();
         }
@@ -318,6 +326,23 @@ public class Templates {
         }
     }
 
+    public static class LogicTemplate {
+        private final List<String> clauses;
+
+        public LogicTemplate(List<String> clauses) {
+            this.clauses = clauses != null ? clauses : new ArrayList<>();
+        }
+
+        public List<String> getClauses() {
+            return clauses;
+        }
+
+        @Override
+        public String toString() {
+            return "LogicTemplate{clauses=" + clauses + "}";
+        }
+    }
+
     public static class Slot {
         public enum TermSelectionType {
             SUBCLASS,
@@ -328,12 +353,18 @@ public class Templates {
         private final TermSelectionType type;
         private final boolean countablePossible;
         private final double countableFreq;
+        private final String variable;
+        private final double definiteFreq;
 
-        public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type, boolean countablePossible, double countableFreq) {
+        public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type,
+                    boolean countablePossible, double countableFreq,
+                    String variable, double definiteFreq) {
             this.sumoTerms = sumoTerms;
             this.type = type;
             this.countablePossible = countablePossible;
             this.countableFreq = countableFreq;
+            this.variable = variable;
+            this.definiteFreq = definiteFreq;
         }
 
         public List<WeightedSumoTerm> getSumoTerms() {
@@ -351,6 +382,19 @@ public class Templates {
         public double getCountableFreq() {
             return countableFreq;
         }
+
+        /***************************************************************
+         * Optional declared variable name (e.g. "?A1"). Null means
+         * the generator will auto-assign one.
+         ***************************************************************/
+        public String getVariable() {
+            return variable;
+        }
+
+        public double getDefiniteFreq() {
+            return definiteFreq;
+        }
+
     }
 
     public static class WeightedSumoTerm {
@@ -423,6 +467,35 @@ public class Templates {
         }
     }
 
+    public static class WeightedModal {
+        private final String sumoTerm;
+        private final String text;
+        private final int weight;
+
+        public WeightedModal(String sumoTerm, String text, int weight) {
+            this.sumoTerm = sumoTerm;
+            this.text = text;
+            this.weight = weight;
+        }
+
+        public String getSumoTerm() {
+            return sumoTerm;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public int getWeight() {
+            return weight;
+        }
+
+        @Override
+        public String toString() {
+            return "{sumo_term='" + sumoTerm + "', text='" + text + "', weight=" + weight + "}";
+        }
+    }
+
     private final double defaultModalFreq;
     private final double defaultModalNegFreq;
     private final double defaultQuestionFreq;
@@ -435,6 +508,7 @@ public class Templates {
     private final int defaultTensePastWeight;
     private final int defaultTensePresentWeight;
     private final int defaultTenseFutureWeight;
+    private final List<WeightedModal> defaultModalValues;
     private final List<Template> templates;
     private int nextIndex;
 
@@ -450,6 +524,7 @@ public class Templates {
                       int defaultTensePastWeight,
                       int defaultTensePresentWeight,
                       int defaultTenseFutureWeight,
+                      List<WeightedModal> defaultModalValues,
                       List<Template> templates) {
         this.defaultModalFreq = defaultModalFreq;
         this.defaultModalNegFreq = defaultModalNegFreq;
@@ -463,6 +538,7 @@ public class Templates {
         this.defaultTensePastWeight = defaultTensePastWeight;
         this.defaultTensePresentWeight = defaultTensePresentWeight;
         this.defaultTenseFutureWeight = defaultTenseFutureWeight;
+        this.defaultModalValues = defaultModalValues != null ? defaultModalValues : new ArrayList<>();
         this.templates = templates;
         this.nextIndex = 0;
     }
@@ -487,13 +563,15 @@ public class Templates {
         int tensePastWeight = tense.path("past").asInt(0);
         int tensePresentWeight = tense.path("present").asInt(0);
         int tenseFutureWeight = tense.path("future").asInt(0);
+        List<WeightedModal> defaultModalValues = parseModalValues(modal);
         List<Template> templates = loadTemplates(root, modalFreq, modalNegFreq,
                 questionFreq, negFreq, numToGen, modalOn, questionOn, tenseOn,
-                tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight);
+                tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
+                defaultModalValues);
         return new Templates(modalFreq, modalNegFreq, questionFreq, negFreq, numToGen,
                 modalOn, questionOn, tenseOn,
                 tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
-                templates);
+                defaultModalValues, templates);
     }
 
     /***************************************************************
@@ -544,7 +622,8 @@ public class Templates {
                                                 int defaultTenseNoneWeight,
                                                 int defaultTensePastWeight,
                                                 int defaultTensePresentWeight,
-                                                int defaultTenseFutureWeight) {
+                                                int defaultTenseFutureWeight,
+                                                List<WeightedModal> defaultModalValues) {
         JsonNode templateNodes = root.path("templates");
         List<Template> templates = new ArrayList<>(templateNodes.size());
         for (JsonNode templateNode : templateNodes) {
@@ -554,7 +633,7 @@ public class Templates {
             RandomFrameMap frameQuestion = loadFrame(english.path("frame_question"));
             Slot[] slots = loadSlots(name, english);
             VerbSlot[] verbSlots = loadVerbSlots(name, english);
-            String logic = english.path("logic").asText();
+            LogicTemplate logicTemplate = parseLogicTemplate(english.path("logic"));
             Double modalFreq = readOptionalDouble(templateNode, "modal", "freq");
             Double modalNegFreq = readOptionalDouble(templateNode, "modal", "neg_freq");
             Double questionFreq = readOptionalDouble(templateNode, "question_freq");
@@ -567,7 +646,9 @@ public class Templates {
             Integer tensePastWeight = readOptionalInt(templateNode, "tense", "past");
             Integer tensePresentWeight = readOptionalInt(templateNode, "tense", "present");
             Integer tenseFutureWeight = readOptionalInt(templateNode, "tense", "future");
-            templates.add(new Template(name, frame, frameQuestion, slots, verbSlots, logic,
+            List<WeightedModal> templateModalValues = parseModalValues(templateNode.path("modal"));
+            List<WeightedModal> resolvedModalValues = !templateModalValues.isEmpty() ? templateModalValues : defaultModalValues;
+            templates.add(new Template(name, frame, frameQuestion, slots, verbSlots, logicTemplate,
                     modalFreq != null ? modalFreq : defaultModalFreq,
                     modalNegFreq != null ? modalNegFreq : defaultModalNegFreq,
                     questionFreq != null ? questionFreq : defaultQuestionFreq,
@@ -579,9 +660,33 @@ public class Templates {
                     tenseNoneWeight != null ? tenseNoneWeight : defaultTenseNoneWeight,
                     tensePastWeight != null ? tensePastWeight : defaultTensePastWeight,
                     tensePresentWeight != null ? tensePresentWeight : defaultTensePresentWeight,
-                    tenseFutureWeight != null ? tenseFutureWeight : defaultTenseFutureWeight));
+                    tenseFutureWeight != null ? tenseFutureWeight : defaultTenseFutureWeight,
+                    resolvedModalValues));
         }
         return templates;
+    }
+
+    /***************************************************************
+     * Parses modal values from a modal JSON node.
+     ***************************************************************/
+    private static List<WeightedModal> parseModalValues(JsonNode modalNode) {
+        List<WeightedModal> values = new ArrayList<>();
+        if (modalNode == null || modalNode.isMissingNode() || modalNode.isNull()) {
+            return values;
+        }
+        JsonNode valuesNode = modalNode.path("values");
+        if (!valuesNode.isArray()) {
+            return values;
+        }
+        for (JsonNode valueNode : valuesNode) {
+            String sumoTerm = valueNode.path("sumo_term").asText();
+            String text = valueNode.path("text").asText();
+            int weight = valueNode.path("weight").asInt(1);
+            if (!sumoTerm.isEmpty() && weight > 0) {
+                values.add(new WeightedModal(sumoTerm, text, weight));
+            }
+        }
+        return values;
     }
 
     /***************************************************************
@@ -768,7 +873,41 @@ public class Templates {
         else if (freqNode != null && freqNode.isNumber()) {
             countableFreq = freqNode.asDouble();
         }
-        return new Slot(sumoTerms, type, countablePossible, countableFreq);
+        String variable = null;
+        JsonNode variableNode = slotNode.get("variable");
+        if (variableNode != null && variableNode.isTextual()) {
+            variable = variableNode.asText();
+        }
+        double definiteFreq = 0.0;
+        JsonNode definiteFreqNode = slotNode.get("definite_freq");
+        if (definiteFreqNode != null && definiteFreqNode.isNumber()) {
+            definiteFreq = definiteFreqNode.asDouble();
+        }
+        return new Slot(sumoTerms, type, countablePossible, countableFreq, variable, definiteFreq);
+    }
+
+    /***************************************************************
+     * Parses logic from either a clause-array object or a legacy
+     * plain string.
+     ***************************************************************/
+    private static LogicTemplate parseLogicTemplate(JsonNode logicNode) {
+        List<String> clauses = new ArrayList<>();
+        if (logicNode == null || logicNode.isMissingNode() || logicNode.isNull()) {
+            return new LogicTemplate(clauses);
+        }
+        if (logicNode.isTextual()) {
+            clauses.add(logicNode.asText());
+            return new LogicTemplate(clauses);
+        }
+        JsonNode clausesNode = logicNode.path("clauses");
+        if (clausesNode.isArray()) {
+            for (JsonNode clauseNode : clausesNode) {
+                if (clauseNode.isTextual()) {
+                    clauses.add(clauseNode.asText());
+                }
+            }
+        }
+        return new LogicTemplate(clauses);
     }
 
     /***************************************************************
