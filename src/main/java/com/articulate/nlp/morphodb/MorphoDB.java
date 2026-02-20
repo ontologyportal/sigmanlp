@@ -70,4 +70,33 @@ public class MorphoDB {
         return null;
     }
 
+    /***************************************************************
+     * Returns "a" or "an" for the given noun surface string.
+     * Checks all loaded models in iteration order; if the noun is
+     * not found in any model, falls back to a letter-based heuristic.
+     ***************************************************************/
+    public String getIndefiniteArticle(String noun) {
+
+        for (ModelMorphoDB model : byModel.values()) {
+            String article = model.nouns.getIndefiniteArticle(noun);
+            if (article != null) {
+                return article;
+            }
+        }
+        return defaultIndefiniteArticle(noun);
+    }
+
+    /***************************************************************
+     * Fallback indefinite article using the first letter of the noun.
+     * Words beginning with a vowel letter get "an"; all others get "a".
+     ***************************************************************/
+    private static String defaultIndefiniteArticle(String noun) {
+
+        if (noun == null || noun.trim().isEmpty()) {
+            return "a";
+        }
+        char first = Character.toLowerCase(noun.trim().charAt(0));
+        return "aeiou".indexOf(first) >= 0 ? "an" : "a";
+    }
+
 }

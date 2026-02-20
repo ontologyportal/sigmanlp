@@ -3,6 +3,7 @@ package com.articulate.nlp.morphodb;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ public class NounMorphoDB {
     public final Map<String, List<ObjectNode>> humanness;
     public final Map<String, List<ObjectNode>> agentivity;
     public final Map<String, List<ObjectNode>> collectiveNouns;
+    private final Map<String, String> articleByNoun;
 
     public NounMorphoDB(Map<String, List<ObjectNode>> indefiniteArticles,
                         Map<String, List<ObjectNode>> countability,
@@ -30,6 +32,38 @@ public class NounMorphoDB {
         this.humanness = humanness;
         this.agentivity = agentivity;
         this.collectiveNouns = collectiveNouns;
+        this.articleByNoun = buildArticleByNounIndex(indefiniteArticles);
+    }
+
+    /***************************************************************
+     * Builds a lowercase noun → article ("a"/"an") secondary index
+     * from the synsetId-keyed indefiniteArticles map.
+     ***************************************************************/
+    private static Map<String, String> buildArticleByNounIndex(Map<String, List<ObjectNode>> indefiniteArticles) {
+
+        Map<String, String> index = new HashMap<>();
+        for (List<ObjectNode> nodes : indefiniteArticles.values()) {
+            for (ObjectNode node : nodes) {
+                String noun = node.path("noun").asText("").trim().toLowerCase();
+                String article = node.path("article").asText("").trim().toLowerCase();
+                if (!noun.isEmpty() && ("a".equals(article) || "an".equals(article))) {
+                    index.putIfAbsent(noun, article);
+                }
+            }
+        }
+        return index;
+    }
+
+    /***************************************************************
+     * Returns "a" or "an" for the given noun surface string, or
+     * null if the noun is not in the database.
+     ***************************************************************/
+    public String getIndefiniteArticle(String noun) {
+
+        if (noun == null || noun.isEmpty()) {
+            return null;
+        }
+        return articleByNoun.get(noun.trim().toLowerCase());
     }
 
     public static NounMorphoDB load(String morphoDbPath) {

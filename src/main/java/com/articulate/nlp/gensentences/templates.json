@@ -41,13 +41,13 @@
       "english":{
         "example":"The book is on the table.",
         "frame":{
-            "tense_none":["The %1 %v1 %2 the %3.",
-                          "The %1 %v1 situated %2 the %3.",
-                          "The %1 %v1 located %2 the %3."]
+            "tense_none":["%1 %v1 %2 %3.",
+                          "%1 %v1 situated %2 %3.",
+                          "%1 %v1 located %2 %3."]
         },
         "frame_question":{
-            "tense_none":["%v1 the %1 %2 the %3?"],
-            "tense_future":["Will the %1 %v1 %2 the %3?"]
+            "tense_none":["%v1 %1 %2 %3?"],
+            "tense_future":["Will %1 %v1 %2 %3?"]
         },
         "%1":{
             "variable":"?A1",

@@ -456,9 +456,18 @@ public class GenFromTemplate {
             if (termFormat == null || termFormat.isEmpty()) {
                 termFormat = term;
             }
-            englishSlotValues.put(slotNum, termFormat);
             Templates.Slot slot = template.getSlots()[slotNum - 1];
-            instanceValues.put(slotNum, resolveInstanceValue(slot, slotNum, termFormat));
+            InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat);
+            instanceValues.put(slotNum, iv);
+            boolean addArticle = slot.getVariable() != null || slot.getDefiniteFreq() > 0.0;
+            String englishValue;
+            if (addArticle) {
+                String article = iv.definite ? "the" : morphoDB.getIndefiniteArticle(termFormat);
+                englishValue = article + " " + termFormat;
+            } else {
+                englishValue = termFormat;
+            }
+            englishSlotValues.put(slotNum, englishValue);
         }
         int verbSlotCount = template.getVerbSlots().length;
         for (int verbSlotNum = 1; verbSlotNum <= verbSlotCount; verbSlotNum++) {
