@@ -130,24 +130,28 @@ public class GenVerbMorphoDB {
                         "Verb: \"" + term + "\".\n" +
                         definitionStatement + "\n\n" +
                         "Instructions:\n" +
-                        " - Return a JSON object with fields: verb, valence, subtype, semantic_roles, explanation, usage.\n" +
+                        " - Return a JSON object with fields: verb, valence, subtype, semantic_roles" +
+                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
                         " - valence must be one of: \"0-valent\", \"1-valent\", \"2-valent\", \"3-valent\".\n" +
                         " - subtype must be selected from the hierarchy (pure impersonal, quasi-impersonal, simple intransitive, prepositional intransitive, transitive, complex transitive, copular, double-object, prepositional ditransitive).\n" +
                         " - semantic_roles should summarize the key semantic roles (Agent, Experiencer, Patient/Theme, Recipient/Beneficiary, Instrument, Location, Source/Goal, Cause, Time, Stimulus, etc.). Use comma-separated values.\n" +
-                        " - Provide a short explanation referencing typical complements.\n" +
-                        " - Give a concise usage example sentence illustrating the classification.\n\n" +
-                        "Reference examples:\n" +
-                        "\"It rains.\" → 0-valent, pure impersonal, semantic_roles: natural process\n" +
-                        "\"Mary opened the door.\" → 2-valent, transitive, semantic_roles: agent, patient\n" +
-                        "\"Mary gave John a book.\" → 3-valent, double-object, semantic_roles: agent, recipient, theme\n\n" +
+                        (cheapPrompt
+                                ? "\n"
+                                : " - Provide a short explanation referencing typical complements.\n" +
+                                " - Give a concise usage example sentence illustrating the classification.\n\n" +
+                                "Reference examples:\n" +
+                                "\"It rains.\" → 0-valent, pure impersonal, semantic_roles: natural process\n" +
+                                "\"Mary opened the door.\" → 2-valent, transitive, semantic_roles: agent, patient\n" +
+                                "\"Mary gave John a book.\" → 3-valent, double-object, semantic_roles: agent, recipient, theme\n\n") +
                         "Output only valid JSON with this shape:\n" +
                         "{\n" +
                         "  \"verb\": \"<verb>\",\n" +
                         "  \"valence\": \"<0-valent|1-valent|2-valent|3-valent>\",\n" +
                         "  \"subtype\": \"<specific subtype>\",\n" +
-                        "  \"semantic_roles\": \"<comma-separated roles>\",\n" +
-                        "  \"explanation\": \"<reasoning>\",\n" +
-                        "  \"usage\": \"<example sentence>\"\n" +
+                        "  \"semantic_roles\": \"<comma-separated roles>\"" +
+                        (cheapPrompt
+                                ? "\n"
+                                : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
                         "}";
                 prompt = GenMorphoUtils.applyCheapPromptDirective(prompt,
                         Arrays.asList("verb", "valence", "subtype", "semantic_roles"));
@@ -220,20 +224,24 @@ public class GenVerbMorphoDB {
                         "Verb: \"" + term + "\".\n" +
                         definitionStatement + "\n\n" +
                         "Instructions:\n" +
-                        " - Return a JSON object with fields: verb, reflexivity, explanation, usage.\n" +
+                        " - Return a JSON object with fields: verb, reflexivity" +
+                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
                         " - reflexivity must be one of: \"must be reflexive\", \"can be reflexive\", or \"never reflexive\".\n" +
-                        " - Provide a concise explanation citing syntactic or semantic cues.\n" +
-                        " - Supply an illustrative usage sentence that matches the classification.\n\n" +
-                        "Example classifications:\n" +
-                        "\"He prides himself on his work.\" → must be reflexive (obligatory reflexive object).\n" +
-                        "\"She dressed (herself).\" → can be reflexive (reflexive optional).\n" +
-                        "\"She greeted him.\" → never reflexive (verb does not take reflexive object).\n\n" +
+                        (cheapPrompt
+                                ? "\n"
+                                : " - Provide a concise explanation citing syntactic or semantic cues.\n" +
+                                " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                                "Example classifications:\n" +
+                                "\"He prides himself on his work.\" → must be reflexive (obligatory reflexive object).\n" +
+                                "\"She dressed (herself).\" → can be reflexive (reflexive optional).\n" +
+                                "\"She greeted him.\" → never reflexive (verb does not take reflexive object).\n\n") +
                         "Output only valid JSON with this shape:\n" +
                         "{\n" +
                         "  \"verb\": \"<verb>\",\n" +
-                        "  \"reflexivity\": \"<must be reflexive|can be reflexive|never reflexive>\",\n" +
-                        "  \"explanation\": \"<reasoning>\",\n" +
-                        "  \"usage\": \"<example sentence>\"\n" +
+                        "  \"reflexivity\": \"<must be reflexive|can be reflexive|never reflexive>\"" +
+                        (cheapPrompt
+                                ? "\n"
+                                : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
                         "}";
                 prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reflexivity"));
                 if (GenMorphoUtils.debug) {
@@ -301,20 +309,24 @@ public class GenVerbMorphoDB {
                         "Verb: \"" + term + "\".\n" +
                         definitionStatement + "\n\n" +
                         "Instructions:\n" +
-                        " - Return a JSON object with fields: verb, causativity, explanation, usage.\n" +
+                        " - Return a JSON object with fields: verb, causativity" +
+                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
                         " - causativity must be one of: \"causative\", \"non-causative\", or \"mixed\" (for verbs with both readings).\n" +
-                        " - Provide a concise explanation citing typical syntactic or semantic patterns.\n" +
-                        " - Supply an illustrative usage sentence that matches the classification.\n\n" +
-                        "Example classifications:\n" +
-                        "\"She broke the vase.\" → causative (agent causes change to patient)\n" +
-                        "\"The baby slept.\" → non-causative (intransitive change of state)\n" +
-                        "\"The door opened.\" / \"She opened the door.\" → mixed (verb alternates between causative and non-causative)\n\n" +
+                        (cheapPrompt
+                                ? "\n"
+                                : " - Provide a concise explanation citing typical syntactic or semantic patterns.\n" +
+                                " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                                "Example classifications:\n" +
+                                "\"She broke the vase.\" → causative (agent causes change to patient)\n" +
+                                "\"The baby slept.\" → non-causative (intransitive change of state)\n" +
+                                "\"The door opened.\" / \"She opened the door.\" → mixed (verb alternates between causative and non-causative)\n\n") +
                         "Output only valid JSON with this shape:\n" +
                         "{\n" +
                         "  \"verb\": \"<verb>\",\n" +
-                        "  \"causativity\": \"<causative|non-causative|mixed>\",\n" +
-                        "  \"explanation\": \"<reasoning>\",\n" +
-                        "  \"usage\": \"<example sentence>\"\n" +
+                        "  \"causativity\": \"<causative|non-causative|mixed>\"" +
+                        (cheapPrompt
+                                ? "\n"
+                                : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
                         "}";
                 prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "causativity"));
                 if (GenMorphoUtils.debug) {
@@ -386,16 +398,20 @@ public class GenVerbMorphoDB {
                         " - Consider the most common contemporary English usage.\n" +
                         " - Interpret process verbs as activities or events that extend over time (e.g., \"run\", \"negotiate\").\n" +
                         " - Interpret achievement verbs as punctual changes or instants (e.g., \"recognize\", \"reach\").\n" +
-                        " - Return a JSON object with fields: verb, aktionsart, explanation, usage.\n" +
+                        " - Return a JSON object with fields: verb, aktionsart" +
+                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
                         " - aktionsart must be one of: \"achievement\", \"process\", \"mixed\", \"unknown\".\n" +
-                        " - Provide a concise explanation referencing the temporal profile.\n" +
-                        " - Supply one illustrative usage sentence that matches the classification.\n\n" +
+                        (cheapPrompt
+                                ? "\n"
+                                : " - Provide a concise explanation referencing the temporal profile.\n" +
+                                " - Supply one illustrative usage sentence that matches the classification.\n\n") +
                         "Output only valid JSON with this schema:\n" +
                         "{\n" +
                         "  \"verb\": \"<verb>\",\n" +
-                        "  \"aktionsart\": \"<achievement|process|mixed|unknown>\",\n" +
-                        "  \"explanation\": \"<short rationale>\",\n" +
-                        "  \"usage\": \"<example sentence>\"\n" +
+                        "  \"aktionsart\": \"<achievement|process|mixed|unknown>\"" +
+                        (cheapPrompt
+                                ? "\n"
+                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n") +
                         "}";
                 prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "aktionsart"));
                 if (GenMorphoUtils.debug) {
@@ -464,20 +480,24 @@ public class GenVerbMorphoDB {
                         "Verb: \"" + term + "\".\n" +
                         definitionStatement + "\n\n" +
                         "Instructions:\n" +
-                        " - Return a JSON object with fields: verb, reciprocity, explanation, usage.\n" +
+                        " - Return a JSON object with fields: verb, reciprocity" +
+                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
                         " - reciprocity must be one of: \"must be reciprocal\", \"can be reciprocal\", or \"never reciprocal\".\n" +
-                        " - Provide a concise explanation referencing argument structure or semantic cues.\n" +
-                        " - Supply an illustrative usage sentence that matches the classification.\n\n" +
-                        "Example classifications:\n" +
-                        "\"They embraced each other tightly.\" → must be reciprocal (verb describes mutual action by default).\n" +
-                        "\"They met (each other) at noon.\" → can be reciprocal (reciprocal available but not obligatory).\n" +
-                        "\"She tutored him in chemistry.\" → never reciprocal (verb encodes asymmetric instruction).\n\n" +
+                        (cheapPrompt
+                                ? "\n"
+                                : " - Provide a concise explanation referencing argument structure or semantic cues.\n" +
+                                " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                                "Example classifications:\n" +
+                                "\"They embraced each other tightly.\" → must be reciprocal (verb describes mutual action by default).\n" +
+                                "\"They met (each other) at noon.\" → can be reciprocal (reciprocal available but not obligatory).\n" +
+                                "\"She tutored him in chemistry.\" → never reciprocal (verb encodes asymmetric instruction).\n\n") +
                         "Output only valid JSON with this shape:\n" +
                         "{\n" +
                         "  \"verb\": \"<verb>\",\n" +
-                        "  \"reciprocity\": \"<must be reciprocal|can be reciprocal|never reciprocal>\",\n" +
-                        "  \"explanation\": \"<reasoning>\",\n" +
-                        "  \"usage\": \"<example sentence>\"\n" +
+                        "  \"reciprocity\": \"<must be reciprocal|can be reciprocal|never reciprocal>\"" +
+                        (cheapPrompt
+                                ? "\n"
+                                : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
                         "}";
                 prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reciprocity"));
                 if (GenMorphoUtils.debug) {

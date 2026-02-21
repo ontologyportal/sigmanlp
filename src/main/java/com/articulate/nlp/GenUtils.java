@@ -528,13 +528,17 @@ public class GenUtils {
         if ("ollama".equals(provider)) {
             return askOllama(prompt);
         }
+        String response;
         if ("openai".equals(provider) || "openai-compatible".equals(provider)) {
-            return askOpenAICompatible(prompt);
+            response = askOpenAICompatible(prompt);
+        } else if ("anthropic".equals(provider)) {
+            response = askAnthropic(prompt);
+        } else {
+            throw new IllegalStateException("Unsupported LLM provider: " + provider);
         }
-        if ("anthropic".equals(provider)) {
-            return askAnthropic(prompt);
-        }
-        throw new IllegalStateException("Unsupported LLM provider: " + provider);
+        System.out.println("GenUtils.askLLM() [" + provider + "] Prompt: " + prompt);
+        System.out.println("GenUtils.askLLM() [" + provider + "] Response: " + response);
+        return response;
     }
 
     /** ***************************************************************

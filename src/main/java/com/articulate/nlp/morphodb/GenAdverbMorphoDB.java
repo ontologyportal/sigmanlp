@@ -91,16 +91,20 @@ public class GenAdverbMorphoDB {
                         "Instructions:\n" +
                         " - Consider the adverb's default dictionary sense.\n" +
                         " - If it has multiple functions, choose the primary or most canonical role.\n" +
-                        " - Output valid JSON only, with fields adverb, category, explanation, usage.\n" +
+                        " - Output valid JSON only, with fields adverb, category" +
+                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
                         " - \"category\" must match one of the twenty-one category names above exactly.\n" +
-                        " - Provide a short explanation mentioning the key semantic cue.\n" +
-                        " - Provide a single usage sentence illustrating the classification.\n\n" +
+                        (cheapPrompt ? "" :
+                                " - Provide a short explanation mentioning the key semantic cue.\n" +
+                                " - Provide a single usage sentence illustrating the classification.\n") +
+                        "\n" +
                         "JSON schema:\n" +
                         "{\n" +
                         "  \"adverb\": \"<adverb>\",\n" +
-                        "  \"category\": \"<one of the twenty-one categories>\",\n" +
-                        "  \"explanation\": \"<short rationale>\",\n" +
-                        "  \"usage\": \"<example sentence>\"\n" +
+                        "  \"category\": \"<one of the twenty-one categories>\"" +
+                        (cheapPrompt
+                                ? "\n"
+                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n") +
                         "}";
                 prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("adverb", "category"));
                 if (GenMorphoUtils.debug) {
