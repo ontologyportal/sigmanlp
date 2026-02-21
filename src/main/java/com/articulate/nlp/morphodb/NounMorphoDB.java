@@ -19,6 +19,7 @@ public class NounMorphoDB {
     public final Map<String, List<ObjectNode>> agentivity;
     public final Map<String, List<ObjectNode>> collectiveNouns;
     private final Map<String, String> articleByNoun;
+    private final Map<String, String> pluralByNoun;
 
     public NounMorphoDB(Map<String, List<ObjectNode>> indefiniteArticles,
                         Map<String, List<ObjectNode>> countability,
@@ -33,6 +34,7 @@ public class NounMorphoDB {
         this.agentivity = agentivity;
         this.collectiveNouns = collectiveNouns;
         this.articleByNoun = buildArticleByNounIndex(indefiniteArticles);
+        this.pluralByNoun = buildPluralByNounIndex(plurals);
     }
 
     /***************************************************************
@@ -64,6 +66,37 @@ public class NounMorphoDB {
             return null;
         }
         return articleByNoun.get(noun.trim().toLowerCase());
+    }
+
+    /***************************************************************
+     * Builds a lowercase singular → plural secondary index from the
+     * synsetId-keyed plurals map. Entries with plural "none" are skipped.
+     ***************************************************************/
+    private static Map<String, String> buildPluralByNounIndex(Map<String, List<ObjectNode>> plurals) {
+
+        Map<String, String> index = new HashMap<>();
+        for (List<ObjectNode> nodes : plurals.values()) {
+            for (ObjectNode node : nodes) {
+                String singular = node.path("singular").asText("").trim().toLowerCase();
+                String plural = node.path("plural").asText("").trim();
+                if (!singular.isEmpty() && !plural.isEmpty() && !"none".equalsIgnoreCase(plural)) {
+                    index.putIfAbsent(singular, plural);
+                }
+            }
+        }
+        return index;
+    }
+
+    /***************************************************************
+     * Returns the plural form for the given noun surface string, or
+     * null if the noun is not in the database.
+     ***************************************************************/
+    public String getPlural(String noun) {
+
+        if (noun == null || noun.isEmpty()) {
+            return null;
+        }
+        return pluralByNoun.get(noun.trim().toLowerCase());
     }
 
     public static NounMorphoDB load(String morphoDbPath) {

@@ -39,7 +39,7 @@ public final class GenMorphoUtils {
         String normalizedWordType = (wordType == null || wordType.trim().isEmpty())
                 ? "misc"
                 : wordType.trim().toLowerCase();
-        String sanitizedModelName = sanitizeModelName(GenUtils.getOllamaModel());
+        String sanitizedModelName = sanitizeModelName(GenUtils.getMorphoModelDirectoryName());
         Path outputDir = Paths.get(OUTPUT_ROOT, sanitizedModelName, normalizedWordType);
         return outputDir.resolve(classificationFileName).toString();
     }
@@ -357,6 +357,33 @@ public final class GenMorphoUtils {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Unable to serialize JSON.", e);
         }
+    }
+
+    /***************************************************************
+     * Appends strict low-token output instructions when cheap-prompt mode is enabled.
+     ***************************************************************/
+    public static String applyCheapPromptDirective(String prompt, List<String> jsonFields) {
+
+        if (prompt == null || !GenUtils.isCheapPromptMode()) {
+            return prompt;
+        }
+        String fields = "";
+        if (jsonFields != null && !jsonFields.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < jsonFields.size(); i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+                builder.append(jsonFields.get(i));
+            }
+            fields = builder.toString();
+        }
+        return prompt +
+                "\n\nCHEAP PROMPT MODE:\n" +
+                "- Return JSON only.\n" +
+                "- Include only these fields: " + fields + ".\n" +
+                "- Do not include explanation or usage unless explicitly listed.\n" +
+                "- Keep each value concise.";
     }
 
     private static ObjectNode parseJsonObjectLine(String serializedLine) {

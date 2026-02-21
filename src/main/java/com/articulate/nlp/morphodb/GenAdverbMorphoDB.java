@@ -61,6 +61,7 @@ public class GenAdverbMorphoDB {
                 }
                 String definitionStatement = (definition == null) ? "" :
                         "Definition: \"" + adverbDocumentationHash.get(synsetId) + "\". ";
+                boolean cheapPrompt = GenUtils.isCheapPromptMode();
                 String prompt = "You are an expert lexicographer specializing in English adverb classes. " +
                         "Assign the adverb to exactly one category from the list below.\n\n" +
                         "Categories:\n" +
@@ -101,13 +102,16 @@ public class GenAdverbMorphoDB {
                         "  \"explanation\": \"<short rationale>\",\n" +
                         "  \"usage\": \"<example sentence>\"\n" +
                         "}";
+                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("adverb", "category"));
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenAdverbMorphoDB.genAdverbSemanticClasses() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 boolean errorInResponse = true;
                 ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        Arrays.asList("adverb", "category", "explanation", "usage"));
+                        cheapPrompt
+                                ? Arrays.asList("adverb", "category")
+                                : Arrays.asList("adverb", "category", "explanation", "usage"));
                 if (responseNode != null) {
                     errorInResponse = false;
                     responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);

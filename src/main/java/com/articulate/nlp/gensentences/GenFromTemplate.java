@@ -38,10 +38,14 @@ public class GenFromTemplate {
     private static class InstanceValue {
         private final boolean definite;
         private final String name;
+        private final boolean collection;
+        private final int count;
 
-        private InstanceValue(boolean definite, String name) {
+        private InstanceValue(boolean definite, String name, boolean collection, int count) {
             this.definite = definite;
             this.name = name;
+            this.collection = collection;
+            this.count = count;
         }
     }
 
@@ -176,7 +180,8 @@ public class GenFromTemplate {
             }
             return candidates;
         }
-        else if (slot.getType() == Templates.Slot.TermSelectionType.INSTANCE) {
+        else if (slot.getType() == Templates.Slot.TermSelectionType.INSTANCE
+                || slot.getType() == Templates.Slot.TermSelectionType.POSITIONAL_INSTANCE) {
             return kbLite.getInstancesForType(sumoTerm.getName());
         }
         return null;
@@ -457,15 +462,33 @@ public class GenFromTemplate {
                 termFormat = term;
             }
             Templates.Slot slot = template.getSlots()[slotNum - 1];
-            InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat);
-            instanceValues.put(slotNum, iv);
-            boolean addArticle = slot.getVariable() != null || slot.getDefiniteFreq() > 0.0;
             String englishValue;
-            if (addArticle) {
-                String article = iv.definite ? "the" : morphoDB.getIndefiniteArticle(termFormat);
-                englishValue = article + " " + termFormat;
+            if (slot.getType() == Templates.Slot.TermSelectionType.POSITIONAL_INSTANCE) {
+                // Positional attributes are not entity instances: no article, no collection.
+                // Append the dependent preposition (e.g. "adjacent" → "adjacent to").
+                String prep = morphoDB.getPositionalPreposition(termFormat);
+                if (prep == null) {
+                    System.out.println("Warning: positional preposition for '" + termFormat + "' not found in PrepositionMorphoDB; using no connecting word.");
+                    prep = "";
+                }
+                englishValue = !prep.isEmpty() ? termFormat + " " + prep : termFormat;
             } else {
-                englishValue = termFormat;
+                InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat);
+                instanceValues.put(slotNum, iv);
+                boolean addArticle = slot.getVariable() != null || slot.getDefiniteFreq() > 0.0;
+                if (addArticle) {
+                    if (iv.collection) {
+                        String plural = morphoDB.getPlural(termFormat);
+                        englishValue = iv.definite
+                                ? "the " + iv.count + " " + plural
+                                : iv.count + " " + plural;
+                    } else {
+                        String article = iv.definite ? "the" : morphoDB.getIndefiniteArticle(termFormat);
+                        englishValue = article + " " + termFormat;
+                    }
+                } else {
+                    englishValue = termFormat;
+                }
             }
             englishSlotValues.put(slotNum, englishValue);
         }
@@ -481,10 +504,14 @@ public class GenFromTemplate {
             String lemma = verbSampler.sampleTerm(template.getName(), verbSlotNum);
             boolean negateVerb = verbSlot.isNegationOn() && Math.random() < verbSlot.getNegFreq();
             logicNegate = logicNegate || negateVerb;
+            InstanceValue subjectIv = instanceValues.get(verbSlotNum);
+            String grammaticalPerson = (subjectIv != null && subjectIv.collection)
+                    ? GenVerbHelper.PLURAL_GRAMMATICAL_PERSON
+                    : GenVerbHelper.DEFAULT_GRAMMATICAL_PERSON;
             GenVerbHelper.VerbFeatures features = new GenVerbHelper.VerbFeatures(
                     lemma,
                     selectedTense,
-                    GenVerbHelper.DEFAULT_GRAMMATICAL_PERSON,
+                    grammaticalPerson,
                     negateVerb,
                     asQuestion);
             englishVerbValues.put(verbSlotNum, verbHelper.realizeVerbPhrase(features));
@@ -512,19 +539,38 @@ public class GenFromTemplate {
     }
 
     /***************************************************************
-     * Decides whether slot N is definite or indefinite.
-     * If definite, derives a KIF-safe constant from the slot's
-     * termFormat in UpperCamelCase with "Instance" appended
-     * (e.g. "human adult" → "HumanAdultInstance").
+     * Samples a count >= 2 from a geometric distribution with the
+     * given drop-off probability p. P(count = k) = (1-p)^(k-2) * p.
+     ***************************************************************/
+    private static int sampleGeometric(double p) {
+
+        int count = 2;
+        while (Math.random() > p) {
+            count++;
+        }
+        return count;
+    }
+
+    /***************************************************************
+     * Resolves definiteness and collection mode for a slot.
+     * Collection mode: (instance %?N Collection) + memberType + memberCount.
+     * Definite collection constant: UpperCamelCase + "Collection".
+     * Definite singular constant:   UpperCamelCase + "Instance".
      ***************************************************************/
     private static InstanceValue resolveInstanceValue(Templates.Slot slot, int slotNum, String termFormat) {
 
         String variableName = (slot.getVariable() != null) ? slot.getVariable() : "?V" + slotNum;
-        if (slot.getDefiniteFreq() > 0.0 && Math.random() < slot.getDefiniteFreq()) {
-            String instanceName = toUpperCamelCase(termFormat) + "Instance";
-            return new InstanceValue(true, instanceName);
+        boolean definite = slot.getDefiniteFreq() > 0.0 && Math.random() < slot.getDefiniteFreq();
+        boolean collection = slot.isCountablePossible() && Math.random() < slot.getCountableFreq();
+        if (collection) {
+            int count = sampleGeometric(slot.getCountProbDropoff());
+            String name = definite ? toUpperCamelCase(termFormat) + "Collection" : variableName;
+            return new InstanceValue(definite, name, true, count);
         }
-        return new InstanceValue(false, variableName);
+        if (definite) {
+            return new InstanceValue(true, toUpperCamelCase(termFormat) + "Instance", false, 1);
+        }
+        return new InstanceValue(false, variableName, false, 1);
     }
 
     /***************************************************************
@@ -578,13 +624,27 @@ public class GenFromTemplate {
             if (m.matches()) {
                 int slotNum = Integer.parseInt(m.group(1));
                 InstanceValue iv = slotValues.instanceValues.get(slotNum);
-                String resolved = replaceInstanceSlots(clause, slotValues.instanceValues);
-                resolved = replaceSlots(resolved, slotValues.logicSlotValues);
-                if (iv != null && iv.definite) {
-                    preExistsClauses.add(resolved);
+                if (iv != null && iv.collection) {
+                    String sumoClass = slotValues.logicSlotValues.get(slotNum);
+                    List<String> collClauses = List.of(
+                            "(instance " + iv.name + " Collection)",
+                            "(memberType " + iv.name + " " + sumoClass + ")",
+                            "(memberCount " + iv.name + " " + iv.count + ")");
+                    if (iv.definite) {
+                        preExistsClauses.addAll(collClauses);
+                    } else {
+                        bodyClauses.addAll(collClauses);
+                        existsVars.add(iv.name);
+                    }
                 } else {
-                    bodyClauses.add(resolved);
-                    if (iv != null) existsVars.add(iv.name);
+                    String resolved = replaceInstanceSlots(clause, slotValues.instanceValues);
+                    resolved = replaceSlots(resolved, slotValues.logicSlotValues);
+                    if (iv != null && iv.definite) {
+                        preExistsClauses.add(resolved);
+                    } else {
+                        bodyClauses.add(resolved);
+                        if (iv != null) existsVars.add(iv.name);
+                    }
                 }
             } else {
                 String resolved = replaceInstanceSlots(clause, slotValues.instanceValues);

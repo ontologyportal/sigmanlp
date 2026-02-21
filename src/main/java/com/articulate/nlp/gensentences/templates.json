@@ -31,6 +31,7 @@
         "present":1,
         "future":1
       },
+      "count_prob_dropoff":0.5,
       "num_to_gen":100,
       "question_freq":0.1
   },
@@ -51,13 +52,13 @@
         },
         "%1":{
             "variable":"?A1",
-            "definite_freq":0.9,
+            "definite_freq":0.5,
             "sumo_terms":[{"name":"Artifact","weight":50},
                           {"name":"AnatomicalStructure","weight":10},
                           {"name":"Human","weight":5},
                           {"name":"Animal","weight":5}],
             "type":"subclass",
-            "countable":{"possible":true, "freq":0.1}
+            "countable":{"possible":true, "freq":0.5}
         },
         "%2":{
             "sumo_terms":[{"name":"PositionalAttribute","weight":1}],
@@ -66,10 +67,10 @@
         },
         "%3":{
             "variable":"?O2",
-            "definite_freq":0.9,
+            "definite_freq":0.5,
             "sumo_terms":[{"name":"Object","weight":1}],
             "type":"subclass",
-            "countable":{"possible":true, "freq":0.1}
+            "countable":{"possible":true, "freq":0.5}
         },
         "%v1":{
             "negation":"on",

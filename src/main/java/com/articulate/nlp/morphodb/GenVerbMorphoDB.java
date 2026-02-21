@@ -107,6 +107,7 @@ public class GenVerbMorphoDB {
                     continue;
                 }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
+                boolean cheapPrompt = GenUtils.isCheapPromptMode();
                 String prompt = "You are an expert lexicographer specializing in English verb valency and argument structure. " +
                         "Classify the verb into the most appropriate valency category from the hierarchy below. \n\n" +
                         "VERB\n" +
@@ -148,13 +149,17 @@ public class GenVerbMorphoDB {
                         "  \"explanation\": \"<reasoning>\",\n" +
                         "  \"usage\": \"<example sentence>\"\n" +
                         "}";
+                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt,
+                        Arrays.asList("verb", "valence", "subtype", "semantic_roles"));
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbValence() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 boolean errorInResponse = true;
                 ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        Arrays.asList("verb", "valence", "subtype", "semantic_roles", "explanation", "usage"));
+                        cheapPrompt
+                                ? Arrays.asList("verb", "valence", "subtype", "semantic_roles")
+                                : Arrays.asList("verb", "valence", "subtype", "semantic_roles", "explanation", "usage"));
                 if (responseNode != null) {
                     errorInResponse = false;
                     responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
@@ -207,6 +212,7 @@ public class GenVerbMorphoDB {
                     continue;
                 }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
+                boolean cheapPrompt = GenUtils.isCheapPromptMode();
                 String prompt = "You are an expert lexicographer specializing in reflexive verb constructions. " +
                         "Determine whether the verb is obligatorily reflexive (must take a reflexive object when its subject acts on itself), " +
                         "optionally reflexive (can appear with or without a reflexive object), or never reflexive " +
@@ -229,13 +235,16 @@ public class GenVerbMorphoDB {
                         "  \"explanation\": \"<reasoning>\",\n" +
                         "  \"usage\": \"<example sentence>\"\n" +
                         "}";
+                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reflexivity"));
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbReflexive() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 boolean errorInResponse = true;
                 ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        Arrays.asList("verb", "reflexivity", "explanation", "usage"));
+                        cheapPrompt
+                                ? Arrays.asList("verb", "reflexivity")
+                                : Arrays.asList("verb", "reflexivity", "explanation", "usage"));
                 if (responseNode != null) {
                     errorInResponse = false;
                     responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
@@ -285,6 +294,7 @@ public class GenVerbMorphoDB {
                     continue;
                 }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
+                boolean cheapPrompt = GenUtils.isCheapPromptMode();
                 String prompt = "You are an expert in lexical semantics focusing on causativity. " +
                         "Determine whether the verb denotes a causative action (the subject causes a change in a patient), " +
                         "is typically non-causative, or has both causative and non-causative senses. \n\n" +
@@ -306,13 +316,16 @@ public class GenVerbMorphoDB {
                         "  \"explanation\": \"<reasoning>\",\n" +
                         "  \"usage\": \"<example sentence>\"\n" +
                         "}";
+                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "causativity"));
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbCausativity() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 boolean errorInResponse = true;
                 ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        Arrays.asList("verb", "causativity", "explanation", "usage"));
+                        cheapPrompt
+                                ? Arrays.asList("verb", "causativity")
+                                : Arrays.asList("verb", "causativity", "explanation", "usage"));
                 if (responseNode != null) {
                     errorInResponse = false;
                     responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
@@ -362,6 +375,7 @@ public class GenVerbMorphoDB {
                     continue;
                 }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
+                boolean cheapPrompt = GenUtils.isCheapPromptMode();
                 String prompt = "You are an expert linguist specializing in lexical aspect (Aktionsart). " +
                         "Classify the verb as either an achievement verb (a single, punctual change of state) or a process verb (an unfolding action with duration). " +
                         "If the verb genuinely alternates between both readings, mark it as mixed. " +
@@ -383,13 +397,16 @@ public class GenVerbMorphoDB {
                         "  \"explanation\": \"<short rationale>\",\n" +
                         "  \"usage\": \"<example sentence>\"\n" +
                         "}";
+                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "aktionsart"));
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbAchievementProcess() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 boolean errorInResponse = true;
                 ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        Arrays.asList("verb", "aktionsart", "explanation", "usage"));
+                        cheapPrompt
+                                ? Arrays.asList("verb", "aktionsart")
+                                : Arrays.asList("verb", "aktionsart", "explanation", "usage"));
                 if (responseNode != null) {
                     errorInResponse = false;
                     responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
@@ -439,6 +456,7 @@ public class GenVerbMorphoDB {
                     continue;
                 }
                 String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
+                boolean cheapPrompt = GenUtils.isCheapPromptMode();
                 String prompt = "You are an expert lexicographer specializing in reciprocal verb constructions. " +
                         "Determine whether the verb is obligatorily reciprocal (typically requires two agents acting on each other), " +
                         "optionally reciprocal (can describe mutual action but also allows non-reciprocal use), or never reciprocal " +
@@ -461,13 +479,16 @@ public class GenVerbMorphoDB {
                         "  \"explanation\": \"<reasoning>\",\n" +
                         "  \"usage\": \"<example sentence>\"\n" +
                         "}";
+                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reciprocity"));
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbReciprocal() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 boolean errorInResponse = true;
                 ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        Arrays.asList("verb", "reciprocity", "explanation", "usage"));
+                        cheapPrompt
+                                ? Arrays.asList("verb", "reciprocity")
+                                : Arrays.asList("verb", "reciprocity", "explanation", "usage"));
                 if (responseNode != null) {
                     errorInResponse = false;
                     responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
@@ -574,7 +595,7 @@ public class GenVerbMorphoDB {
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
                 boolean errorInResponse = true;
                 if (jsonResponse != null) {

@@ -13,6 +13,7 @@ public class GenVerbHelper {
 
     public static final String DEFAULT_VERB_TENSE = "Simple present";
     public static final String DEFAULT_GRAMMATICAL_PERSON = "he_she_it";
+    public static final String PLURAL_GRAMMATICAL_PERSON = "they";
 
     private final MorphoDB morphoDB;
 

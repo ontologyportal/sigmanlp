@@ -17,17 +17,20 @@ public class MorphoDB {
         public final VerbMorphoDB verbs;
         public final AdjectiveMorphoDB adjectives;
         public final AdverbMorphoDB adverbs;
+        public final PrepositionMorphoDB prepositions;
 
         public ModelMorphoDB(String modelDirectory,
                              NounMorphoDB nouns,
                              VerbMorphoDB verbs,
                              AdjectiveMorphoDB adjectives,
-                             AdverbMorphoDB adverbs) {
+                             AdverbMorphoDB adverbs,
+                             PrepositionMorphoDB prepositions) {
             this.modelDirectory = modelDirectory;
             this.nouns = nouns;
             this.verbs = verbs;
             this.adjectives = adjectives;
             this.adverbs = adverbs;
+            this.prepositions = prepositions;
         }
     }
 
@@ -47,7 +50,8 @@ public class MorphoDB {
                 NounMorphoDB.load(root.getPath()),
                 VerbMorphoDB.load(root.getPath()),
                 AdjectiveMorphoDB.load(root.getPath()),
-                AdverbMorphoDB.load(root.getPath()));
+                AdverbMorphoDB.load(root.getPath()),
+                PrepositionMorphoDB.load(root.getPath()));
         db.byModel.put(modelDirectory, modelDB);
         return db;
     }
@@ -71,9 +75,28 @@ public class MorphoDB {
     }
 
     /***************************************************************
+     * Returns the dependent preposition for the given positional
+     * surface form (e.g. "adjacent" → "to", "downstream" → "from",
+     * "on" → "").  Returns null if the term is not recognised.
+     ***************************************************************/
+    public String getPositionalPreposition(String surfaceForm) {
+
+        for (ModelMorphoDB model : byModel.values()) {
+            String prep = model.prepositions.getPositionalPreposition(surfaceForm);
+            if (prep != null) {
+                return prep;
+            }
+        }
+        return null;
+    }
+
+    /***************************************************************
      * Returns "a" or "an" for the given noun surface string.
-     * Checks all loaded models in iteration order; if the noun is
-     * not found in any model, falls back to a letter-based heuristic.
+     * Checks all loaded models in iteration order. For compound
+     * nouns not found as a whole (e.g. "human child"), retries
+     * with just the first word ("human" → "a") since the article
+     * depends on the first word's initial sound. Falls back to a
+     * letter-based heuristic if still not found.
      ***************************************************************/
     public String getIndefiniteArticle(String noun) {
 
@@ -81,6 +104,19 @@ public class MorphoDB {
             String article = model.nouns.getIndefiniteArticle(noun);
             if (article != null) {
                 return article;
+            }
+        }
+        if (noun != null) {
+            String trimmed = noun.trim();
+            int firstSpace = trimmed.indexOf(' ');
+            if (firstSpace >= 0) {
+                String firstWord = trimmed.substring(0, firstSpace);
+                for (ModelMorphoDB model : byModel.values()) {
+                    String firstWordArticle = model.nouns.getIndefiniteArticle(firstWord);
+                    if (firstWordArticle != null) {
+                        return firstWordArticle;
+                    }
+                }
             }
         }
         return defaultIndefiniteArticle(noun);
@@ -92,11 +128,68 @@ public class MorphoDB {
      ***************************************************************/
     private static String defaultIndefiniteArticle(String noun) {
 
+        System.out.println("Warning: noun '" + noun + "' not found in any model; using default article heuristic.");
         if (noun == null || noun.trim().isEmpty()) {
             return "a";
         }
         char first = Character.toLowerCase(noun.trim().charAt(0));
         return "aeiou".indexOf(first) >= 0 ? "an" : "a";
+    }
+
+    /***************************************************************
+     * Returns the plural form for the given noun surface string.
+     * Checks all loaded models in iteration order. For compound
+     * nouns not found as a whole (e.g. "human child"), retries
+     * with just the last word ("child" → "children") and
+     * reconstructs the full string ("human children"). Falls back
+     * to suffix-based rules if still not found.
+     ***************************************************************/
+    public String getPlural(String noun) {
+
+        for (ModelMorphoDB model : byModel.values()) {
+            String plural = model.nouns.getPlural(noun);
+            if (plural != null) {
+                return plural;
+            }
+        }
+        if (noun != null) {
+            String trimmed = noun.trim();
+            int lastSpace = trimmed.lastIndexOf(' ');
+            if (lastSpace >= 0) {
+                String lastWord = trimmed.substring(lastSpace + 1);
+                String prefix = trimmed.substring(0, lastSpace + 1);
+                for (ModelMorphoDB model : byModel.values()) {
+                    String lastWordPlural = model.nouns.getPlural(lastWord);
+                    if (lastWordPlural != null) {
+                        return prefix + lastWordPlural;
+                    }
+                }
+            }
+        }
+        return defaultPlural(noun);
+    }
+
+    /***************************************************************
+     * Fallback plural using standard English suffix rules.
+     * Prints a warning so missing nouns can be added to the MorphoDB.
+     ***************************************************************/
+    private static String defaultPlural(String noun) {
+
+        System.out.println("Warning: plural for '" + noun + "' not found in MorphoDB; using suffix fallback.");
+        if (noun == null || noun.trim().isEmpty()) {
+            return noun;
+        }
+        String n = noun.trim();
+        String lower = n.toLowerCase();
+        if (lower.endsWith("ch") || lower.endsWith("sh") || lower.endsWith("s")
+                || lower.endsWith("x") || lower.endsWith("z")) {
+            return n + "es";
+        }
+        if (lower.length() > 1 && lower.endsWith("y")
+                && "aeiou".indexOf(lower.charAt(lower.length() - 2)) < 0) {
+            return n.substring(0, n.length() - 1) + "ies";
+        }
+        return n + "s";
     }
 
 }

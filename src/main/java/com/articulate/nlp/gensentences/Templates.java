@@ -346,7 +346,8 @@ public class Templates {
     public static class Slot {
         public enum TermSelectionType {
             SUBCLASS,
-            INSTANCE
+            INSTANCE,
+            POSITIONAL_INSTANCE
         }
 
         private final List<WeightedSumoTerm> sumoTerms;
@@ -355,16 +356,18 @@ public class Templates {
         private final double countableFreq;
         private final String variable;
         private final double definiteFreq;
+        private final double countProbDropoff;
 
         public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type,
                     boolean countablePossible, double countableFreq,
-                    String variable, double definiteFreq) {
+                    String variable, double definiteFreq, double countProbDropoff) {
             this.sumoTerms = sumoTerms;
             this.type = type;
             this.countablePossible = countablePossible;
             this.countableFreq = countableFreq;
             this.variable = variable;
             this.definiteFreq = definiteFreq;
+            this.countProbDropoff = countProbDropoff;
         }
 
         public List<WeightedSumoTerm> getSumoTerms() {
@@ -393,6 +396,10 @@ public class Templates {
 
         public double getDefiniteFreq() {
             return definiteFreq;
+        }
+
+        public double getCountProbDropoff() {
+            return countProbDropoff;
         }
 
     }
@@ -564,10 +571,11 @@ public class Templates {
         int tensePresentWeight = tense.path("present").asInt(0);
         int tenseFutureWeight = tense.path("future").asInt(0);
         List<WeightedModal> defaultModalValues = parseModalValues(modal);
+        double defaultCountProbDropoff = defaults.path("count_prob_dropoff").asDouble(0.5);
         List<Template> templates = loadTemplates(root, modalFreq, modalNegFreq,
                 questionFreq, negFreq, numToGen, modalOn, questionOn, tenseOn,
                 tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
-                defaultModalValues);
+                defaultModalValues, defaultCountProbDropoff);
         return new Templates(modalFreq, modalNegFreq, questionFreq, negFreq, numToGen,
                 modalOn, questionOn, tenseOn,
                 tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
@@ -623,7 +631,8 @@ public class Templates {
                                                 int defaultTensePastWeight,
                                                 int defaultTensePresentWeight,
                                                 int defaultTenseFutureWeight,
-                                                List<WeightedModal> defaultModalValues) {
+                                                List<WeightedModal> defaultModalValues,
+                                                double defaultCountProbDropoff) {
         JsonNode templateNodes = root.path("templates");
         List<Template> templates = new ArrayList<>(templateNodes.size());
         for (JsonNode templateNode : templateNodes) {
@@ -631,7 +640,7 @@ public class Templates {
             JsonNode english = templateNode.path("english");
             RandomFrameMap frame = loadFrame(english.path("frame"));
             RandomFrameMap frameQuestion = loadFrame(english.path("frame_question"));
-            Slot[] slots = loadSlots(name, english);
+            Slot[] slots = loadSlots(name, english, defaultCountProbDropoff);
             VerbSlot[] verbSlots = loadVerbSlots(name, english);
             LogicTemplate logicTemplate = parseLogicTemplate(english.path("logic"));
             Double modalFreq = readOptionalDouble(templateNode, "modal", "freq");
@@ -723,7 +732,7 @@ public class Templates {
     /***************************************************************
      * Loads %1, %2, %3... entries into a flexible array.
      ***************************************************************/
-    private static Slot[] loadSlots(String templateName, JsonNode english) {
+    private static Slot[] loadSlots(String templateName, JsonNode english, double defaultCountProbDropoff) {
         if (english == null || english.isMissingNode() || english.isNull()) {
             System.err.println("Template '" + templateName + "' is missing the 'english' section.");
             System.exit(1);
@@ -739,7 +748,7 @@ public class Templates {
                 continue;
             }
             int index = Integer.parseInt(matcher.group(1));
-            slotMap.put(index, parseSlot(templateName, field.getKey(), field.getValue()));
+            slotMap.put(index, parseSlot(templateName, field.getKey(), field.getValue(), defaultCountProbDropoff));
             if (index > maxIndex) {
                 maxIndex = index;
             }
@@ -791,7 +800,7 @@ public class Templates {
     /***************************************************************
      * Parses a single slot definition.
      ***************************************************************/
-    private static Slot parseSlot(String templateName, String slotKey, JsonNode slotNode) {
+    private static Slot parseSlot(String templateName, String slotKey, JsonNode slotNode, double defaultCountProbDropoff) {
         if (slotNode == null || slotNode.isMissingNode() || slotNode.isNull()) {
             System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing a definition.");
             System.exit(1);
@@ -843,11 +852,19 @@ public class Templates {
         else if ("instance".equals(typeString)) {
             type = Slot.TermSelectionType.INSTANCE;
         }
+        else if ("positional".equals(typeString)) {
+            type = Slot.TermSelectionType.POSITIONAL_INSTANCE;
+        }
         else {
             System.err.println("Template '" + templateName + "', slot " + slotKey
-                    + " has invalid type '" + typeNode.asText() + "'. Expected \"subclass\" or \"instance\".");
+                    + " has invalid type '" + typeNode.asText() + "'. Expected \"subclass\", \"instance\", or \"positional\".");
             System.exit(1);
             return null;
+        }
+        // Positional slots don't have countable, variable, or definite_freq — those concepts
+        // don't apply to PositionalAttribute instances (they're not entity instances).
+        if (type == Slot.TermSelectionType.POSITIONAL_INSTANCE) {
+            return new Slot(sumoTerms, type, false, 0.0, null, 0.0, defaultCountProbDropoff);
         }
         JsonNode countableNode = slotNode.get("countable");
         if (countableNode == null || !countableNode.isObject()) {
@@ -883,7 +900,11 @@ public class Templates {
         if (definiteFreqNode != null && definiteFreqNode.isNumber()) {
             definiteFreq = definiteFreqNode.asDouble();
         }
-        return new Slot(sumoTerms, type, countablePossible, countableFreq, variable, definiteFreq);
+        JsonNode countableCountProbDropoffNode = countableNode.get("count_prob_dropoff");
+        double countProbDropoff = (countableCountProbDropoffNode != null && countableCountProbDropoffNode.isNumber())
+                ? countableCountProbDropoffNode.asDouble()
+                : defaultCountProbDropoff;
+        return new Slot(sumoTerms, type, countablePossible, countableFreq, variable, definiteFreq, countProbDropoff);
     }
 
     /***************************************************************
