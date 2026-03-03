@@ -18,6 +18,10 @@ import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.images.ImageGenerateParams;
 import com.openai.models.images.ImageModel;
 import com.openai.azure.credential.AzureApiKeyCredential;
+import com.openai.models.images.ImageEditParams;
+import com.openai.core.MultipartField;
+import java.io.InputStream;
+import java.io.FileInputStream;
 
 public class GenOrientationsImageVariations {
         public static class ImageRecord {
@@ -143,23 +147,50 @@ public class GenOrientationsImageVariations {
                 .build();
         // Load input image
         Path imagePath = Paths.get(ImageLocation);
-        // byte[] imageBytes = Files.readAllBytes(imagePath);
-        ImageGenerateParams imageGenerateParams = ImageGenerateParams.builder()
-                .model(deploymentName)
-                .prompt(prompt)
-                .image(imageBytes)
-                .n(1)
-                .build();
+        ImageEditParams imageEditParams;
+        try (InputStream imageStream = new FileInputStream(ImageLocation)) {
+            imageEditParams = ImageEditParams.builder()
+                    .model(deploymentName)
+                    .prompt(prompt)
+                    .image(imageStream)
+                    .n(1)
+                    .build();
 
-        client.images().generate(imageGenerateParams).data().orElseThrow().forEach(image -> {
-                try {   
-                        String base64String = image.b64Json().orElseThrow();
-                        byte[] imageData = Base64.getDecoder().decode(base64String);
-                        Files.write(Paths.get(savepath), imageData);
+            client.images().edit(imageEditParams)
+            .data()
+            .orElseThrow()
+            .forEach(image -> {
+                try {
+                    String base64String = image.b64Json().orElseThrow();
+                    byte[] imageData = Base64.getDecoder().decode(base64String);
+                    Files.write(Paths.get(savepath), imageData);
                 } catch (IOException e) {
-                        e.printStackTrace();
+                    e.printStackTrace();
                 }
-        });
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        // ImageEditParams imageEditParams = ImageEditParams.builder()
+        //         .model(deploymentName)
+        //         .prompt(prompt)
+        //         .image(imageBytes)
+        //         .n(1)
+        //         .build();
+
+        // client.images().edit(imageEditParams)
+        // .data()
+        // .orElseThrow()
+        // .forEach(image -> {
+        //     try {
+        //         String base64String = image.b64Json().orElseThrow();
+        //         byte[] imageData = Base64.getDecoder().decode(base64String);
+        //         Files.write(Paths.get(savepath), imageData);
+        //     } catch (IOException e) {
+        //         e.printStackTrace();
+        //     }
+        // });
         return savepath;
     }
    
