@@ -33,37 +33,43 @@ public class PrepositionMorphoDB {
     static {
         Map<String, String> m = new HashMap<>();
         // True prepositions — no connecting word needed
-        m.put("on",         "");
-        m.put("above",      "");
-        m.put("below",      "");
-        m.put("under",      "");
-        m.put("over",       "");
-        m.put("behind",     "");
-        m.put("beside",     "");
-        m.put("between",    "");
-        m.put("near",       "");
-        m.put("inside",     "");
-        m.put("outside",    "");
-        m.put("around",     "");
-        m.put("along",      "");
-        m.put("across",     "");
-        m.put("through",    "");
-        m.put("within",     "");
-        m.put("beneath",    "");
-        m.put("atop",       "");
-        m.put("amid",       "");
-        m.put("by",         "");
-        m.put("past",       "");
-        m.put("beyond",     "");
+        m.put("on",          "");
+        m.put("above",       "");
+        m.put("below",       "");
+        m.put("under",       "");
+        m.put("over",        "");
+        m.put("behind",      "");
+        m.put("beside",      "");
+        m.put("between",     "");
+        m.put("near",        "");
+        m.put("inside",      "");
+        m.put("outside",     "");
+        m.put("around",      "");
+        m.put("along",       "");
+        m.put("across",      "");
+        m.put("through",     "");
+        m.put("within",      "");
+        m.put("beneath",     "");
+        m.put("atop",        "");
+        m.put("amid",        "");
+        m.put("by",          "");
+        m.put("past",        "");
+        m.put("beyond",      "");
+        m.put("horizontal",  "");  // intrinsic orientation; no reference object needed
+        m.put("vertical",    "");  // intrinsic orientation; no reference object needed
         // Adjectives requiring "to"
-        m.put("next",       "to");
-        m.put("adjacent",   "to");
-        m.put("close",      "to");
-        m.put("opposite",   "to");
-        m.put("prior",      "to");
+        m.put("next",        "to");
+        m.put("adjacent",    "to");
+        m.put("close",       "to");
+        m.put("opposite",    "to");
+        m.put("prior",       "to");
+        m.put("right angle", "to");  // at a right angle to
         // Adverbs/adjectives requiring "from"
         m.put("downstream", "from");
         m.put("upstream",   "from");
+        m.put("downhill",   "from");
+        m.put("uphill",     "from");
+        m.put("clockwise",  "from");
         m.put("far",        "from");
         m.put("away",       "from");
         m.put("apart",      "from");
@@ -78,6 +84,11 @@ public class PrepositionMorphoDB {
         m.put("southwest",  "of");
         m.put("ahead",      "of");
         m.put("in front",   "of");
+        m.put("right",      "of");
+        m.put("left",       "of");
+        m.put("upwind",     "of");
+        // Requiring "by"
+        m.put("surrounded", "by");  // surrounded by
         HARDCODED = m;
     }
 

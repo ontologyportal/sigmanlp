@@ -357,10 +357,13 @@ public class Templates {
         private final String variable;
         private final double definiteFreq;
         private final double countProbDropoff;
+        private final double namedHumanFreq;
+        private final List<String> exclude;
 
         public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type,
                     boolean countablePossible, double countableFreq,
-                    String variable, double definiteFreq, double countProbDropoff) {
+                    String variable, double definiteFreq, double countProbDropoff,
+                    double namedHumanFreq, List<String> exclude) {
             this.sumoTerms = sumoTerms;
             this.type = type;
             this.countablePossible = countablePossible;
@@ -368,6 +371,8 @@ public class Templates {
             this.variable = variable;
             this.definiteFreq = definiteFreq;
             this.countProbDropoff = countProbDropoff;
+            this.namedHumanFreq = namedHumanFreq;
+            this.exclude = exclude;
         }
 
         public List<WeightedSumoTerm> getSumoTerms() {
@@ -400,6 +405,14 @@ public class Templates {
 
         public double getCountProbDropoff() {
             return countProbDropoff;
+        }
+
+        public double getNamedHumanFreq() {
+            return namedHumanFreq;
+        }
+
+        public List<String> getExclude() {
+            return exclude;
         }
 
     }
@@ -572,10 +585,11 @@ public class Templates {
         int tenseFutureWeight = tense.path("future").asInt(0);
         List<WeightedModal> defaultModalValues = parseModalValues(modal);
         double defaultCountProbDropoff = defaults.path("count_prob_dropoff").asDouble(0.5);
+        double defaultNamedHumanFreq = defaults.path("named_human_freq").asDouble(0.0);
         List<Template> templates = loadTemplates(root, modalFreq, modalNegFreq,
                 questionFreq, negFreq, numToGen, modalOn, questionOn, tenseOn,
                 tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
-                defaultModalValues, defaultCountProbDropoff);
+                defaultModalValues, defaultCountProbDropoff, defaultNamedHumanFreq);
         return new Templates(modalFreq, modalNegFreq, questionFreq, negFreq, numToGen,
                 modalOn, questionOn, tenseOn,
                 tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
@@ -632,7 +646,8 @@ public class Templates {
                                                 int defaultTensePresentWeight,
                                                 int defaultTenseFutureWeight,
                                                 List<WeightedModal> defaultModalValues,
-                                                double defaultCountProbDropoff) {
+                                                double defaultCountProbDropoff,
+                                                double defaultNamedHumanFreq) {
         JsonNode templateNodes = root.path("templates");
         List<Template> templates = new ArrayList<>(templateNodes.size());
         for (JsonNode templateNode : templateNodes) {
@@ -640,7 +655,7 @@ public class Templates {
             JsonNode english = templateNode.path("english");
             RandomFrameMap frame = loadFrame(english.path("frame"));
             RandomFrameMap frameQuestion = loadFrame(english.path("frame_question"));
-            Slot[] slots = loadSlots(name, english, defaultCountProbDropoff);
+            Slot[] slots = loadSlots(name, english, defaultCountProbDropoff, defaultNamedHumanFreq);
             VerbSlot[] verbSlots = loadVerbSlots(name, english);
             LogicTemplate logicTemplate = parseLogicTemplate(english.path("logic"));
             Double modalFreq = readOptionalDouble(templateNode, "modal", "freq");
@@ -732,7 +747,8 @@ public class Templates {
     /***************************************************************
      * Loads %1, %2, %3... entries into a flexible array.
      ***************************************************************/
-    private static Slot[] loadSlots(String templateName, JsonNode english, double defaultCountProbDropoff) {
+    private static Slot[] loadSlots(String templateName, JsonNode english,
+                                    double defaultCountProbDropoff, double defaultNamedHumanFreq) {
         if (english == null || english.isMissingNode() || english.isNull()) {
             System.err.println("Template '" + templateName + "' is missing the 'english' section.");
             System.exit(1);
@@ -748,7 +764,8 @@ public class Templates {
                 continue;
             }
             int index = Integer.parseInt(matcher.group(1));
-            slotMap.put(index, parseSlot(templateName, field.getKey(), field.getValue(), defaultCountProbDropoff));
+            slotMap.put(index, parseSlot(templateName, field.getKey(), field.getValue(),
+                    defaultCountProbDropoff, defaultNamedHumanFreq));
             if (index > maxIndex) {
                 maxIndex = index;
             }
@@ -800,7 +817,8 @@ public class Templates {
     /***************************************************************
      * Parses a single slot definition.
      ***************************************************************/
-    private static Slot parseSlot(String templateName, String slotKey, JsonNode slotNode, double defaultCountProbDropoff) {
+    private static Slot parseSlot(String templateName, String slotKey, JsonNode slotNode,
+                                  double defaultCountProbDropoff, double defaultNamedHumanFreq) {
         if (slotNode == null || slotNode.isMissingNode() || slotNode.isNull()) {
             System.err.println("Template '" + templateName + "', slot " + slotKey + " is missing a definition.");
             System.exit(1);
@@ -861,10 +879,19 @@ public class Templates {
             System.exit(1);
             return null;
         }
-        // Positional slots don't have countable, variable, or definite_freq — those concepts
-        // don't apply to PositionalAttribute instances (they're not entity instances).
+        // Positional slots don't have countable, variable, definite_freq, or named_human_freq —
+        // those concepts don't apply to PositionalAttribute instances (they're not entity instances).
+        // Exclusion lists ARE supported on positional slots.
         if (type == Slot.TermSelectionType.POSITIONAL_INSTANCE) {
-            return new Slot(sumoTerms, type, false, 0.0, null, 0.0, defaultCountProbDropoff);
+            List<String> positionalExclude = new ArrayList<>();
+            JsonNode positionalExcludeNode = slotNode.get("exclude");
+            if (positionalExcludeNode != null && positionalExcludeNode.isArray()) {
+                for (JsonNode item : positionalExcludeNode) {
+                    if (item.isTextual()) positionalExclude.add(item.asText());
+                }
+            }
+            return new Slot(sumoTerms, type, false, 0.0, null, 0.0, defaultCountProbDropoff, 0.0,
+                    positionalExclude);
         }
         JsonNode countableNode = slotNode.get("countable");
         if (countableNode == null || !countableNode.isObject()) {
@@ -904,7 +931,19 @@ public class Templates {
         double countProbDropoff = (countableCountProbDropoffNode != null && countableCountProbDropoffNode.isNumber())
                 ? countableCountProbDropoffNode.asDouble()
                 : defaultCountProbDropoff;
-        return new Slot(sumoTerms, type, countablePossible, countableFreq, variable, definiteFreq, countProbDropoff);
+        JsonNode namedHumanFreqNode = slotNode.get("named_human_freq");
+        double namedHumanFreq = (namedHumanFreqNode != null && namedHumanFreqNode.isNumber())
+                ? namedHumanFreqNode.asDouble()
+                : defaultNamedHumanFreq;
+        List<String> exclude = new ArrayList<>();
+        JsonNode excludeNode = slotNode.get("exclude");
+        if (excludeNode != null && excludeNode.isArray()) {
+            for (JsonNode item : excludeNode) {
+                if (item.isTextual()) exclude.add(item.asText());
+            }
+        }
+        return new Slot(sumoTerms, type, countablePossible, countableFreq, variable, definiteFreq,
+                countProbDropoff, namedHumanFreq, exclude);
     }
 
     /***************************************************************

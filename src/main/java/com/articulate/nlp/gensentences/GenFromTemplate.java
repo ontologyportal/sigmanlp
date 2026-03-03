@@ -40,12 +40,24 @@ public class GenFromTemplate {
         private final String name;
         private final boolean collection;
         private final int count;
+        /** Non-null when the sampled term is a SocialRole instance (e.g. "Employee").
+         *  Logic uses (instance X Human) + (attribute X socialRole) instead of (instance X socialRole). */
+        private final String socialRole;
+        /** Non-null when a named individual was drawn from lfeatsets.humans (e.g. "Mary Jane").
+         *  Used as the English surface form and in the (names "Mary Jane" Mary_Jane) predicate. */
+        private final String humanName;
+        /** "Male" or "Female" when humanName is non-null; null otherwise. */
+        private final String humanGender;
 
-        private InstanceValue(boolean definite, String name, boolean collection, int count) {
+        private InstanceValue(boolean definite, String name, boolean collection, int count,
+                              String socialRole, String humanName, String humanGender) {
             this.definite = definite;
             this.name = name;
             this.collection = collection;
             this.count = count;
+            this.socialRole = socialRole;
+            this.humanName = humanName;
+            this.humanGender = humanGender;
         }
     }
 
@@ -153,6 +165,15 @@ public class GenFromTemplate {
             WeightedSampler slotSampler = new WeightedSampler();
             for (Templates.WeightedSumoTerm sumoTerm : slot.getSumoTerms()) {
                 Set<String> candidates = getCandidatesForSlot(slot, sumoTerm);
+                // Apply per-slot exclusion list before building the sampler.
+                for (String excluded : slot.getExclude()) {
+                    if (candidates == null || !candidates.remove(excluded)) {
+                        System.out.println("Warning: template '" + template.getName() + "' slot %"
+                                + slotNumber + " excluded term '" + excluded
+                                + "' was not found in candidates for class '"
+                                + sumoTerm.getName() + "'.");
+                    }
+                }
                 if (candidates == null || candidates.isEmpty()) {
                     if (sumoTerm.getWeight() > 0) {
                         System.err.println("Error: template '" + template.getName() + "' slot %" + slotNumber
@@ -173,6 +194,11 @@ public class GenFromTemplate {
      ***************************************************************/
     private static Set<String> getCandidatesForSlot(Templates.Slot slot, Templates.WeightedSumoTerm sumoTerm) {
 
+        // SocialRole terms (Employee, Student, etc.) are instances of SocialRole in SUMO,
+        // not subclasses of it. Always use instance lookup regardless of slot type.
+        if ("SocialRole".equals(sumoTerm.getName())) {
+            return kbLite.getInstancesForType("SocialRole");
+        }
         if (slot.getType() == Templates.Slot.TermSelectionType.SUBCLASS) {
             Set<String> candidates = kbLite.getChildClasses(sumoTerm.getName());
             if (candidates != null) {
@@ -373,20 +399,20 @@ public class GenFromTemplate {
     private static String wrapLogicFuture(String internalText) {
 
         return "(instance ?T TimeDuration) (before Now (BeginFn(WhenFn ?T)) " + //
-                        "(holdsDuring ?T (" + internalText + ")) ?T)";
+                        "(holdsDuring ?T " + internalText + ")";
     }
 
     private static String wrapLogicPresent(String internalText) {
 
         return "(instance ?T TimeDuration) "+ //
                         "(temporallyBetween (BeginFn (WhenFn ?T)) Now (EndFn (WhenFn ?T))) " + //
-                        "(holdsDuring ?T (" + internalText + "))";
+                        "(holdsDuring ?T " + internalText + ")";
     }
 
     private static String wrapLogicPast(String internalText) {
 
         return "(instance ?T TimeDuration) (before (EndFn (WhenFn ?T)) Now) " + //
-                        "(holdsDuring ?T (" + internalText + "))";
+                        "(holdsDuring ?T " + internalText + ")";
     }
 
     private static String selectFrameForTense(Templates.RandomFrameMap map, Templates.Tense selectedTense) {
@@ -473,21 +499,26 @@ public class GenFromTemplate {
                 }
                 englishValue = !prep.isEmpty() ? termFormat + " " + prep : termFormat;
             } else {
-                InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat);
+                InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat, term);
                 instanceValues.put(slotNum, iv);
-                boolean addArticle = slot.getVariable() != null || slot.getDefiniteFreq() > 0.0;
-                if (addArticle) {
-                    if (iv.collection) {
-                        String plural = morphoDB.getPlural(termFormat);
-                        englishValue = iv.definite
-                                ? "the " + iv.count + " " + plural
-                                : iv.count + " " + plural;
-                    } else {
-                        String article = iv.definite ? "the" : morphoDB.getIndefiniteArticle(termFormat);
-                        englishValue = article + " " + termFormat;
-                    }
+                if (iv.humanName != null) {
+                    // Named individual: use the raw first name directly (no article)
+                    englishValue = iv.humanName;
                 } else {
-                    englishValue = termFormat;
+                    boolean addArticle = slot.getVariable() != null || slot.getDefiniteFreq() > 0.0;
+                    if (addArticle) {
+                        if (iv.collection) {
+                            String plural = morphoDB.getPlural(termFormat);
+                            englishValue = iv.definite
+                                    ? "the " + iv.count + " " + plural
+                                    : iv.count + " " + plural;
+                        } else {
+                            String article = iv.definite ? "the" : morphoDB.getIndefiniteArticle(termFormat);
+                            englishValue = article + " " + termFormat;
+                        }
+                    } else {
+                        englishValue = termFormat;
+                    }
                 }
             }
             englishSlotValues.put(slotNum, englishValue);
@@ -552,25 +583,42 @@ public class GenFromTemplate {
     }
 
     /***************************************************************
-     * Resolves definiteness and collection mode for a slot.
+     * Resolves definiteness, collection mode, and SocialRole for a slot.
      * Collection mode: (instance %?N Collection) + memberType + memberCount.
      * Definite collection constant: UpperCamelCase + "Collection".
      * Definite singular constant:   UpperCamelCase + "Instance".
+     * SocialRole: socialRole field is set to the SUMO term (e.g. "Employee");
+     *   logic uses (instance X Human) + (attribute X Employee) instead of
+     *   (instance X Employee).
      ***************************************************************/
-    private static InstanceValue resolveInstanceValue(Templates.Slot slot, int slotNum, String termFormat) {
+    private static InstanceValue resolveInstanceValue(Templates.Slot slot, int slotNum,
+                                                      String termFormat, String sumoTerm) {
 
         String variableName = (slot.getVariable() != null) ? slot.getVariable() : "?V" + slotNum;
         boolean definite = slot.getDefiniteFreq() > 0.0 && Math.random() < slot.getDefiniteFreq();
         boolean collection = slot.isCountablePossible() && Math.random() < slot.getCountableFreq();
+        String socialRole = kbLite.isInstanceOf(sumoTerm, "SocialRole") ? sumoTerm : null;
         if (collection) {
             int count = sampleGeometric(slot.getCountProbDropoff());
             String name = definite ? toUpperCamelCase(termFormat) + "Collection" : variableName;
-            return new InstanceValue(definite, name, true, count);
+            return new InstanceValue(definite, name, true, count, socialRole, null, null);
+        }
+        // Named-human path: ~named_human_freq% of singular non-SocialRole Human slots.
+        if (socialRole == null
+                && slot.getNamedHumanFreq() > 0.0
+                && lfeatsets != null && lfeatsets.humans != null
+                && kbLite.isSubclass(sumoTerm, "Human")
+                && Math.random() < slot.getNamedHumanFreq()) {
+            String rawName  = lfeatsets.humans.getNext();
+            String constant = rawName.replace(' ', '_');   // SUMO individual constant
+            String gender   = lfeatsets.getSumoGender(rawName);
+            // Named individuals are always pre-existing definite entities (constant, not variable).
+            return new InstanceValue(true, constant, false, 1, null, rawName, gender);
         }
         if (definite) {
-            return new InstanceValue(true, toUpperCamelCase(termFormat) + "Instance", false, 1);
+            return new InstanceValue(true, toUpperCamelCase(termFormat) + "Instance", false, 1, socialRole, null, null);
         }
-        return new InstanceValue(false, variableName, false, 1);
+        return new InstanceValue(false, variableName, false, 1, socialRole, null, null);
     }
 
     /***************************************************************
@@ -625,15 +673,35 @@ public class GenFromTemplate {
                 int slotNum = Integer.parseInt(m.group(1));
                 InstanceValue iv = slotValues.instanceValues.get(slotNum);
                 if (iv != null && iv.collection) {
-                    String sumoClass = slotValues.logicSlotValues.get(slotNum);
-                    List<String> collClauses = List.of(
-                            "(instance " + iv.name + " Collection)",
-                            "(memberType " + iv.name + " " + sumoClass + ")",
-                            "(memberCount " + iv.name + " " + iv.count + ")");
+                    List<String> collClauses;
+                    if (iv.socialRole != null) {
+                        collClauses = Arrays.asList(
+                                "(instance " + iv.name + " Collection)",
+                                "(memberType " + iv.name + " Human)",
+                                "(memberAttribute " + iv.name + " " + iv.socialRole + ")",
+                                "(memberCount " + iv.name + " " + iv.count + ")");
+                    } else {
+                        String sumoClass = slotValues.logicSlotValues.get(slotNum);
+                        collClauses = Arrays.asList(
+                                "(instance " + iv.name + " Collection)",
+                                "(memberType " + iv.name + " " + sumoClass + ")",
+                                "(memberCount " + iv.name + " " + iv.count + ")");
+                    }
                     if (iv.definite) {
                         preExistsClauses.addAll(collClauses);
                     } else {
                         bodyClauses.addAll(collClauses);
+                        existsVars.add(iv.name);
+                    }
+                } else if (iv != null && iv.socialRole != null) {
+                    String instanceClause  = "(instance " + iv.name + " Human)";
+                    String attributeClause = "(attribute " + iv.name + " " + iv.socialRole + ")";
+                    if (iv.definite) {
+                        preExistsClauses.add(instanceClause);
+                        preExistsClauses.add(attributeClause);
+                    } else {
+                        bodyClauses.add(instanceClause);
+                        bodyClauses.add(attributeClause);
                         existsVars.add(iv.name);
                     }
                 } else {
@@ -641,6 +709,12 @@ public class GenFromTemplate {
                     resolved = replaceSlots(resolved, slotValues.logicSlotValues);
                     if (iv != null && iv.definite) {
                         preExistsClauses.add(resolved);
+                        if (iv.humanName != null) {
+                            // Named human: add gender attribute and names predicate as pre-existing facts.
+                            // iv.name is the SUMO constant (e.g. "Mary"); iv.humanName is the raw name.
+                            preExistsClauses.add("(attribute " + iv.name + " " + iv.humanGender + ")");
+                            preExistsClauses.add("(names \"" + iv.humanName + "\" " + iv.name + ")");
+                        }
                     } else {
                         bodyClauses.add(resolved);
                         if (iv != null) existsVars.add(iv.name);
