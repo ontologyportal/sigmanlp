@@ -25,6 +25,7 @@ public final class GenMorphoUtils {
 
     public static boolean debug = false;
     private static final String OUTPUT_ROOT = "MorphologicalDatabase";
+    private static final String MORPHO_DB_ROOT_DIR = "MorphoDB";
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     /***************************************************************
@@ -38,11 +39,69 @@ public final class GenMorphoUtils {
         String normalizedWordType = (wordType == null || wordType.trim().isEmpty())
                 ? "misc"
                 : wordType.trim().toLowerCase();
-        String sanitizedModelName = GenUtils.getOllamaModel()
-                .replace('.', '_')
-                .replace(':', '_');
+        String sanitizedModelName = sanitizeModelName(GenUtils.getMorphoModelDirectoryName());
         Path outputDir = Paths.get(OUTPUT_ROOT, sanitizedModelName, normalizedWordType);
         return outputDir.resolve(classificationFileName).toString();
+    }
+
+    /***************************************************************
+     * Returns the default root for persisted morphology DB snapshots.
+     ***************************************************************/
+    public static Path getDefaultMorphoDbRoot() {
+
+        return Paths.get(System.getProperty("user.home"), ".sigmanlp", MORPHO_DB_ROOT_DIR);
+    }
+
+    /***************************************************************
+     * Normalizes model naming for filesystem paths.
+     ***************************************************************/
+    public static String sanitizeModelName(String modelName) {
+
+        if (modelName == null || modelName.trim().isEmpty()) {
+            return "unknown_model";
+        }
+        return modelName.trim()
+                .replace('.', '_')
+                .replace(':', '_');
+    }
+
+    /***************************************************************
+     * Computes a morphology DB file path for a specific model folder.
+     ***************************************************************/
+    public static String computeModelOutputFilePath(String modelDirectoryName,
+                                                    String wordType,
+                                                    String classificationFileName) {
+
+        if (classificationFileName == null || classificationFileName.trim().isEmpty()) {
+            throw new IllegalArgumentException("classificationFileName cannot be null or empty.");
+        }
+        String normalizedWordType = (wordType == null || wordType.trim().isEmpty())
+                ? "misc"
+                : wordType.trim().toLowerCase();
+        String sanitizedModelName = sanitizeModelName(modelDirectoryName);
+        Path outputDir = getDefaultMorphoDbRoot().resolve(sanitizedModelName).resolve(normalizedWordType);
+        return outputDir.resolve(classificationFileName).toString();
+    }
+
+    /***************************************************************
+     * Expands leading "~" in filesystem paths to user.home.
+     ***************************************************************/
+    public static Path expandHomePath(String path) {
+
+        if (path == null) {
+            return Paths.get("");
+        }
+        String trimmed = path.trim();
+        if (trimmed.startsWith("~")) {
+            String home = System.getProperty("user.home");
+            if ("~".equals(trimmed)) {
+                return Paths.get(home);
+            }
+            if (trimmed.startsWith("~/")) {
+                return Paths.get(home + trimmed.substring(1));
+            }
+        }
+        return Paths.get(trimmed);
     }
 
     /***************************************************************
@@ -298,6 +357,33 @@ public final class GenMorphoUtils {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Unable to serialize JSON.", e);
         }
+    }
+
+    /***************************************************************
+     * Appends strict low-token output instructions when cheap-prompt mode is enabled.
+     ***************************************************************/
+    public static String applyCheapPromptDirective(String prompt, List<String> jsonFields) {
+
+        if (prompt == null || !GenUtils.isCheapPromptMode()) {
+            return prompt;
+        }
+        String fields = "";
+        if (jsonFields != null && !jsonFields.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < jsonFields.size(); i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+                builder.append(jsonFields.get(i));
+            }
+            fields = builder.toString();
+        }
+        return prompt +
+                "\n\nCHEAP PROMPT MODE:\n" +
+                "- Return JSON only.\n" +
+                "- Include only these fields: " + fields + ".\n" +
+                "- Do not include explanation or usage unless explicitly listed.\n" +
+                "- Keep each value concise.";
     }
 
     private static ObjectNode parseJsonObjectLine(String serializedLine) {

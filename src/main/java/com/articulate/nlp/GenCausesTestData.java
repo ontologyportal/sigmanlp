@@ -385,7 +385,7 @@ public class GenCausesTestData {
         for (String process : processes) {
             if (debug) System.out.println("Process in add article: " + process);
             char firstChar = Character.toLowerCase(process.charAt(0));
-            if (GenSimpTestData.biasedBoolean(1, 2)) {
+            if (GenUtils.biasedBoolean(1, 2)) {
                 sentence = sentence.replace(process, "the " + process);
             }
             else {
@@ -501,10 +501,10 @@ public class GenCausesTestData {
                 randomSumoProcessEnglish = addSpaceBeforeCapitals((randomSumoProcess));
             }
             if (debug) System.out.println("Random SUMO Process: " + randomSumoProcess);
-            boolean negation = GenSimpTestData.biasedBoolean(1, 2);
-            boolean SUMOProcessFirst = GenSimpTestData.biasedBoolean(1, 2);
-            boolean generateQuestionTermCauses = GenSimpTestData.biasedBoolean(1, 15);
-            boolean generateQuestionTermCausesTerm = GenSimpTestData.biasedBoolean(1, 15);
+            boolean negation = GenUtils.biasedBoolean(1, 2);
+            boolean SUMOProcessFirst = GenUtils.biasedBoolean(1, 2);
+            boolean generateQuestionTermCauses = GenUtils.biasedBoolean(1, 15);
+            boolean generateQuestionTermCausesTerm = GenUtils.biasedBoolean(1, 15);
 
             if (generateQuestionTermCauses && sentenceGeneratedCounter < numToGenerate+2) {
                 generateQuestionTermCauses(negation, SUMOProcessFirst, randomSumoProcess, randomSumoProcessEnglish);
@@ -523,7 +523,7 @@ public class GenCausesTestData {
                 String resultProcessLog = (SUMOProcessFirst) ? responseInSumo : randomSumoProcess;
                 if (debug) System.out.println("Causing Process: " + causingProcess);
                 if (debug) System.out.println("Result  Process: " + resultProcess);
-                if (GenSimpTestData.biasedBoolean(1, 2)) {
+                if (GenUtils.biasedBoolean(1, 2)) {
                     int randomIndex = random.nextInt(phrasesCauses.length);
                     String causePhrase = negation ? phrasesNotCauses[randomIndex] : phrasesCauses[randomIndex] ;
                     englishSentence = causingProcess + causePhrase + resultProcess + ".";
@@ -546,7 +546,7 @@ public class GenCausesTestData {
 
                 // Form question of form "Is it true that <TERM> <DOES NOT> cause<S> <RESULT>?" or "Does <TERM> <NOT> cause <RESULT>?"
                 if (generateQuestionTermCausesTerm && sentenceGeneratedCounter < numToGenerate) {
-                    if (GenSimpTestData.biasedBoolean(1, 2)) {
+                    if (GenUtils.biasedBoolean(1, 2)) {
                         int randomIndex = random.nextInt(phrasesQuestionTermCausesTerm.length);
                         englishSentenceQuestion = phrasesQuestionTermCausesTerm[randomIndex];
                     }

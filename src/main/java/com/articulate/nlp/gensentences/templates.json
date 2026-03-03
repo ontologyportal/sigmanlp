@@ -1,0 +1,154 @@
+/*
+  templates.json — Templates for synthetic English/logic sentence generation.
+  Processed by GenFromTemplate.java.
+
+  ─────────────────────────────────────────────────────────────────────────────
+  GLOBAL DEFAULTS  (default_settings)
+  ─────────────────────────────────────────────────────────────────────────────
+  All fields in default_settings can be overridden per template.
+
+    modal.on          — enable modal wrapping (true/false)
+    modal.freq        — probability [0,1] that a sentence gets a modal prefix
+    modal.neg_freq    — probability [0,1] that a modal is negated in logic
+    modal.values      — list of {sumo_term, text, weight} modal choices
+    tense.on          — enable tense variants (true/false)
+    tense.none/past/present/future — relative sampling weights for each tense
+    count_prob_dropoff — geometric decay p for collection size sampling (P(k) = (1-p)^(k-2)*p)
+    named_human_freq  — probability [0,1] that a Human-typed instance slot renders as a named
+                        individual (e.g. "Mary") rather than a generic term; can be overridden
+                        per slot with "named_human_freq"; default 0.0 (disabled)
+    num_to_gen        — default number of sentences to generate per template
+    question_freq     — probability [0,1] that a sentence is rendered as a question
+
+  ─────────────────────────────────────────────────────────────────────────────
+  SLOT NOTATION  (in frame strings and logic clauses)
+  ─────────────────────────────────────────────────────────────────────────────
+    %<n>              — English surface value for slot n (e.g. "a chair", "adjacent to")
+    %v<n>             — Conjugated verb phrase for verb slot n (e.g. "is", "was not")
+    %?<n>             — KIF variable or named constant for slot n (e.g. "?A1", "ChairInstance")
+    %n{...}           — Negation marker: content included only when the verb is negated
+    %t{...}           — Tense marker: content wrapped in holdsDuring/before/etc. when tense != NONE
+
+  ─────────────────────────────────────────────────────────────────────────────
+  SLOT TYPES  (%<n> slot definitions)
+  ─────────────────────────────────────────────────────────────────────────────
+    type: "subclass"    — samples a random subclass of the given SUMO term
+    type: "instance"    — samples a random instance of the given SUMO term;
+                          tracks a KIF variable or named constant (%?<n>)
+    type: "positional"  — samples a SUMO PositionalAttribute instance;
+                          automatically appends the dependent preposition
+                          (e.g. "adjacent" → "adjacent to", "on" → "on")
+                          No countable, variable, or definite_freq needed.
+
+  SLOT OPTIONS  (for "subclass" and "instance" types)
+    sumo_terms        — weighted list of {name, weight} SUMO classes to draw from
+    variable          — optional fixed KIF variable name (e.g. "?A1");
+                        also triggers article generation for the English value
+    definite_freq     — probability [0,1] of using "the" vs. indefinite article;
+                        0.0 = always indefinite, 1.0 = always definite
+    countable.possible — whether collection mode is possible (true/false)
+    countable.freq     — probability [0,1] of generating a collection when possible
+    countable.count_prob_dropoff — per-slot override of the geometric decay p
+    named_human_freq  — per-slot override of the global named_human_freq
+    exclude           — optional list of SUMO term names to remove from the candidate pool
+                        for this slot (e.g. ["Vertical","Horizontal"]); a warning is printed
+                        if an excluded term is not found among the candidates
+
+  ─────────────────────────────────────────────────────────────────────────────
+  VERB SLOT OPTIONS  (%v<n> slot definitions)
+  ─────────────────────────────────────────────────────────────────────────────
+    verbs             — weighted list of {lemma, weight} verb lemmas
+    negation          — "on" or "off" to enable verb negation
+    neg_freq          — probability [0,1] that the verb is negated
+
+  ─────────────────────────────────────────────────────────────────────────────
+  LOGIC CLAUSES
+  ─────────────────────────────────────────────────────────────────────────────
+  The logic section contains a list of KIF clauses that are assembled into a
+  (exists (...) (and ...)) expression.  Clauses of the form (instance %?<n> %<n>)
+  are handled specially: for collection slots they expand into three clauses
+  (instance ... Collection), (memberType ...), (memberCount ...).
+  Definite slots emit their instance assertion outside any modal wrapper.
+*/
+{
+  "default_settings":{
+      "modal":{
+        "on":true,
+        "freq":0.1,
+        "neg_freq":0.2,
+        "values":[
+          {"sumo_term":"Necessity",   "text":"it is %n{not} necessary that ",   "weight":1},
+          {"sumo_term":"Possibility", "text":"it is %n{not} possible that ",    "weight":1},
+          {"sumo_term":"Obligation",  "text":"it is %n{not} obligatory that ",  "weight":1},
+          {"sumo_term":"Permission",  "text":"it is %n{not} permitted that ",   "weight":1},
+          {"sumo_term":"Prohibition", "text":"it is %n{not} prohibited that ",  "weight":1},
+          {"sumo_term":"Likely",      "text":"it is %n{not} likely that ",      "weight":1},
+          {"sumo_term":"Unlikely",    "text":"it is %n{not} unlikely that ",    "weight":1}
+        ]
+      },
+      "tense":{
+        "on":true,
+        "none":10, // none means tense is not encoded in logic and default tense is used in the sentence.
+        "past":1,
+        "present":1,
+        "future":1
+      },
+      "count_prob_dropoff":0.5,
+      "named_human_freq":1.0,
+      "num_to_gen":100,
+      "question_freq":0.1
+  },
+  "templates":[
+    {
+      "name":"Orientation",
+      "num_to_gen":200,
+      "english":{
+        "example":"The book is on the table.",
+        "frame":{
+            "tense_none":["%1 %v1 %2 %3.",
+                          "%1 %v1 situated %2 %3.",
+                          "%1 %v1 located %2 %3."]
+        },
+        "frame_question":{
+            "tense_none":["%v1 %1 %2 %3?"],
+            "tense_future":["Will %1 %v1 %2 %3?"]
+        },
+        "%1":{
+            "variable":"?A1",
+            "definite_freq":0.5,
+            "sumo_terms":[{"name":"Artifact","weight":5},
+                          {"name":"AnatomicalStructure","weight":5},
+                          {"name":"Human","weight":100},
+                          {"name":"SocialRole","weight":5},
+                          {"name":"Animal","weight":5}],
+            "type":"subclass",
+            "countable":{"possible":true, "freq":0.5}
+        },
+        "%2":{
+            "sumo_terms":[{"name":"PositionalAttribute","weight":1}],
+            "type":"positional",
+            "exclude":["Vertical","Horizontal"]
+        },
+        "%3":{
+            "variable":"?O2",
+            "definite_freq":0.5,
+            "sumo_terms":[{"name":"Object","weight":1}],
+            "type":"subclass",
+            "countable":{"possible":true, "freq":0.5}
+        },
+        "%v1":{
+            "negation":"on",
+            "neg_freq":0.5,
+            "verbs":[{"lemma":"be","weight":1}]
+        },
+        "logic":{
+            "clauses":[
+                "(instance %?1 %1)",
+                "(instance %?3 %3)",
+                "%t{%n{(not }(orientation %?1 %?3 %2)%n{)}}"
+            ]
+        }
+      }
+    }
+  ]
+}

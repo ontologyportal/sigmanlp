@@ -38,15 +38,6 @@ public class GenAdjectiveMorphoDB {
     }
 
     /***************************************************************
-     * Loads adjective semantic classifications into memory.
-     ***************************************************************/
-    public static Map<String, List<ObjectNode>> loadAdjectiveClasses() {
-
-        String adjectiveFileName = GenMorphoUtils.computeOutputFilePath("adjective", "AdjectiveSemanticClasses.txt");
-        return GenMorphoUtils.loadClassificationObjects(adjectiveFileName);
-    }
-
-    /***************************************************************
      * Uses OLLAMA to classify adjectives by function.
      ***************************************************************/
     private void genAdjectiveClasses() {
@@ -70,6 +61,7 @@ public class GenAdjectiveMorphoDB {
                 }
                 String definitionStatement = (definition == null) ? "" :
                         "Definition: \"" + adjectiveDocumentationHash.get(synsetId) + "\". ";
+                boolean cheapPrompt = GenUtils.isCheapPromptMode();
                 String prompt = "You are an expert lexicographer specializing in English adjective classes. " +
                         "Assign the adjective to exactly one category from the list below.\n\n" +
                         "Categories:\n" +
@@ -88,24 +80,31 @@ public class GenAdjectiveMorphoDB {
                         "Instructions:\n" +
                         " - Consider the adjective's default dictionary sense.\n" +
                         " - If it has multiple functions, choose the most canonical or cite the primary role in standard usage.\n" +
-                        " - Output valid JSON only, with fields adjective, category, explanation, usage.\n" +
+                        " - Output valid JSON only, with fields adjective, category" +
+                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
                         " - \"category\" must match one of the ten category names above exactly.\n" +
-                        " - Provide a short explanation mentioning the key semantic cue.\n" +
-                        " - Provide a single usage sentence illustrating the classification.\n\n" +
+                        (cheapPrompt ? "" :
+                                " - Provide a short explanation mentioning the key semantic cue.\n" +
+                                " - Provide a single usage sentence illustrating the classification.\n") +
+                        "\n" +
                         "JSON schema:\n" +
                         "{\n" +
                         "  \"adjective\": \"<adjective>\",\n" +
-                        "  \"category\": \"<one of the ten categories>\",\n" +
-                        "  \"explanation\": \"<short rationale>\",\n" +
-                        "  \"usage\": \"<example sentence>\"\n" +
+                        "  \"category\": \"<one of the ten categories>\"" +
+                        (cheapPrompt
+                                ? "\n"
+                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n") +
                         "}";
+                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("adjective", "category"));
                 if (GenMorphoUtils.debug) {
                     System.out.println("GenAdjectiveMorphoDB.genAdjectiveSemanticClasses() Prompt: " + prompt);
                 }
-                String llmResponse = GenUtils.askOllama(prompt);
+                String llmResponse = GenUtils.askLLM(prompt);
                 boolean errorInResponse = true;
                 ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        Arrays.asList("adjective", "category", "explanation", "usage"));
+                        cheapPrompt
+                                ? Arrays.asList("adjective", "category")
+                                : Arrays.asList("adjective", "category", "explanation", "usage"));
                 if (responseNode != null) {
                     errorInResponse = false;
                     responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);

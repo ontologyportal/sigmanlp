@@ -439,6 +439,16 @@ public class LFeatureSets {
     }
 
     /***************************************************************
+     * Returns the SUMO gender attribute term for the given first name:
+     * "Female" if the name's gender code is "F", otherwise "Male".
+     ***************************************************************/
+    public String getSumoGender(String name) {
+
+        String g = genders.get(name);
+        return "F".equalsIgnoreCase(g) ? "Female" : "Male";
+    }
+
+    /***************************************************************
      * add UNK words to the list of objects
      */
     public void addUnknownsObjects(Collection<AVPair> objFreqs) {

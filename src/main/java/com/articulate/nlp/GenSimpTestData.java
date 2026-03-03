@@ -83,7 +83,7 @@ public class GenSimpTestData {
 
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-        initGSTD();
+        lfeatsets = GenUtils.initLFeatureSets(kbLite, suppress);
     }
 
     public GenSimpTestData(boolean useKBLite) {
@@ -96,21 +96,7 @@ public class GenSimpTestData {
             KBmanager.getMgr().initializeOnce();
             kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         }
-        initGSTD();
-    }
-
-    private void initGSTD() {
-
-        suppress.add("modal");
-        suppress.add("attitude");
-        lfeatsets = new LFeatureSets(kbLite);
-        lfeatsets.initNumbers();
-        lfeatsets.initRequests();
-        lfeatsets.initAttitudes(suppress.contains("attitude"));
-        lfeatsets.initOthers();
-        lfeatsets.initPrepPhrase();
-        lfeatsets.initEndings();
-        lfeatsets.genProcTable();
+        lfeatsets = GenUtils.initLFeatureSets(kbLite, suppress);
     }
     
 
@@ -577,7 +563,7 @@ public class GenSimpTestData {
                 return "some " + word;
         }
         String number = "";
-        if (biasedBoolean(1,5) && kbLite.isSubclass(term,"CorpuscularObject")) { // occasionally make this a plural or count
+        if (GenUtils.biasedBoolean(1,5) && kbLite.isSubclass(term,"CorpuscularObject")) { // occasionally make this a plural or count
             int index = rand.nextInt(lfeatsets.numbers.size());  // how many of the object
             avp.value = Integer.toString(index);
             if (rand.nextBoolean())
@@ -641,17 +627,6 @@ public class GenSimpTestData {
     }
 
     /** ***************************************************************
-     * Generate a boolean true value randomly num out of max times.
-     * So biasedBoolean(8,10) generates a true most of the time
-     * (8 out of 10 times on average)
-     */
-    public static boolean biasedBoolean(int num, int max) {
-
-        int val = rand.nextInt(max);
-        return val < num;
-    }
-
-    /** ***************************************************************
      * Add SUMO content about a plural noun
      */
     private void addBodyPart(LFeatures lfeat) {
@@ -671,7 +646,7 @@ public class GenSimpTestData {
 
         StringBuilder type = new StringBuilder();
         StringBuilder name = new StringBuilder();
-        if (biasedBoolean(1,5) ) { // It's a question.
+        if (GenUtils.biasedBoolean(1,5) ) { // It's a question.
             lfeat.subj = "Who";
             lfeat.subjName = "";
             lfeat.question = true;
@@ -688,10 +663,10 @@ public class GenSimpTestData {
             lfeat.subjName = name.toString();
         }
         if (lfeat.subj.equals("You")) {
-            if (biasedBoolean(1,5)) {
+            if (GenUtils.biasedBoolean(1,5)) {
                 lfeat.addPleaseToSubj = true;
             }
-            else if (biasedBoolean(1,5)) {
+            else if (GenUtils.biasedBoolean(1,5)) {
                 lfeat.addShouldToSubj = true;
             }
         }
@@ -725,7 +700,7 @@ public class GenSimpTestData {
      */
     public void generateThingSubject(LFeatures lfeat) {
 
-        if (biasedBoolean(4,5) && !lfeat.isModalAttitudeOrPolitefirst()) {
+        if (GenUtils.biasedBoolean(4,5) && !lfeat.isModalAttitudeOrPolitefirst()) {
             lfeat.subj = "what";
             lfeat.question = true;
         }
@@ -849,7 +824,7 @@ public class GenSimpTestData {
     }
 
 
-    /** ***************************************************************
+    /** ***********************************************************************
      * Get a person or thing.  Fill in directName, directtype, preposition
      * as a side effect in lfeat
      */
@@ -1290,8 +1265,8 @@ public class GenSimpTestData {
         dateOptions.add("d MMM uuuu"); dateOptions.add("dd-MM-yyyy"); dateOptions.add("EEE, d MMM yyyy");
         dateOptions.add(getFormattedDate(d));
         String dateOption = dateOptions.get(rand.nextInt(dateOptions.size()));
-        lfeat.hastime = biasedBoolean(2,5); // sometimes add a time
-        lfeat.hasdate = !lfeat.hastime && biasedBoolean(2,5); // sometimes add a date
+        lfeat.hastime = GenUtils.biasedBoolean(2,5); // sometimes add a time
+        lfeat.hasdate = !lfeat.hastime && GenUtils.biasedBoolean(2,5); // sometimes add a date
         lfeat.hasdatetime = !lfeat.hastime && !lfeat.hasdate; // sometimes add both
         if (lfeat.hastime) {
             lfeat.timeEng = "at " + t.format(DateTimeFormatter.ofPattern("ha"));
@@ -1372,9 +1347,9 @@ public class GenSimpTestData {
             getFrame(lfeat);  // Get a verb frame from WordNet
             if (lfeat.framePart != null) { // An optimization would be to remove all the verbs that have null frameParts from lfeatset.
                 getPrepFromFrame(lfeat);
-                lfeat.negatedBody = biasedBoolean(2,10);  // make it negated one time out of 5
+                lfeat.negatedBody = GenUtils.biasedBoolean(2,10);  // make it negated one time out of 5
                 // lfeat.indirectType = gws.getNoun(GenWordSelector.PoS.INDIRECT, lfeatsets, lfeat, kbLite, "");
-                if (biasedBoolean(1,10) && !lfeat.isModalAttitudeOrPolitefirst()) {
+                if (GenUtils.biasedBoolean(1,10) && !lfeat.isModalAttitudeOrPolitefirst()) {
                     lfeat.hasdateORtime = true;
                     addTimeDate(lfeat);
                 }
@@ -1495,7 +1470,7 @@ public class GenSimpTestData {
         if (debug) System.out.println("GenSimpTestData.genWithModals() start");
         AVPair modal = lfeatsets.modals.get(rand.nextInt(lfeatsets.modals.size()));
         lfeat.modal = modal;
-        lfeat.negatedModal = biasedBoolean(2,10); // make it negated one time out of 5
+        lfeat.negatedModal = GenUtils.biasedBoolean(2,10); // make it negated one time out of 5
         if (debug) System.out.println("genWithModals(): " + modal);
     }
 
