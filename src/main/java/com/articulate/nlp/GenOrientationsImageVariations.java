@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.File;
 import java.util.*;
+
+import javax.mail.Multipart;
+
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.images.ImageGenerateParams;
@@ -147,14 +150,9 @@ public class GenOrientationsImageVariations {
                 .build();
         // Load input image
         Path imagePath = Paths.get(ImageLocation);
-        ImageEditParams imageEditParams;
-        try (InputStream imageStream = new FileInputStream(ImageLocation)) {
-            imageEditParams = ImageEditParams.builder()
-                    .model(deploymentName)
-                    .prompt(prompt)
-                    .image(imageStream)
-                    .n(1)
-                    .build();
+        System.out.println(imagePath.toString());
+
+
 
             client.images().edit(imageEditParams)
             .data()
@@ -168,10 +166,7 @@ public class GenOrientationsImageVariations {
                     e.printStackTrace();
                 }
             });
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+
         // ImageEditParams imageEditParams = ImageEditParams.builder()
         //         .model(deploymentName)
         //         .prompt(prompt)
