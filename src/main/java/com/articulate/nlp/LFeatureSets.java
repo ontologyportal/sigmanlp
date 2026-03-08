@@ -445,7 +445,9 @@ public class LFeatureSets {
     public String getSumoGender(String name) {
 
         String g = genders.get(name);
-        return "F".equalsIgnoreCase(g) ? "Female" : "Male";
+        if ("F".equalsIgnoreCase(g)) return "Female";
+        if ("M".equalsIgnoreCase(g)) return "Male";
+        return null;  // unknown gender (e.g. UNK_PERSON_*)
     }
 
     /***************************************************************
@@ -487,7 +489,7 @@ public class LFeatureSets {
 
         for (int i = 1; i <= 3; i++) {
             humans.put("UNK_ORG_" + i,"N");
-            humans.put("UNK_PERSON_" + i,"M");
+            humans.put("UNK_PERSON_" + i,"U");
         }
     }
 

@@ -46,7 +46,8 @@ public class NounMorphoDB {
         Map<String, String> index = new HashMap<>();
         for (List<ObjectNode> nodes : indefiniteArticles.values()) {
             for (ObjectNode node : nodes) {
-                String noun = node.path("noun").asText("").trim().toLowerCase();
+                String noun = node.path("lemma").asText("").trim().toLowerCase();
+                if (noun.isEmpty()) noun = node.path("noun").asText("").trim().toLowerCase();
                 String article = node.path("article").asText("").trim().toLowerCase();
                 if (!noun.isEmpty() && ("a".equals(article) || "an".equals(article))) {
                     index.putIfAbsent(noun, article);
@@ -77,7 +78,8 @@ public class NounMorphoDB {
         Map<String, String> index = new HashMap<>();
         for (List<ObjectNode> nodes : plurals.values()) {
             for (ObjectNode node : nodes) {
-                String singular = node.path("singular").asText("").trim().toLowerCase();
+                String singular = node.path("lemma").asText("").trim().toLowerCase();
+                if (singular.isEmpty()) singular = node.path("singular").asText("").trim().toLowerCase();
                 String plural = node.path("plural").asText("").trim();
                 if (!singular.isEmpty() && !plural.isEmpty() && !"none".equalsIgnoreCase(plural)) {
                     index.putIfAbsent(singular, plural);

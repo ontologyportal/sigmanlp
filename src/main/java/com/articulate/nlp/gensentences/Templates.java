@@ -45,19 +45,6 @@ public class Templates {
             return frames == null || frames.isEmpty();
         }
 
-        public String getFirstAvailable() {
-            if (frames == null || frames.isEmpty()) {
-                return "";
-            }
-            for (Tense tense : Tense.values()) {
-                String value = get(tense);
-                if (value != null) {
-                    return value;
-                }
-            }
-            return "";
-        }
-
         @Override
         public String toString() {
             return String.valueOf(frames);
@@ -99,7 +86,6 @@ public class Templates {
         private final double modalFreq;
         private final double modalNegFreq;
         private final double questionFreq;
-        private final double negFreq;
         private final int numToGen;
         private final boolean modalOn;
         private final boolean questionOn;
@@ -119,7 +105,6 @@ public class Templates {
                         double modalFreq,
                         double modalNegFreq,
                         double questionFreq,
-                        double negFreq,
                         int numToGen,
                         boolean modalOn,
                         boolean questionOn,
@@ -138,7 +123,6 @@ public class Templates {
             this.modalFreq = modalFreq;
             this.modalNegFreq = modalNegFreq;
             this.questionFreq = questionFreq;
-            this.negFreq = negFreq;
             this.numToGen = numToGen;
             this.modalOn = modalOn;
             this.questionOn = questionOn;
@@ -196,13 +180,6 @@ public class Templates {
         }
 
         /***************************************************************
-         * Returns the general negation frequency for this template.
-         ***************************************************************/
-        public double getNegFreq() {
-            return negFreq;
-        }
-
-        /***************************************************************
          * Returns the number of sentences to generate for this template.
          ***************************************************************/
         public int getNumToGen() {
@@ -257,7 +234,6 @@ public class Templates {
             builder.append(", modalFreq=").append(modalFreq);
             builder.append(", modalNegFreq=").append(modalNegFreq);
             builder.append(", questionFreq=").append(questionFreq);
-            builder.append(", negFreq=").append(negFreq);
             builder.append(", numToGen=").append(numToGen);
             builder.append(", modalOn=").append(modalOn);
             builder.append(", questionOn=").append(questionOn);
@@ -359,11 +335,14 @@ public class Templates {
         private final double countProbDropoff;
         private final double namedHumanFreq;
         private final List<String> exclude;
+        private final double listFreq;
+        private final double listProbDropoff;
 
         public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type,
                     boolean countablePossible, double countableFreq,
                     String variable, double definiteFreq, double countProbDropoff,
-                    double namedHumanFreq, List<String> exclude) {
+                    double namedHumanFreq, List<String> exclude,
+                    double listFreq, double listProbDropoff) {
             this.sumoTerms = sumoTerms;
             this.type = type;
             this.countablePossible = countablePossible;
@@ -373,6 +352,8 @@ public class Templates {
             this.countProbDropoff = countProbDropoff;
             this.namedHumanFreq = namedHumanFreq;
             this.exclude = exclude;
+            this.listFreq = listFreq;
+            this.listProbDropoff = listProbDropoff;
         }
 
         public List<WeightedSumoTerm> getSumoTerms() {
@@ -413,6 +394,14 @@ public class Templates {
 
         public List<String> getExclude() {
             return exclude;
+        }
+
+        public double getListFreq() {
+            return listFreq;
+        }
+
+        public double getListProbDropoff() {
+            return listProbDropoff;
         }
 
     }
@@ -519,7 +508,6 @@ public class Templates {
     private final double defaultModalFreq;
     private final double defaultModalNegFreq;
     private final double defaultQuestionFreq;
-    private final double defaultNegFreq;
     private final int defaultNumToGen;
     private final boolean defaultModalOn;
     private final boolean defaultQuestionOn;
@@ -530,12 +518,14 @@ public class Templates {
     private final int defaultTenseFutureWeight;
     private final List<WeightedModal> defaultModalValues;
     private final List<Template> templates;
+    private final String morphoDbPath;
+    private final boolean queryMissingWords;
+    private final String morphoDbModel;
     private int nextIndex;
 
     private Templates(double defaultModalFreq,
                       double defaultModalNegFreq,
                       double defaultQuestionFreq,
-                      double defaultNegFreq,
                       int defaultNumToGen,
                       boolean defaultModalOn,
                       boolean defaultQuestionOn,
@@ -545,11 +535,13 @@ public class Templates {
                       int defaultTensePresentWeight,
                       int defaultTenseFutureWeight,
                       List<WeightedModal> defaultModalValues,
-                      List<Template> templates) {
+                      List<Template> templates,
+                      String morphoDbPath,
+                      boolean queryMissingWords,
+                      String morphoDbModel) {
         this.defaultModalFreq = defaultModalFreq;
         this.defaultModalNegFreq = defaultModalNegFreq;
         this.defaultQuestionFreq = defaultQuestionFreq;
-        this.defaultNegFreq = defaultNegFreq;
         this.defaultNumToGen = defaultNumToGen;
         this.defaultModalOn = defaultModalOn;
         this.defaultQuestionOn = defaultQuestionOn;
@@ -560,7 +552,22 @@ public class Templates {
         this.defaultTenseFutureWeight = defaultTenseFutureWeight;
         this.defaultModalValues = defaultModalValues != null ? defaultModalValues : new ArrayList<>();
         this.templates = templates;
+        this.morphoDbPath = morphoDbPath;
+        this.queryMissingWords = queryMissingWords;
+        this.morphoDbModel = morphoDbModel;
         this.nextIndex = 0;
+    }
+
+    public String getMorphoDbPath() {
+        return morphoDbPath;
+    }
+
+    public boolean isQueryMissingWords() {
+        return queryMissingWords;
+    }
+
+    public String getMorphoDbModel() {
+        return morphoDbModel;
     }
 
     /***************************************************************
@@ -574,7 +581,6 @@ public class Templates {
         double modalFreq = modal.path("freq").asDouble();
         double modalNegFreq = modal.path("neg_freq").asDouble();
         double questionFreq = defaults.path("question_freq").asDouble();
-        double negFreq = defaults.path("neg_freq").asDouble();
         int numToGen = defaults.path("num_to_gen").asInt();
         boolean modalOn = modal.path("on").asBoolean();
         boolean questionOn = defaults.path("question_on").asBoolean(true);
@@ -585,15 +591,23 @@ public class Templates {
         int tenseFutureWeight = tense.path("future").asInt(0);
         List<WeightedModal> defaultModalValues = parseModalValues(modal);
         double defaultCountProbDropoff = defaults.path("count_prob_dropoff").asDouble(0.5);
+        if (defaultCountProbDropoff <= 0.0 || defaultCountProbDropoff > 1.0) {
+            System.err.println("default_settings count_prob_dropoff " + defaultCountProbDropoff + " must be in (0,1].");
+            System.exit(1);
+        }
         double defaultNamedHumanFreq = defaults.path("named_human_freq").asDouble(0.0);
+        JsonNode morphoDbNode = root.path("resources").path("morpho_db");
+        String morphoDbPath       = readOptionalString(morphoDbNode, "path");
+        boolean queryMissingWords = Boolean.TRUE.equals(readOptionalBoolean(morphoDbNode, "query_missing_words"));
+        String morphoDbModel      = readOptionalString(morphoDbNode, "model");
         List<Template> templates = loadTemplates(root, modalFreq, modalNegFreq,
-                questionFreq, negFreq, numToGen, modalOn, questionOn, tenseOn,
+                questionFreq, numToGen, modalOn, questionOn, tenseOn,
                 tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
                 defaultModalValues, defaultCountProbDropoff, defaultNamedHumanFreq);
-        return new Templates(modalFreq, modalNegFreq, questionFreq, negFreq, numToGen,
+        return new Templates(modalFreq, modalNegFreq, questionFreq, numToGen,
                 modalOn, questionOn, tenseOn,
                 tenseNoneWeight, tensePastWeight, tensePresentWeight, tenseFutureWeight,
-                defaultModalValues, templates);
+                defaultModalValues, templates, morphoDbPath, queryMissingWords, morphoDbModel);
     }
 
     /***************************************************************
@@ -636,7 +650,6 @@ public class Templates {
                                                 double defaultModalFreq,
                                                 double defaultModalNegFreq,
                                                 double defaultQuestionFreq,
-                                                double defaultNegFreq,
                                                 int defaultNumToGen,
                                                 boolean defaultModalOn,
                                                 boolean defaultQuestionOn,
@@ -649,6 +662,10 @@ public class Templates {
                                                 double defaultCountProbDropoff,
                                                 double defaultNamedHumanFreq) {
         JsonNode templateNodes = root.path("templates");
+        if (!templateNodes.isArray()) {
+            System.err.println("templates.json is missing or has an invalid 'templates' array.");
+            System.exit(1);
+        }
         List<Template> templates = new ArrayList<>(templateNodes.size());
         for (JsonNode templateNode : templateNodes) {
             String name = templateNode.path("name").asText();
@@ -661,7 +678,6 @@ public class Templates {
             Double modalFreq = readOptionalDouble(templateNode, "modal", "freq");
             Double modalNegFreq = readOptionalDouble(templateNode, "modal", "neg_freq");
             Double questionFreq = readOptionalDouble(templateNode, "question_freq");
-            Double negFreq = readOptionalDouble(templateNode, "neg_freq");
             Integer numToGen = readOptionalInt(templateNode, "num_to_gen");
             Boolean modalOn = readOptionalBoolean(templateNode, "modal", "on");
             Boolean questionOn = readOptionalBoolean(templateNode, "question_on");
@@ -676,7 +692,6 @@ public class Templates {
                     modalFreq != null ? modalFreq : defaultModalFreq,
                     modalNegFreq != null ? modalNegFreq : defaultModalNegFreq,
                     questionFreq != null ? questionFreq : defaultQuestionFreq,
-                    negFreq != null ? negFreq : defaultNegFreq,
                     numToGen != null ? numToGen : defaultNumToGen,
                     modalOn != null ? modalOn : defaultModalOn,
                     questionOn != null ? questionOn : defaultQuestionOn,
@@ -770,12 +785,15 @@ public class Templates {
                 maxIndex = index;
             }
         }
+        for (int i = 1; i <= maxIndex; i++) {
+            if (!slotMap.containsKey(i)) {
+                System.err.println("Template '" + templateName + "' has non-contiguous slot indices: missing %" + i + ".");
+                System.exit(1);
+            }
+        }
         Slot[] slots = new Slot[maxIndex];
         for (Map.Entry<Integer, Slot> entry : slotMap.entrySet()) {
-            int index = entry.getKey();
-            if (index >= 1 && index <= maxIndex) {
-                slots[index - 1] = entry.getValue();
-            }
+            slots[entry.getKey() - 1] = entry.getValue();
         }
         return slots;
     }
@@ -804,12 +822,15 @@ public class Templates {
                 maxIndex = index;
             }
         }
+        for (int i = 1; i <= maxIndex; i++) {
+            if (!slotMap.containsKey(i)) {
+                System.err.println("Template '" + templateName + "' has non-contiguous verb slot indices: missing %v" + i + ".");
+                System.exit(1);
+            }
+        }
         VerbSlot[] slots = new VerbSlot[maxIndex];
         for (Map.Entry<Integer, VerbSlot> entry : slotMap.entrySet()) {
-            int index = entry.getKey();
-            if (index >= 1 && index <= maxIndex) {
-                slots[index - 1] = entry.getValue();
-            }
+            slots[entry.getKey() - 1] = entry.getValue();
         }
         return slots;
     }
@@ -859,11 +880,11 @@ public class Templates {
         JsonNode typeNode = slotNode.get("type");
         if (typeNode == null || !typeNode.isTextual()) {
             System.err.println("Template '" + templateName + "', slot " + slotKey
-                    + " is missing required type (\"subclass\" or \"instance\").");
+                    + " is missing required type (\"subclass\", \"instance\", or \"positional\").");
             System.exit(1);
         }
         String typeString = typeNode.asText().trim().toLowerCase();
-        Slot.TermSelectionType type;
+        Slot.TermSelectionType type = Slot.TermSelectionType.INSTANCE;
         if ("subclass".equals(typeString)) {
             type = Slot.TermSelectionType.SUBCLASS;
         }
@@ -877,7 +898,6 @@ public class Templates {
             System.err.println("Template '" + templateName + "', slot " + slotKey
                     + " has invalid type '" + typeNode.asText() + "'. Expected \"subclass\", \"instance\", or \"positional\".");
             System.exit(1);
-            return null;
         }
         // Positional slots don't have countable, variable, definite_freq, or named_human_freq —
         // those concepts don't apply to PositionalAttribute instances (they're not entity instances).
@@ -891,7 +911,7 @@ public class Templates {
                 }
             }
             return new Slot(sumoTerms, type, false, 0.0, null, 0.0, defaultCountProbDropoff, 0.0,
-                    positionalExclude);
+                    positionalExclude, 0.0, defaultCountProbDropoff);
         }
         JsonNode countableNode = slotNode.get("countable");
         if (countableNode == null || !countableNode.isObject()) {
@@ -931,6 +951,22 @@ public class Templates {
         double countProbDropoff = (countableCountProbDropoffNode != null && countableCountProbDropoffNode.isNumber())
                 ? countableCountProbDropoffNode.asDouble()
                 : defaultCountProbDropoff;
+        if (countProbDropoff <= 0.0 || countProbDropoff > 1.0) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " has invalid count_prob_dropoff " + countProbDropoff + "; expected (0,1].");
+            System.exit(1);
+        }
+        JsonNode listFreqNode = countableNode.get("list_freq");
+        double listFreq = (listFreqNode != null && listFreqNode.isNumber())
+                ? listFreqNode.asDouble() : 0.0;
+        JsonNode listProbDropoffNode = countableNode.get("list_prob_dropoff");
+        double listProbDropoff = (listProbDropoffNode != null && listProbDropoffNode.isNumber())
+                ? listProbDropoffNode.asDouble() : defaultCountProbDropoff;
+        if (listProbDropoff <= 0.0 || listProbDropoff > 1.0) {
+            System.err.println("Template '" + templateName + "', slot " + slotKey
+                    + " has invalid list_prob_dropoff " + listProbDropoff + "; expected (0,1].");
+            System.exit(1);
+        }
         JsonNode namedHumanFreqNode = slotNode.get("named_human_freq");
         double namedHumanFreq = (namedHumanFreqNode != null && namedHumanFreqNode.isNumber())
                 ? namedHumanFreqNode.asDouble()
@@ -943,7 +979,7 @@ public class Templates {
             }
         }
         return new Slot(sumoTerms, type, countablePossible, countableFreq, variable, definiteFreq,
-                countProbDropoff, namedHumanFreq, exclude);
+                countProbDropoff, namedHumanFreq, exclude, listFreq, listProbDropoff);
     }
 
     /***************************************************************
@@ -991,7 +1027,7 @@ public class Templates {
             System.exit(1);
         }
         String negationValue = negationNode.asText().trim().toLowerCase();
-        boolean negationOn;
+        boolean negationOn = false;
         if ("on".equals(negationValue)) {
             negationOn = true;
         }
@@ -1002,7 +1038,6 @@ public class Templates {
             System.err.println("Template '" + templateName + "', slot " + slotKey
                     + " has invalid negation value '" + negationNode.asText() + "'. Expected \"on\" or \"off\".");
             System.exit(1);
-            return null;
         }
         if (negFreqNode == null || !negFreqNode.isNumber()) {
             System.err.println("Template '" + templateName + "', slot " + slotKey
@@ -1050,18 +1085,7 @@ public class Templates {
      * Reads a nested double override if present.
      ***************************************************************/
     private static Double readOptionalDouble(JsonNode node, String parentField, String field) {
-        if (node == null || node.isMissingNode() || node.isNull()) {
-            return null;
-        }
-        JsonNode parent = node.get(parentField);
-        if (parent == null || parent.isMissingNode() || parent.isNull()) {
-            return null;
-        }
-        JsonNode value = parent.get(field);
-        if (value == null || value.isMissingNode() || value.isNull()) {
-            return null;
-        }
-        return value.asDouble();
+        return node == null ? null : readOptionalDouble(node.get(parentField), field);
     }
 
     /***************************************************************
@@ -1072,7 +1096,7 @@ public class Templates {
             return null;
         }
         JsonNode value = node.get(field);
-        if (value == null || value.isMissingNode() || value.isNull()) {
+        if (value == null || value.isMissingNode() || value.isNull() || !value.isNumber()) {
             return null;
         }
         return value.asDouble();
@@ -1086,7 +1110,7 @@ public class Templates {
             return null;
         }
         JsonNode value = node.get(field);
-        if (value == null || value.isMissingNode() || value.isNull()) {
+        if (value == null || value.isMissingNode() || value.isNull() || !value.isNumber()) {
             return null;
         }
         return value.asInt();
@@ -1096,36 +1120,14 @@ public class Templates {
      * Reads a nested integer override if present.
      ***************************************************************/
     private static Integer readOptionalInt(JsonNode node, String parentField, String field) {
-        if (node == null || node.isMissingNode() || node.isNull()) {
-            return null;
-        }
-        JsonNode parent = node.get(parentField);
-        if (parent == null || parent.isMissingNode() || parent.isNull()) {
-            return null;
-        }
-        JsonNode value = parent.get(field);
-        if (value == null || value.isMissingNode() || value.isNull()) {
-            return null;
-        }
-        return value.asInt();
+        return node == null ? null : readOptionalInt(node.get(parentField), field);
     }
 
     /***************************************************************
      * Reads a boolean override if present.
      ***************************************************************/
     private static Boolean readOptionalBoolean(JsonNode node, String parentField, String field) {
-        if (node == null || node.isMissingNode() || node.isNull()) {
-            return null;
-        }
-        JsonNode parent = node.get(parentField);
-        if (parent == null || parent.isMissingNode() || parent.isNull()) {
-            return null;
-        }
-        JsonNode value = parent.get(field);
-        if (value == null || value.isMissingNode() || value.isNull()) {
-            return null;
-        }
-        return value.asBoolean();
+        return node == null ? null : readOptionalBoolean(node.get(parentField), field);
     }
 
     /***************************************************************
@@ -1136,9 +1138,23 @@ public class Templates {
             return null;
         }
         JsonNode value = node.get(field);
-        if (value == null || value.isMissingNode() || value.isNull()) {
+        if (value == null || value.isMissingNode() || value.isNull() || !value.isBoolean()) {
             return null;
         }
         return value.asBoolean();
+    }
+
+    /***************************************************************
+     * Reads a string override if present at the current object level.
+     ***************************************************************/
+    private static String readOptionalString(JsonNode node, String field) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        JsonNode value = node.get(field);
+        if (value == null || value.isMissingNode() || value.isNull() || !value.isTextual()) {
+            return null;
+        }
+        return value.asText();
     }
 }

@@ -4,6 +4,7 @@ import com.articulate.nlp.GenUtils;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,95 +50,99 @@ public class GenAdverbMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = adverbDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenAdverbMorphoDB.genAdverbSemanticClasses() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" :
-                        "Definition: \"" + adverbDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer specializing in English adverb classes. " +
-                        "Assign the adverb to exactly one category from the list below.\n\n" +
-                        "Categories:\n" +
-                        " 1. Manner - describes how an action is performed (quickly, carefully)\n" +
-                        " 2. Place / Location - indicates where an action occurs (here, abroad)\n" +
-                        " 3. Direction / Path - expresses movement or trajectory (away, homeward)\n" +
-                        " 4. Time - situates an event in time (now, tomorrow)\n" +
-                        " 5. Duration - shows how long something lasts (briefly, forever)\n" +
-                        " 6. Frequency - shows how often something occurs (always, rarely)\n" +
-                        " 7. Sequence - orders events (first, then, finally)\n" +
-                        " 8. Degree / Intensifier - scales intensity (very, extremely)\n" +
-                        " 9. Approximator / Scalar - conveys near limits (almost, roughly)\n" +
-                        "10. Measure / Multiplier - indicates proportional extent (twice, threefold)\n" +
-                        "11. Epistemic - conveys certainty or likelihood (probably, surely)\n" +
-                        "12. Evidential - signals source of information (apparently, reportedly)\n" +
-                        "13. Attitudinal / Evaluative - expresses speaker stance (fortunately, sadly)\n" +
-                        "14. Style / Domain - limits the statement to a perspective (technically, legally)\n" +
-                        "15. Focus (additive / restrictive / emphatic) - highlights or limits focus (only, even)\n" +
-                        "16. Negation / Polarity - expresses denial (not, never)\n" +
-                        "17. Affirmative - reinforces truth (yes, indeed)\n" +
-                        "18. Connective / Linking - joins clauses (however, therefore)\n" +
-                        "19. Topic-management / Discourse - manages discourse flow (well, anyway)\n" +
-                        "20. Interrogative - introduces a question (how, when)\n" +
-                        "21. Relative - introduces a subordinate clause (when, where, wherever)\n\n" +
-                        "Adverb: \"" + term + "\".\n" +
-                        definitionStatement + "\n" +
-                        "Instructions:\n" +
-                        " - Consider the adverb's default dictionary sense.\n" +
-                        " - If it has multiple functions, choose the primary or most canonical role.\n" +
-                        " - Output valid JSON only, with fields adverb, category" +
-                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
-                        " - \"category\" must match one of the twenty-one category names above exactly.\n" +
-                        (cheapPrompt ? "" :
-                                " - Provide a short explanation mentioning the key semantic cue.\n" +
-                                " - Provide a single usage sentence illustrating the classification.\n") +
-                        "\n" +
-                        "JSON schema:\n" +
-                        "{\n" +
-                        "  \"adverb\": \"<adverb>\",\n" +
-                        "  \"category\": \"<one of the twenty-one categories>\"" +
-                        (cheapPrompt
-                                ? "\n"
-                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n") +
-                        "}";
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("adverb", "category"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenAdverbMorphoDB.genAdverbSemanticClasses() Prompt: " + prompt);
+                    System.out.println("Skipping GenAdverbMorphoDB.genAdverbSemanticClasses() for \"" + term + "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("adverb", "category")
-                                : Arrays.asList("adverb", "category", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("category",
-                            normalizeAdverbCategory(responseNode.path("category").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = adverbDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" :
+                    "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer specializing in English adverb classes. " +
+                    "Assign the adverb to exactly one category from the list below.\n\n" +
+                    "Categories:\n" +
+                    " 1. Manner - describes how an action is performed (quickly, carefully)\n" +
+                    " 2. Place / Location - indicates where an action occurs (here, abroad)\n" +
+                    " 3. Direction / Path - expresses movement or trajectory (away, homeward)\n" +
+                    " 4. Time - situates an event in time (now, tomorrow)\n" +
+                    " 5. Duration - shows how long something lasts (briefly, forever)\n" +
+                    " 6. Frequency - shows how often something occurs (always, rarely)\n" +
+                    " 7. Sequence - orders events (first, then, finally)\n" +
+                    " 8. Degree / Intensifier - scales intensity (very, extremely)\n" +
+                    " 9. Approximator / Scalar - conveys near limits (almost, roughly)\n" +
+                    "10. Measure / Multiplier - indicates proportional extent (twice, threefold)\n" +
+                    "11. Epistemic - conveys certainty or likelihood (probably, surely)\n" +
+                    "12. Evidential - signals source of information (apparently, reportedly)\n" +
+                    "13. Attitudinal / Evaluative - expresses speaker stance (fortunately, sadly)\n" +
+                    "14. Style / Domain - limits the statement to a perspective (technically, legally)\n" +
+                    "15. Focus (additive / restrictive / emphatic) - highlights or limits focus (only, even)\n" +
+                    "16. Negation / Polarity - expresses denial (not, never)\n" +
+                    "17. Affirmative - reinforces truth (yes, indeed)\n" +
+                    "18. Connective / Linking - joins clauses (however, therefore)\n" +
+                    "19. Topic-management / Discourse - manages discourse flow (well, anyway)\n" +
+                    "20. Interrogative - introduces a question (how, when)\n" +
+                    "21. Relative - introduces a subordinate clause (when, where, wherever)\n\n" +
+                    "Adverb: \"" + term + "\".\n" +
+                    definitionStatement + "\n" +
+                    "Instructions:\n" +
+                    " - Consider the adverb's default dictionary sense.\n" +
+                    " - If it has multiple functions, choose the primary or most canonical role.\n" +
+                    " - Output valid JSON only, with fields adverb, category" +
+                    (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
+                    " - \"category\" must match one of the twenty-one category names above exactly.\n" +
+                    (cheapPrompt ? "" :
+                            " - Provide a short explanation mentioning the key semantic cue.\n" +
+                            " - Provide a single usage sentence illustrating the classification.\n") +
+                    "\n" +
+                    "JSON schema:\n" +
+                    "{\n" +
+                    "  \"adverb\": \"<adverb>\",\n" +
+                    "  \"category\": \"<one of the twenty-one categories>\"" +
+                    (cheapPrompt
+                            ? "\n"
+                            : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n") +
+                    "}";
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("adverb", "category"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenAdverbMorphoDB.genAdverbSemanticClasses() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("adverb", "category")
+                            : Arrays.asList("adverb", "category", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("category",
+                        normalizeAdverbCategory(responseNode.path("category").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(adverbFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("adverb", term, synsetId,
-                            definition, llmResponse, "Unable to parse adverb classification response.");
-                    GenUtils.writeToFile(adverbFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(adverbFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("adverb", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse adverb classification response.");
+                GenUtils.writeToFile(adverbFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenAdverbMorphoDB.genAdverbSemanticClasses().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenAdverbMorphoDB.genAdverbSemanticClasses().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }

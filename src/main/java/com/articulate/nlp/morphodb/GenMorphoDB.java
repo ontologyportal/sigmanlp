@@ -4,11 +4,24 @@ import com.articulate.nlp.GenUtils;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.wordNet.WordNet;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /***************************************************************
  * Entry point that delegates morphological database generation
@@ -23,12 +36,17 @@ public class GenMorphoDB {
         String genFunction;
         String provider = "ollama";
         String model;
+        String morphoDbPath;
         Integer ollamaPort = DEFAULT_OLLAMA_PORT;
         String apiKey;
         String apiKeyEnv;
         String baseUrl;
         String serviceTier;
         Boolean cheapPromptMode;
+        boolean verbose;
+        boolean allModels;
+        boolean compact;
+        boolean addLemma;
     }
 
 
@@ -79,12 +97,25 @@ public class GenMorphoDB {
         System.out.println("Usage:");
         System.out.println("  Legacy Ollama usage (still supported):");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB <word-type> <gen-function> <model> [ollama-port]");
+        System.out.println("Maintenance usage:");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --compact --db-path <path-to-morpho-db>");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --compact --all-models --db-path <path-to-parent-dir>");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --db-path <path-to-morpho-db>");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --all-models --db-path <path-to-parent-dir>");
         System.out.println("  Provider-aware usage:");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB <word-type> <gen-function> \\");
         System.out.println("      --provider <ollama|openai|anthropic|claude|openai-compatible> --model <model> \\");
         System.out.println("      [--ollama-port <port>] [--api-key <key>|--api-key-env <ENV_VAR>] [--base-url <url>] \\");
-        System.out.println("      [--service-tier <auto|default|flex|priority>] [--cheap-prompt|--full-prompt]");
+        System.out.println("      [--service-tier <auto|default|flex|priority>] [--cheap-prompt|--full-prompt] [--verbose]");
         System.out.println("word-types supported: noun, verb, adjective, adverb, all");
+        System.out.println("Maintenance flags:");
+        System.out.println("  --compact      strip explanation/usage/definition and convert malformed rows into error rows");
+        System.out.println("  --add-lemma    add the \"lemma\" field to existing records that lack it (no LLM calls)");
+        System.out.println("  --all-models   treat --db-path as parent directory and run maintenance on each direct child model dir");
+        System.out.println("  "
+                + "You may pass --add-lemma and --compact together; when both are set, --add-lemma runs first.");
+        System.out.println("  "
+                + "Maintenance works on noun, verb, adjective, and adverb tables in the current morphed model.");
         System.out.println("Noun gen-functions:");
         System.out.println("  -i to generate indefinite articles");
         System.out.println("  -c to generate countability classifications");
@@ -116,26 +147,40 @@ public class GenMorphoDB {
                 + "com.articulate.nlp.morphodb.GenMorphoDB noun -i --provider openai --model gpt-4o --api-key-env OPENAI_API_KEY --cheap-prompt");
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB all -a --provider openai --model gpt-5 --api-key-env OPENAI_API_KEY --service-tier flex --cheap-prompt");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --compact --db-path /file/path/to/db/gpt-oss_20b");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --db-path /file/path/to/db/gpt-oss_20b");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --compact --all-models --db-path /file/path/to/db");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --all-models --db-path /file/path/to/db");
         System.out.println("If no Ollama port is provided, the default 11434 is used.");
         System.out.println("Default prompt mode: full for ollama, cheap for non-ollama providers.");
+        System.out.println("--verbose prints per-item prompts and raw LLM responses.");
     }
 
     private static CliOptions parseCliArgs(String[] args) {
 
-        if (args == null || args.length < 2) {
+        if (args == null || args.length == 0) {
             return null;
         }
         CliOptions options = new CliOptions();
-        options.wordType = args[0].toLowerCase();
-        options.genFunction = args[1];
-
-        int index = 2;
+        int index = 0;
         if (index < args.length && !args[index].startsWith("--")) {
-            options.model = args[index];
+            options.wordType = args[index].toLowerCase();
             index++;
-            if (index < args.length && isInteger(args[index])) {
-                options.ollamaPort = Integer.parseInt(args[index]);
+            if (index < args.length && !args[index].startsWith("--")) {
+                options.genFunction = args[index];
                 index++;
+            }
+            if (index < args.length && !args[index].startsWith("--")) {
+                options.model = args[index];
+                index++;
+                if (index < args.length && isInteger(args[index])) {
+                    options.ollamaPort = Integer.parseInt(args[index]);
+                    index++;
+                }
             }
         }
 
@@ -221,8 +266,52 @@ public class GenMorphoDB {
                 index++;
                 continue;
             }
+            if ("--verbose".equals(arg)) {
+                options.verbose = true;
+                index++;
+                continue;
+            }
+            if ("--compact".equals(arg)) {
+                options.compact = true;
+                index++;
+                continue;
+            }
+            if ("--add-lemma".equals(arg)) {
+                options.addLemma = true;
+                index++;
+                continue;
+            }
+            if ("--all-models".equals(arg)) {
+                options.allModels = true;
+                index++;
+                continue;
+            }
+            if ("--db-path".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --db-path.");
+                    return null;
+                }
+                options.morphoDbPath = args[index + 1];
+                index += 2;
+                continue;
+            }
             System.err.println("Unsupported argument: " + arg);
             return null;
+        }
+
+        int maintenanceCount = (options.compact ? 1 : 0) + (options.addLemma ? 1 : 0);
+        boolean maintenanceRequested = maintenanceCount > 0;
+        if (options.allModels && !maintenanceRequested) {
+            System.err.println("--all-models is only valid for maintenance operations (--compact or --add-lemma).");
+            return null;
+        }
+        if (maintenanceRequested && (options.morphoDbPath == null || options.morphoDbPath.trim().isEmpty())) {
+            System.err.println("Missing --db-path for maintenance operations.");
+            System.err.println("Pass --db-path <path-to-morpho-db>.");
+            return null;
+        }
+        if (maintenanceRequested) {
+            return options;
         }
 
         String normalizedProvider = GenUtils.normalizeLLMProvider(options.provider);
@@ -249,6 +338,11 @@ public class GenMorphoDB {
             return null;
         }
         options.model = options.model.trim();
+
+        if (options.wordType == null || options.genFunction == null) {
+            System.err.println("Missing word type and generation function.");
+            return null;
+        }
 
         if (!"ollama".equals(options.provider)) {
             String resolvedApiKey = resolveApiKey(options);
@@ -310,6 +404,7 @@ public class GenMorphoDB {
                 ? options.cheapPromptMode
                 : !"ollama".equals(options.provider);
         GenUtils.setCheapPromptMode(cheapPromptMode);
+        GenMorphoUtils.debug = options.verbose;
         if ("ollama".equals(options.provider)) {
             GenUtils.setOllamaPort(options.ollamaPort == null ? DEFAULT_OLLAMA_PORT : options.ollamaPort);
             GenUtils.setLLMApiKey(null);
@@ -346,6 +441,7 @@ public class GenMorphoDB {
                     " (only applied when --provider openai).");
         }
         System.out.println("Using cheap prompt mode: " + GenUtils.isCheapPromptMode());
+        System.out.println("Using verbose logging: " + GenMorphoUtils.debug);
         System.out.println("MorphoDB model directory: " + GenUtils.getMorphoModelDirectoryName());
     }
 
@@ -374,6 +470,14 @@ public class GenMorphoDB {
         }
         String wordType = cliOptions.wordType;
         String genFunction = cliOptions.genFunction;
+        Path morphoModelRoot = resolveMorphoModelRoot(cliOptions);
+        boolean maintenanceRequested = cliOptions.compact || cliOptions.addLemma;
+
+        if (maintenanceRequested) {
+            runMorphologicalMaintenance(morphoModelRoot, cliOptions);
+            return;
+        }
+
         configureLlm(cliOptions);
 
         KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
@@ -438,8 +542,681 @@ public class GenMorphoDB {
                 System.out.println("Unsupported word type: " + wordType);
                 System.out.println("Please specify a word type (noun, verb, adjective, adverb).");
                 printHelp();
-                break;
+                return;
         }
+
+    }
+
+    private static class MaintenanceTarget {
+        final String modelName;
+        final Path modelRoot;
+        final List<MorphoFileSpec> fileSpecs;
+
+        MaintenanceTarget(String modelName, Path modelRoot, List<MorphoFileSpec> fileSpecs) {
+            this.modelName = modelName;
+            this.modelRoot = modelRoot;
+            this.fileSpecs = fileSpecs;
+        }
+    }
+
+    private static class MaintenanceTargetResolution {
+        final List<MaintenanceTarget> targets = new ArrayList<>();
+        final List<String> skipped = new ArrayList<>();
+    }
+
+    private static String modelLabelFromPath(Path path) {
+
+        if (path == null) {
+            return "";
+        }
+        Path fileName = path.getFileName();
+        if (fileName != null) {
+            return fileName.toString();
+        }
+        return path.toString();
+    }
+
+    private static List<MorphoFileSpec> getExistingMorphologicalDatabaseFileSpecs(Path modelRoot) {
+
+        List<MorphoFileSpec> existing = new ArrayList<>();
+        for (MorphoFileSpec fileSpec : getMorphologicalDatabaseFileSpecs(modelRoot)) {
+            if (fileSpec != null && fileSpec.path != null && Files.exists(fileSpec.path)) {
+                existing.add(fileSpec);
+            }
+        }
+        return existing;
+    }
+
+    private static MaintenanceTargetResolution resolveMaintenanceTargets(Path rootPath, boolean allModels) {
+
+        MaintenanceTargetResolution result = new MaintenanceTargetResolution();
+        if (rootPath == null) {
+            return result;
+        }
+
+        if (!allModels) {
+            List<MorphoFileSpec> existingFileSpecs = getExistingMorphologicalDatabaseFileSpecs(rootPath);
+            if (existingFileSpecs.isEmpty()) {
+                result.skipped.add(modelLabelFromPath(rootPath) + " (" + rootPath + "): no morphology files found");
+                return result;
+            }
+            result.targets.add(new MaintenanceTarget(modelLabelFromPath(rootPath), rootPath, existingFileSpecs));
+            return result;
+        }
+
+        if (!Files.exists(rootPath)) {
+            result.skipped.add(rootPath + ": directory does not exist");
+            return result;
+        }
+        if (!Files.isDirectory(rootPath)) {
+            result.skipped.add(rootPath + ": not a directory");
+            return result;
+        }
+
+        List<Path> childDirs = new ArrayList<>();
+        try (java.util.stream.Stream<Path> stream = Files.list(rootPath)) {
+            stream.filter(Files::isDirectory).forEach(childDirs::add);
+        } catch (IOException e) {
+            result.skipped.add(rootPath + ": unable to enumerate child directories (" + e.getMessage() + ")");
+            return result;
+        }
+        childDirs.sort(Comparator.comparing(GenMorphoDB::modelLabelFromPath));
+
+        for (Path childDir : childDirs) {
+            List<MorphoFileSpec> existingFileSpecs = getExistingMorphologicalDatabaseFileSpecs(childDir);
+            if (existingFileSpecs.isEmpty()) {
+                result.skipped.add(modelLabelFromPath(childDir) + " (" + childDir + "): no morphology files found");
+                continue;
+            }
+            result.targets.add(new MaintenanceTarget(modelLabelFromPath(childDir), childDir, existingFileSpecs));
+        }
+        return result;
+    }
+
+    private static void printSkippedMaintenanceTargets(List<String> skipped) {
+
+        if (skipped == null || skipped.isEmpty()) {
+            return;
+        }
+        System.out.println("Skipped model directories:");
+        for (String skippedEntry : skipped) {
+            System.out.println("  - " + skippedEntry);
+        }
+    }
+
+    private static void printCompactLine(BufferedWriter compactSummaryWriter, String line) {
+
+        if (line == null) {
+            return;
+        }
+        System.out.println(line);
+        if (compactSummaryWriter == null) {
+            return;
+        }
+        try {
+            compactSummaryWriter.write(line);
+            compactSummaryWriter.newLine();
+        } catch (IOException e) {
+            System.out.println("Failed to write compact summary line: " + e.getMessage());
+        }
+    }
+
+    private static String formatErrorPct(int errors, int lines) {
+
+        if (lines <= 0) {
+            return "0.00%";
+        }
+        double pct = (100.0 * errors) / lines;
+        return String.format("%.2f%%", pct);
+    }
+
+    private static void runMorphologicalMaintenance(Path morphoModelRoot, CliOptions cliOptions) {
+
+        if (morphoModelRoot == null) {
+            System.out.println("Unable to determine morphological DB root path.");
+            return;
+        }
+        System.out.println("Running morphological DB maintenance in: " + morphoModelRoot +
+                (cliOptions.allModels ? " (all-models mode)" : ""));
+        MaintenanceTargetResolution targetResolution =
+                resolveMaintenanceTargets(morphoModelRoot, cliOptions.allModels);
+        if (targetResolution.targets.isEmpty()) {
+            System.out.println("No valid morphological model directories found for maintenance at: " + morphoModelRoot);
+            printSkippedMaintenanceTargets(targetResolution.skipped);
+            return;
+        }
+
+        if (cliOptions.addLemma && cliOptions.compact) {
+            System.out.println("Both maintenance flags provided; running add-lemma first, then compact.");
+        }
+
+        if (cliOptions.addLemma) {
+            if (cliOptions.allModels) {
+                Path summaryPath = morphoModelRoot.resolve("add-lemma-unchanged-summary.txt");
+                try (BufferedWriter unchangedSummaryWriter =
+                             Files.newBufferedWriter(summaryPath, StandardCharsets.UTF_8)) {
+                    unchangedSummaryWriter.write("model\tfile\tline\treason\tcontent");
+                    unchangedSummaryWriter.newLine();
+                    for (MaintenanceTarget target : targetResolution.targets) {
+                        addLemmaToAllMorphoFiles(target.fileSpecs, unchangedSummaryWriter, target.modelName);
+                    }
+                    unchangedSummaryWriter.flush();
+                    System.out.println("add-lemma: unchanged summary file=" + summaryPath);
+                } catch (IOException e) {
+                    System.out.println("Failed to create unchanged summary file: " + summaryPath + " (" + e.getMessage() + ")");
+                }
+            } else {
+                for (MaintenanceTarget target : targetResolution.targets) {
+                    addLemmaToAllMorphoFiles(target.fileSpecs);
+                }
+            }
+        }
+
+        if (cliOptions.compact) {
+            Path compactSummaryPath = morphoModelRoot.resolve("compact-summary.txt");
+            BufferedWriter compactSummaryWriter = null;
+            try {
+                compactSummaryWriter = Files.newBufferedWriter(compactSummaryPath, StandardCharsets.UTF_8);
+                compactSummaryWriter.write("compact-summary");
+                compactSummaryWriter.newLine();
+                compactSummaryWriter.write("root\t" + morphoModelRoot);
+                compactSummaryWriter.newLine();
+            } catch (IOException e) {
+                System.out.println("Failed to create compact summary file: " + compactSummaryPath + " (" + e.getMessage() + ")");
+                compactSummaryWriter = null;
+            }
+            CompactStats total = new CompactStats();
+            int totalFilesProcessed = 0;
+            for (MaintenanceTarget target : targetResolution.targets) {
+                CompactStats modelTotal = new CompactStats();
+                for (MorphoFileSpec fileSpec : target.fileSpecs) {
+                    CompactStats stats = compactMorphoFile(fileSpec, compactSummaryWriter);
+                    modelTotal.add(stats);
+                }
+                total.add(modelTotal);
+                totalFilesProcessed += target.fileSpecs.size();
+                int modelErrors = modelTotal.existingErrorRows + modelTotal.malformedConvertedRows;
+                String modelSummary = String.format("compact MODEL: %s files=%d lines=%d stripped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d)",
+                        target.modelName,
+                        target.fileSpecs.size(),
+                        modelTotal.totalLines,
+                        modelTotal.strippedFieldRows,
+                        modelErrors,
+                        formatErrorPct(modelErrors, modelTotal.totalLines),
+                        modelTotal.existingErrorRows,
+                        modelTotal.malformedConvertedRows);
+                printCompactLine(compactSummaryWriter, modelSummary);
+                if (modelTotal.malformedUnrecoverableRows > 0) {
+                    String modelMalformedSummary = String.format("compact MODEL: %s dropped malformed rows without recoverable lemma=%d",
+                            target.modelName,
+                            modelTotal.malformedUnrecoverableRows);
+                    printCompactLine(compactSummaryWriter, modelMalformedSummary);
+                }
+                if (modelTotal.lemmaAddedRows > 0) {
+                    String modelLemmaSummary = String.format("compact MODEL: %s lemma added to existing JSON rows=%d",
+                            target.modelName,
+                            modelTotal.lemmaAddedRows);
+                    printCompactLine(compactSummaryWriter, modelLemmaSummary);
+                }
+                if (modelTotal.droppedMissingLemmaRows > 0) {
+                    String modelDroppedSummary = String.format("compact MODEL: %s dropped rows without lemma=%d",
+                            target.modelName,
+                            modelTotal.droppedMissingLemmaRows);
+                    printCompactLine(compactSummaryWriter, modelDroppedSummary);
+                }
+            }
+            int totalErrors = total.existingErrorRows + total.malformedConvertedRows;
+            String totalSummary = String.format("compact TOTAL: models=%d skipped=%d files=%d lines=%d stripped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d)",
+                    targetResolution.targets.size(),
+                    targetResolution.skipped.size(),
+                    totalFilesProcessed,
+                    total.totalLines,
+                    total.strippedFieldRows,
+                    totalErrors,
+                    formatErrorPct(totalErrors, total.totalLines),
+                    total.existingErrorRows,
+                    total.malformedConvertedRows);
+            printCompactLine(compactSummaryWriter, totalSummary);
+            if (total.malformedUnrecoverableRows > 0) {
+                String totalMalformedSummary = String.format("compact TOTAL: dropped malformed rows without recoverable lemma=%d",
+                        total.malformedUnrecoverableRows);
+                printCompactLine(compactSummaryWriter, totalMalformedSummary);
+            }
+            if (total.lemmaAddedRows > 0) {
+                String totalLemmaSummary = String.format("compact TOTAL: lemma added to existing JSON rows=%d", total.lemmaAddedRows);
+                printCompactLine(compactSummaryWriter, totalLemmaSummary);
+            }
+            if (total.droppedMissingLemmaRows > 0) {
+                String totalDroppedSummary = String.format("compact TOTAL: dropped rows without lemma=%d", total.droppedMissingLemmaRows);
+                printCompactLine(compactSummaryWriter, totalDroppedSummary);
+            }
+            if (compactSummaryWriter != null) {
+                try {
+                    compactSummaryWriter.flush();
+                    compactSummaryWriter.close();
+                    System.out.println("compact: summary file=" + compactSummaryPath);
+                } catch (IOException e) {
+                    System.out.println("Failed to finalize compact summary file: " + compactSummaryPath + " (" + e.getMessage() + ")");
+                }
+            }
+        }
+
+        printSkippedMaintenanceTargets(targetResolution.skipped);
+        System.out.println("Morphological DB maintenance complete for root: " + morphoModelRoot +
+                (cliOptions.allModels ? " (all-models mode)" : ""));
+    }
+
+    private static Path resolveMorphoModelRoot(CliOptions options) {
+
+        if (options != null && options.morphoDbPath != null && !options.morphoDbPath.trim().isEmpty()) {
+            return Paths.get(options.morphoDbPath.trim());
+        }
+        if (options == null || options.model == null || options.model.trim().isEmpty()) {
+            return null;
+        }
+        String modelDirectoryName = "ollama".equals(options.provider)
+                ? options.model
+                : options.provider + "__" + options.model;
+        String sanitizedModelDirectory = GenMorphoUtils.sanitizeModelName(modelDirectoryName);
+        return Paths.get("MorphologicalDatabase", sanitizedModelDirectory);
+    }
+
+    private static class MorphoFileSpec {
+        final Path path;
+        final String sourceFieldName;
+
+        MorphoFileSpec(Path path, String sourceFieldName) {
+            this.path = path;
+            this.sourceFieldName = sourceFieldName;
+        }
+    }
+
+    private static class CompactStats {
+        int totalLines;
+        int jsonLines;
+        int strippedFieldRows;
+        int existingErrorRows;
+        int malformedConvertedRows;
+        int malformedUnrecoverableRows;
+        int lemmaAddedRows;
+        int droppedMissingLemmaRows;
+
+        void add(CompactStats other) {
+            if (other == null) return;
+            totalLines += other.totalLines;
+            jsonLines += other.jsonLines;
+            strippedFieldRows += other.strippedFieldRows;
+            existingErrorRows += other.existingErrorRows;
+            malformedConvertedRows += other.malformedConvertedRows;
+            malformedUnrecoverableRows += other.malformedUnrecoverableRows;
+            lemmaAddedRows += other.lemmaAddedRows;
+            droppedMissingLemmaRows += other.droppedMissingLemmaRows;
+        }
+    }
+
+    private static List<MorphoFileSpec> getMorphologicalDatabaseFileSpecs(Path modelRoot) {
+
+        List<MorphoFileSpec> specs = new ArrayList<>();
+        if (modelRoot == null) {
+            return specs;
+        }
+
+        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("IndefiniteArticles.txt"), "noun"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("Countability.txt"), "noun"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("Plurals.txt"), "singular"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("Humanness.txt"), "noun"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("NounAgentivity.txt"), "noun"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("CollectiveNouns.txt"), "noun"));
+
+        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbValence.txt"), "verb"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbReflexive.txt"), "verb"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbCausativity.txt"), "verb"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbAchievementProcess.txt"), "verb"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbReciprocal.txt"), "verb"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbConjugations.txt"), "verb"));
+
+        specs.add(new MorphoFileSpec(modelRoot.resolve("adjective").resolve("AdjectiveSemanticClasses.txt"), "adjective"));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("adverb").resolve("AdverbSemanticClasses.txt"), "adverb"));
+
+        return specs;
+    }
+
+    private static CompactStats compactMorphoFile(MorphoFileSpec fileSpec,
+                                                  BufferedWriter compactSummaryWriter) {
+
+        CompactStats stats = new CompactStats();
+        if (fileSpec == null || fileSpec.path == null || !Files.exists(fileSpec.path)) {
+            return stats;
+        }
+        Path filePath = fileSpec.path;
+        Path tmp = createTempFileInSameDirectory(filePath);
+        int lineNo = 0;
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8);
+             BufferedWriter writer = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lineNo++;
+                stats.totalLines++;
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    String recoveredLemma = recoverLemmaFromMalformedLine(line, fileSpec.sourceFieldName);
+                    if (recoveredLemma.isEmpty()) {
+                        stats.malformedUnrecoverableRows++;
+                        stats.droppedMissingLemmaRows++;
+                        continue;
+                    }
+                    String recoveredSynset = extractJsonLikeField(line, "synsetId");
+                    com.fasterxml.jackson.databind.node.ObjectNode errorNode =
+                            GenMorphoUtils.JSON_MAPPER.createObjectNode();
+                    errorNode.put("synsetId", recoveredSynset == null ? "" : recoveredSynset);
+                    errorNode.put("lemma", recoveredLemma);
+                    errorNode.put(fileSpec.sourceFieldName, recoveredLemma);
+                    errorNode.put("status", "error");
+                    errorNode.put("rawResponse", sanitizeForJsonField(line));
+                    writer.write(GenMorphoUtils.serializeJsonLine(errorNode));
+                    writer.newLine();
+                    stats.malformedConvertedRows++;
+                    continue;
+                }
+                stats.jsonLines++;
+                boolean removedAny = false;
+                if (node.remove("explanation") != null) {
+                    removedAny = true;
+                }
+                if (node.remove("usage") != null) {
+                    removedAny = true;
+                }
+                if (node.remove("definition") != null) {
+                    removedAny = true;
+                }
+                if (node.remove("message") != null) {
+                    removedAny = true;
+                }
+                if (removedAny) {
+                    stats.strippedFieldRows++;
+                }
+
+                String lemma = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
+                if (lemma.isEmpty()) {
+                    String sourceValue = recoverLemmaFromNode(node, fileSpec.sourceFieldName);
+                    if (!sourceValue.isEmpty()) {
+                        node.put("lemma", sourceValue);
+                        lemma = sourceValue;
+                        stats.lemmaAddedRows++;
+                    }
+                    else {
+                        stats.droppedMissingLemmaRows++;
+                        continue;
+                    }
+                } else {
+                    node.put("lemma", lemma);
+                }
+                node = GenMorphoUtils.prependSynsetIdAndLemma(
+                        node,
+                        node.path("synsetId").asText(""),
+                        lemma);
+
+                if ("error".equalsIgnoreCase(node.path("status").asText(""))) {
+                    stats.existingErrorRows++;
+                }
+                writer.write(GenMorphoUtils.serializeJsonLine(node));
+                writer.newLine();
+            }
+            writer.flush();
+        } catch (IOException e) {
+            printCompactLine(compactSummaryWriter, "Failed while compacting file " + filePath + ": " + e.getMessage());
+            return stats;
+        }
+        overwriteFile(filePath, tmp);
+        int errorRows = stats.existingErrorRows + stats.malformedConvertedRows;
+        String fileSummary = String.format("compact: %-30s lines=%d stripped=%d dropped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d)",
+                filePath.getFileName(),
+                stats.totalLines,
+                stats.strippedFieldRows,
+                stats.droppedMissingLemmaRows,
+                errorRows,
+                formatErrorPct(errorRows, stats.totalLines),
+                stats.existingErrorRows,
+                stats.malformedConvertedRows);
+        printCompactLine(compactSummaryWriter, fileSummary);
+        return stats;
+    }
+
+    private static String recoverLemmaFromNode(com.fasterxml.jackson.databind.node.ObjectNode node, String sourceFieldName) {
+
+        if (node == null) {
+            return "";
+        }
+        String lemma = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
+        if (!lemma.isEmpty()) {
+            return lemma;
+        }
+        lemma = GenMorphoUtils.normalizeLemma(node.path(sourceFieldName).asText(""));
+        if (!lemma.isEmpty()) {
+            return lemma;
+        }
+        for (String fallback : Arrays.asList("noun", "singular", "verb", "adjective", "adverb")) {
+            lemma = GenMorphoUtils.normalizeLemma(node.path(fallback).asText(""));
+            if (!lemma.isEmpty()) {
+                return lemma;
+            }
+        }
+        return "";
+    }
+
+    private static String extractJsonLikeField(String line, String fieldName) {
+
+        if (line == null || fieldName == null || fieldName.trim().isEmpty()) {
+            return null;
+        }
+        Pattern p = Pattern.compile("\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\"([^\"]+)\"");
+        Matcher m = p.matcher(line);
+        if (m.find()) {
+            String value = m.group(1);
+            return value == null ? null : value.trim();
+        }
+        return null;
+    }
+
+    private static String recoverLemmaFromMalformedLine(String line, String sourceFieldName) {
+
+        String lemma = GenMorphoUtils.normalizeLemma(extractJsonLikeField(line, "lemma"));
+        if (!lemma.isEmpty()) {
+            return lemma;
+        }
+        lemma = GenMorphoUtils.normalizeLemma(extractJsonLikeField(line, sourceFieldName));
+        if (!lemma.isEmpty()) {
+            return lemma;
+        }
+        for (String fallback : Arrays.asList("noun", "singular", "verb", "adjective", "adverb")) {
+            lemma = GenMorphoUtils.normalizeLemma(extractJsonLikeField(line, fallback));
+            if (!lemma.isEmpty()) {
+                return lemma;
+            }
+        }
+        return "";
+    }
+
+    private static String sanitizeForJsonField(String line) {
+
+        if (line == null) {
+            return "";
+        }
+        return line.replace("\n", " ").replace("\r", " ").trim();
+    }
+
+    private static Path createTempFileInSameDirectory(Path source) {
+        try {
+            return Files.createTempFile(source.getParent(), source.getFileName().toString(), ".tmp");
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to create temporary file for " + source, e);
+        }
+    }
+
+    private static void overwriteFile(Path target, Path sourceTmp) {
+        try {
+            Files.move(sourceTmp, target, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to overwrite file " + target, e);
+        }
+    }
+
+    private static Path addLemmaUnchangedSummaryPath(List<MorphoFileSpec> fileSpecs) {
+
+        if (fileSpecs == null || fileSpecs.isEmpty() || fileSpecs.get(0) == null || fileSpecs.get(0).path == null) {
+            return Paths.get("add-lemma-unchanged-summary.txt");
+        }
+        Path firstPath = fileSpecs.get(0).path;
+        Path modelRoot = firstPath.getParent();
+        if (modelRoot != null) {
+            modelRoot = modelRoot.getParent();
+        }
+        if (modelRoot == null) {
+            modelRoot = firstPath.getParent();
+        }
+        if (modelRoot == null) {
+            modelRoot = firstPath.toAbsolutePath().getParent();
+        }
+        if (modelRoot == null) {
+            return Paths.get("add-lemma-unchanged-summary.txt");
+        }
+        return modelRoot.resolve("add-lemma-unchanged-summary.txt");
+    }
+
+    private static void writeUnchangedLine(BufferedWriter unchangedWriter,
+                                           String modelName,
+                                           String sourceFileName,
+                                           int lineNumber,
+                                           String reason,
+                                           String lineContent) throws IOException {
+
+        String safeReason = (reason == null) ? "" : reason;
+        String safeLine = (lineContent == null) ? "" : lineContent;
+        String safeSource = (sourceFileName == null) ? "" : sourceFileName;
+        String safeModel = (modelName == null) ? "" : modelName;
+        if (safeModel.isEmpty()) {
+            unchangedWriter.write(safeSource + "\t" + lineNumber + "\t" + safeReason + "\t" + safeLine);
+        } else {
+            unchangedWriter.write(safeModel + "\t" + safeSource + "\t" + lineNumber + "\t" + safeReason + "\t" + safeLine);
+        }
+        unchangedWriter.newLine();
+    }
+
+    /***************************************************************
+     * Adds the "lemma" field to all morphological DB files that lack
+     * it, deriving the value from the type-specific source field
+     * (e.g. "noun", "singular", "verb", "adjective", "adverb").
+     * Existing "lemma" fields are preserved unchanged.
+     ***************************************************************/
+    private static void addLemmaToAllMorphoFiles(List<MorphoFileSpec> fileSpecs) {
+
+        if (fileSpecs == null || fileSpecs.isEmpty()) return;
+        Path summaryPath = addLemmaUnchangedSummaryPath(fileSpecs);
+        try (BufferedWriter unchangedSummaryWriter = Files.newBufferedWriter(summaryPath, StandardCharsets.UTF_8)) {
+            unchangedSummaryWriter.write("file\tline\treason\tcontent");
+            unchangedSummaryWriter.newLine();
+            addLemmaToAllMorphoFiles(fileSpecs, unchangedSummaryWriter, null);
+            unchangedSummaryWriter.flush();
+            System.out.println("add-lemma: unchanged summary file=" + summaryPath);
+        } catch (IOException e) {
+            System.out.println("Failed to create unchanged summary file: " + summaryPath + " (" + e.getMessage() + ")");
+        }
+    }
+
+    private static void addLemmaToAllMorphoFiles(List<MorphoFileSpec> fileSpecs,
+                                                  BufferedWriter unchangedSummaryWriter,
+                                                  String modelName) {
+
+        if (fileSpecs == null || fileSpecs.isEmpty() || unchangedSummaryWriter == null) return;
+        for (MorphoFileSpec fileSpec : fileSpecs) {
+            addLemmaFieldToMorphoFile(fileSpec.path, fileSpec.sourceFieldName, unchangedSummaryWriter, modelName);
+        }
+    }
+
+    /***************************************************************
+     * Reads each JSON line in the file. If a "lemma" field is absent,
+     * derives its value from the named sourceFieldName (normalized),
+     * inserts it after "synsetId", and rewrites the file in place.
+     * Lines that already have a "lemma" field are written unchanged.
+     ***************************************************************/
+    private static void addLemmaFieldToMorphoFile(Path filePath,
+                                                  String sourceFieldName,
+                                                  BufferedWriter unchangedWriter,
+                                                  String modelName) {
+
+        if (filePath == null || !Files.exists(filePath)) {
+            return;
+        }
+        Path tmp = createTempFileInSameDirectory(filePath);
+        String sourceFileName = filePath.getFileName() == null ? filePath.toString() : filePath.getFileName().toString();
+        int kept = 0;
+        int added = 0;
+        int lineNumber = 0;
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8);
+             BufferedWriter writer = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    writer.write(line);
+                    writer.newLine();
+                    writeUnchangedLine(unchangedWriter, modelName, sourceFileName, lineNumber, "malformed_json", line);
+                    kept++;
+                    continue;
+                }
+                if (!node.path("lemma").asText("").trim().isEmpty()) {
+                    // lemma already present — write unchanged
+                    String serialized = GenMorphoUtils.serializeJsonLine(node);
+                    writer.write(serialized);
+                    writer.newLine();
+                    writeUnchangedLine(unchangedWriter, modelName, sourceFileName, lineNumber, "lemma_present", serialized);
+                    kept++;
+                    continue;
+                }
+                String sourceValue = node.path(sourceFieldName).asText("").trim();
+                if ("singular".equals(sourceFieldName)) {
+                    String nounValue = node.path("noun").asText("").trim();
+                    if (!sourceValue.isEmpty() && !nounValue.isEmpty()) {
+                        String normalizedSingular = GenMorphoUtils.normalizeLemma(sourceValue);
+                        String normalizedNoun = GenMorphoUtils.normalizeLemma(nounValue);
+                        if (!normalizedSingular.isEmpty() && !normalizedNoun.isEmpty()
+                                && !normalizedSingular.equals(normalizedNoun)) {
+                            String serialized = GenMorphoUtils.serializeJsonLine(node);
+                            writeUnchangedLine(unchangedWriter, modelName, sourceFileName, lineNumber,
+                                    "mismatch_singular_noun_prefer_singular", serialized);
+                        }
+                    }
+                    if (sourceValue.isEmpty() && !nounValue.isEmpty()) {
+                        sourceValue = nounValue;
+                    }
+                }
+                if (sourceValue.isEmpty()) {
+                    // no source value to derive from — write unchanged
+                    String serialized = GenMorphoUtils.serializeJsonLine(node);
+                    writer.write(serialized);
+                    writer.newLine();
+                    writeUnchangedLine(unchangedWriter, modelName, sourceFileName, lineNumber, "missing_" + sourceFieldName, serialized);
+                    kept++;
+                    continue;
+                }
+                String lemma = GenMorphoUtils.normalizeLemma(sourceValue);
+                com.fasterxml.jackson.databind.node.ObjectNode rebuilt =
+                        GenMorphoUtils.prependSynsetIdAndLemma(
+                                node,
+                                node.path("synsetId").asText(""),
+                                lemma);
+                writer.write(GenMorphoUtils.serializeJsonLine(rebuilt));
+                writer.newLine();
+                added++;
+            }
+            writer.flush();
+            System.out.println("add-lemma: " + filePath.getFileName() + " unchanged=" + kept + " updated=" + added);
+        } catch (IOException e) {
+            System.out.println("Failed while adding lemma field to " + filePath + ": " + e.getMessage());
+            return;
+        }
+        overwriteFile(filePath, tmp);
     }
 
 

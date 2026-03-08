@@ -135,13 +135,13 @@ public class GenSimpTestData {
 
         StringBuilder sb = new StringBuilder();
         if (name != null) {
-            String gender = "Male";
             String g = lfeatsets.genders.get(name);
             if (g != null) {
-                if (g.equalsIgnoreCase("F"))
-                    gender = "Female";
                 //sb.append("(instance " + var + " Human) ");
-                sb.append("(attribute ").append(var).append(" ").append(gender).append(") ");
+                if (g.equalsIgnoreCase("M") || g.equalsIgnoreCase("F")) {
+                    String gender = g.equalsIgnoreCase("F") ? "Female" : "Male";
+                    sb.append("(attribute ").append(var).append(" ").append(gender).append(") ");
+                }
                 sb.append("(names \"").append(name).append("\" ").append(var).append(") ");
             }
         }

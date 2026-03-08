@@ -3,6 +3,18 @@
   Processed by GenFromTemplate.java.
 
   ─────────────────────────────────────────────────────────────────────────────
+  TOP-LEVEL SETTINGS
+  ─────────────────────────────────────────────────────────────────────────────
+    resources.morpho_db.path  — path to the MorphoDB snapshot directory; leading ~ is
+                        expanded to the user home directory.
+                        Overridden by the third CLI argument if supplied.
+    resources.morpho_db.query_missing_words — if true, words not found in the DB are
+                        queried via LLM, then persisted back into the DB files.
+                        Default: false.
+    resources.morpho_db.model — LLM model name to use for missing-word queries
+                        (passed to GenUtils.setLLMModel).
+
+  ─────────────────────────────────────────────────────────────────────────────
   GLOBAL DEFAULTS  (default_settings)
   ─────────────────────────────────────────────────────────────────────────────
   All fields in default_settings can be overridden per template.
@@ -12,7 +24,9 @@
     modal.neg_freq    — probability [0,1] that a modal is negated in logic
     modal.values      — list of {sumo_term, text, weight} modal choices
     tense.on          — enable tense variants (true/false)
-    tense.none/past/present/future — relative sampling weights for each tense
+    tense.none/past/present/future — relative sampling weights for each tense;
+                        "none" means tense is not encoded in logic and the default
+                        tense is used in the English surface form
     count_prob_dropoff — geometric decay p for collection size sampling (P(k) = (1-p)^(k-2)*p)
     named_human_freq  — probability [0,1] that a Human-typed instance slot renders as a named
                         individual (e.g. "Mary") rather than a generic term; can be overridden
@@ -46,9 +60,17 @@
                         also triggers article generation for the English value
     definite_freq     — probability [0,1] of using "the" vs. indefinite article;
                         0.0 = always indefinite, 1.0 = always definite
-    countable.possible — whether collection mode is possible (true/false)
-    countable.freq     — probability [0,1] of generating a collection when possible
-    countable.count_prob_dropoff — per-slot override of the geometric decay p
+    countable.possible  — whether collection/list mode is possible (true/false)
+    countable.freq      — probability [0,1] of generating a countable (collection or list) when possible
+    countable.count_prob_dropoff — geometric decay p for collection member count (higher p → smaller count)
+    countable.list_freq — probability [0,1] that a countable becomes a natural-language list
+                          instead of a SUMO Collection; evaluated only when freq fires; default 0.0
+                          (disabled). Each list item is a fully individual entity with its own
+                          instance statement. List items may independently be singletons,
+                          named humans, social roles, definite/indefinite, or even SUMO Collections.
+                          Template clauses referencing the slot are duplicated once per list item.
+    countable.list_prob_dropoff — geometric decay p for list size sampling (min 2);
+                          higher p → shorter lists; default equals count_prob_dropoff
     named_human_freq  — per-slot override of the global named_human_freq
     exclude           — optional list of SUMO term names to remove from the candidate pool
                         for this slot (e.g. ["Vertical","Horizontal"]); a warning is printed
@@ -67,10 +89,18 @@
   The logic section contains a list of KIF clauses that are assembled into a
   (exists (...) (and ...)) expression.  Clauses of the form (instance %?<n> %<n>)
   are handled specially: for collection slots they expand into three clauses
-  (instance ... Collection), (memberType ...), (memberCount ...).
-  Definite slots emit their instance assertion outside any modal wrapper.
+  (instance ... Collection), (memberType ...), (memberCount ...); for list slots
+  they are duplicated once per list item. Definite slots emit their instance
+  assertion outside any modal wrapper.
 */
 {
+  "resources": {
+    "morpho_db": {
+      "path": "~/.sigmanlp/MorphoDB/gpt-oss_20b",
+      "query_missing_words": true,
+      "model": "gpt-oss:20b"
+    }
+  },
   "default_settings":{
       "modal":{
         "on":true,
@@ -88,7 +118,7 @@
       },
       "tense":{
         "on":true,
-        "none":10, // none means tense is not encoded in logic and default tense is used in the sentence.
+        "none":10,
         "past":1,
         "present":1,
         "future":1
@@ -122,7 +152,13 @@
                           {"name":"SocialRole","weight":5},
                           {"name":"Animal","weight":5}],
             "type":"subclass",
-            "countable":{"possible":true, "freq":0.5}
+            "countable":{
+                "possible":true,
+                "freq":0.5,
+                "count_prob_dropoff":0.5,
+                "list_freq":0.27,
+                "list_prob_dropoff":0.5
+            }
         },
         "%2":{
             "sumo_terms":[{"name":"PositionalAttribute","weight":1}],

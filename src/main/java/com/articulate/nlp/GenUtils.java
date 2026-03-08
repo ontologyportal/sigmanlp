@@ -29,6 +29,7 @@ import io.github.ollama4j.OllamaAPI;
 import io.github.ollama4j.models.response.OllamaResult;
 import io.github.ollama4j.utils.OptionsBuilder;
 import io.github.ollama4j.utils.Options;
+import io.github.ollama4j.models.generate.OllamaStreamHandler;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -65,12 +66,13 @@ public class GenUtils {
     static String LLM_BASE_URL = null;
     static String LLM_SERVICE_TIER = null;
     static boolean CHEAP_PROMPT_MODE = false;
-    static int OLLAMA_PORT = 11434;
+    static int OLLAMA_PORT = Integer.parseInt(System.getProperty("OLLAMA_PORT", "11434"));
     public static OllamaAPI ollamaAPI;
     public static Options options;
+    private static Process ollamaProcess = null;
     private static final Random rand = new Random();
-    private static final int OLLAMA_MAX_ATTEMPTS = 12;
-    private static final long OLLAMA_RETRY_DELAY_MS = 5 * 60 * 1000L;
+    private static final int OLLAMA_MAX_ATTEMPTS = 6;
+    private static final long OLLAMA_RETRY_DELAY_MS = 30 * 1000L;
 
     /** ***************************************************************
      *   Creates a random unique variable name.
@@ -310,17 +312,21 @@ public class GenUtils {
      * @return true if the server is running, false otherwise
      */
     public static boolean isOllamaServerRunning(int port) {
+        HttpURLConnection conn = null;
         try {
             URL url = new URL("http://127.0.0.1:" + port + "/api/version");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setConnectTimeout(2000);  // 2 sec: fast probe
+            conn.setConnectTimeout(2000);
             conn.setReadTimeout(2000);
-            
+            conn.setUseCaches(false);
+            conn.setInstanceFollowRedirects(false);
             int code = conn.getResponseCode();
             return code == 200;
         } catch (Exception e) {
             return false;
+        } finally {
+            if (conn != null) conn.disconnect();
         }
     }
 
@@ -336,8 +342,9 @@ public class GenUtils {
             if (!isOllamaServerRunning(port)) {
                 System.out.println("GenUtils: Starting Ollama Server on port: " + port);
                 ProcessBuilder pb = new ProcessBuilder("ollama", "serve");
-                pb.environment().put("OLLAMA_HOST", "0.0.0.0:" + port);
-                Process process = pb.start();
+                pb.environment().put("OLLAMA_HOST", "127.0.0.1:" + port);
+                pb.inheritIO();
+                ollamaProcess = pb.start();
                 Thread.sleep(10000);
                 if (!isOllamaServerRunning(port)) {
                     System.err.println("Failed to start Ollama server on port " + port);
@@ -350,13 +357,22 @@ public class GenUtils {
             System.out.println("GenUtils: Creating connection to Ollama server using model: " + LLM_MODEL);
             ollamaAPI = new OllamaAPI("http://localhost:" + port + "/");
             ollamaAPI.setVerbose(false);
-            options = new OptionsBuilder().setTemperature(0.0f).build();
+            options = new OptionsBuilder().setTemperature(0.0f).setNumPredict(4000).build();
             System.out.println("GenUtils: Connected to Ollama server");
         } catch (Exception e) {
             System.err.println("Failed to start Ollama server on port " + port);
             System.err.println("aError: " + e.getMessage());
             System.exit(1);
         }
+    }
+
+    private static void stopOllamaServer() {
+        if (ollamaProcess != null && ollamaProcess.isAlive()) {
+            ollamaProcess.destroy();
+            try { ollamaProcess.waitFor(5, java.util.concurrent.TimeUnit.SECONDS); } catch (Exception ignored) {}
+            if (ollamaProcess.isAlive()) ollamaProcess.destroyForcibly();
+        }
+        ollamaProcess = null;
     }
 
     public static void setOllamaModel(String newModel) {
@@ -541,6 +557,19 @@ public class GenUtils {
         return response;
     }
 
+    public static class StringBuilderStreamHandler implements OllamaStreamHandler {
+        private final StringBuilder sb = new StringBuilder();
+
+        @Override
+        public void accept(String s) {
+            if (s != null) sb.append(s);
+        }
+
+        public String getText() {
+            return sb.toString();
+        }
+    }
+
     /** ***************************************************************
      *   Sends a prompt to the Ollama server and returns the response.
      */
@@ -551,22 +580,33 @@ public class GenUtils {
                 if (ollamaAPI == null) {
                     startOllamaServer(OLLAMA_PORT);
                 }
-                ollamaAPI.setRequestTimeoutSeconds(500);
-                OllamaResult result =
-                        ollamaAPI.generate(getLLMModel(), prompt, false, options);
+                ollamaAPI.setRequestTimeoutSeconds(600);
+                StringBuilderStreamHandler handler = new StringBuilderStreamHandler();
+                OllamaResult result = ollamaAPI.generate(getLLMModel(), prompt, false, options, handler);
                 Object response = result.getResponse();
                 if (response == null) {
                     throw new IllegalStateException("Ollama returned a null response.");
                 }
-                return response.toString();
+                String text = response.toString();
+                if (text.isBlank()) {
+                    throw new IllegalStateException("Ollama returned an empty response.");
+                }
+                return text;
             } catch (Exception e) {
                 System.out.println("Error in GenUtils.askOllama() attempt " + attempt +
                         " of " + OLLAMA_MAX_ATTEMPTS + ": " + e.getMessage());
-                System.out.println("Errored out prompt: " + prompt);
+                System.out.println("Erroring Prompt: " + prompt);
                 e.printStackTrace();
-                ollamaAPI = null; // force reconnection on next attempt
+                boolean serverHealthy = isOllamaServerRunning(OLLAMA_PORT);
+                if (!serverHealthy) {
+                    System.out.println("Ollama server appears unhealthy. Restarting...");
+                    stopOllamaServer();
+                    startOllamaServer(OLLAMA_PORT);
+                } else {
+                    System.out.println("Ollama server responds to health check. Retrying without restart.");
+                }
                 if (attempt < OLLAMA_MAX_ATTEMPTS) {
-                    System.out.println("Retrying Ollama request in 5 minutes...");
+                    System.out.println("Retrying Ollama request in 30 seconds...");
                     try {
                         Thread.sleep(OLLAMA_RETRY_DELAY_MS);
                     } catch (InterruptedException interruptedException) {
@@ -578,7 +618,7 @@ public class GenUtils {
         }
         System.err.println("GenUtils.askOllama(): Exhausted all retries without receiving a response. Exiting.");
         System.exit(1);
-        throw new IllegalStateException("GenUtils.askOllama(): System exit failed to terminate process."); // required for compiler.
+        throw new IllegalStateException("GenUtils.askOllama(): System exit failed to terminate process.");
     }
 
     private static String askOpenAICompatible(String prompt) {
