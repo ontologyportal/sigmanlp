@@ -14,7 +14,7 @@ public class LFeatures {
     private static final boolean debug = false;
     public boolean testMode = false;
     private static final Random rand = new Random();
-    private static final boolean GEN_ENG_WITH_OLLAMA = true;
+    private static final boolean GEN_ENG_WITH_OLLAMA = false;
 
     public static final int NOTIME = -1;
     public static final int PAST = 0;         // spoke, docked
@@ -497,17 +497,13 @@ public class LFeatures {
 
             prompt += "Give just the final resulting sentence in the following JSON format so it can be read by a machine: " +
                     "\n\n{\n  \"sentence\": \"<generated sentence>\"\n}\n";
-            System.out.println("LFeatures.DELETE ME - Prompt: " + prompt);
             String llmResponse = GenUtils.askOllama(prompt);
-            System.out.println("\n\nLLMResponse: " + llmResponse);
             // Regex to find the first {"sentence": "..."} JSON object
             String regex = "\\{\\s*\"sentence\"\\s*:\\s*\"([^\"]*)\"\\s*\\}";
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex);
             java.util.regex.Matcher matcher = pattern.matcher(llmResponse);
             if (matcher.find()) {
-                System.out.println("LFeatures.DELETE ME -    before sentence: " + englishSentence);
                 englishSentence = matcher.group(1);
-                System.out.println("LFeatures.DELETE ME - generated sentence: " + englishSentence + "\n\n\n\n");
             }
             else {
                 System.out.println("LFeatures could not generate sentence with an LLM. Returing non-LLM generated english sentence: " + englishSentence);

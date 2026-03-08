@@ -8,15 +8,21 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /***************************************************************
  * Shared utilities for morphological database generation.
@@ -26,7 +32,8 @@ public final class GenMorphoUtils {
     public static boolean debug = false;
     private static final String OUTPUT_ROOT = "MorphologicalDatabase";
     private static final String MORPHO_DB_ROOT_DIR = "MorphoDB";
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private static final ConcurrentHashMap<String, Object> FILE_WRITE_LOCKS = new ConcurrentHashMap<>();
 
     /***************************************************************
      * Builds the standardized output path for morphology resources.
@@ -122,6 +129,32 @@ public final class GenMorphoUtils {
     }
 
     /***************************************************************
+     * Normalizes a lemma string to a canonical lowercase form used as
+     * the primary key in all morphology DB files.
+     ***************************************************************/
+    public static String normalizeLemma(String lemma) {
+
+        if (lemma == null) return "";
+        return lemma.trim().toLowerCase().replace('_', ' ').replaceAll("\\s+", " ");
+    }
+
+    /***************************************************************
+     * Extracts the value of a named field from a serialized JSON line.
+     * Returns null if the line is not a JSON object or the field is absent/empty.
+     ***************************************************************/
+    private static String extractFieldFromSerializedLine(String line, String fieldName) {
+
+        if (line == null || !line.trim().startsWith("{")) return null;
+        try {
+            JsonNode node = JSON_MAPPER.readTree(line.trim());
+            String value = node.path(fieldName).asText("").trim();
+            return value.isEmpty() ? null : value;
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    /***************************************************************
      * Filters out non-English words and numbers from the provided map.
      ***************************************************************/
     public static void removeNonEnglishWords(Map<String, Set<String>> wordMap, String wordMapName) {
@@ -163,7 +196,8 @@ public final class GenMorphoUtils {
     }
 
     /***************************************************************
-     * Returns a map of synsetId -> serialized lines already present in the output file.
+     * Returns a map of normalized lemma -> serialized lines already present
+     * in the output file. Lines without a "lemma" field are ignored.
      ***************************************************************/
     public static Map<String, List<String>> loadExistingClassifications(String outputFilePath) {
 
@@ -179,14 +213,14 @@ public final class GenMorphoUtils {
             String line;
             while ((line = reader.readLine()) != null) {
                 String trimmed = line.trim();
-                if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
+                if (!trimmed.startsWith("{")) {
                     continue;
                 }
-                String key = extractSynsetIdFromSerializedLine(trimmed);
-                if (key == null || key.isEmpty()) {
-                    continue;
-                }
-                existing.computeIfAbsent(key, mapKey -> new ArrayList<>()).add(trimmed);
+                String raw = extractFieldFromSerializedLine(trimmed, "lemma");
+                if (raw == null) continue;
+                String lemma = normalizeLemma(raw);
+                if (lemma.isEmpty()) continue;
+                existing.computeIfAbsent(lemma, k -> new ArrayList<>()).add(trimmed);
             }
         } catch (IOException e) {
             throw new RuntimeException("Unable to read morphology output file: " + outputFilePath, e);
@@ -318,7 +352,31 @@ public final class GenMorphoUtils {
         Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
-            augmented.set(field.getKey(), field.getValue());
+            if (!"synsetId".equals(field.getKey())) {
+                augmented.set(field.getKey(), field.getValue());
+            }
+        }
+        return augmented;
+    }
+
+    /***************************************************************
+     * Returns a copy of the supplied node with canonical field order:
+     * synsetId first, lemma second, then all remaining fields.
+     ***************************************************************/
+    public static ObjectNode prependSynsetIdAndLemma(ObjectNode node, String synsetId, String lemma) {
+
+        ObjectNode augmented = JSON_MAPPER.createObjectNode();
+        augmented.put("synsetId", synsetId == null ? "" : synsetId);
+        augmented.put("lemma", lemma == null ? "" : lemma);
+        if (node == null) {
+            return augmented;
+        }
+        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            if (!"synsetId".equals(field.getKey()) && !"lemma".equals(field.getKey())) {
+                augmented.set(field.getKey(), field.getValue());
+            }
         }
         return augmented;
     }
@@ -326,16 +384,17 @@ public final class GenMorphoUtils {
     /***************************************************************
      * Standardizes error output so classification attempts are tracked.
      ***************************************************************/
-    public static String buildErrorRecord(String termFieldName, String termValue, String synsetId,
-                                          String definition, String llmResponse, String errorMessage) {
+    public static String buildErrorRecord(String termFieldName, String termValue, String lemma,
+                                          String synsetId, String definition,
+                                          String llmResponse, String errorMessage) {
 
         ObjectNode errorNode = JSON_MAPPER.createObjectNode();
         errorNode.put("synsetId", synsetId == null ? "" : synsetId);
+        errorNode.put("lemma", lemma == null ? "" : lemma);
         String resolvedFieldName = (termFieldName == null || termFieldName.trim().isEmpty())
                 ? "term"
                 : termFieldName;
         errorNode.put(resolvedFieldName, termValue == null ? "" : termValue);
-        errorNode.put("definition", definition == null ? "" : definition);
         errorNode.put("status", "error");
         errorNode.put("message", errorMessage == null ? "LLM response missing required fields." : errorMessage);
         errorNode.put("rawResponse", llmResponse == null
@@ -386,7 +445,33 @@ public final class GenMorphoUtils {
                 "- Keep each value concise.";
     }
 
-    private static ObjectNode parseJsonObjectLine(String serializedLine) {
+    /***************************************************************
+     * Appends a single JSON line to an existing DB file, using two
+     * layers of locking:
+     *   1. Per-file synchronized block — intra-JVM thread safety
+     *      (Java FileLock is NOT visible across threads in the same JVM).
+     *   2. FileChannel.lock() — exclusive advisory lock across processes.
+     * Does nothing if the file does not already exist (never creates files).
+     ***************************************************************/
+    public static void appendJsonLine(String filePath, ObjectNode node) {
+
+        Object jvmLock = FILE_WRITE_LOCKS.computeIfAbsent(filePath, k -> new Object());
+        synchronized (jvmLock) {
+            Path path = Paths.get(filePath);
+            if (!Files.exists(path)) return;
+            String line = serializeJsonLine(node) + System.lineSeparator();
+            try (FileChannel channel = FileChannel.open(path,
+                    StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+                 FileLock fileLock = channel.lock()) {
+                channel.write(ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
+            } catch (IOException e) {
+                System.out.println("MorphoDB: failed to persist to " + filePath
+                        + ": " + e.getMessage());
+            }
+        }
+    }
+
+    static ObjectNode parseJsonObjectLine(String serializedLine) {
 
         if (serializedLine == null) {
             return null;

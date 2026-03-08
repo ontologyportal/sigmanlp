@@ -123,7 +123,9 @@ public class VerbMorphoDB {
                 if (record == null) {
                     continue;
                 }
-                String lemma = normalizeLemma(record.path("verb").asText(""));
+                String lemmaRaw = record.path("lemma").asText("").trim();
+                if (lemmaRaw.isEmpty()) lemmaRaw = record.path("verb").asText("").trim();
+                String lemma = normalizeLemma(lemmaRaw);
                 if (lemma.isEmpty()) {
                     continue;
                 }

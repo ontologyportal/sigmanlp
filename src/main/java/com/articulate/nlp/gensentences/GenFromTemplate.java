@@ -48,9 +48,18 @@ public class GenFromTemplate {
         private final String humanName;
         /** "Male" or "Female" when humanName is non-null; null otherwise. */
         private final String humanGender;
+        /** Non-null iff this slot resolved to a natural-language list (not a SUMO Collection).
+         *  Each element is a fully-resolved singleton or collection InstanceValue. */
+        private final List<InstanceValue> listItems;
+        /** Parallel to listItems: the SUMO class sampled for each item (used in logic). */
+        private final List<String> listSumoTerms;
+        /** Parallel to listItems: the English term format for each item (used in English). */
+        private final List<String> listTermFormats;
 
         private InstanceValue(boolean definite, String name, boolean collection, int count,
-                              String socialRole, String humanName, String humanGender) {
+                              String socialRole, String humanName, String humanGender,
+                              List<InstanceValue> listItems, List<String> listSumoTerms,
+                              List<String> listTermFormats) {
             this.definite = definite;
             this.name = name;
             this.collection = collection;
@@ -58,7 +67,28 @@ public class GenFromTemplate {
             this.socialRole = socialRole;
             this.humanName = humanName;
             this.humanGender = humanGender;
+            this.listItems = listItems;
+            this.listSumoTerms = listSumoTerms;
+            this.listTermFormats = listTermFormats;
         }
+
+        /** List constructor: count is derived from listItems.size(). */
+        private InstanceValue(List<InstanceValue> listItems,
+                              List<String> listSumoTerms,
+                              List<String> listTermFormats) {
+            this.definite       = false;
+            this.name           = null;
+            this.collection     = false;
+            this.count          = listItems.size();
+            this.socialRole     = null;
+            this.humanName      = null;
+            this.humanGender    = null;
+            this.listItems      = listItems;
+            this.listSumoTerms  = listSumoTerms;
+            this.listTermFormats = listTermFormats;
+        }
+
+        boolean isList() { return listItems != null && !listItems.isEmpty(); }
     }
 
     private static class SlotValues {
@@ -135,7 +165,8 @@ public class GenFromTemplate {
     /***************************************************************
      * Initializes generation resources.
      ***************************************************************/
-    public static void init(String filePrefix, String morphoDbPath) {
+    public static void init(String filePrefix, String morphoDbPath,
+                            boolean queryMissingWords, String morphoDbModel) {
 
         outputFileEnglish = filePrefix + "-eng.txt";
         outputFileLogic = filePrefix + "-log.txt";
@@ -145,11 +176,15 @@ public class GenFromTemplate {
             WordNet.initOnce();
         }
         lfeatsets = GenUtils.initLFeatureSets(kbLite, suppress);
-        morphoDB = MorphoDB.loadMorphoDatabase(morphoDbPath);
+        morphoDB = MorphoDB.loadMorphoDatabase(morphoDbPath, queryMissingWords, morphoDbModel);
         verbHelper = new GenVerbHelper(morphoDB);
         System.out.println("Loaded " + morphoDB.size() + " morphology DB snapshot(s) from: " + morphoDbPath);
         GenUtils.createFileIfDoesNotExists(outputFileEnglish);
         GenUtils.createFileIfDoesNotExists(outputFileLogic);
+    }
+
+    public static void init(String filePrefix, String morphoDbPath) {
+        init(filePrefix, morphoDbPath, false, null);
     }
 
     /***************************************************************
@@ -297,7 +332,7 @@ public class GenFromTemplate {
             System.exit(1); 
         }
         String english = modal.getText() + GenUtils.lowercaseFirstLetter(pair.english);
-        String logic = "(modalAttribute " + " " + pair.logic + " " + modal.getSumoTerm() + ")";
+        String logic = "(modalAttribute " + pair.logic + " " + modal.getSumoTerm() + ")";
         if (Math.random() < template.getModalNegFreq()) {
             logic = "(not " + logic + ")";
         }
@@ -337,7 +372,10 @@ public class GenFromTemplate {
             return null;
         }
         english = english
-                .replace('_', ' ')
+                // Replace underscores with spaces, but preserve all-caps identifiers like UNK_PERSON_1.
+                // An underscore is from a space-converted name (e.g. "Mary_Smith") only when at least
+                // one adjacent character is lowercase; all-uppercase/digit surroundings are left alone.
+                .replaceAll("(?<![A-Z0-9])_|_(?![A-Z0-9])", " ")
                 .replaceAll(" {2,}", " ")
                 .replaceAll("\\s+([,.;!])", "$1")
                 .trim();
@@ -398,7 +436,7 @@ public class GenFromTemplate {
 
     private static String wrapLogicFuture(String internalText) {
 
-        return "(instance ?T TimeDuration) (before Now (BeginFn(WhenFn ?T)) " + //
+        return "(instance ?T TimeDuration) (before Now (BeginFn (WhenFn ?T))) " +
                         "(holdsDuring ?T " + internalText + ")";
     }
 
@@ -461,6 +499,44 @@ public class GenFromTemplate {
     }
 
     /***************************************************************
+     * Builds an Oxford-comma English string for a list InstanceValue.
+     * Two items: "X and Y". Three or more: "X, Y, and Z".
+     * Each item is rendered using the same article/plural rules as
+     * a non-list slot: named humans use the raw name, collection
+     * items use count + plural, singletons use article + termFormat.
+     ***************************************************************/
+    private static String buildEnglishListValue(InstanceValue iv, Templates.Slot slot) {
+
+        List<String> parts = new ArrayList<>();
+        boolean addArticle = slot.getVariable() != null || slot.getDefiniteFreq() > 0.0;
+        for (int i = 0; i < iv.listItems.size(); i++) {
+            InstanceValue item    = iv.listItems.get(i);
+            String        termFmt = iv.listTermFormats.get(i);
+            String        part;
+            String itemSumoTerm = (iv.listSumoTerms != null && i < iv.listSumoTerms.size())
+                    ? iv.listSumoTerms.get(i) : null;
+            if (item.humanName != null) {
+                part = item.humanName;
+            } else if (item.collection) {
+                String plural = morphoDB.getPlural(termFmt, itemSumoTerm);
+                part = item.definite ? "the " + item.count + " " + plural : item.count + " " + plural;
+            } else if (addArticle) {
+                String article = item.definite ? "the" : morphoDB.getIndefiniteArticle(termFmt, itemSumoTerm);
+                part = article + " " + termFmt;
+            } else {
+                part = termFmt;
+            }
+            parts.add(part);
+        }
+        if (parts.size() == 2) {
+            return parts.get(0) + " and " + parts.get(1);
+        }
+        // Oxford comma for 3+
+        return String.join(", ", parts.subList(0, parts.size() - 1))
+               + ", and " + parts.get(parts.size() - 1);
+    }
+
+    /***************************************************************
      * Samples slot terms and builds logic/English slot value maps.
      * A slot is %1, %2, etc. and a verb slot is %v1, %v2, etc.
      ***************************************************************/
@@ -494,26 +570,66 @@ public class GenFromTemplate {
                 // Append the dependent preposition (e.g. "adjacent" → "adjacent to").
                 String prep = morphoDB.getPositionalPreposition(termFormat);
                 if (prep == null) {
-                    System.out.println("Warning: positional preposition for '" + termFormat + "' not found in PrepositionMorphoDB; using no connecting word.");
+                    if (termFormat.contains(" ")) {
+                        // Term format is already multi-word (e.g. "east of", "surrounded by");
+                        // the preposition is embedded — use as-is.
+                        prep = "";
+                    } else {
+                        System.out.println("Warning: positional preposition for '" + termFormat + "' not found in PrepositionMorphoDB; using no connecting word.");
+                        prep = "";
+                    }
+                } else if (termFormat.endsWith(" " + prep)) {
+                    // Preposition already present at the end of the term format — don't duplicate.
                     prep = "";
                 }
                 englishValue = !prep.isEmpty() ? termFormat + " " + prep : termFormat;
             } else {
-                InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat, term);
+                InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat, term, 0);
+                // Convert collection → natural-language list when list_freq fires.
+                if (iv.collection && slot.getListFreq() > 0.0 && Math.random() < slot.getListFreq()) {
+                    int listSize = sampleGeometric(slot.getListProbDropoff());
+                    List<InstanceValue> listItems     = new ArrayList<>();
+                    List<String>        listSumoTerms = new ArrayList<>();
+                    List<String>        listTermFmts  = new ArrayList<>();
+                    // Item 1: reuse the already-sampled term.
+                    InstanceValue item1 = resolveInstanceValue(slot, slotNum, termFormat, term, 1);
+                    listItems.add(item1);
+                    listSumoTerms.add(item1.humanName != null ? "Human" : term);
+                    listTermFmts.add(termFormat);
+                    // Items 2..listSize: sample fresh terms independently.
+                    for (int li = 2; li <= listSize; li++) {
+                        String iterm = slotSamplers.get(slotNum).sampleTerm(template.getName(), slotNum);
+                        String ifmt  = kbLite.getTermFormat(iterm);
+                        if (ifmt == null || ifmt.isEmpty()) ifmt = iterm;
+                        InstanceValue itemN = resolveInstanceValue(slot, slotNum, ifmt, iterm, li);
+                        listItems.add(itemN);
+                        listSumoTerms.add(itemN.humanName != null ? "Human" : iterm);
+                        listTermFmts.add(ifmt);
+                    }
+                    iv = new InstanceValue(listItems, listSumoTerms, listTermFmts);
+                }
                 instanceValues.put(slotNum, iv);
                 if (iv.humanName != null) {
+                    // A first name tells us gender only — not age or sub-type.
+                    // Override the sampled class (e.g. "Boy") with "Human", the
+                    // only class we can assert with certainty for a named individual.
+                    logicSlotValues.put(slotNum, "Human");
+                }
+                if (iv.isList()) {
+                    englishValue = buildEnglishListValue(iv, slot);
+                } else if (iv.humanName != null) {
                     // Named individual: use the raw first name directly (no article)
                     englishValue = iv.humanName;
                 } else {
                     boolean addArticle = slot.getVariable() != null || slot.getDefiniteFreq() > 0.0;
                     if (addArticle) {
                         if (iv.collection) {
-                            String plural = morphoDB.getPlural(termFormat);
+                            String plural = morphoDB.getPlural(termFormat, term);
                             englishValue = iv.definite
                                     ? "the " + iv.count + " " + plural
                                     : iv.count + " " + plural;
                         } else {
-                            String article = iv.definite ? "the" : morphoDB.getIndefiniteArticle(termFormat);
+                            String article = iv.definite ? "the" : morphoDB.getIndefiniteArticle(termFormat, term);
                             englishValue = article + " " + termFormat;
                         }
                     } else {
@@ -536,7 +652,7 @@ public class GenFromTemplate {
             boolean negateVerb = verbSlot.isNegationOn() && Math.random() < verbSlot.getNegFreq();
             logicNegate = logicNegate || negateVerb;
             InstanceValue subjectIv = instanceValues.get(verbSlotNum);
-            String grammaticalPerson = (subjectIv != null && subjectIv.collection)
+            String grammaticalPerson = (subjectIv != null && (subjectIv.collection || subjectIv.isList()))
                     ? GenVerbHelper.PLURAL_GRAMMATICAL_PERSON
                     : GenVerbHelper.DEFAULT_GRAMMATICAL_PERSON;
             GenVerbHelper.VerbFeatures features = new GenVerbHelper.VerbFeatures(
@@ -575,6 +691,8 @@ public class GenFromTemplate {
      ***************************************************************/
     private static int sampleGeometric(double p) {
 
+        if (p <= 0.0 || p > 1.0)
+            throw new IllegalArgumentException("sampleGeometric: p must be in (0,1], got " + p);
         int count = 2;
         while (Math.random() > p) {
             count++;
@@ -585,23 +703,29 @@ public class GenFromTemplate {
     /***************************************************************
      * Resolves definiteness, collection mode, and SocialRole for a slot.
      * Collection mode: (instance %?N Collection) + memberType + memberCount.
-     * Definite collection constant: UpperCamelCase + "Collection".
-     * Definite singular constant:   UpperCamelCase + "Instance".
+     * Definite collection constant: UpperCamelCase + "Collection[_N]".
+     * Definite singular constant:   UpperCamelCase + "Instance[_N]".
      * SocialRole: socialRole field is set to the SUMO term (e.g. "Employee");
      *   logic uses (instance X Human) + (attribute X Employee) instead of
      *   (instance X Employee).
+     * itemIndex: 0 for the top-level slot call; 1-based index when resolving
+     *   a list item. When > 0, variable and constant names are suffixed with
+     *   "_N" to keep each list item's identifiers unique.
      ***************************************************************/
     private static InstanceValue resolveInstanceValue(Templates.Slot slot, int slotNum,
-                                                      String termFormat, String sumoTerm) {
+                                                      String termFormat, String sumoTerm,
+                                                      int itemIndex) {
 
-        String variableName = (slot.getVariable() != null) ? slot.getVariable() : "?V" + slotNum;
-        boolean definite = slot.getDefiniteFreq() > 0.0 && Math.random() < slot.getDefiniteFreq();
-        boolean collection = slot.isCountablePossible() && Math.random() < slot.getCountableFreq();
-        String socialRole = kbLite.isInstanceOf(sumoTerm, "SocialRole") ? sumoTerm : null;
+        String baseVar      = (slot.getVariable() != null) ? slot.getVariable() : "?V" + slotNum;
+        String variableName = (itemIndex > 0) ? baseVar + "_" + itemIndex : baseVar;
+        boolean definite    = slot.getDefiniteFreq() > 0.0 && Math.random() < slot.getDefiniteFreq();
+        boolean collection  = slot.isCountablePossible() && Math.random() < slot.getCountableFreq();
+        String socialRole   = kbLite.isInstanceOf(sumoTerm, "SocialRole") ? sumoTerm : null;
         if (collection) {
             int count = sampleGeometric(slot.getCountProbDropoff());
-            String name = definite ? toUpperCamelCase(termFormat) + "Collection" : variableName;
-            return new InstanceValue(definite, name, true, count, socialRole, null, null);
+            String collSuffix = (itemIndex > 0) ? "Collection_" + itemIndex : "Collection";
+            String name = definite ? toUpperCamelCase(termFormat) + collSuffix : variableName;
+            return new InstanceValue(definite, name, true, count, socialRole, null, null, null, null, null);
         }
         // Named-human path: ~named_human_freq% of singular non-SocialRole Human slots.
         if (socialRole == null
@@ -613,12 +737,14 @@ public class GenFromTemplate {
             String constant = rawName.replace(' ', '_');   // SUMO individual constant
             String gender   = lfeatsets.getSumoGender(rawName);
             // Named individuals are always pre-existing definite entities (constant, not variable).
-            return new InstanceValue(true, constant, false, 1, null, rawName, gender);
+            return new InstanceValue(true, constant, false, 1, null, rawName, gender, null, null, null);
         }
         if (definite) {
-            return new InstanceValue(true, toUpperCamelCase(termFormat) + "Instance", false, 1, socialRole, null, null);
+            String instSuffix = (itemIndex > 0) ? "Instance_" + itemIndex : "Instance";
+            return new InstanceValue(true, toUpperCamelCase(termFormat) + instSuffix,
+                    false, 1, socialRole, null, null, null, null, null);
         }
-        return new InstanceValue(false, variableName, false, 1, socialRole, null, null);
+        return new InstanceValue(false, variableName, false, 1, socialRole, null, null, null, null, null);
     }
 
     /***************************************************************
@@ -651,6 +777,72 @@ public class GenFromTemplate {
     }
 
     /***************************************************************
+     * Builds the list of SUMO KIF clauses for a Collection slot.
+     * When the collection contains SocialRole members, an extra
+     * (memberAttribute ...) clause is emitted.
+     ***************************************************************/
+    private static List<String> buildCollectionClauses(InstanceValue iv, String sumoClass) {
+
+        if (iv.socialRole != null) {
+            return Arrays.asList(
+                    "(instance " + iv.name + " Collection)",
+                    "(memberType " + iv.name + " Human)",
+                    "(memberAttribute " + iv.name + " " + iv.socialRole + ")",
+                    "(memberCount " + iv.name + " " + iv.count + ")");
+        } else {
+            return Arrays.asList(
+                    "(instance " + iv.name + " Collection)",
+                    "(memberType " + iv.name + " " + sumoClass + ")",
+                    "(memberCount " + iv.name + " " + iv.count + ")");
+        }
+    }
+
+    /***************************************************************
+     * Returns the deduplicated list of slot numbers whose
+     * InstanceValue.isList() == true, for all %?N tokens found
+     * in the given clause string.
+     ***************************************************************/
+    private static List<Integer> findListSlotRefs(String clause,
+                                                   Map<Integer, InstanceValue> instanceValues) {
+
+        List<Integer> result = new ArrayList<>();
+        Matcher m = Pattern.compile("%\\?(\\d+)").matcher(clause);
+        while (m.find()) {
+            int n = Integer.parseInt(m.group(1));
+            InstanceValue iv = instanceValues.get(n);
+            if (iv != null && iv.isList() && !result.contains(n)) result.add(n);
+        }
+        return result;
+    }
+
+    /***************************************************************
+     * Returns the cross-product of list items across all slot
+     * numbers in listSlotNums. Each element of the returned list
+     * is a map from slot number → specific InstanceValue item
+     * that should override the list InstanceValue for that slot
+     * when substituting variables into a logic clause.
+     ***************************************************************/
+    private static List<Map<Integer, InstanceValue>> buildListCombinations(
+            List<Integer> listSlotNums, Map<Integer, InstanceValue> instanceValues) {
+
+        List<Map<Integer, InstanceValue>> result = new ArrayList<>();
+        result.add(new HashMap<>());
+        for (int slotNum : listSlotNums) {
+            List<InstanceValue> items = instanceValues.get(slotNum).listItems;
+            List<Map<Integer, InstanceValue>> expanded = new ArrayList<>();
+            for (Map<Integer, InstanceValue> existing : result) {
+                for (InstanceValue item : items) {
+                    Map<Integer, InstanceValue> combo = new HashMap<>(existing);
+                    combo.put(slotNum, item);
+                    expanded.add(combo);
+                }
+            }
+            result = expanded;
+        }
+        return result;
+    }
+
+    /***************************************************************
      * Builds SUO-KIF logic from the clause list and returns two
      * parts: definite instance assertions (preExists) that must
      * stay outside any modal wrapper, and the quantified body.
@@ -672,21 +864,38 @@ public class GenFromTemplate {
             if (m.matches()) {
                 int slotNum = Integer.parseInt(m.group(1));
                 InstanceValue iv = slotValues.instanceValues.get(slotNum);
-                if (iv != null && iv.collection) {
-                    List<String> collClauses;
-                    if (iv.socialRole != null) {
-                        collClauses = Arrays.asList(
-                                "(instance " + iv.name + " Collection)",
-                                "(memberType " + iv.name + " Human)",
-                                "(memberAttribute " + iv.name + " " + iv.socialRole + ")",
-                                "(memberCount " + iv.name + " " + iv.count + ")");
-                    } else {
-                        String sumoClass = slotValues.logicSlotValues.get(slotNum);
-                        collClauses = Arrays.asList(
-                                "(instance " + iv.name + " Collection)",
-                                "(memberType " + iv.name + " " + sumoClass + ")",
-                                "(memberCount " + iv.name + " " + iv.count + ")");
+                if (iv != null && iv.isList()) {
+                    // Expand the instance clause once per list item.
+                    for (int li = 0; li < iv.listItems.size(); li++) {
+                        InstanceValue item      = iv.listItems.get(li);
+                        String        sumoClass = iv.listSumoTerms.get(li);
+                        if (item.collection) {
+                            List<String> collClauses = buildCollectionClauses(item, sumoClass);
+                            if (item.definite) { preExistsClauses.addAll(collClauses); }
+                            else               { bodyClauses.addAll(collClauses); existsVars.add(item.name); }
+                        } else if (item.socialRole != null) {
+                            String instClause = "(instance " + item.name + " Human)";
+                            String attrClause = "(attribute " + item.name + " " + item.socialRole + ")";
+                            if (item.definite) { preExistsClauses.add(instClause); preExistsClauses.add(attrClause); }
+                            else               { bodyClauses.add(instClause); bodyClauses.add(attrClause); existsVars.add(item.name); }
+                        } else {
+                            String itemClause = "(instance " + item.name + " " + sumoClass + ")";
+                            if (item.definite) {
+                                preExistsClauses.add(itemClause);
+                                if (item.humanName != null) {
+                                    if (item.humanGender != null)
+                                        preExistsClauses.add("(attribute " + item.name + " " + item.humanGender + ")");
+                                    preExistsClauses.add("(names \"" + item.humanName + "\" " + item.name + ")");
+                                }
+                            } else {
+                                bodyClauses.add(itemClause);
+                                existsVars.add(item.name);
+                            }
+                        }
                     }
+                } else if (iv != null && iv.collection) {
+                    String sumoClass = slotValues.logicSlotValues.get(slotNum);
+                    List<String> collClauses = buildCollectionClauses(iv, sumoClass);
                     if (iv.definite) {
                         preExistsClauses.addAll(collClauses);
                     } else {
@@ -712,7 +921,8 @@ public class GenFromTemplate {
                         if (iv.humanName != null) {
                             // Named human: add gender attribute and names predicate as pre-existing facts.
                             // iv.name is the SUMO constant (e.g. "Mary"); iv.humanName is the raw name.
-                            preExistsClauses.add("(attribute " + iv.name + " " + iv.humanGender + ")");
+                            if (iv.humanGender != null)
+                                preExistsClauses.add("(attribute " + iv.name + " " + iv.humanGender + ")");
                             preExistsClauses.add("(names \"" + iv.humanName + "\" " + iv.name + ")");
                         }
                     } else {
@@ -721,9 +931,22 @@ public class GenFromTemplate {
                     }
                 }
             } else {
-                String resolved = replaceInstanceSlots(clause, slotValues.instanceValues);
-                resolved = replaceSlots(resolved, slotValues.logicSlotValues);
-                bodyClauses.add(resolved);
+                List<Integer> listSlotNums = findListSlotRefs(clause, slotValues.instanceValues);
+                if (listSlotNums.isEmpty()) {
+                    String resolved = replaceInstanceSlots(clause, slotValues.instanceValues);
+                    resolved = replaceSlots(resolved, slotValues.logicSlotValues);
+                    bodyClauses.add(resolved);
+                } else {
+                    // Expand clause once per combination of list-slot items.
+                    for (Map<Integer, InstanceValue> combo
+                            : buildListCombinations(listSlotNums, slotValues.instanceValues)) {
+                        Map<Integer, InstanceValue> merged = new HashMap<>(slotValues.instanceValues);
+                        merged.putAll(combo);
+                        String resolved = replaceInstanceSlots(clause, merged);
+                        resolved = replaceSlots(resolved, slotValues.logicSlotValues);
+                        bodyClauses.add(resolved);
+                    }
+                }
             }
         }
         if (hasTenseClause && selectedTense != Templates.Tense.NONE) {
@@ -779,7 +1002,7 @@ public class GenFromTemplate {
 
         String home = System.getProperty("user.home");
         String templatePath = home + "/workspace/sigmanlp/src/main/java/com/articulate/nlp/gensentences/templates.json";
-        String morphoDbPath = home + "/.sigmanlp/MorphoDB/llama3_2";
+        String morphoDbPathArg = null; // set only when explicitly supplied on the CLI
         String filePrefix = "from_template";
         if (args != null && args.length > 0) {
             if ("-h".equals(args[0]) || "--help".equals(args[0])) {
@@ -793,12 +1016,22 @@ public class GenFromTemplate {
                 templatePath = args[1];
             }
             if (args.length > 2) {
-                morphoDbPath = args[2];
+                morphoDbPathArg = args[2];
             }
         }
         try {
-            init(filePrefix, morphoDbPath);
+            // Read templates first so morpho_db can be sourced from the JSON file.
             Templates templates = Templates.read(templatePath);
+            // Priority: CLI arg > morpho_db.path in templates.json > hardcoded default.
+            String morphoDbPath;
+            if (morphoDbPathArg != null) {
+                morphoDbPath = morphoDbPathArg;
+            } else if (templates.getMorphoDbPath() != null && !templates.getMorphoDbPath().isEmpty()) {
+                morphoDbPath = templates.getMorphoDbPath().replace("~", home);
+            } else {
+                morphoDbPath = home + "/.sigmanlp/MorphoDB/gpt-oss_20b";
+            }
+            init(filePrefix, morphoDbPath, templates.isQueryMissingWords(), templates.getMorphoDbModel());
             System.out.println("Loaded templates.json with " + templates.size() + " template(s).");
             Templates.Template template;
             int i = 0;

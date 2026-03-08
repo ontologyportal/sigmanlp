@@ -4,6 +4,7 @@ import com.articulate.nlp.GenUtils;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,87 +76,91 @@ public class GenNounMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = nounDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenNounMorphoDB.genIndefiniteArticles() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert linguist specializing in English noun phrase syntax and article usage. " +
-                        "Your task is to determine the correct indefinite article usage for the given noun or noun phrase. \n\n" +
-                        "The noun to classify: \"" + term + "\". \n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions: \n" +
-                        "- Decide whether the correct indefinite article is \"a\", \"an\", or \"none\".\n" +
-                        "- Base your decision on pronunciation and grammatical convention.\n" +
-                        "- If the noun is a scientific or proper name that normally does not take an article, return \"none\".\n" +
-                        "- If an article applies only in specific usage contexts, still provide the indefinite article.\n" +
-                        "- Always provide:\n" +
-                        "  1. The chosen article.\n" +
-                        "  2. The noun exactly as given.\n" +
-                        (cheapPrompt
-                                ? "\n"
-                                : "  3. A clear explanation of the rationale.\n" +
-                                "  4. An example sentence showing the article in use (or stating why no article is used).\n\n") +
-                        "Important formatting rules:\n" +
-                        " * Output only valid JSON.\n" +
-                        " * All JSON strings must escape sequences for quotation marks if necessary (\" → \\\") and (' → \\')\n" +
-                        (cheapPrompt ? "" : " * Do not place the usage sentence itself inside quotation marks.\n") +
-                        " * Do not include any commentary outside the JSON.\n\n" +
-                        "Output strictly in this JSON format (all lowercase for the article):" +
-                        "\n\n```json\n{\n  \"article\": \"<a|an|none>\",\n  \"noun\": \"<noun>\"" +
-                        (cheapPrompt
-                                ? "\n}"
-                                : ",\n  \"explanation\":\"<rationale for classification (escaped quotes if neccessary)>\",\n  \"usage\":\"<example sentence with article (escaped quotes if neccessary)>\" \n}");
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("article", "noun"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenNounMorphoDB.genIndefiniteArticles() Prompt: " + prompt);
+                    System.out.println("Skipping GenNounMorphoDB.genIndefiniteArticles() for \"" + term + "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("article", "noun")
-                                : Arrays.asList("article", "noun", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = nounDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert linguist specializing in English noun phrase syntax and article usage. " +
+                    "Your task is to determine the correct indefinite article usage for the given noun or noun phrase. \n\n" +
+                    "The noun to classify: \"" + term + "\". \n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions: \n" +
+                    "- Decide whether the correct indefinite article is \"a\", \"an\", or \"none\".\n" +
+                    "- Base your decision on pronunciation and grammatical convention.\n" +
+                    "- If the noun is a scientific or proper name that normally does not take an article, return \"none\".\n" +
+                    "- If an article applies only in specific usage contexts, still provide the indefinite article.\n" +
+                    "- Always provide:\n" +
+                    "  1. The chosen article.\n" +
+                    "  2. The noun exactly as given.\n" +
+                    (cheapPrompt
+                            ? "\n"
+                            : "  3. A clear explanation of the rationale.\n" +
+                            "  4. An example sentence showing the article in use (or stating why no article is used).\n\n") +
+                    "Important formatting rules:\n" +
+                    " * Output only valid JSON.\n" +
+                    " * All JSON strings must escape sequences for quotation marks if necessary (\" → \\\") and (' → \\')\n" +
+                    (cheapPrompt ? "" : " * Do not place the usage sentence itself inside quotation marks.\n") +
+                    " * Do not include any commentary outside the JSON.\n\n" +
+                    "Output strictly in this JSON format (all lowercase for the article):" +
+                    "\n\n```json\n{\n  \"article\": \"<a|an|none>\",\n  \"noun\": \"<noun>\"" +
+                    (cheapPrompt
+                            ? "\n}"
+                            : ",\n  \"explanation\":\"<rationale for classification (escaped quotes if neccessary)>\",\n  \"usage\":\"<example sentence with article (escaped quotes if neccessary)>\" \n}");
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("article", "noun"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenNounMorphoDB.genIndefiniteArticles() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("article", "noun")
+                            : Arrays.asList("article", "noun", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    String articleValue = responseNode.path("article").asText("");
-                    String nounValue = responseNode.path("noun").asText("");
-                    String category;
-                    if ("none".equals(articleValue)) {
-                        category = "NA";
-                    }
-                    else if (isIrregularIndefiniteArticle(articleValue, nounValue)) {
-                        category = "Irregular";
-                    }
-                    else {
-                        category = "Regular";
-                    }
-                    responseNode.put("article_pattern", category);
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(indefFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
-                            definition, llmResponse, "Unable to parse indefinite article response.");
-                    GenUtils.writeToFile(indefFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
+                String articleValue = responseNode.path("article").asText("");
+                String nounValue = responseNode.path("noun").asText("");
+                String category;
+                if ("none".equals(articleValue)) {
+                    category = "NA";
                 }
+                else if (isIrregularIndefiniteArticle(articleValue, nounValue)) {
+                    category = "Irregular";
+                }
+                else {
+                    category = "Regular";
+                }
+                responseNode.put("article_pattern", category);
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(indefFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse indefinite article response.");
+                GenUtils.writeToFile(indefFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenNounMorphoDB.genIndefiniteArticles().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenNounMorphoDB.genIndefiniteArticles().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -172,70 +177,74 @@ public class GenNounMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = nounDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenNounMorphoDB.genCollectiveNouns() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer specializing in English collective nouns. " +
-                        "Determine whether the given noun typically refers to a collection of individuals or things acting as a single unit. " +
-                        "If the noun can be collective in some contexts but not others, classify it as context-dependent. " +
-                        "If you cannot determine the usage, mark it as unknown.\n\n" +
-                        "The noun to classify: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Consider standard contemporary English usage.\n" +
-                        " - Treat words for groups (team, family, crew, flock, etc.) as collective.\n" +
-                        " - Treat ordinary concrete or abstract nouns that do not inherently refer to a group as not collective.\n" +
-                        (cheapPrompt ? "\n" : " - Provide one concise usage example that matches the classification.\n\n") +
-                        "Important formatting rules:\n" +
-                        " * Output only valid JSON and nothing else.\n" +
-                        " * Allowed values for the collective field: \"collective\", \"not collective\", \"context-dependent\", \"unknown\".\n" +
-                        " * Escape quotation marks within strings.\n\n" +
-                        "Output strictly in this JSON format:\n" +
-                        "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"collective\": \"<collective | not collective | context-dependent | unknown>\"" +
-                        (cheapPrompt
-                                ? "\n}\n```"
-                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "collective"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenNounMorphoDB.genCollectiveNouns() Prompt: " + prompt);
+                    System.out.println("Skipping GenNounMorphoDB.genCollectiveNouns() for \"" + term + "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("noun", "collective")
-                                : Arrays.asList("noun", "collective", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("collective",
-                            normalizeCollectiveCategory(responseNode.path("collective").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = nounDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer specializing in English collective nouns. " +
+                    "Determine whether the given noun typically refers to a collection of individuals or things acting as a single unit. " +
+                    "If the noun can be collective in some contexts but not others, classify it as context-dependent. " +
+                    "If you cannot determine the usage, mark it as unknown.\n\n" +
+                    "The noun to classify: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Consider standard contemporary English usage.\n" +
+                    " - Treat words for groups (team, family, crew, flock, etc.) as collective.\n" +
+                    " - Treat ordinary concrete or abstract nouns that do not inherently refer to a group as not collective.\n" +
+                    (cheapPrompt ? "\n" : " - Provide one concise usage example that matches the classification.\n\n") +
+                    "Important formatting rules:\n" +
+                    " * Output only valid JSON and nothing else.\n" +
+                    " * Allowed values for the collective field: \"collective\", \"not collective\", \"context-dependent\", \"unknown\".\n" +
+                    " * Escape quotation marks within strings.\n\n" +
+                    "Output strictly in this JSON format:\n" +
+                    "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"collective\": \"<collective | not collective | context-dependent | unknown>\"" +
+                    (cheapPrompt
+                            ? "\n}\n```"
+                            : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "collective"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenNounMorphoDB.genCollectiveNouns() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("noun", "collective")
+                            : Arrays.asList("noun", "collective", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("collective",
+                        normalizeCollectiveCategory(responseNode.path("collective").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(collectiveFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
-                            definition, llmResponse, "Unable to parse collective noun response.");
-                    GenUtils.writeToFile(collectiveFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(collectiveFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse collective noun response.");
+                GenUtils.writeToFile(collectiveFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenNounMorphoDB.genCollectiveNouns().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenNounMorphoDB.genCollectiveNouns().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -252,71 +261,75 @@ public class GenNounMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = nounDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenNounMorphoDB.genCountability() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer specializing in English noun countability. " +
-                        "Classify whether the noun is a count noun, mass noun, or can be used as both. " +
-                        "If it is a proper noun that typically does not pluralize, identify it as a proper noun. " +
-                        "If the countability genuinely cannot be determined, mark it as unknown.\n\n" +
-                        "The noun to classify: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Consider standard modern English usage.\n" +
-                        (cheapPrompt
-                                ? " - If the noun has both count and mass uses, classify it as \"count and mass noun\".\n\n"
-                                : " - If the noun has both count and mass uses, classify it as \"count and mass noun\" and explain when each use applies.\n" +
-                                " - Provide one concise usage example illustrating the classification.\n\n") +
-                        "Important formatting rules:\n" +
-                        " * Output only valid JSON and nothing else.\n" +
-                        " * Use the following allowed values for the countability field: \"count noun\", \"mass noun\", \"count and mass noun\", \"proper noun\", \"unknown\".\n" +
-                        " * Escape quotation marks within strings.\n\n" +
-                        "Output strictly in this JSON format:\n" +
-                        "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"countability\": \"<count noun | mass noun | count and mass noun | proper noun | unknown>\"" +
-                        (cheapPrompt
-                                ? "\n}\n```"
-                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "countability"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenNounMorphoDB.genCountability() Prompt: " + prompt);
+                    System.out.println("Skipping GenNounMorphoDB.genCountability() for \"" + term + "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("noun", "countability")
-                                : Arrays.asList("noun", "countability", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("countability",
-                            normalizeCountabilityCategory(responseNode.path("countability").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = nounDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer specializing in English noun countability. " +
+                    "Classify whether the noun is a count noun, mass noun, or can be used as both. " +
+                    "If it is a proper noun that typically does not pluralize, identify it as a proper noun. " +
+                    "If the countability genuinely cannot be determined, mark it as unknown.\n\n" +
+                    "The noun to classify: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Consider standard modern English usage.\n" +
+                    (cheapPrompt
+                            ? " - If the noun has both count and mass uses, classify it as \"count and mass noun\".\n\n"
+                            : " - If the noun has both count and mass uses, classify it as \"count and mass noun\" and explain when each use applies.\n" +
+                            " - Provide one concise usage example illustrating the classification.\n\n") +
+                    "Important formatting rules:\n" +
+                    " * Output only valid JSON and nothing else.\n" +
+                    " * Use the following allowed values for the countability field: \"count noun\", \"mass noun\", \"count and mass noun\", \"proper noun\", \"unknown\".\n" +
+                    " * Escape quotation marks within strings.\n\n" +
+                    "Output strictly in this JSON format:\n" +
+                    "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"countability\": \"<count noun | mass noun | count and mass noun | proper noun | unknown>\"" +
+                    (cheapPrompt
+                            ? "\n}\n```"
+                            : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "countability"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenNounMorphoDB.genCountability() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("noun", "countability")
+                            : Arrays.asList("noun", "countability", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("countability",
+                        normalizeCountabilityCategory(responseNode.path("countability").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(countabilityFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
-                            definition, llmResponse, "Unable to parse countability response.");
-                    GenUtils.writeToFile(countabilityFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(countabilityFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse countability response.");
+                GenUtils.writeToFile(countabilityFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenNounMorphoDB.genCountability().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenNounMorphoDB.genCountability().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -333,69 +346,73 @@ public class GenNounMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = nounDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenNounMorphoDB.genHumanness() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer specializing in the semantics of English nouns. " +
-                        "Classify whether the noun typically denotes a human being (including professions, roles, demonyms, and personal names), a non-human entity, or can refer to both. " +
-                        "If the reference cannot be determined, mark it as unknown.\n\n" +
-                        "The noun to classify: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Consider the most common contemporary usage.\n" +
-                        " - Treat words for animals, objects, abstractions, or organizations as non-human.\n" +
-                        " - Use \"human and non-human\" when the noun regularly refers to both (e.g., words like \"host\" or \"leader\").\n" +
-                        (cheapPrompt ? "\n" : " - Provide one concise usage example that matches the classification.\n\n") +
-                        "Important formatting rules:\n" +
-                        " * Output only valid JSON and nothing else.\n" +
-                        " * Allowed values for the classification field: \"human\", \"non-human\", \"human and non-human\", \"unknown\".\n" +
-                        " * Escape quotation marks within strings.\n\n" +
-                        "Output strictly in this JSON format:\n" +
-                        "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"classification\": \"<human | non-human | human and non-human | unknown>\"" +
-                        (cheapPrompt
-                                ? "\n}\n```"
-                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "classification"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenNounMorphoDB.genHumanness() Prompt: " + prompt);
+                    System.out.println("Skipping GenNounMorphoDB.genHumanness() for \"" + term + "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("noun", "classification")
-                                : Arrays.asList("noun", "classification", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("classification",
-                            normalizeHumannessCategory(responseNode.path("classification").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = nounDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer specializing in the semantics of English nouns. " +
+                    "Classify whether the noun typically denotes a human being (including professions, roles, demonyms, and personal names), a non-human entity, or can refer to both. " +
+                    "If the reference cannot be determined, mark it as unknown.\n\n" +
+                    "The noun to classify: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Consider the most common contemporary usage.\n" +
+                    " - Treat words for animals, objects, abstractions, or organizations as non-human.\n" +
+                    " - Use \"human and non-human\" when the noun regularly refers to both (e.g., words like \"host\" or \"leader\").\n" +
+                    (cheapPrompt ? "\n" : " - Provide one concise usage example that matches the classification.\n\n") +
+                    "Important formatting rules:\n" +
+                    " * Output only valid JSON and nothing else.\n" +
+                    " * Allowed values for the classification field: \"human\", \"non-human\", \"human and non-human\", \"unknown\".\n" +
+                    " * Escape quotation marks within strings.\n\n" +
+                    "Output strictly in this JSON format:\n" +
+                    "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"classification\": \"<human | non-human | human and non-human | unknown>\"" +
+                    (cheapPrompt
+                            ? "\n}\n```"
+                            : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "classification"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenNounMorphoDB.genHumanness() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("noun", "classification")
+                            : Arrays.asList("noun", "classification", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("classification",
+                        normalizeHumannessCategory(responseNode.path("classification").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(humannessFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
-                            definition, llmResponse, "Unable to parse humanness response.");
-                    GenUtils.writeToFile(humannessFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(humannessFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse humanness response.");
+                GenUtils.writeToFile(humannessFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenNounMorphoDB.genHumanness().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenNounMorphoDB.genHumanness().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -412,74 +429,78 @@ public class GenNounMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = nounDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenNounMorphoDB.genAgentivity() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer analyzing agentivity in English nouns. " +
-                        "Determine whether the noun typically denotes an entity capable of intentional action (agentive). " +
-                        "If it is agentive, indicate whether the agent is animate (living beings such as people or animals) or inanimate (institutions, organizations, artifacts, etc.).\n\n" +
-                        "The noun to classify: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Consider the noun's most common literal sense.\n" +
-                        " - Treat organizations, governments, and software that can act as inanimate agents.\n" +
-                        " - Mark the noun as non-agentive when it does not independently perform actions.\n" +
-                        " - Use 'unknown' if the evidence is insufficient.\n" +
-                        (cheapPrompt ? "\n" : " - Provide a concise usage example that matches the classification.\n\n") +
-                        "Important formatting rules:\n" +
-                        " * Output only valid JSON and nothing else.\n" +
-                        " * Allowed values for agency: \"agentive\", \"non-agentive\", \"unknown\".\n" +
-                        " * For agentive nouns, agent_type must be \"animate agent\", \"inanimate agent\", or \"mixed agent type\".\n" +
-                        " * For non-agentive or unknown nouns, agent_type must be \"not applicable\" or \"unknown agent type\".\n" +
-                        " * Escape quotation marks inside strings.\n\n" +
-                        "Output strictly in this JSON format:\n" +
-                        "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"agency\": \"<agentive | non-agentive | unknown>\",\n  \"agent_type\": \"<animate agent | inanimate agent | mixed agent type | not applicable | unknown agent type>\"" +
-                        (cheapPrompt
-                                ? "\n}\n```"
-                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "agency", "agent_type"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenNounMorphoDB.genAgentivity() Prompt: " + prompt);
+                    System.out.println("Skipping GenNounMorphoDB.genAgentivity() for \"" + term + "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("noun", "agency", "agent_type")
-                                : Arrays.asList("noun", "agency", "agent_type", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    String normalizedAgency = normalizeAgencyCategory(responseNode.path("agency").asText(""));
-                    responseNode.put("agency", normalizedAgency);
-                    responseNode.put("agent_type",
-                            normalizeAgentType(responseNode.path("agent_type").asText(""), normalizedAgency));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = nounDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer analyzing agentivity in English nouns. " +
+                    "Determine whether the noun typically denotes an entity capable of intentional action (agentive). " +
+                    "If it is agentive, indicate whether the agent is animate (living beings such as people or animals) or inanimate (institutions, organizations, artifacts, etc.).\n\n" +
+                    "The noun to classify: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Consider the noun's most common literal sense.\n" +
+                    " - Treat organizations, governments, and software that can act as inanimate agents.\n" +
+                    " - Mark the noun as non-agentive when it does not independently perform actions.\n" +
+                    " - Use 'unknown' if the evidence is insufficient.\n" +
+                    (cheapPrompt ? "\n" : " - Provide a concise usage example that matches the classification.\n\n") +
+                    "Important formatting rules:\n" +
+                    " * Output only valid JSON and nothing else.\n" +
+                    " * Allowed values for agency: \"agentive\", \"non-agentive\", \"unknown\".\n" +
+                    " * For agentive nouns, agent_type must be \"animate agent\", \"inanimate agent\", or \"mixed agent type\".\n" +
+                    " * For non-agentive or unknown nouns, agent_type must be \"not applicable\" or \"unknown agent type\".\n" +
+                    " * Escape quotation marks inside strings.\n\n" +
+                    "Output strictly in this JSON format:\n" +
+                    "\n```json\n{\n  \"noun\": \"<noun>\",\n  \"agency\": \"<agentive | non-agentive | unknown>\",\n  \"agent_type\": \"<animate agent | inanimate agent | mixed agent type | not applicable | unknown agent type>\"" +
+                    (cheapPrompt
+                            ? "\n}\n```"
+                            : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n}\n```");
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("noun", "agency", "agent_type"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenNounMorphoDB.genAgentivity() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("noun", "agency", "agent_type")
+                            : Arrays.asList("noun", "agency", "agent_type", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                String normalizedAgency = normalizeAgencyCategory(responseNode.path("agency").asText(""));
+                responseNode.put("agency", normalizedAgency);
+                responseNode.put("agent_type",
+                        normalizeAgentType(responseNode.path("agent_type").asText(""), normalizedAgency));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(agentivityFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
-                            definition, llmResponse, "Unable to parse agentivity response.");
-                    GenUtils.writeToFile(agentivityFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(agentivityFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse agentivity response.");
+                GenUtils.writeToFile(agentivityFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenNounMorphoDB.genAgentivity().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenNounMorphoDB.genAgentivity().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -497,91 +518,97 @@ public class GenNounMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = nounDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenNounMorphoDB.genPlurals() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + nounDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert linguist specializing in English noun phrase syntax and plural forms. " +
-                        "Your task is to determine the singular and plural form of the given noun or noun phrase. \n\n" +
-                        "The noun to classify: \"" + term + "\". \n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:" +
-                        " - Always provide:" +
-                        "   1. The singular form.\n" +
-                        "   2. The plural form.\n" +
-                        "   3. The noun type, such as \"count noun\", \"mass noun\", \"proper noun\", \"collective noun\", etc.\n" +
-                        (cheapPrompt ? "\n" : "   4. An explanation justifying the classification.\n\n") +
-                        " - If the noun is a proper noun or unique entity (e.g., personal names, places, institutions) that does not naturally pluralize, return the singular unchanged and \"none\" for the plural." +
-                        " - If the noun can pluralize in specific contexts (e.g., metaphorical or generic use), provide the most standard plural form." +
-                        (cheapPrompt ? "" : " - The explanation must justify why the chosen plural is valid, \"none\", or context-dependent.") +
-                        "Important formatting rules:\n" +
-                        " * Output only valid JSON and nothing else.\n" +
-                        " * Do not include any commentary outside the JSON.\n" +
-                        "Output strictly in this JSON format:" +
-                        "\n\n```json\n{\n  \"singular\": \"<noun in singular form>\",\n  \"plural\": \"<noun in plural form>\",\n  \"type\": \"<count noun | mass noun | proper noun | collective noun | other>\"" +
-                        (cheapPrompt
-                                ? "\n}"
-                                : ",\n  \"explanation\":\"<rationale for classification>\" \n}");
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("singular", "plural", "type"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenNounMorphoDB.genPlurals() Prompt: " + prompt);
+                    System.out.println("Skipping GenNounMorphoDB.genPlurals() for \"" + term + "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("singular", "plural", "type")
-                                : Arrays.asList("singular", "plural", "type", "explanation"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = nounDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert linguist specializing in English noun phrase syntax and plural forms. " +
+                    "Your task is to determine the singular and plural form of the given noun or noun phrase. \n\n" +
+                    "The noun to classify: \"" + term + "\". \n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:" +
+                    " - Always provide:" +
+                    "   1. The singular form.\n" +
+                    "   2. The plural form.\n" +
+                    "   3. The noun type, such as \"count noun\", \"mass noun\", \"proper noun\", \"collective noun\", etc.\n" +
+                    (cheapPrompt ? "\n" : "   4. An explanation justifying the classification.\n\n") +
+                    " - If the noun is a proper noun or unique entity (e.g., personal names, places, institutions) that does not naturally pluralize, return the singular unchanged and \"none\" for the plural." +
+                    " - If the noun can pluralize in specific contexts (e.g., metaphorical or generic use), provide the most standard plural form." +
+                    (cheapPrompt ? "" : " - The explanation must justify why the chosen plural is valid, \"none\", or context-dependent.") +
+                    "Important formatting rules:\n" +
+                    " * Output only valid JSON and nothing else.\n" +
+                    " * Do not include any commentary outside the JSON.\n" +
+                    "Output strictly in this JSON format:" +
+                    "\n\n```json\n{\n  \"singular\": \"<noun in singular form>\",\n  \"plural\": \"<noun in plural form>\",\n  \"type\": \"<count noun | mass noun | proper noun | collective noun | other>\"" +
+                    (cheapPrompt
+                            ? "\n}"
+                            : ",\n  \"explanation\":\"<rationale for classification>\" \n}");
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("singular", "plural", "type"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenNounMorphoDB.genPlurals() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("singular", "plural", "type")
+                            : Arrays.asList("singular", "plural", "type", "explanation"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
-                    String singularValue = responseNode.path("singular").asText("");
-                    String pluralValue = responseNode.path("plural").asText("");
-                    String category;
-                    if (!pluralValue.equals(term) && isIrregularPlural(singularValue, pluralValue)) {
-                        category = "Irregular";
-                    }
-                    else {
-                        category = "Regular";
-                    }
-                    responseNode.put("plural_pattern", category);
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(pluralsFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("noun", term, synsetId,
-                            definition, llmResponse, "Unable to parse pluralization response.");
-                    GenUtils.writeToFile(pluralsFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
+                String singularValue = responseNode.path("singular").asText("");
+                String pluralValue = responseNode.path("plural").asText("");
+                String category;
+                if (!pluralValue.equals(term) && isIrregularPlural(singularValue, pluralValue)) {
+                    category = "Irregular";
                 }
+                else {
+                    category = "Regular";
+                }
+                responseNode.put("plural_pattern", category);
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(pluralsFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("singular", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse pluralization response.");
+                GenUtils.writeToFile(pluralsFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenNounMorphoDB.genPlurals().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenNounMorphoDB.genPlurals().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
 
     private static boolean isIrregularIndefiniteArticle(String article, String noun) {
 
-        char firstChar = Character.toLowerCase(noun.trim().charAt(0));
-        if ("aeiou".indexOf(firstChar) >= 0) {
-            return "an".equals(article);
+        String normalizedArticle = (article == null) ? "" : article.trim().toLowerCase();
+        String normalizedNoun = (noun == null) ? "" : noun.trim();
+        if (normalizedNoun.isEmpty()) {
+            return true;
         }
-        else {
-            return "a".equals(article);
-        }
+        char firstChar = Character.toLowerCase(normalizedNoun.charAt(0));
+        return "aeiou".indexOf(firstChar) >= 0
+                ? !"an".equals(normalizedArticle)
+                : !"a".equals(normalizedArticle);
     }
 
     private static boolean isIrregularPlural(String singular, String givenPlural) {

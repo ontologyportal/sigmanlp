@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -96,19 +97,21 @@ public class GenVerbMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = verbDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenVerbMorphoDB.genVerbValence() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
+                if (GenMorphoUtils.debug) {
+                    System.out.println("Skipping GenVerbMorphoDB.genVerbValence() for \"" + term +
+                            "\" - already classified.");
                 }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer specializing in English verb valency and argument structure. " +
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = verbDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer specializing in English verb valency and argument structure. " +
                         "Classify the verb into the most appropriate valency category from the hierarchy below. \n\n" +
                         "VERB\n" +
                         "├── 0-Valent (Impersonal)\n" +
@@ -164,31 +167,34 @@ public class GenVerbMorphoDB {
                         cheapPrompt
                                 ? Arrays.asList("verb", "valence", "subtype", "semantic_roles")
                                 : Arrays.asList("verb", "valence", "subtype", "semantic_roles", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("valence",
-                            normalizeValenceCategory(responseNode.path("valence").asText("")));
-                    responseNode.put("subtype", normalizeSubtype(responseNode.path("subtype").asText("")));
-                    responseNode.put("semantic_roles",
-                            normalizeSemanticRoles(responseNode.path("semantic_roles").asText("")));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("valence",
+                        normalizeValenceCategory(responseNode.path("valence").asText("")));
+                responseNode.put("subtype", normalizeSubtype(responseNode.path("subtype").asText("")));
+                responseNode.put("semantic_roles",
+                        normalizeSemanticRoles(responseNode.path("semantic_roles").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(valenceFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
-                            definition, llmResponse, "Unable to parse verb valence response.");
-                    GenUtils.writeToFile(valenceFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(valenceFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse verb valence response.");
+                GenUtils.writeToFile(valenceFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenVerbMorphoDB.genVerbValence().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenVerbMorphoDB.genVerbValence().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -205,76 +211,81 @@ public class GenVerbMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = verbDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenVerbMorphoDB.genVerbReflexive() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer specializing in reflexive verb constructions. " +
-                        "Determine whether the verb is obligatorily reflexive (must take a reflexive object when its subject acts on itself), " +
-                        "optionally reflexive (can appear with or without a reflexive object), or never reflexive " +
-                        "(does not permit subject and object to be the same in standard usage).\n\n" +
-                        "Verb: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Return a JSON object with fields: verb, reflexivity" +
-                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
-                        " - reflexivity must be one of: \"must be reflexive\", \"can be reflexive\", or \"never reflexive\".\n" +
-                        (cheapPrompt
-                                ? "\n"
-                                : " - Provide a concise explanation citing syntactic or semantic cues.\n" +
-                                " - Supply an illustrative usage sentence that matches the classification.\n\n" +
-                                "Example classifications:\n" +
-                                "\"He prides himself on his work.\" → must be reflexive (obligatory reflexive object).\n" +
-                                "\"She dressed (herself).\" → can be reflexive (reflexive optional).\n" +
-                                "\"She greeted him.\" → never reflexive (verb does not take reflexive object).\n\n") +
-                        "Output only valid JSON with this shape:\n" +
-                        "{\n" +
-                        "  \"verb\": \"<verb>\",\n" +
-                        "  \"reflexivity\": \"<must be reflexive|can be reflexive|never reflexive>\"" +
-                        (cheapPrompt
-                                ? "\n"
-                                : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
-                        "}";
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reflexivity"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenVerbMorphoDB.genVerbReflexive() Prompt: " + prompt);
+                    System.out.println("Skipping GenVerbMorphoDB.genVerbReflexive() for \"" + term +
+                            "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("verb", "reflexivity")
-                                : Arrays.asList("verb", "reflexivity", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("reflexivity",
-                            normalizeReflexivityCategory(responseNode.path("reflexivity").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = verbDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer specializing in reflexive verb constructions. " +
+                    "Determine whether the verb is obligatorily reflexive (must take a reflexive object when its subject acts on itself), " +
+                    "optionally reflexive (can appear with or without a reflexive object), or never reflexive " +
+                    "(does not permit subject and object to be the same in standard usage).\n\n" +
+                    "Verb: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Return a JSON object with fields: verb, reflexivity" +
+                    (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
+                    " - reflexivity must be one of: \"must be reflexive\", \"can be reflexive\", or \"never reflexive\".\n" +
+                    (cheapPrompt
+                            ? "\n"
+                            : " - Provide a concise explanation citing syntactic or semantic cues.\n" +
+                            " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                            "Example classifications:\n" +
+                            "\"He prides himself on his work.\" → must be reflexive (obligatory reflexive object).\n" +
+                            "\"She dressed (herself).\" → can be reflexive (reflexive optional).\n" +
+                            "\"She greeted him.\" → never reflexive (verb does not take reflexive object).\n\n") +
+                    "Output only valid JSON with this shape:\n" +
+                    "{\n" +
+                    "  \"verb\": \"<verb>\",\n" +
+                    "  \"reflexivity\": \"<must be reflexive|can be reflexive|never reflexive>\"" +
+                    (cheapPrompt
+                            ? "\n"
+                            : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
+                    "}";
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reflexivity"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenVerbMorphoDB.genVerbReflexive() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("verb", "reflexivity")
+                            : Arrays.asList("verb", "reflexivity", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("reflexivity",
+                        normalizeReflexivityCategory(responseNode.path("reflexivity").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(reflexiveFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
-                            definition, llmResponse, "Unable to parse reflexive behavior response.");
-                    GenUtils.writeToFile(reflexiveFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(reflexiveFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse reflexive behavior response.");
+                GenUtils.writeToFile(reflexiveFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenVerbMorphoDB.genVerbReflexive().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenVerbMorphoDB.genVerbReflexive().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -291,75 +302,80 @@ public class GenVerbMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = verbDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenVerbMorphoDB.genVerbCausativity() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert in lexical semantics focusing on causativity. " +
-                        "Determine whether the verb denotes a causative action (the subject causes a change in a patient), " +
-                        "is typically non-causative, or has both causative and non-causative senses. \n\n" +
-                        "Verb: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Return a JSON object with fields: verb, causativity" +
-                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
-                        " - causativity must be one of: \"causative\", \"non-causative\", or \"mixed\" (for verbs with both readings).\n" +
-                        (cheapPrompt
-                                ? "\n"
-                                : " - Provide a concise explanation citing typical syntactic or semantic patterns.\n" +
-                                " - Supply an illustrative usage sentence that matches the classification.\n\n" +
-                                "Example classifications:\n" +
-                                "\"She broke the vase.\" → causative (agent causes change to patient)\n" +
-                                "\"The baby slept.\" → non-causative (intransitive change of state)\n" +
-                                "\"The door opened.\" / \"She opened the door.\" → mixed (verb alternates between causative and non-causative)\n\n") +
-                        "Output only valid JSON with this shape:\n" +
-                        "{\n" +
-                        "  \"verb\": \"<verb>\",\n" +
-                        "  \"causativity\": \"<causative|non-causative|mixed>\"" +
-                        (cheapPrompt
-                                ? "\n"
-                                : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
-                        "}";
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "causativity"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenVerbMorphoDB.genVerbCausativity() Prompt: " + prompt);
+                    System.out.println("Skipping GenVerbMorphoDB.genVerbCausativity() for \"" + term +
+                            "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("verb", "causativity")
-                                : Arrays.asList("verb", "causativity", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("causativity",
-                            normalizeCausativityCategory(responseNode.path("causativity").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = verbDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert in lexical semantics focusing on causativity. " +
+                    "Determine whether the verb denotes a causative action (the subject causes a change in a patient), " +
+                    "is typically non-causative, or has both causative and non-causative senses. \n\n" +
+                    "Verb: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Return a JSON object with fields: verb, causativity" +
+                    (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
+                    " - causativity must be one of: \"causative\", \"non-causative\", or \"mixed\" (for verbs with both readings).\n" +
+                    (cheapPrompt
+                            ? "\n"
+                            : " - Provide a concise explanation citing typical syntactic or semantic patterns.\n" +
+                            " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                            "Example classifications:\n" +
+                            "\"She broke the vase.\" → causative (agent causes change to patient)\n" +
+                            "\"The baby slept.\" → non-causative (intransitive change of state)\n" +
+                            "\"The door opened.\" / \"She opened the door.\" → mixed (verb alternates between causative and non-causative)\n\n") +
+                    "Output only valid JSON with this shape:\n" +
+                    "{\n" +
+                    "  \"verb\": \"<verb>\",\n" +
+                    "  \"causativity\": \"<causative|non-causative|mixed>\"" +
+                    (cheapPrompt
+                            ? "\n"
+                            : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
+                    "}";
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "causativity"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenVerbMorphoDB.genVerbCausativity() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("verb", "causativity")
+                            : Arrays.asList("verb", "causativity", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("causativity",
+                        normalizeCausativityCategory(responseNode.path("causativity").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(causativityFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
-                            definition, llmResponse, "Unable to parse causativity response.");
-                    GenUtils.writeToFile(causativityFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(causativityFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse causativity response.");
+                GenUtils.writeToFile(causativityFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenVerbMorphoDB.genVerbCausativity().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenVerbMorphoDB.genVerbCausativity().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -376,75 +392,80 @@ public class GenVerbMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = verbDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenVerbMorphoDB.genVerbAchievementProcess() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert linguist specializing in lexical aspect (Aktionsart). " +
-                        "Classify the verb as either an achievement verb (a single, punctual change of state) or a process verb (an unfolding action with duration). " +
-                        "If the verb genuinely alternates between both readings, mark it as mixed. " +
-                        "If the classification cannot be determined, label it unknown.\n\n" +
-                        "Verb: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Consider the most common contemporary English usage.\n" +
-                        " - Interpret process verbs as activities or events that extend over time (e.g., \"run\", \"negotiate\").\n" +
-                        " - Interpret achievement verbs as punctual changes or instants (e.g., \"recognize\", \"reach\").\n" +
-                        " - Return a JSON object with fields: verb, aktionsart" +
-                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
-                        " - aktionsart must be one of: \"achievement\", \"process\", \"mixed\", \"unknown\".\n" +
-                        (cheapPrompt
-                                ? "\n"
-                                : " - Provide a concise explanation referencing the temporal profile.\n" +
-                                " - Supply one illustrative usage sentence that matches the classification.\n\n") +
-                        "Output only valid JSON with this schema:\n" +
-                        "{\n" +
-                        "  \"verb\": \"<verb>\",\n" +
-                        "  \"aktionsart\": \"<achievement|process|mixed|unknown>\"" +
-                        (cheapPrompt
-                                ? "\n"
-                                : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n") +
-                        "}";
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "aktionsart"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenVerbMorphoDB.genVerbAchievementProcess() Prompt: " + prompt);
+                    System.out.println("Skipping GenVerbMorphoDB.genVerbAchievementProcess() for \"" + term +
+                            "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("verb", "aktionsart")
-                                : Arrays.asList("verb", "aktionsart", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("aktionsart",
-                            normalizeAktionsartCategory(responseNode.path("aktionsart").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = verbDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert linguist specializing in lexical aspect (Aktionsart). " +
+                    "Classify the verb as either an achievement verb (a single, punctual change of state) or a process verb (an unfolding action with duration). " +
+                    "If the verb genuinely alternates between both readings, mark it as mixed. " +
+                    "If the classification cannot be determined, label it unknown.\n\n" +
+                    "Verb: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Consider the most common contemporary English usage.\n" +
+                    " - Interpret process verbs as activities or events that extend over time (e.g., \"run\", \"negotiate\").\n" +
+                    " - Interpret achievement verbs as punctual changes or instants (e.g., \"recognize\", \"reach\").\n" +
+                    " - Return a JSON object with fields: verb, aktionsart" +
+                    (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
+                    " - aktionsart must be one of: \"achievement\", \"process\", \"mixed\", \"unknown\".\n" +
+                    (cheapPrompt
+                            ? "\n"
+                            : " - Provide a concise explanation referencing the temporal profile.\n" +
+                            " - Supply one illustrative usage sentence that matches the classification.\n\n") +
+                    "Output only valid JSON with this schema:\n" +
+                    "{\n" +
+                    "  \"verb\": \"<verb>\",\n" +
+                    "  \"aktionsart\": \"<achievement|process|mixed|unknown>\"" +
+                    (cheapPrompt
+                            ? "\n"
+                            : ",\n  \"explanation\": \"<short rationale>\",\n  \"usage\": \"<example sentence>\"\n") +
+                    "}";
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "aktionsart"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenVerbMorphoDB.genVerbAchievementProcess() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("verb", "aktionsart")
+                            : Arrays.asList("verb", "aktionsart", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("aktionsart",
+                        normalizeAktionsartCategory(responseNode.path("aktionsart").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(aspectFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
-                            definition, llmResponse, "Unable to parse aktionsart response.");
-                    GenUtils.writeToFile(aspectFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(aspectFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse aktionsart response.");
+                GenUtils.writeToFile(aspectFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenVerbMorphoDB.genVerbAchievementProcess().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenVerbMorphoDB.genVerbAchievementProcess().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -461,76 +482,81 @@ public class GenVerbMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = verbDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenVerbMorphoDB.genVerbReciprocal() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
-                boolean cheapPrompt = GenUtils.isCheapPromptMode();
-                String prompt = "You are an expert lexicographer specializing in reciprocal verb constructions. " +
-                        "Determine whether the verb is obligatorily reciprocal (typically requires two agents acting on each other), " +
-                        "optionally reciprocal (can describe mutual action but also allows non-reciprocal use), or never reciprocal " +
-                        "(does not naturally describe participants acting on each other).\n\n" +
-                        "Verb: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Instructions:\n" +
-                        " - Return a JSON object with fields: verb, reciprocity" +
-                        (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
-                        " - reciprocity must be one of: \"must be reciprocal\", \"can be reciprocal\", or \"never reciprocal\".\n" +
-                        (cheapPrompt
-                                ? "\n"
-                                : " - Provide a concise explanation referencing argument structure or semantic cues.\n" +
-                                " - Supply an illustrative usage sentence that matches the classification.\n\n" +
-                                "Example classifications:\n" +
-                                "\"They embraced each other tightly.\" → must be reciprocal (verb describes mutual action by default).\n" +
-                                "\"They met (each other) at noon.\" → can be reciprocal (reciprocal available but not obligatory).\n" +
-                                "\"She tutored him in chemistry.\" → never reciprocal (verb encodes asymmetric instruction).\n\n") +
-                        "Output only valid JSON with this shape:\n" +
-                        "{\n" +
-                        "  \"verb\": \"<verb>\",\n" +
-                        "  \"reciprocity\": \"<must be reciprocal|can be reciprocal|never reciprocal>\"" +
-                        (cheapPrompt
-                                ? "\n"
-                                : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
-                        "}";
-                prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reciprocity"));
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenVerbMorphoDB.genVerbReciprocal() Prompt: " + prompt);
+                    System.out.println("Skipping GenVerbMorphoDB.genVerbReciprocal() for \"" + term +
+                            "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                boolean errorInResponse = true;
-                ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
-                        cheapPrompt
-                                ? Arrays.asList("verb", "reciprocity")
-                                : Arrays.asList("verb", "reciprocity", "explanation", "usage"));
-                if (responseNode != null) {
-                    errorInResponse = false;
-                    responseNode = GenMorphoUtils.prependSynsetId(responseNode, synsetId);
-                    responseNode.put("reciprocity",
-                            normalizeReciprocityCategory(responseNode.path("reciprocity").asText("")));
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = verbDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
+            String prompt = "You are an expert lexicographer specializing in reciprocal verb constructions. " +
+                    "Determine whether the verb is obligatorily reciprocal (typically requires two agents acting on each other), " +
+                    "optionally reciprocal (can describe mutual action but also allows non-reciprocal use), or never reciprocal " +
+                    "(does not naturally describe participants acting on each other).\n\n" +
+                    "Verb: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Instructions:\n" +
+                    " - Return a JSON object with fields: verb, reciprocity" +
+                    (cheapPrompt ? ".\n" : ", explanation, usage.\n") +
+                    " - reciprocity must be one of: \"must be reciprocal\", \"can be reciprocal\", or \"never reciprocal\".\n" +
+                    (cheapPrompt
+                            ? "\n"
+                            : " - Provide a concise explanation referencing argument structure or semantic cues.\n" +
+                            " - Supply an illustrative usage sentence that matches the classification.\n\n" +
+                            "Example classifications:\n" +
+                            "\"They embraced each other tightly.\" → must be reciprocal (verb describes mutual action by default).\n" +
+                            "\"They met (each other) at noon.\" → can be reciprocal (reciprocal available but not obligatory).\n" +
+                            "\"She tutored him in chemistry.\" → never reciprocal (verb encodes asymmetric instruction).\n\n") +
+                    "Output only valid JSON with this shape:\n" +
+                    "{\n" +
+                    "  \"verb\": \"<verb>\",\n" +
+                    "  \"reciprocity\": \"<must be reciprocal|can be reciprocal|never reciprocal>\"" +
+                    (cheapPrompt
+                            ? "\n"
+                            : ",\n  \"explanation\": \"<reasoning>\",\n  \"usage\": \"<example sentence>\"\n") +
+                    "}";
+            prompt = GenMorphoUtils.applyCheapPromptDirective(prompt, Arrays.asList("verb", "reciprocity"));
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenVerbMorphoDB.genVerbReciprocal() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            boolean errorInResponse = true;
+            ObjectNode responseNode = GenMorphoUtils.extractRequiredJsonObject(llmResponse,
+                    cheapPrompt
+                            ? Arrays.asList("verb", "reciprocity")
+                            : Arrays.asList("verb", "reciprocity", "explanation", "usage"));
+            if (responseNode != null) {
+                errorInResponse = false;
+                responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
+                responseNode.put("reciprocity",
+                        normalizeReciprocityCategory(responseNode.path("reciprocity").asText("")));
+                if (cheapPrompt) {
+                    responseNode.remove("explanation");
+                    responseNode.remove("usage");
+                } else {
                     responseNode.put("explanation", responseNode.path("explanation").asText(""));
                     responseNode.put("usage", responseNode.path("usage").asText(""));
-                    responseNode.put("definition", definition == null ? "" : definition);
-                    String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
-                    GenUtils.writeToFile(reciprocalFileName, serializedLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
-                            definition, llmResponse, "Unable to parse reciprocity response.");
-                    GenUtils.writeToFile(reciprocalFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+                String serializedLine = GenMorphoUtils.serializeJsonLine(responseNode);
+                GenUtils.writeToFile(reciprocalFileName, serializedLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse reciprocity response.");
+                GenUtils.writeToFile(reciprocalFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenVerbMorphoDB.genVerbReciprocal().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenVerbMorphoDB.genVerbReciprocal().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
@@ -547,116 +573,117 @@ public class GenVerbMorphoDB {
             if (term.length() < 2) {
                 continue;
             }
-            for (String synsetId : entry.getValue()) {
-                String definition = verbDocumentationHash.get(synsetId);
-                definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
-                if (GenMorphoUtils.alreadyClassified(classifiedEntries, synsetId)) {
-                    if (GenMorphoUtils.debug) {
-                        System.out.println("Skipping GenVerbMorphoDB.genVerbConjugations() for \"" + term +
-                                "\" (" + synsetId + ") - already classified.");
-                    }
-                    continue;
-                }
-                String definitionStatement = (definition == null) ? "" : "Definition: \"" + verbDocumentationHash.get(synsetId) + "\". ";
-                String prompt = "You are an expert English grammarian generating complete verb conjugation tables. " +
-                        "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
-                        "across the tense/aspect categories below.\n\n" +
-                        "Verb: \"" + term + "\".\n" +
-                        definitionStatement + "\n\n" +
-                        "Tenses to cover in this order:\n" +
-                        "  1. Infinitive\n" +
-                        "  2. Simple present\n" +
-                        "  3. Simple past\n" +
-                        "  4. Simple future\n" +
-                        "  5. Present progressive (present continuous)\n" +
-                        "  6. Past progressive (past continuous)\n" +
-                        "  7. Future progressive (future continuous)\n" +
-                        "  8. Present perfect\n" +
-                        "  9. Past perfect\n" +
-                        " 10. Future perfect\n" +
-                        " 11. Present perfect progressive\n" +
-                        " 12. Past perfect progressive\n" +
-                        " 13. Future perfect progressive\n" +
-                        " 14. Imperative\n" +
-                        " 15. Gerund / present participle\n" +
-                        " 16. Past participle\n\n" +
-                        "Instructions:\n" +
-                        " - Return valid JSON with fields: verb, tenses, regularity, notes.\n" +
-                        " - verb must match the infinitive/base form provided.\n" +
-                        " - tenses must be an array of 16 objects, each containing:\n" +
-                        "     • tense: the tense/aspect name\n" +
-                        "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\n" +
-                        "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
-                        "     • Optional fields example and notes are allowed.\n" +
-                        " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
-                        " - regularity must be either \"Regular\" or \"Irregular\" and should reflect whether the simple past and past participle follow the standard -ed pattern.\n" +
-                        " - Provide a brief notes string highlighting any irregularities or alternations.\n" +
-                        " - Do not include commentary outside the JSON object.\n\n" +
-                        "Example output schema:\n" +
-                        "{\n" +
-                        "  \"verb\": \"to sample\",\n" +
-                        "  \"regularity\": \"<Regular|Irregular>\",\n" +
-                        "  \"tenses\": [\n" +
-                        "    {\n" +
-                        "      \"tense\": \"Simple present\",\n" +
-                        "      \"forms\": {\n" +
-                        "        \"i\": \"I sample\",\n" +
-                        "        \"you_singular\": \"You sample\",\n" +
-                        "        \"he_she_it\": \"He samples\",\n" +
-                        "        \"we\": \"We sample\",\n" +
-                        "        \"you_plural\": \"You sample\",\n" +
-                        "        \"they\": \"They sample\"\n" +
-                        "      },\n" +
-                        "      \"example\": \"I sample the sauce before serving.\"\n" +
-                        "    }\n" +
-                        "  ],\n" +
-                        "  \"notes\": \"Third person singular present adds -s.\"\n" +
-                        "}";
+            if (entry.getValue().isEmpty()) continue;
+            String lemmaKey = GenMorphoUtils.normalizeLemma(term);
+            if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
                 if (GenMorphoUtils.debug) {
-                    System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: " + prompt);
+                    System.out.println("Skipping GenVerbMorphoDB.genVerbConjugations() for \"" + term +
+                            "\" - already classified.");
                 }
-                String llmResponse = GenUtils.askLLM(prompt);
-                String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
-                boolean errorInResponse = true;
-                if (jsonResponse != null) {
-                    try {
-                        JsonNode root = JSON_MAPPER.readTree(jsonResponse);
-                        String verbValue = root.path("verb").asText("").trim();
-                        ArrayNode tensesNode = normalizeConjugationTenses(root.get("tenses"));
-                        if (!verbValue.isEmpty() && tensesNode != null && tensesNode.size() > 0) {
-                            errorInResponse = false;
-                            ObjectNode record = JSON_MAPPER.createObjectNode();
-                            record.put("synsetId", synsetId == null ? "" : synsetId);
-                            record.put("verb", verbValue);
-                            record.put("definition", definition == null ? "" : definition);
-                            String providedRegularity = normalizeRegularity(root.path("regularity").asText(""));
-                            String resolvedRegularity = providedRegularity;
-                            if (resolvedRegularity.equals("Unknown")) {
-                                resolvedRegularity = inferVerbRegularity(verbValue, tensesNode);
-                            }
-                            record.put("regularity", resolvedRegularity);
-                            record.set("tenses", tensesNode);
-                            if (root.hasNonNull("notes")) {
-                                record.put("notes", root.get("notes").asText(""));
-                            }
-                            String serializedLine = JSON_MAPPER.writeValueAsString(record);
-                            GenUtils.writeToFile(conjugationFileName, serializedLine + "\n");
-                            GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, serializedLine);
+                continue;
+            }
+            String synsetId = Collections.min(entry.getValue());
+            String definition = verbDocumentationHash.get(synsetId);
+            definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
+            String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            String prompt = "You are an expert English grammarian generating complete verb conjugation tables. " +
+                    "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
+                    "across the tense/aspect categories below.\n\n" +
+                    "Verb: \"" + term + "\".\n" +
+                    definitionStatement + "\n\n" +
+                    "Tenses to cover in this order:\n" +
+                    "  1. Infinitive\n" +
+                    "  2. Simple present\n" +
+                    "  3. Simple past\n" +
+                    "  4. Simple future\n" +
+                    "  5. Present progressive (present continuous)\n" +
+                    "  6. Past progressive (past continuous)\n" +
+                    "  7. Future progressive (future continuous)\n" +
+                    "  8. Present perfect\n" +
+                    "  9. Past perfect\n" +
+                    " 10. Future perfect\n" +
+                    " 11. Present perfect progressive\n" +
+                    " 12. Past perfect progressive\n" +
+                    " 13. Future perfect progressive\n" +
+                    " 14. Imperative\n" +
+                    " 15. Gerund / present participle\n" +
+                    " 16. Past participle\n\n" +
+                    "Instructions:\n" +
+                    " - Return valid JSON with fields: verb, tenses, regularity, notes.\n" +
+                    " - verb must match the infinitive/base form provided.\n" +
+                    " - tenses must be an array of 16 objects, each containing:\n" +
+                    "     • tense: the tense/aspect name\n" +
+                    "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\n" +
+                    "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
+                    "     • Optional fields example and notes are allowed.\n" +
+                    " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
+                    " - regularity must be either \"Regular\" or \"Irregular\" and should reflect whether the simple past and past participle follow the standard -ed pattern.\n" +
+                    " - Provide a brief notes string highlighting any irregularities or alternations.\n" +
+                    " - Do not include commentary outside the JSON object.\n\n" +
+                    "Example output schema:\n" +
+                    "{\n" +
+                    "  \"verb\": \"to sample\",\n" +
+                    "  \"regularity\": \"<Regular|Irregular>\",\n" +
+                    "  \"tenses\": [\n" +
+                    "    {\n" +
+                    "      \"tense\": \"Simple present\",\n" +
+                    "      \"forms\": {\n" +
+                    "        \"i\": \"I sample\",\n" +
+                    "        \"you_singular\": \"You sample\",\n" +
+                    "        \"he_she_it\": \"He samples\",\n" +
+                    "        \"we\": \"We sample\",\n" +
+                    "        \"you_plural\": \"You sample\",\n" +
+                    "        \"they\": \"They sample\"\n" +
+                    "      },\n" +
+                    "      \"example\": \"I sample the sauce before serving.\"\n" +
+                    "    }\n" +
+                    "  ],\n" +
+                    "  \"notes\": \"Third person singular present adds -s.\"\n" +
+                    "}";
+            if (GenMorphoUtils.debug) {
+                System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: " + prompt);
+            }
+            String llmResponse = GenUtils.askLLM(prompt);
+            String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
+            boolean errorInResponse = true;
+            if (jsonResponse != null) {
+                try {
+                    JsonNode root = JSON_MAPPER.readTree(jsonResponse);
+                    String verbValue = root.path("verb").asText("").trim();
+                    ArrayNode tensesNode = normalizeConjugationTenses(root.get("tenses"));
+                    if (!verbValue.isEmpty() && tensesNode != null && tensesNode.size() > 0) {
+                        errorInResponse = false;
+                        ObjectNode record = JSON_MAPPER.createObjectNode();
+                        record.put("synsetId", synsetId == null ? "" : synsetId);
+                        record.put("lemma", lemmaKey);
+                        record.put("verb", verbValue);
+                        String providedRegularity = normalizeRegularity(root.path("regularity").asText(""));
+                        String resolvedRegularity = providedRegularity;
+                        if (resolvedRegularity.equals("Unknown")) {
+                            resolvedRegularity = inferVerbRegularity(verbValue, tensesNode);
                         }
-                    } catch (Exception ignored) {
-                        // fall through to error handling
+                        record.put("regularity", resolvedRegularity);
+                        record.set("tenses", tensesNode);
+                        if (root.hasNonNull("notes")) {
+                            record.put("notes", root.get("notes").asText(""));
+                        }
+                        String serializedLine = JSON_MAPPER.writeValueAsString(record);
+                        GenUtils.writeToFile(conjugationFileName, serializedLine + "\n");
+                        GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
                     }
+                } catch (Exception ignored) {
+                    // fall through to error handling
                 }
-                if (errorInResponse) {
-                    String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, synsetId,
-                            definition, llmResponse, "Unable to parse verb conjugation response.");
-                    GenUtils.writeToFile(conjugationFileName, errorLine + "\n");
-                    GenMorphoUtils.cacheClassification(classifiedEntries, synsetId, errorLine);
-                }
+            }
+            if (errorInResponse) {
+                String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, lemmaKey, synsetId,
+                        definition, llmResponse, "Unable to parse verb conjugation response.");
+                GenUtils.writeToFile(conjugationFileName, errorLine + "\n");
+                GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
+            }
 
-                if (GenMorphoUtils.debug) {
-                    System.out.println("\n\nGenVerbMorphoDB.genVerbConjugations().LLMResponse: " + llmResponse + "\n\n**************\n");
-                }
+            if (GenMorphoUtils.debug) {
+                System.out.println("\n\nGenVerbMorphoDB.genVerbConjugations().LLMResponse: " + llmResponse + "\n\n**************\n");
             }
         }
     }
