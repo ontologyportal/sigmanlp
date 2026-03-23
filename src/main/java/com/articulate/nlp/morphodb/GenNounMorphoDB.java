@@ -73,9 +73,7 @@ public class GenNounMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(indefFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -174,9 +172,7 @@ public class GenNounMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(collectiveFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -258,9 +254,7 @@ public class GenNounMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(countabilityFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -343,9 +337,7 @@ public class GenNounMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(humannessFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -426,9 +418,7 @@ public class GenNounMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(agentivityFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -515,9 +505,7 @@ public class GenNounMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(pluralsFileName);
         for (Map.Entry<String, Set<String>> entry : nounSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {

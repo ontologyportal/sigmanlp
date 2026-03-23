@@ -164,7 +164,7 @@ public final class GenMorphoUtils {
         while (iterator.hasNext()) {
             Map.Entry<String, Set<String>> entry = iterator.next();
             String key = entry.getKey();
-            if (!key.matches("^[a-zA-Z_.\\'-]+$")) {
+            if (key.length() < 2 || !key.matches("^[a-zA-Z_.\\'-]+$")) {
                 iterator.remove();
                 numDeleted++;
             }

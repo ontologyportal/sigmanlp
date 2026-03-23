@@ -16,10 +16,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,6 +51,12 @@ public class GenMorphoDB {
         boolean allModels;
         boolean compact;
         boolean addLemma;
+        boolean dedup;
+        boolean findFixGaps;
+        boolean compareDb;
+        String referenceDbPath;
+        String verbStart;
+        String verbEnd;
     }
 
 
@@ -104,13 +114,18 @@ public class GenMorphoDB {
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --all-models --db-path <path-to-parent-dir>");
         System.out.println("  Provider-aware usage:");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB <word-type> <gen-function> \\");
-        System.out.println("      --provider <ollama|openai|anthropic|claude|openai-compatible> --model <model> \\");
+        System.out.println("      --provider <ollama|openai|anthropic|claude|openai-compatible|google|gemini|openrouter> --model <model> \\");
         System.out.println("      [--ollama-port <port>] [--api-key <key>|--api-key-env <ENV_VAR>] [--base-url <url>] \\");
         System.out.println("      [--service-tier <auto|default|flex|priority>] [--cheap-prompt|--full-prompt] [--verbose]");
         System.out.println("word-types supported: noun, verb, adjective, adverb, all");
         System.out.println("Maintenance flags:");
         System.out.println("  --compact      strip explanation/usage/definition and convert malformed rows into error rows");
         System.out.println("  --add-lemma    add the \"lemma\" field to existing records that lack it (no LLM calls)");
+        System.out.println("  --dedup        remove duplicate entries, keeping the first occurrence per lemma");
+        System.out.println("  --find-fix-gaps    compare each file against its WordNet POS set and list missing lemmas (requires SIGMA_HOME)");
+        System.out.println("  --compare-db       compare synsetId/lemma pairs across DBs; requires --reference <ref-db-path> and --db-path [--all-models]");
+        System.out.println("  --reference <path> (with --compare-db) reference DB path to compare against");
+        System.out.println("                     (with --compact)    prefer matching synsetId from this DB during the dedup pre-pass");
         System.out.println("  --all-models   treat --db-path as parent directory and run maintenance on each direct child model dir");
         System.out.println("  "
                 + "You may pass --add-lemma and --compact together; when both are set, --add-lemma runs first.");
@@ -130,6 +145,9 @@ public class GenMorphoDB {
         System.out.println("  -p to classify verbs by reciprocal behavior");
         System.out.println("  -a to classify verbs as achievements vs processes");
         System.out.println("  -t to generate full conjugation tables");
+        System.out.println("Verb parallelization flags (apply to all verb gen-functions):");
+        System.out.println("  --verb-start <letter>   Begin verb processing at this letter, inclusive (e.g. a)");
+        System.out.println("  --verb-end   <letter>   Stop verb processing at this letter, inclusive (e.g. k)");
         System.out.println("Adjective gen-functions:");
         System.out.println("  -c to classify adjectives by semantic category");
         System.out.println("Adverb gen-functions:");
@@ -148,6 +166,10 @@ public class GenMorphoDB {
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB all -a --provider openai --model gpt-5 --api-key-env OPENAI_API_KEY --service-tier flex --cheap-prompt");
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB noun -i --provider google --model gemini-2.5-flash-preview-04-17 --api-key-env GEMINI_API_KEY --cheap-prompt");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB noun -i --provider openrouter --model <openrouter-model-slug> --api-key-env OPENROUTER_API_KEY --cheap-prompt");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB --compact --db-path /file/path/to/db/gpt-oss_20b");
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --db-path /file/path/to/db/gpt-oss_20b");
@@ -155,6 +177,14 @@ public class GenMorphoDB {
                 + "com.articulate.nlp.morphodb.GenMorphoDB --compact --all-models --db-path /file/path/to/db");
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --all-models --db-path /file/path/to/db");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --dedup --db-path /file/path/to/db/gemma3_270m");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --dedup --all-models --db-path /file/path/to/db");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --find-fix-gaps --db-path /file/path/to/db/gemma3_270m");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --find-fix-gaps --all-models --db-path /file/path/to/db");
         System.out.println("If no Ollama port is provided, the default 11434 is used.");
         System.out.println("Default prompt mode: full for ollama, cheap for non-ollama providers.");
         System.out.println("--verbose prints per-item prompts and raw LLM responses.");
@@ -281,6 +311,48 @@ public class GenMorphoDB {
                 index++;
                 continue;
             }
+            if ("--dedup".equals(arg)) {
+                options.dedup = true;
+                index++;
+                continue;
+            }
+            if ("--find-fix-gaps".equals(arg)) {
+                options.findFixGaps = true;
+                index++;
+                continue;
+            }
+            if ("--verb-start".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --verb-start.");
+                    return null;
+                }
+                options.verbStart = args[index + 1].toLowerCase();
+                index += 2;
+                continue;
+            }
+            if ("--verb-end".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --verb-end.");
+                    return null;
+                }
+                options.verbEnd = args[index + 1].toLowerCase();
+                index += 2;
+                continue;
+            }
+            if ("--compare-db".equals(arg)) {
+                options.compareDb = true;
+                index++;
+                continue;
+            }
+            if ("--reference".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --reference.");
+                    return null;
+                }
+                options.referenceDbPath = args[index + 1];
+                index += 2;
+                continue;
+            }
             if ("--all-models".equals(arg)) {
                 options.allModels = true;
                 index++;
@@ -299,10 +371,10 @@ public class GenMorphoDB {
             return null;
         }
 
-        int maintenanceCount = (options.compact ? 1 : 0) + (options.addLemma ? 1 : 0);
+        int maintenanceCount = (options.compact ? 1 : 0) + (options.addLemma ? 1 : 0) + (options.dedup ? 1 : 0);
         boolean maintenanceRequested = maintenanceCount > 0;
-        if (options.allModels && !maintenanceRequested) {
-            System.err.println("--all-models is only valid for maintenance operations (--compact or --add-lemma).");
+        if (options.allModels && !maintenanceRequested && !options.findFixGaps && !options.compareDb) {
+            System.err.println("--all-models is only valid for maintenance operations (--compact, --add-lemma, --dedup, --find-fix-gaps, or --compare-db).");
             return null;
         }
         if (maintenanceRequested && (options.morphoDbPath == null || options.morphoDbPath.trim().isEmpty())) {
@@ -311,6 +383,25 @@ public class GenMorphoDB {
             return null;
         }
         if (maintenanceRequested) {
+            return options;
+        }
+        if (options.findFixGaps) {
+            if (options.morphoDbPath == null || options.morphoDbPath.trim().isEmpty()) {
+                System.err.println("Missing --db-path for --find-fix-gaps.");
+                System.err.println("Pass --db-path <path-to-morpho-db>.");
+                return null;
+            }
+            return options;
+        }
+        if (options.compareDb) {
+            if (options.referenceDbPath == null || options.referenceDbPath.trim().isEmpty()) {
+                System.err.println("--compare-db requires --reference <path-to-reference-db>.");
+                return null;
+            }
+            if (options.morphoDbPath == null || options.morphoDbPath.trim().isEmpty()) {
+                System.err.println("--compare-db requires --db-path <path-to-target-db>.");
+                return null;
+            }
             return options;
         }
 
@@ -471,27 +562,50 @@ public class GenMorphoDB {
         String wordType = cliOptions.wordType;
         String genFunction = cliOptions.genFunction;
         Path morphoModelRoot = resolveMorphoModelRoot(cliOptions);
-        boolean maintenanceRequested = cliOptions.compact || cliOptions.addLemma;
+        boolean maintenanceRequested = cliOptions.compact || cliOptions.addLemma || cliOptions.dedup;
 
         if (maintenanceRequested) {
             runMorphologicalMaintenance(morphoModelRoot, cliOptions);
+            if (cliOptions.compact) {
+                System.out.println("Running --find-fix-gaps automatically after --compact...");
+                loadWordNetAndRunFindFixGaps(morphoModelRoot, cliOptions);
+            }
+            return;
+        }
+
+        if (cliOptions.findFixGaps) {
+            loadWordNetAndRunFindFixGaps(morphoModelRoot, cliOptions);
+            return;
+        }
+
+        if (cliOptions.compareDb) {
+            Path referenceRoot = Paths.get(cliOptions.referenceDbPath.trim());
+            runCompareDb(referenceRoot, cliOptions);
             return;
         }
 
         configureLlm(cliOptions);
 
-        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
-        WordNet.initOnce();
+        initWordNet();
 
-        Map<String, Set<String>> nounSynsetHash = new TreeMap<>(WordNet.wn.nounSynsetHash);
-        Map<String, Set<String>> verbSynsetHash = new TreeMap<>(WordNet.wn.verbSynsetHash);
-        Map<String, Set<String>> adjectiveSynsetHash = new TreeMap<>(WordNet.wn.adjectiveSynsetHash);
-        Map<String, Set<String>> adverbSynsetHash = new TreeMap<>(WordNet.wn.adverbSynsetHash);
+        Map<String, Set<String>> nounSynsetHash      = filteredSortedCopy(WordNet.wn.nounSynsetHash,      "noun set");
+        Map<String, Set<String>> verbSynsetHash      = filteredSortedCopy(WordNet.wn.verbSynsetHash,      "verb set");
 
-        GenMorphoUtils.removeNonEnglishWords(nounSynsetHash, "noun set");
-        GenMorphoUtils.removeNonEnglishWords(verbSynsetHash, "verb set");
-        GenMorphoUtils.removeNonEnglishWords(adjectiveSynsetHash, "adjective set");
-        GenMorphoUtils.removeNonEnglishWords(adverbSynsetHash, "adverb set");
+        if (cliOptions.verbStart != null || cliOptions.verbEnd != null) {
+            NavigableMap<String, Set<String>> navVerbs = (TreeMap<String, Set<String>>) verbSynsetHash;
+            if (cliOptions.verbStart != null) {
+                navVerbs = navVerbs.tailMap(cliOptions.verbStart, true);
+            }
+            if (cliOptions.verbEnd != null) {
+                String upperBound = String.valueOf((char) (cliOptions.verbEnd.charAt(0) + 1));
+                navVerbs = navVerbs.headMap(upperBound, false);
+            }
+            verbSynsetHash = navVerbs;
+            System.out.println("Verb set size (after range filter): " + verbSynsetHash.size());
+        }
+
+        Map<String, Set<String>> adjectiveSynsetHash = filteredSortedCopy(WordNet.wn.adjectiveSynsetHash, "adjective set");
+        Map<String, Set<String>> adverbSynsetHash    = filteredSortedCopy(WordNet.wn.adverbSynsetHash,    "adverb set");
 
         System.out.println("Noun set size      : " + nounSynsetHash.size());
         System.out.println("Verb set size      : " + verbSynsetHash.size());
@@ -687,7 +801,9 @@ public class GenMorphoDB {
         }
 
         if (cliOptions.addLemma && cliOptions.compact) {
-            System.out.println("Both maintenance flags provided; running add-lemma first, then compact.");
+            System.out.println("Both maintenance flags provided; running add-lemma first, then compact (dedup, compact, find-fix-gaps).");
+        } else if (cliOptions.compact) {
+            System.out.println("compact: full cleanup sequence: dedup, compact, find-fix-gaps.");
         }
 
         if (cliOptions.addLemma) {
@@ -713,6 +829,13 @@ public class GenMorphoDB {
         }
 
         if (cliOptions.compact) {
+            System.out.println("compact: running dedup pre-pass...");
+            Path referenceRoot = null;
+            if (cliOptions.referenceDbPath != null && !cliOptions.referenceDbPath.trim().isEmpty()) {
+                referenceRoot = Paths.get(cliOptions.referenceDbPath.trim());
+                System.out.println("compact: using reference DB for dedup: " + referenceRoot);
+            }
+            runDedupPass(targetResolution.targets, cliOptions.allModels, referenceRoot);
             Path compactSummaryPath = morphoModelRoot.resolve("compact-summary.txt");
             BufferedWriter compactSummaryWriter = null;
             try {
@@ -799,6 +922,15 @@ public class GenMorphoDB {
                     System.out.println("Failed to finalize compact summary file: " + compactSummaryPath + " (" + e.getMessage() + ")");
                 }
             }
+        }
+
+        if (cliOptions.dedup) {
+            Path dedupReferenceRoot = null;
+            if (cliOptions.referenceDbPath != null && !cliOptions.referenceDbPath.trim().isEmpty()) {
+                dedupReferenceRoot = Paths.get(cliOptions.referenceDbPath.trim());
+                System.out.println("dedup: using reference DB: " + dedupReferenceRoot);
+            }
+            runDedupPass(targetResolution.targets, cliOptions.allModels, dedupReferenceRoot);
         }
 
         printSkippedMaintenanceTargets(targetResolution.skipped);
@@ -980,6 +1112,282 @@ public class GenMorphoDB {
                 stats.malformedConvertedRows);
         printCompactLine(compactSummaryWriter, fileSummary);
         return stats;
+    }
+
+    /**
+     * Removes duplicate entries from a morpho file, keeping the first occurrence of each normalized lemma.
+     * Returns int[3]: {totalLines, keptLines, droppedLines}.
+     */
+    private static void runDedupPass(List<MaintenanceTarget> targets, boolean allModels, Path referenceRoot) {
+
+        int totalLines = 0, totalKept = 0, totalDropped = 0, totalUpgrades = 0;
+        for (MaintenanceTarget target : targets) {
+            int modelLines = 0, modelKept = 0, modelDropped = 0, modelUpgrades = 0;
+            for (MorphoFileSpec fileSpec : target.fileSpecs) {
+                Map<String, String> refMap = null;
+                if (referenceRoot != null) {
+                    Path refFilePath = referenceRoot
+                            .resolve(fileSpec.path.getParent().getFileName())
+                            .resolve(fileSpec.path.getFileName());
+                    refMap = loadLemmaToSynsetIdMap(refFilePath);
+                }
+                int[] stats = dedupMorphoFile(fileSpec, refMap);
+                modelLines    += stats[0];
+                modelKept     += stats[1];
+                modelDropped  += stats[2];
+                modelUpgrades += stats[3];
+                if (stats[2] > 0 || stats[3] > 0) {
+                    System.out.printf("dedup: %-40s  total=%d  kept=%d  dropped=%d  ref-upgrades=%d%n",
+                            fileSpec.path.getFileName(), stats[0], stats[1], stats[2], stats[3]);
+                }
+            }
+            totalLines    += modelLines;
+            totalKept     += modelKept;
+            totalDropped  += modelDropped;
+            totalUpgrades += modelUpgrades;
+            if (allModels) {
+                System.out.printf("dedup MODEL: %-30s  files=%d  total=%d  kept=%d  dropped=%d  ref-upgrades=%d%n",
+                        target.modelName, target.fileSpecs.size(), modelLines, modelKept, modelDropped, modelUpgrades);
+            }
+        }
+        System.out.printf("dedup TOTAL: models=%d  total=%d  kept=%d  dropped=%d  ref-upgrades=%d%n",
+                targets.size(), totalLines, totalKept, totalDropped, totalUpgrades);
+    }
+
+    /***************************************************************
+     * Removes duplicate lemmas from a morpho file.
+     * When refLemmaToSynsetId is non-null, among duplicates for the
+     * same lemma the row whose synsetId matches the reference is
+     * preferred; otherwise the first-in-file row is kept.
+     * Returns int[4]: {totalLines, keptLines, droppedLines, refUpgrades}.
+     ***************************************************************/
+    private static int[] dedupMorphoFile(MorphoFileSpec fileSpec, Map<String, String> refLemmaToSynsetId) {
+
+        int[] result = {0, 0, 0, 0};
+        if (fileSpec == null || fileSpec.path == null || !Files.exists(fileSpec.path)) {
+            return result;
+        }
+        Path filePath = fileSpec.path;
+        Path tmp = createTempFileInSameDirectory(filePath);
+
+        Map<String, String> lemmaToSelectedLine = new HashMap<>();
+        List<String> lemmaOrder = new ArrayList<>();
+        List<String> unparseable = new ArrayList<>();
+
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result[0]++;
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    unparseable.add(line);
+                    result[1]++;
+                    continue;
+                }
+                String lemma = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
+                if (lemma.isEmpty()) {
+                    result[2]++;
+                    continue;
+                }
+                if (!lemmaToSelectedLine.containsKey(lemma)) {
+                    lemmaToSelectedLine.put(lemma, line);
+                    lemmaOrder.add(lemma);
+                } else if (refLemmaToSynsetId != null && refLemmaToSynsetId.containsKey(lemma)) {
+                    String refSynsetId = refLemmaToSynsetId.get(lemma);
+                    String currentSynsetId = GenMorphoUtils.parseJsonObjectLine(
+                            lemmaToSelectedLine.get(lemma)).path("synsetId").asText("").trim();
+                    String thisSynsetId = node.path("synsetId").asText("").trim();
+                    if (!refSynsetId.equals(currentSynsetId) && refSynsetId.equals(thisSynsetId)) {
+                        lemmaToSelectedLine.put(lemma, line);
+                        result[3]++;
+                    } else {
+                        result[2]++;
+                    }
+                } else {
+                    result[2]++;
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("dedup: Failed while reading file " + filePath + ": " + e.getMessage());
+            return result;
+        }
+
+        try (BufferedWriter writer = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+            for (String unparsedLine : unparseable) {
+                writer.write(unparsedLine);
+                writer.newLine();
+            }
+            for (String lemma : lemmaOrder) {
+                writer.write(lemmaToSelectedLine.get(lemma));
+                writer.newLine();
+            }
+            writer.flush();
+        } catch (IOException e) {
+            System.out.println("dedup: Failed while writing file " + filePath + ": " + e.getMessage());
+            return result;
+        }
+
+        overwriteFile(filePath, tmp);
+        return result;
+    }
+
+    private static Set<String> buildNormalizedLemmaSet(Map<String, Set<String>> synsetHash) {
+
+        Set<String> result = new HashSet<>();
+        for (String lemma : synsetHash.keySet()) {
+            String normalized = GenMorphoUtils.normalizeLemma(lemma);
+            if (!normalized.isEmpty()) {
+                result.add(normalized);
+            }
+        }
+        return result;
+    }
+
+    private static void initWordNet() {
+
+        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+        WordNet.initOnce();
+    }
+
+    private static Map<String, Set<String>> filteredSortedCopy(Map<String, Set<String>> raw, String label) {
+
+        Map<String, Set<String>> copy = new TreeMap<>(raw);
+        GenMorphoUtils.removeNonEnglishWords(copy, label);
+        return copy;
+    }
+
+    private static void loadWordNetAndRunFindFixGaps(Path morphoModelRoot, CliOptions cliOptions) {
+
+        initWordNet();
+        runFindFixGaps(morphoModelRoot, cliOptions,
+                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.nounSynsetHash,      "noun set")),
+                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.verbSynsetHash,      "verb set")),
+                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.adjectiveSynsetHash, "adjective set")),
+                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.adverbSynsetHash,    "adverb set")));
+    }
+
+    private static void runFindFixGaps(Path morphoModelRoot, CliOptions cliOptions,
+                                    Set<String> nounLemmas, Set<String> verbLemmas,
+                                    Set<String> adjLemmas,  Set<String> advLemmas) {
+
+        if (morphoModelRoot == null) {
+            System.out.println("Unable to determine morphological DB root path.");
+            return;
+        }
+        System.out.println("Finding gaps in: " + morphoModelRoot +
+                (cliOptions.allModels ? " (all-models mode)" : ""));
+        MaintenanceTargetResolution targetResolution =
+                resolveMaintenanceTargets(morphoModelRoot, cliOptions.allModels);
+        if (targetResolution.targets.isEmpty()) {
+            System.out.println("No valid morphological model directories found at: " + morphoModelRoot);
+            printSkippedMaintenanceTargets(targetResolution.skipped);
+            return;
+        }
+        for (MaintenanceTarget target : targetResolution.targets) {
+            if (cliOptions.allModels) {
+                System.out.println("find-gaps MODEL: " + target.modelName);
+            }
+            Path gapsFile = target.modelRoot.resolve("find-gaps.txt");
+            try (BufferedWriter gapsWriter = Files.newBufferedWriter(gapsFile, StandardCharsets.UTF_8)) {
+                for (MorphoFileSpec fileSpec : target.fileSpecs) {
+                    Set<String> expected = posExpectedLemmas(fileSpec.sourceFieldName,
+                            nounLemmas, verbLemmas, adjLemmas, advLemmas);
+                    findFixGapsForFile(fileSpec, expected, gapsWriter);
+                }
+            } catch (IOException e) {
+                System.out.println("find-gaps: Failed writing " + gapsFile + ": " + e.getMessage());
+            }
+            System.out.println("  -> gap details written to: " + gapsFile);
+        }
+        printSkippedMaintenanceTargets(targetResolution.skipped);
+    }
+
+    private static Set<String> posExpectedLemmas(String sourceFieldName,
+                                                  Set<String> nounLemmas, Set<String> verbLemmas,
+                                                  Set<String> adjLemmas,  Set<String> advLemmas) {
+        switch (sourceFieldName) {
+            case "verb":      return verbLemmas;
+            case "adjective": return adjLemmas;
+            case "adverb":    return advLemmas;
+            default:          return nounLemmas; // "noun" and "singular"
+        }
+    }
+
+    private static void findFixGapsForFile(MorphoFileSpec fileSpec, Set<String> expectedLemmas,
+                                         BufferedWriter gapsWriter) {
+
+        if (fileSpec == null || fileSpec.path == null || !Files.exists(fileSpec.path)) {
+            System.out.printf("find-fix-gaps: %-40s  (file not found)%n", fileSpec != null ? fileSpec.path : "null");
+            return;
+        }
+        Path filePath = fileSpec.path;
+        Path tmp = createTempFileInSameDirectory(filePath);
+        Set<String> keptLemmas  = new HashSet<>();
+        Set<String> extraLemmas = new TreeSet<>();
+        int droppedNoLemma = 0;
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8);
+             BufferedWriter writer = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    // Malformed — keep and let --compact handle it
+                    writer.write(line);
+                    writer.newLine();
+                    continue;
+                }
+                String lemma = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
+                if (lemma.isEmpty()) {
+                    droppedNoLemma++;
+                    continue;
+                }
+                if (!expectedLemmas.contains(lemma)) {
+                    extraLemmas.add(lemma);
+                    continue;
+                }
+                keptLemmas.add(lemma);
+                writer.write(line);
+                writer.newLine();
+            }
+            writer.flush();
+        } catch (IOException e) {
+            System.out.println("find-fix-gaps: Failed reading/writing " + filePath + ": " + e.getMessage());
+            return;
+        }
+        overwriteFile(filePath, tmp);
+        Set<String> missing = new TreeSet<>(expectedLemmas);
+        missing.removeAll(keptLemmas);
+        System.out.printf("find-fix-gaps: %-40s  expected=%d  kept=%d  missing=%d  removed=%d  droppedNoLemma=%d%n",
+                filePath.getFileName(),
+                expectedLemmas.size(), keptLemmas.size(),
+                missing.size(), extraLemmas.size(), droppedNoLemma);
+        try {
+            gapsWriter.write("=== " + filePath.getFileName() +
+                    "  expected=" + expectedLemmas.size() +
+                    "  kept=" + keptLemmas.size() +
+                    "  missing=" + missing.size() +
+                    "  removed=" + extraLemmas.size() + " ===");
+            gapsWriter.newLine();
+            if (!missing.isEmpty()) {
+                gapsWriter.write("MISSING:");
+                gapsWriter.newLine();
+                for (String lemma : missing) {
+                    gapsWriter.write("  " + lemma);
+                    gapsWriter.newLine();
+                }
+            }
+            if (!extraLemmas.isEmpty()) {
+                gapsWriter.write("REMOVED (extra):");
+                gapsWriter.newLine();
+                for (String lemma : extraLemmas) {
+                    gapsWriter.write("  " + lemma);
+                    gapsWriter.newLine();
+                }
+            }
+            gapsWriter.newLine();
+        } catch (IOException e) {
+            System.out.println("find-fix-gaps: Failed writing gap details for " + filePath.getFileName() + ": " + e.getMessage());
+        }
     }
 
     private static String recoverLemmaFromNode(com.fasterxml.jackson.databind.node.ObjectNode node, String sourceFieldName) {
@@ -1217,6 +1625,142 @@ public class GenMorphoDB {
             return;
         }
         overwriteFile(filePath, tmp);
+    }
+
+
+    /***************************************************************
+     * Loads a morphoDB file and returns a map of normalized lemma
+     * to synsetId. Used by the reference-aware dedup pre-pass.
+     ***************************************************************/
+    private static Map<String, String> loadLemmaToSynsetIdMap(Path filePath) {
+
+        Map<String, String> map = new HashMap<>();
+        if (filePath == null || !Files.exists(filePath)) {
+            return map;
+        }
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    continue;
+                }
+                String synsetId = node.path("synsetId").asText("").trim();
+                String lemma    = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
+                if (!synsetId.isEmpty() && !lemma.isEmpty()) {
+                    map.put(lemma, synsetId);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("dedup: failed to read reference file " + filePath + ": " + e.getMessage());
+        }
+        return map;
+    }
+
+
+    /***************************************************************
+     * Compares synset_id/lemma pairs in every morphology file of
+     * one or more target DBs against the corresponding file in the
+     * reference DB and prints per-file counts to stdout.
+     ***************************************************************/
+    private static void runCompareDb(Path referenceRoot, CliOptions cliOptions) {
+
+        Path targetRoot = Paths.get(cliOptions.morphoDbPath.trim());
+        System.out.println("compare-db reference : " + referenceRoot);
+        System.out.println("compare-db target    : " + targetRoot
+                + (cliOptions.allModels ? " (all-models mode)" : ""));
+
+        List<MorphoFileSpec> refSpecs = getExistingMorphologicalDatabaseFileSpecs(referenceRoot);
+        if (refSpecs.isEmpty()) {
+            System.out.println("compare-db: no morphology files found in reference: " + referenceRoot);
+            return;
+        }
+
+        MaintenanceTargetResolution targetResolution = resolveMaintenanceTargets(targetRoot, cliOptions.allModels);
+        printSkippedMaintenanceTargets(targetResolution.skipped);
+
+        if (targetResolution.targets.isEmpty()) {
+            System.out.println("compare-db: no target models found under: " + targetRoot);
+            return;
+        }
+
+        for (MaintenanceTarget target : targetResolution.targets) {
+            System.out.println("compare-db MODEL: " + target.modelName);
+            int totalOnlyInRef = 0, totalOnlyInTarget = 0, totalCommon = 0;
+
+            for (MorphoFileSpec targetSpec : target.fileSpecs) {
+                String fileName = targetSpec.path.getFileName().toString();
+                MorphoFileSpec refSpec = findRefSpecByFilename(refSpecs, fileName);
+                if (refSpec == null) {
+                    System.out.printf("  compare-db: %-42s  (not present in reference)%n", fileName);
+                    continue;
+                }
+
+                Set<String> refPairs    = loadSynsetIdLemmaPairs(refSpec.path);
+                Set<String> targetPairs = loadSynsetIdLemmaPairs(targetSpec.path);
+
+                Set<String> onlyInRef = new TreeSet<>(refPairs);
+                onlyInRef.removeAll(targetPairs);
+
+                Set<String> onlyInTarget = new TreeSet<>(targetPairs);
+                onlyInTarget.removeAll(refPairs);
+
+                int common = refPairs.size() - onlyInRef.size();
+                totalOnlyInRef    += onlyInRef.size();
+                totalOnlyInTarget += onlyInTarget.size();
+                totalCommon       += common;
+
+                System.out.printf("  compare-db: %-42s  ref=%d  target=%d  only-in-ref=%d  only-in-target=%d  common=%d%n",
+                        fileName, refPairs.size(), targetPairs.size(),
+                        onlyInRef.size(), onlyInTarget.size(), common);
+            }
+
+            for (MorphoFileSpec refSpec : refSpecs) {
+                String fileName = refSpec.path.getFileName().toString();
+                if (findRefSpecByFilename(target.fileSpecs, fileName) == null) {
+                    System.out.printf("  compare-db: %-42s  (not present in target)%n", fileName);
+                }
+            }
+
+            System.out.printf("compare-db MODEL TOTAL: %-30s  only-in-ref=%d  only-in-target=%d  common=%d%n",
+                    target.modelName, totalOnlyInRef, totalOnlyInTarget, totalCommon);
+        }
+    }
+
+    private static MorphoFileSpec findRefSpecByFilename(List<MorphoFileSpec> specs, String fileName) {
+
+        for (MorphoFileSpec spec : specs) {
+            if (spec.path != null && fileName.equals(spec.path.getFileName().toString())) {
+                return spec;
+            }
+        }
+        return null;
+    }
+
+    private static Set<String> loadSynsetIdLemmaPairs(Path filePath) {
+
+        Set<String> pairs = new HashSet<>();
+        if (filePath == null || !Files.exists(filePath)) {
+            return pairs;
+        }
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    continue;
+                }
+                String synsetId = node.path("synsetId").asText("").trim();
+                String lemma    = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
+                if (synsetId.isEmpty() || lemma.isEmpty()) {
+                    continue;
+                }
+                pairs.add(synsetId + "|" + lemma);
+            }
+        } catch (IOException e) {
+            System.out.println("compare-db: failed to read " + filePath + ": " + e.getMessage());
+        }
+        return pairs;
     }
 
 

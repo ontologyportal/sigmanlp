@@ -94,9 +94,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(valenceFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -208,9 +206,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(reflexiveFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -299,9 +295,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(causativityFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -389,9 +383,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(aspectFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -479,9 +471,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(reciprocalFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -570,9 +560,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(conjugationFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -586,6 +574,7 @@ public class GenVerbMorphoDB {
             String definition = verbDocumentationHash.get(synsetId);
             definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
             String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
             String prompt = "You are an expert English grammarian generating complete verb conjugation tables. " +
                     "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
                     "across the tense/aspect categories below.\n\n" +
@@ -609,16 +598,18 @@ public class GenVerbMorphoDB {
                     " 15. Gerund / present participle\n" +
                     " 16. Past participle\n\n" +
                     "Instructions:\n" +
-                    " - Return valid JSON with fields: verb, tenses, regularity, notes.\n" +
+                    (cheapPrompt
+                            ? " - Return valid JSON with fields: verb, tenses, regularity.\n"
+                            : " - Return valid JSON with fields: verb, tenses, regularity, notes.\n") +
                     " - verb must match the infinitive/base form provided.\n" +
                     " - tenses must be an array of 16 objects, each containing:\n" +
                     "     • tense: the tense/aspect name\n" +
                     "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\n" +
                     "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
-                    "     • Optional fields example and notes are allowed.\n" +
+                    (cheapPrompt ? "" : "     • Optional fields example and notes are allowed.\n") +
                     " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
                     " - regularity must be either \"Regular\" or \"Irregular\" and should reflect whether the simple past and past participle follow the standard -ed pattern.\n" +
-                    " - Provide a brief notes string highlighting any irregularities or alternations.\n" +
+                    (cheapPrompt ? "" : " - Provide a brief notes string highlighting any irregularities or alternations.\n") +
                     " - Do not include commentary outside the JSON object.\n\n" +
                     "Example output schema:\n" +
                     "{\n" +
@@ -634,11 +625,11 @@ public class GenVerbMorphoDB {
                     "        \"we\": \"We sample\",\n" +
                     "        \"you_plural\": \"You sample\",\n" +
                     "        \"they\": \"They sample\"\n" +
-                    "      },\n" +
-                    "      \"example\": \"I sample the sauce before serving.\"\n" +
+                    "      }" +
+                    (cheapPrompt ? "\n" : ",\n      \"example\": \"I sample the sauce before serving.\"\n") +
                     "    }\n" +
-                    "  ],\n" +
-                    "  \"notes\": \"Third person singular present adds -s.\"\n" +
+                    "  ]" +
+                    (cheapPrompt ? "\n" : ",\n  \"notes\": \"Third person singular present adds -s.\"\n") +
                     "}";
             if (GenMorphoUtils.debug) {
                 System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: " + prompt);
@@ -664,7 +655,7 @@ public class GenVerbMorphoDB {
                         }
                         record.put("regularity", resolvedRegularity);
                         record.set("tenses", tensesNode);
-                        if (root.hasNonNull("notes")) {
+                        if (!GenUtils.isCheapPromptMode() && root.hasNonNull("notes")) {
                             record.put("notes", root.get("notes").asText(""));
                         }
                         String serializedLine = JSON_MAPPER.writeValueAsString(record);
@@ -752,13 +743,15 @@ public class GenVerbMorphoDB {
         normalizedEntry.put("tense", tenseName);
         normalizedEntry.set("forms", normalizeConjugationForms(formsNode));
 
-        JsonNode exampleNode = rawEntry.get("example");
-        if (exampleNode != null && !exampleNode.isNull()) {
-            normalizedEntry.put("example", exampleNode.asText(""));
-        }
-        JsonNode notesNode = rawEntry.get("notes");
-        if (notesNode != null && !notesNode.isNull()) {
-            normalizedEntry.put("notes", notesNode.asText(""));
+        if (!GenUtils.isCheapPromptMode()) {
+            JsonNode exampleNode = rawEntry.get("example");
+            if (exampleNode != null && !exampleNode.isNull()) {
+                normalizedEntry.put("example", exampleNode.asText(""));
+            }
+            JsonNode notesNode = rawEntry.get("notes");
+            if (notesNode != null && !notesNode.isNull()) {
+                normalizedEntry.put("notes", notesNode.asText(""));
+            }
         }
         target.add(normalizedEntry);
     }
