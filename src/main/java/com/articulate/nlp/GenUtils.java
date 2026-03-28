@@ -54,6 +54,8 @@ public class GenUtils {
     private static final String DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
     private static final String DEFAULT_OPENAI_SERVICE_TIER = "auto";
     private static final String DEFAULT_ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
+    private static final String DEFAULT_GOOGLE_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+    private static final String DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
     private static final int REMOTE_MAX_ATTEMPTS = 3;
     private static final long REMOTE_RETRY_DELAY_MS = 10000L;
     private static final int REMOTE_REQUEST_TIMEOUT_MS = 300000;
@@ -66,6 +68,7 @@ public class GenUtils {
     static String LLM_BASE_URL = null;
     static String LLM_SERVICE_TIER = null;
     static boolean CHEAP_PROMPT_MODE = false;
+    static String OPENROUTER_PROVIDER_PREFERRED = null;
     static int OLLAMA_PORT = Integer.parseInt(System.getProperty("OLLAMA_PORT", "11434"));
     public static OllamaAPI ollamaAPI;
     public static Options options;
@@ -420,7 +423,11 @@ public class GenUtils {
                 "compatible".equals(normalized)) {
             return "openai-compatible";
         }
-        if ("openai".equals(normalized) || "anthropic".equals(normalized) || "ollama".equals(normalized)) {
+        if ("gemini".equals(normalized)) {
+            return "google";
+        }
+        if ("openai".equals(normalized) || "anthropic".equals(normalized) || "ollama".equals(normalized)
+                || "google".equals(normalized) || "openrouter".equals(normalized)) {
             return normalized;
         }
         return null;
@@ -496,6 +503,12 @@ public class GenUtils {
         return null;
     }
 
+    public static void setOpenRouterProviderPreferred(String provider) {
+
+        OPENROUTER_PROVIDER_PREFERRED = (provider == null || provider.trim().isEmpty())
+                ? null : provider.trim();
+    }
+
     public static void setOllamaPort(Integer port) {
 
         if (port == null) {
@@ -532,6 +545,12 @@ public class GenUtils {
         if ("anthropic".equals(normalizedProvider)) {
             return "ANTHROPIC_API_KEY";
         }
+        if ("google".equals(normalizedProvider)) {
+            return "GEMINI_API_KEY";
+        }
+        if ("openrouter".equals(normalizedProvider)) {
+            return "OPENROUTER_API_KEY";
+        }
         return null;
     }
 
@@ -545,10 +564,12 @@ public class GenUtils {
             return askOllama(prompt);
         }
         String response;
-        if ("openai".equals(provider) || "openai-compatible".equals(provider)) {
+        if ("openai".equals(provider) || "openai-compatible".equals(provider) || "openrouter".equals(provider)) {
             response = askOpenAICompatible(prompt);
         } else if ("anthropic".equals(provider)) {
             response = askAnthropic(prompt);
+        } else if ("google".equals(provider)) {
+            response = askGemini(prompt);
         } else {
             throw new IllegalStateException("Unsupported LLM provider: " + provider);
         }
@@ -624,8 +645,11 @@ public class GenUtils {
     private static String askOpenAICompatible(String prompt) {
 
         String apiKey = resolveApiKey();
+        String defaultBaseUrl = "openrouter".equals(getLLMProvider())
+                ? DEFAULT_OPENROUTER_BASE_URL
+                : DEFAULT_OPENAI_BASE_URL;
         String baseUrl = (LLM_BASE_URL == null || LLM_BASE_URL.trim().isEmpty())
-                ? DEFAULT_OPENAI_BASE_URL
+                ? defaultBaseUrl
                 : LLM_BASE_URL;
         String endpoint = resolveOpenAIEndpoint(baseUrl);
         Map<String, String> headers = new HashMap<>();
@@ -697,6 +721,47 @@ public class GenUtils {
         throw new IllegalStateException("GenUtils.askLLM(): System exit failed to terminate process."); // required for compiler.
     }
 
+    private static String askGemini(String prompt) {
+
+        String apiKey = resolveApiKey();
+        String baseUrl = (LLM_BASE_URL == null || LLM_BASE_URL.trim().isEmpty())
+                ? DEFAULT_GOOGLE_BASE_URL
+                : LLM_BASE_URL;
+        String endpoint = trimTrailingSlash(baseUrl) + "/models/" + getLLMModel()
+                + ":generateContent?key=" + apiKey;
+        for (int attempt = 1; attempt <= REMOTE_MAX_ATTEMPTS; attempt++) {
+            try {
+                String responseBody = postJson(endpoint, buildGeminiRequestPayload(prompt), new HashMap<>());
+                JsonNode textNode = JSON_MAPPER.readTree(responseBody)
+                        .path("candidates").path(0).path("content").path("parts").path(0).path("text");
+                if (textNode.isMissingNode() || textNode.isNull()) {
+                    throw new IllegalStateException("No text content in Gemini response.");
+                }
+                return textNode.asText();
+            } catch (Exception e) {
+                System.out.println("Error in GenUtils.askLLM() [google] attempt " + attempt +
+                        " of " + REMOTE_MAX_ATTEMPTS + ": " + e.getMessage());
+                if (attempt < REMOTE_MAX_ATTEMPTS) {
+                    sleepBeforeRetry();
+                }
+            }
+        }
+        System.err.println("GenUtils.askLLM(): Exhausted Google retries without receiving a response. Exiting.");
+        System.exit(1);
+        throw new IllegalStateException("GenUtils.askLLM(): System exit failed to terminate process.");
+    }
+
+    private static String buildGeminiRequestPayload(String prompt) throws IOException {
+
+        ObjectNode root = JSON_MAPPER.createObjectNode();
+        root.putArray("contents")
+                .addObject()
+                .putArray("parts")
+                .addObject()
+                .put("text", prompt);
+        return JSON_MAPPER.writeValueAsString(root);
+    }
+
     private static void sleepBeforeRetry() {
 
         try {
@@ -762,6 +827,10 @@ public class GenUtils {
         }
         if (serviceTier != null && !serviceTier.trim().isEmpty()) {
             root.put("service_tier", serviceTier);
+        }
+        if ("openrouter".equals(getLLMProvider()) && OPENROUTER_PROVIDER_PREFERRED != null) {
+            root.putObject("provider")
+                    .putArray("order").add(OPENROUTER_PROVIDER_PREFERRED);
         }
         root.putArray("messages")
                 .addObject()

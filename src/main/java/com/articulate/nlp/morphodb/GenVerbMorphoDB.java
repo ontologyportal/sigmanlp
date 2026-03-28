@@ -1,17 +1,17 @@
 package com.articulate.nlp.morphodb;
 
 import com.articulate.nlp.GenUtils;
+import com.articulate.nlp.morphodb.evaluation.GenerativeEvalUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,16 +38,6 @@ public class GenVerbMorphoDB {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static final List<String> PERSON_PRONOUN_KEYS =
             Arrays.asList("i", "you_singular", "he_she_it", "we", "you_plural", "they");
-    private static final List<String> CLAUSE_SUBJECT_CANDIDATES =
-            Arrays.asList("i", "you", "he", "she", "it", "we", "they");
-    private static final Set<String> LEADING_AUXILIARY_TOKENS = new HashSet<>(Arrays.asList(
-            "am", "m", "is", "s", "are", "re", "was", "were",
-            "be", "been", "being", "have", "has", "had", "having",
-            "do", "does", "did",
-            "will", "shall", "would", "should", "can", "could",
-            "may", "might", "must", "ought", "need", "dare",
-            "to", "not", "no", "ll", "ve", "d"
-    ));
 
     public GenVerbMorphoDB(Map<String, Set<String>> verbSynsetHash,
                            Map<String, String> verbDocumentationHash) {
@@ -94,9 +84,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(valenceFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -172,9 +160,9 @@ public class GenVerbMorphoDB {
                 responseNode = GenMorphoUtils.prependSynsetIdAndLemma(responseNode, synsetId, lemmaKey);
                 responseNode.put("valence",
                         normalizeValenceCategory(responseNode.path("valence").asText("")));
-                responseNode.put("subtype", normalizeSubtype(responseNode.path("subtype").asText("")));
+                responseNode.put("subtype", MorphoFlatSchemaUtils.normalizeSubtype(responseNode.path("subtype").asText("")));
                 responseNode.put("semantic_roles",
-                        normalizeSemanticRoles(responseNode.path("semantic_roles").asText("")));
+                        MorphoFlatSchemaUtils.normalizeSemanticRoles(responseNode.path("semantic_roles").asText("")));
                 if (cheapPrompt) {
                     responseNode.remove("explanation");
                     responseNode.remove("usage");
@@ -208,9 +196,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(reflexiveFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -299,9 +285,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(causativityFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -389,9 +373,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(aspectFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -479,9 +461,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(reciprocalFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -570,9 +550,7 @@ public class GenVerbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(conjugationFileName);
         for (Map.Entry<String, Set<String>> entry : verbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {
@@ -586,6 +564,7 @@ public class GenVerbMorphoDB {
             String definition = verbDocumentationHash.get(synsetId);
             definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
             String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
+            boolean cheapPrompt = GenUtils.isCheapPromptMode();
             String prompt = "You are an expert English grammarian generating complete verb conjugation tables. " +
                     "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
                     "across the tense/aspect categories below.\n\n" +
@@ -609,16 +588,18 @@ public class GenVerbMorphoDB {
                     " 15. Gerund / present participle\n" +
                     " 16. Past participle\n\n" +
                     "Instructions:\n" +
-                    " - Return valid JSON with fields: verb, tenses, regularity, notes.\n" +
+                    (cheapPrompt
+                            ? " - Return valid JSON with fields: verb, tenses, regularity.\n"
+                            : " - Return valid JSON with fields: verb, tenses, regularity, notes.\n") +
                     " - verb must match the infinitive/base form provided.\n" +
                     " - tenses must be an array of 16 objects, each containing:\n" +
                     "     • tense: the tense/aspect name\n" +
                     "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\n" +
                     "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
-                    "     • Optional fields example and notes are allowed.\n" +
+                    (cheapPrompt ? "" : "     • Optional fields example and notes are allowed.\n") +
                     " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
                     " - regularity must be either \"Regular\" or \"Irregular\" and should reflect whether the simple past and past participle follow the standard -ed pattern.\n" +
-                    " - Provide a brief notes string highlighting any irregularities or alternations.\n" +
+                    (cheapPrompt ? "" : " - Provide a brief notes string highlighting any irregularities or alternations.\n") +
                     " - Do not include commentary outside the JSON object.\n\n" +
                     "Example output schema:\n" +
                     "{\n" +
@@ -634,11 +615,11 @@ public class GenVerbMorphoDB {
                     "        \"we\": \"We sample\",\n" +
                     "        \"you_plural\": \"You sample\",\n" +
                     "        \"they\": \"They sample\"\n" +
-                    "      },\n" +
-                    "      \"example\": \"I sample the sauce before serving.\"\n" +
+                    "      }" +
+                    (cheapPrompt ? "\n" : ",\n      \"example\": \"I sample the sauce before serving.\"\n") +
                     "    }\n" +
-                    "  ],\n" +
-                    "  \"notes\": \"Third person singular present adds -s.\"\n" +
+                    "  ]" +
+                    (cheapPrompt ? "\n" : ",\n  \"notes\": \"Third person singular present adds -s.\"\n") +
                     "}";
             if (GenMorphoUtils.debug) {
                 System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: " + prompt);
@@ -650,24 +631,11 @@ public class GenVerbMorphoDB {
                 try {
                     JsonNode root = JSON_MAPPER.readTree(jsonResponse);
                     String verbValue = root.path("verb").asText("").trim();
-                    ArrayNode tensesNode = normalizeConjugationTenses(root.get("tenses"));
-                    if (!verbValue.isEmpty() && tensesNode != null && tensesNode.size() > 0) {
+                    VerbConjugationUtils.CanonicalizationResult result = VerbConjugationUtils.canonicalizeRecord(
+                            root, synsetId, lemmaKey, verbValue.isEmpty() ? term : verbValue);
+                    if (result.record != null && result.completeness != VerbConjugationUtils.ConjugationCompleteness.ERROR) {
                         errorInResponse = false;
-                        ObjectNode record = JSON_MAPPER.createObjectNode();
-                        record.put("synsetId", synsetId == null ? "" : synsetId);
-                        record.put("lemma", lemmaKey);
-                        record.put("verb", verbValue);
-                        String providedRegularity = normalizeRegularity(root.path("regularity").asText(""));
-                        String resolvedRegularity = providedRegularity;
-                        if (resolvedRegularity.equals("Unknown")) {
-                            resolvedRegularity = inferVerbRegularity(verbValue, tensesNode);
-                        }
-                        record.put("regularity", resolvedRegularity);
-                        record.set("tenses", tensesNode);
-                        if (root.hasNonNull("notes")) {
-                            record.put("notes", root.get("notes").asText(""));
-                        }
-                        String serializedLine = JSON_MAPPER.writeValueAsString(record);
+                        String serializedLine = JSON_MAPPER.writeValueAsString(result.record);
                         GenUtils.writeToFile(conjugationFileName, serializedLine + "\n");
                         GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
                     }
@@ -752,13 +720,15 @@ public class GenVerbMorphoDB {
         normalizedEntry.put("tense", tenseName);
         normalizedEntry.set("forms", normalizeConjugationForms(formsNode));
 
-        JsonNode exampleNode = rawEntry.get("example");
-        if (exampleNode != null && !exampleNode.isNull()) {
-            normalizedEntry.put("example", exampleNode.asText(""));
-        }
-        JsonNode notesNode = rawEntry.get("notes");
-        if (notesNode != null && !notesNode.isNull()) {
-            normalizedEntry.put("notes", notesNode.asText(""));
+        if (!GenUtils.isCheapPromptMode()) {
+            JsonNode exampleNode = rawEntry.get("example");
+            if (exampleNode != null && !exampleNode.isNull()) {
+                normalizedEntry.put("example", exampleNode.asText(""));
+            }
+            JsonNode notesNode = rawEntry.get("notes");
+            if (notesNode != null && !notesNode.isNull()) {
+                normalizedEntry.put("notes", notesNode.asText(""));
+            }
         }
         target.add(normalizedEntry);
     }
@@ -802,127 +772,20 @@ public class GenVerbMorphoDB {
         return forms;
     }
 
-    private static String inferVerbRegularity(String verb, ArrayNode tenses) {
+    private static String inferVerbRegularity(String lemma, String verb, ArrayNode tenses) {
 
-        if (tenses == null || tenses.isEmpty()) {
+        if (lemma == null || lemma.trim().isEmpty() || tenses == null || tenses.isEmpty()) {
             return "Unknown";
         }
-        Set<String> simplePastForms = extractCanonicalFormsForTense(tenses, "Simple past");
-        Set<String> pastParticipleForms = extractCanonicalFormsForTense(tenses, "Past participle");
-        boolean hasEvidence = !simplePastForms.isEmpty() || !pastParticipleForms.isEmpty();
-        if (!hasEvidence) {
+        JSONObject record = new JSONObject();
+        record.put("lemma", lemma);
+        record.put("verb", verb == null ? "" : verb);
+        record.put("tenses", new org.json.JSONArray(tenses.toString()));
+        Map<String, String> normalizedForms = GenerativeEvalUtils.extractNormalizedConjugationForms(record);
+        if (normalizedForms == null) {
             return "Unknown";
         }
-        boolean pastLooksRegular = simplePastForms.isEmpty() || looksRegularForms(simplePastForms);
-        boolean participleLooksRegular = pastParticipleForms.isEmpty() || looksRegularForms(pastParticipleForms);
-        if (pastLooksRegular && participleLooksRegular) {
-            return "Regular";
-        }
-        return "Irregular";
-    }
-
-    private static Set<String> extractCanonicalFormsForTense(ArrayNode tenses, String targetTense) {
-
-        Set<String> forms = new LinkedHashSet<>();
-        if (tenses == null || tenses.isEmpty() || targetTense == null) {
-            return forms;
-        }
-        for (JsonNode tenseNode : tenses) {
-            if (tenseNode == null || !targetTense.equalsIgnoreCase(tenseNode.path("tense").asText(""))) {
-                continue;
-            }
-            JsonNode formsNode = tenseNode.get("forms");
-            if (formsNode != null && formsNode.isObject()) {
-                for (String pronoun : PERSON_PRONOUN_KEYS) {
-                    addCanonicalForm(forms, formsNode.path(pronoun).asText(""));
-                }
-                addCanonicalForm(forms, formsNode.path("summary").asText(""));
-                continue;
-            }
-            addCanonicalForm(forms, formsNode == null ? "" : formsNode.asText(""));
-        }
-        return forms;
-    }
-
-    private static void addCanonicalForm(Set<String> target, String clause) {
-
-        if (target == null) {
-            return;
-        }
-        String canonical = extractMainVerbToken(clause);
-        if (!canonical.isEmpty()) {
-            target.add(canonical);
-        }
-    }
-
-    private static boolean looksRegularForms(Set<String> forms) {
-
-        boolean sawValidForm = false;
-        if (forms == null || forms.isEmpty()) {
-            return false;
-        }
-        for (String form : forms) {
-            if (form == null) {
-                continue;
-            }
-            String lowered = form.trim().toLowerCase();
-            if (lowered.isEmpty()) {
-                continue;
-            }
-            sawValidForm = true;
-            if (!isLikelyRegularForm(lowered)) {
-                return false;
-            }
-        }
-        return sawValidForm;
-    }
-
-    private static boolean isLikelyRegularForm(String form) {
-
-        if (form == null || form.isEmpty()) {
-            return false;
-        }
-        return form.endsWith("ed");
-    }
-
-    private static String extractMainVerbToken(String clause) {
-
-        if (clause == null) {
-            return "";
-        }
-        String normalized = clause.trim().toLowerCase();
-        if (normalized.isEmpty()) {
-            return "";
-        }
-        normalized = normalized.replaceAll("[^a-z\\s'-]", " ");
-        normalized = normalized.replace("'", " ");
-        normalized = normalized.replaceAll("\\s+", " ").trim();
-        if (normalized.isEmpty()) {
-            return "";
-        }
-        for (String pronoun : CLAUSE_SUBJECT_CANDIDATES) {
-            if (normalized.equals(pronoun)) {
-                return "";
-            }
-            if (normalized.startsWith(pronoun + " ")) {
-                normalized = normalized.substring(pronoun.length()).trim();
-                break;
-            }
-        }
-        while (!normalized.isEmpty()) {
-            int spaceIndex = normalized.indexOf(' ');
-            String token = spaceIndex == -1 ? normalized : normalized.substring(0, spaceIndex);
-            if (!LEADING_AUXILIARY_TOKENS.contains(token)) {
-                break;
-            }
-            normalized = spaceIndex == -1 ? "" : normalized.substring(spaceIndex + 1).trim();
-        }
-        if (normalized.isEmpty()) {
-            return "";
-        }
-        int spaceIndex = normalized.indexOf(' ');
-        String mainVerb = spaceIndex == -1 ? normalized : normalized.substring(0, spaceIndex);
-        return mainVerb.replaceAll("[^a-z]", "");
+        return VerbRegularityUtils.classifyRegularity(lemma, normalizedForms);
     }
 
     private static String normalizeRegularity(String rawRegularity) {
@@ -1086,75 +949,6 @@ public class GenVerbMorphoDB {
             return "2-valent";
         }
         return GenUtils.capitalizeFirstLetter(lower);
-    }
-
-    private static String normalizeSubtype(String rawSubtype) {
-
-        if (rawSubtype == null || rawSubtype.trim().isEmpty()) {
-            return "Unknown";
-        }
-        String lower = rawSubtype.trim().toLowerCase();
-        if (lower.contains("pure")) {
-            return "Pure impersonal";
-        }
-        if (lower.contains("quasi")) {
-            return "Quasi-impersonal";
-        }
-        if (lower.contains("prepositional") && lower.contains("intrans")) {
-            return "Prepositional intransitive";
-        }
-        if (lower.contains("simple") && lower.contains("intrans")) {
-            return "Simple intransitive";
-        }
-        if (lower.contains("complex") && lower.contains("trans")) {
-            return "Complex transitive";
-        }
-        if (lower.contains("copul")) {
-            return "Copular";
-        }
-        if (lower.contains("double")) {
-            return "Double-object";
-        }
-        if (lower.contains("prepositional") && lower.contains("di")) {
-            return "Prepositional ditransitive";
-        }
-        if (lower.contains("trans")) {
-            return "Transitive";
-        }
-        if (lower.contains("intrans")) {
-            return "Simple intransitive";
-        }
-        return GenUtils.capitalizeFirstLetter(lower);
-    }
-
-    private static String normalizeSemanticRoles(String rawRoles) {
-
-        if (rawRoles == null) {
-            return "";
-        }
-        String cleaned = rawRoles.replaceAll("[\\[\\]]", "")
-                .replaceAll("\\s*;\\s*", ",")
-                .replaceAll("\\s*\\+\\s*", ",")
-                .replaceAll("\\s+/\\s*", "/")
-                .trim();
-        if (cleaned.isEmpty()) {
-            return "";
-        }
-        String[] parts = cleaned.split("\\s*,\\s*");
-        List<String> normalized = new ArrayList<>();
-        for (String part : parts) {
-            if (part.isEmpty()) {
-                continue;
-            }
-            String role = part.trim();
-            if (role.isEmpty()) {
-                continue;
-            }
-            role = role.replaceAll("\\s+", " ");
-            String formatted = GenUtils.capitalizeFirstLetter(role);
-            normalized.add(formatted);
-        }
-        return String.join(", ", normalized);
     }
 
     private static String normalizeCausativityCategory(String rawCategory) {

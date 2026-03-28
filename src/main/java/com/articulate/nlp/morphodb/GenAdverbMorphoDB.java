@@ -47,9 +47,7 @@ public class GenAdverbMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(adverbFileName);
         for (Map.Entry<String, Set<String>> entry : adverbSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {

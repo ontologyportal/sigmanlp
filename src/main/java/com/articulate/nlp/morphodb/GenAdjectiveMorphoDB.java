@@ -47,9 +47,7 @@ public class GenAdjectiveMorphoDB {
         Map<String, List<String>> classifiedEntries = GenMorphoUtils.loadExistingClassifications(adjectiveFileName);
         for (Map.Entry<String, Set<String>> entry : adjectiveSynsetHash.entrySet()) {
             String term = entry.getKey().replace('_', ' ');
-            if (term.length() < 2) {
-                continue;
-            }
+
             if (entry.getValue().isEmpty()) continue;
             String lemmaKey = GenMorphoUtils.normalizeLemma(term);
             if (GenMorphoUtils.alreadyClassified(classifiedEntries, lemmaKey)) {

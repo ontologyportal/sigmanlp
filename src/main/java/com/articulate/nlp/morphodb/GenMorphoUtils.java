@@ -164,7 +164,7 @@ public final class GenMorphoUtils {
         while (iterator.hasNext()) {
             Map.Entry<String, Set<String>> entry = iterator.next();
             String key = entry.getKey();
-            if (!key.matches("^[a-zA-Z_.\\'-]+$")) {
+            if (key.length() < 2 || !key.matches("^[a-zA-Z_.\\'-]+$")) {
                 iterator.remove();
                 numDeleted++;
             }
@@ -307,11 +307,111 @@ public final class GenMorphoUtils {
      * Converts the first JSON object found in the LLM response into an ObjectNode.
      * Ensures that the required fields are present and non-null.
      ***************************************************************/
+    /***************************************************************
+     * Strips markdown code fences (```json ... ``` or ``` ... ```) from a
+     * string, returning the inner content trimmed. Returns the original
+     * string unchanged if no fences are detected.
+     ***************************************************************/
+    public static String stripMarkdownFences(String s) {
+
+        if (s == null) {
+            return s;
+        }
+        String t = s.trim();
+        if (!t.startsWith("```")) {
+            return s;
+        }
+        t = t.replaceFirst("^```[a-zA-Z]*\\s*", "");
+        if (t.endsWith("```")) {
+            t = t.substring(0, t.length() - 3).trim();
+        }
+        return t.trim();
+    }
+
+    /***************************************************************
+     * Removes invalid JSON escape sequences produced by LLMs using a
+     * single-pass left-to-right scanner.
+     *
+     * Valid JSON escapes (left unchanged): \" \\ \/ \b \f \n \r \t and
+     *   Unicode escapes (backslash + u + 4 hex digits).
+     * Invalid escapes (backslash stripped): \( \) \, \_ \^ \! and all
+     *   other \X where X is not a valid JSON escape character.
+     *
+     * The scanner skips valid \\ pairs atomically, so \\( is never
+     * misread as an invalid \( and no new invalid escapes are created.
+     * Malformed Unicode escapes with non-hex digits are left unchanged.
+     ***************************************************************/
+    public static String fixInvalidJsonEscapes(String s) {
+
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        StringBuilder sb = null; // allocated lazily — returns original if no changes needed
+        int i = 0;
+        while (i < s.length()) {
+            char c = s.charAt(i);
+            if (c != '\\') {
+                if (sb != null) sb.append(c);
+                i++;
+                continue;
+            }
+            // c == '\\'
+            if (i + 1 >= s.length()) {
+                // trailing backslash — leave as-is
+                if (sb != null) sb.append(c);
+                i++;
+                continue;
+            }
+            char next = s.charAt(i + 1);
+            switch (next) {
+                case '"': case '\\': case '/':
+                case 'b': case 'f': case 'n': case 'r': case 't':
+                    // valid two-character escape — copy both
+                    if (sb != null) { sb.append(c); sb.append(next); }
+                    i += 2;
+                    break;
+                case 'u':
+                    // valid only if followed by exactly 4 hex digits
+                    if (i + 5 < s.length()
+                            && isHex(s.charAt(i + 2)) && isHex(s.charAt(i + 3))
+                            && isHex(s.charAt(i + 4)) && isHex(s.charAt(i + 5))) {
+                        if (sb != null) {
+                            sb.append(c); sb.append(next);
+                            sb.append(s.charAt(i + 2)); sb.append(s.charAt(i + 3));
+                            sb.append(s.charAt(i + 4)); sb.append(s.charAt(i + 5));
+                        }
+                        i += 6;
+                    } else {
+                        // malformed Unicode escape — leave unchanged
+                        if (sb != null) { sb.append(c); sb.append(next); }
+                        i += 2;
+                    }
+                    break;
+                default:
+                    // invalid escape — strip the backslash, keep the character
+                    if (sb == null) {
+                        sb = new StringBuilder(s.length());
+                        sb.append(s, 0, i); // copy everything before this point
+                    }
+                    sb.append(next);
+                    i += 2;
+                    break;
+            }
+        }
+        return sb == null ? s : sb.toString();
+    }
+
+    private static boolean isHex(char c) {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+    }
+
     public static ObjectNode extractRequiredJsonObject(String llmResponse, List<String> requiredFields) {
 
         if (llmResponse == null) {
             return null;
         }
+        llmResponse = stripMarkdownFences(llmResponse);
+        llmResponse = fixInvalidJsonEscapes(llmResponse);
         String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
         if (jsonResponse == null) {
             return null;
@@ -384,6 +484,43 @@ public final class GenMorphoUtils {
     /***************************************************************
      * Standardizes error output so classification attempts are tracked.
      ***************************************************************/
+    /***************************************************************
+     * Classifies a non-JSON LLM response as "refused", "garbled", or "error".
+     * Used by buildErrorRecord (upstream) and --compact re-tagging (retroactive).
+     ***************************************************************/
+    public static String classifyNonJsonResponse(String rawResponse) {
+
+        if (rawResponse == null || rawResponse.isEmpty()) {
+            return "error";
+        }
+        String t = rawResponse.trim();
+        String tNorm = t.replace('\u2019', '\'');
+        if (tNorm.startsWith("I'm sorry, but I can't") ||
+                tNorm.startsWith("I can't provide") ||
+                tNorm.startsWith("I cannot provide")) {
+            return "refused";
+        }
+        if (t.startsWith("It seems") ||
+                t.startsWith("It looks like") ||
+                hasUnexpectedUnicodeScript(t)) {
+            return "garbled";
+        }
+        return "error";
+    }
+
+    private static boolean hasUnexpectedUnicodeScript(String s) {
+
+        int unusual = 0;
+        int nonWhitespace = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (Character.isWhitespace(c)) continue;
+            nonWhitespace++;
+            if (c > '\u02FF') unusual++;
+        }
+        return nonWhitespace > 10 && (double) unusual / nonWhitespace > 0.10;
+    }
+
     public static String buildErrorRecord(String termFieldName, String termValue, String lemma,
                                           String synsetId, String definition,
                                           String llmResponse, String errorMessage) {
@@ -395,7 +532,8 @@ public final class GenMorphoUtils {
                 ? "term"
                 : termFieldName;
         errorNode.put(resolvedFieldName, termValue == null ? "" : termValue);
-        errorNode.put("status", "error");
+        String rawForClassify = llmResponse == null ? "" : llmResponse.trim();
+        errorNode.put("status", classifyNonJsonResponse(rawForClassify));
         errorNode.put("message", errorMessage == null ? "LLM response missing required fields." : errorMessage);
         errorNode.put("rawResponse", llmResponse == null
                 ? ""

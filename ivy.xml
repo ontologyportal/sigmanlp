@@ -63,6 +63,9 @@
         <dependency org="org.slf4j" name="slf4j-simple" rev="2.0.9" conf="api->default"/>
         <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
         <dependency org="org.xerial" name="sqlite-jdbc" rev="3.47.2.0" conf="api->default"/>
+        <dependency org="org.json" name="json" rev="20231013" transitive="false" conf="api->default"/>
+        <!-- https://mvnrepository.com/artifact/org.dkpro.statistics/dkpro-statistics-agreement -->
+        <dependency org="org.dkpro.statistics" name="dkpro-statistics-agreement" rev="2.2.1" transitive="false" conf="api->default"/>
         <dependency org="junit" name="junit" rev="4.13.2" conf="test->default"/>
     </dependencies>
 </ivy-module>
