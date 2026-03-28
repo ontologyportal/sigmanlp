@@ -668,8 +668,10 @@ public class GenNounMorphoDB {
             return "Unknown";
         }
         String spacesNormalized = normalized.replace('-', ' ');
-        if (spacesNormalized.contains("both") || spacesNormalized.contains("human and non") ||
-                (spacesNormalized.contains("human") && spacesNormalized.contains("non human"))) {
+        if (spacesNormalized.contains("both") || spacesNormalized.contains("human and non")
+                || spacesNormalized.contains("human or non")
+                || spacesNormalized.contains("human/non")
+                || spacesNormalized.contains("either human or non")) {
             return "Human and non-human";
         }
         if (spacesNormalized.contains("non human") || spacesNormalized.contains("nonhuman") ||

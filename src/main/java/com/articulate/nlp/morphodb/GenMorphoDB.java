@@ -1,7 +1,7 @@
 package com.articulate.nlp.morphodb;
 
 import com.articulate.nlp.GenUtils;
-import com.articulate.sigma.KBmanager;
+import com.articulate.nlp.morphodb.evaluation.ModelMetadata;
 import com.articulate.sigma.wordNet.WordNet;
 
 import java.io.BufferedReader;
@@ -19,13 +19,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /***************************************************************
  * Entry point that delegates morphological database generation
@@ -34,6 +33,13 @@ import java.util.regex.Pattern;
 public class GenMorphoDB {
 
     private static final int DEFAULT_OLLAMA_PORT = 11434;
+    private static final String ERROR_SOURCE_EXISTING = "existing_error";
+    private static final String ERROR_SOURCE_MALFORMED_CONVERTED = "malformed_converted";
+    private static final String REQUIRED_FIELD_RECOVERY_AUDIT_FILE = "compact-required-field-recovery-audit.jsonl";
+    private static final String RECOVERY_METHOD_REQUIRED_FIELDS_ONLY = "required_fields_only";
+    private static final String RECOVERY_METHOD_DROPPED_FIELD_PRUNED = "dropped_field_pruned";
+    private static final String[] DROPPABLE_COMPACT_FIELDS =
+            new String[]{"explanation", "usage", "definition", "message"};
 
     private static class CliOptions {
         String wordType;
@@ -52,11 +58,16 @@ public class GenMorphoDB {
         boolean compact;
         boolean addLemma;
         boolean dedup;
+        boolean getErrorPercent;
+        boolean normalizeCategorical;
         boolean findFixGaps;
         boolean compareDb;
         String referenceDbPath;
         String verbStart;
         String verbEnd;
+        String nounStart;
+        String nounEnd;
+        String orProviderPreferred;
     }
 
 
@@ -110,25 +121,32 @@ public class GenMorphoDB {
         System.out.println("Maintenance usage:");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --compact --db-path <path-to-morpho-db>");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --compact --all-models --db-path <path-to-parent-dir>");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --normalize-categorical --db-path <path-to-morpho-db>");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --normalize-categorical --all-models --db-path <path-to-parent-dir>");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --getErrorPercent --db-path <path-to-morpho-db>");
+        System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --getErrorPercent --all --db-path <path-to-parent-dir>");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --db-path <path-to-morpho-db>");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --all-models --db-path <path-to-parent-dir>");
         System.out.println("  Provider-aware usage:");
         System.out.println("    com.articulate.nlp.morphodb.GenMorphoDB <word-type> <gen-function> \\");
         System.out.println("      --provider <ollama|openai|anthropic|claude|openai-compatible|google|gemini|openrouter> --model <model> \\");
         System.out.println("      [--ollama-port <port>] [--api-key <key>|--api-key-env <ENV_VAR>] [--base-url <url>] \\");
-        System.out.println("      [--service-tier <auto|default|flex|priority>] [--cheap-prompt|--full-prompt] [--verbose]");
+        System.out.println("      [--service-tier <auto|default|flex|priority>] [--cheap-prompt|--full-prompt] [--verbose] \\");
+        System.out.println("      [--or-provider-preferred <provider>]");
         System.out.println("word-types supported: noun, verb, adjective, adverb, all");
         System.out.println("Maintenance flags:");
         System.out.println("  --compact      strip explanation/usage/definition and convert malformed rows into error rows");
+        System.out.println("  --normalize-categorical   canonicalize categorical fields in place and mark invalid categorical labels");
+        System.out.println("  --getErrorPercent   report existing error rows, malformed->error rows, parse failures, and total error percent");
         System.out.println("  --add-lemma    add the \"lemma\" field to existing records that lack it (no LLM calls)");
         System.out.println("  --dedup        remove duplicate entries, keeping the first occurrence per lemma");
         System.out.println("  --find-fix-gaps    compare each file against its WordNet POS set and list missing lemmas (requires SIGMA_HOME)");
         System.out.println("  --compare-db       compare synsetId/lemma pairs across DBs; requires --reference <ref-db-path> and --db-path [--all-models]");
         System.out.println("  --reference <path> (with --compare-db) reference DB path to compare against");
         System.out.println("                     (with --compact)    prefer matching synsetId from this DB during the dedup pre-pass");
-        System.out.println("  --all-models   treat --db-path as parent directory and run maintenance on each direct child model dir");
+        System.out.println("  --all, --all-models   treat --db-path as parent directory and run maintenance on each direct child model dir");
         System.out.println("  "
-                + "You may pass --add-lemma and --compact together; when both are set, --add-lemma runs first.");
+                + "You may pass --add-lemma, --compact, and --normalize-categorical together; when combined, --add-lemma runs first.");
         System.out.println("  "
                 + "Maintenance works on noun, verb, adjective, and adverb tables in the current morphed model.");
         System.out.println("Noun gen-functions:");
@@ -148,6 +166,9 @@ public class GenMorphoDB {
         System.out.println("Verb parallelization flags (apply to all verb gen-functions):");
         System.out.println("  --verb-start <letter>   Begin verb processing at this letter, inclusive (e.g. a)");
         System.out.println("  --verb-end   <letter>   Stop verb processing at this letter, inclusive (e.g. k)");
+        System.out.println("Noun parallelization flags (apply to all noun gen-functions):");
+        System.out.println("  --noun-start <letter>   Begin noun processing at this letter, inclusive (e.g. a)");
+        System.out.println("  --noun-end   <letter>   Stop noun processing at this letter, inclusive (e.g. k)");
         System.out.println("Adjective gen-functions:");
         System.out.println("  -c to classify adjectives by semantic category");
         System.out.println("Adverb gen-functions:");
@@ -175,6 +196,12 @@ public class GenMorphoDB {
                 + "com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --db-path /file/path/to/db/gpt-oss_20b");
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB --compact --all-models --db-path /file/path/to/db");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --normalize-categorical --db-path /file/path/to/db/gpt-oss_20b");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --getErrorPercent --db-path /file/path/to/db/gpt-oss_20b");
+        System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
+                + "com.articulate.nlp.morphodb.GenMorphoDB --getErrorPercent --all --db-path /file/path/to/db");
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
                 + "com.articulate.nlp.morphodb.GenMorphoDB --add-lemma --all-models --db-path /file/path/to/db");
         System.out.println("  java -Xmx40g -classpath $SIGMANLP_CP "
@@ -286,6 +313,15 @@ public class GenMorphoDB {
                 index += 2;
                 continue;
             }
+            if ("--or-provider-preferred".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --or-provider-preferred.");
+                    return null;
+                }
+                options.orProviderPreferred = args[index + 1];
+                index += 2;
+                continue;
+            }
             if ("--cheap-prompt".equals(arg)) {
                 options.cheapPromptMode = true;
                 index++;
@@ -303,6 +339,16 @@ public class GenMorphoDB {
             }
             if ("--compact".equals(arg)) {
                 options.compact = true;
+                index++;
+                continue;
+            }
+            if ("--getErrorPercent".equals(arg)) {
+                options.getErrorPercent = true;
+                index++;
+                continue;
+            }
+            if ("--normalize-categorical".equals(arg)) {
+                options.normalizeCategorical = true;
                 index++;
                 continue;
             }
@@ -339,6 +385,24 @@ public class GenMorphoDB {
                 index += 2;
                 continue;
             }
+            if ("--noun-start".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --noun-start.");
+                    return null;
+                }
+                options.nounStart = args[index + 1].toLowerCase();
+                index += 2;
+                continue;
+            }
+            if ("--noun-end".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --noun-end.");
+                    return null;
+                }
+                options.nounEnd = args[index + 1].toLowerCase();
+                index += 2;
+                continue;
+            }
             if ("--compare-db".equals(arg)) {
                 options.compareDb = true;
                 index++;
@@ -353,7 +417,7 @@ public class GenMorphoDB {
                 index += 2;
                 continue;
             }
-            if ("--all-models".equals(arg)) {
+            if ("--all-models".equals(arg) || "--all".equals(arg)) {
                 options.allModels = true;
                 index++;
                 continue;
@@ -371,10 +435,20 @@ public class GenMorphoDB {
             return null;
         }
 
-        int maintenanceCount = (options.compact ? 1 : 0) + (options.addLemma ? 1 : 0) + (options.dedup ? 1 : 0);
+        int maintenanceCount = (options.compact ? 1 : 0)
+                + (options.addLemma ? 1 : 0)
+                + (options.dedup ? 1 : 0)
+                + (options.getErrorPercent ? 1 : 0)
+                + (options.normalizeCategorical ? 1 : 0);
         boolean maintenanceRequested = maintenanceCount > 0;
         if (options.allModels && !maintenanceRequested && !options.findFixGaps && !options.compareDb) {
-            System.err.println("--all-models is only valid for maintenance operations (--compact, --add-lemma, --dedup, --find-fix-gaps, or --compare-db).");
+            System.err.println("--all/--all-models is only valid for maintenance operations (--compact, --normalize-categorical, --getErrorPercent, --add-lemma, --dedup, --find-fix-gaps, or --compare-db).");
+            return null;
+        }
+        if (options.getErrorPercent &&
+                (options.compact || options.addLemma || options.dedup || options.normalizeCategorical
+                        || options.findFixGaps || options.compareDb)) {
+            System.err.println("--getErrorPercent must be run by itself (optionally with --all/--all-models and --db-path).");
             return null;
         }
         if (maintenanceRequested && (options.morphoDbPath == null || options.morphoDbPath.trim().isEmpty())) {
@@ -491,6 +565,7 @@ public class GenMorphoDB {
         GenUtils.setLLMModel(options.model);
         GenUtils.setLLMBaseUrl(options.baseUrl);
         GenUtils.setLLMServiceTier(options.serviceTier);
+        GenUtils.setOpenRouterProviderPreferred(options.orProviderPreferred);
         boolean cheapPromptMode = options.cheapPromptMode != null
                 ? options.cheapPromptMode
                 : !"ollama".equals(options.provider);
@@ -531,6 +606,12 @@ public class GenMorphoDB {
             System.out.println("Ignoring --service-tier for provider: " + options.provider +
                     " (only applied when --provider openai).");
         }
+        if ("openrouter".equals(options.provider) && options.orProviderPreferred != null) {
+            System.out.println("Using OpenRouter preferred provider: " + options.orProviderPreferred);
+        } else if (options.orProviderPreferred != null) {
+            System.out.println("Ignoring --or-provider-preferred for provider: " + options.provider +
+                    " (only applied when --provider openrouter).");
+        }
         System.out.println("Using cheap prompt mode: " + GenUtils.isCheapPromptMode());
         System.out.println("Using verbose logging: " + GenMorphoUtils.debug);
         System.out.println("MorphoDB model directory: " + GenUtils.getMorphoModelDirectoryName());
@@ -562,7 +643,11 @@ public class GenMorphoDB {
         String wordType = cliOptions.wordType;
         String genFunction = cliOptions.genFunction;
         Path morphoModelRoot = resolveMorphoModelRoot(cliOptions);
-        boolean maintenanceRequested = cliOptions.compact || cliOptions.addLemma || cliOptions.dedup;
+        boolean maintenanceRequested = cliOptions.compact
+                || cliOptions.addLemma
+                || cliOptions.dedup
+                || cliOptions.getErrorPercent
+                || cliOptions.normalizeCategorical;
 
         if (maintenanceRequested) {
             runMorphologicalMaintenance(morphoModelRoot, cliOptions);
@@ -586,10 +671,24 @@ public class GenMorphoDB {
 
         configureLlm(cliOptions);
 
-        initWordNet();
+        MorphoWordNetUtils.initWordNet();
 
-        Map<String, Set<String>> nounSynsetHash      = filteredSortedCopy(WordNet.wn.nounSynsetHash,      "noun set");
-        Map<String, Set<String>> verbSynsetHash      = filteredSortedCopy(WordNet.wn.verbSynsetHash,      "verb set");
+        Map<String, Set<String>> nounSynsetHash      = MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.nounSynsetHash,      "noun set");
+        Map<String, Set<String>> verbSynsetHash      = MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.verbSynsetHash,      "verb set");
+
+        if (cliOptions.nounStart != null || cliOptions.nounEnd != null) {
+            NavigableMap<String, Set<String>> navNouns = (TreeMap<String, Set<String>>) nounSynsetHash;
+            if (cliOptions.nounStart != null) {
+                navNouns = navNouns.tailMap(cliOptions.nounStart, true);
+            }
+            if (cliOptions.nounEnd != null) {
+                String upperBound = cliOptions.nounEnd.substring(0, cliOptions.nounEnd.length() - 1)
+                        + (char) (cliOptions.nounEnd.charAt(cliOptions.nounEnd.length() - 1) + 1);
+                navNouns = navNouns.headMap(upperBound, false);
+            }
+            nounSynsetHash = navNouns;
+            System.out.println("Noun set size (after range filter): " + nounSynsetHash.size());
+        }
 
         if (cliOptions.verbStart != null || cliOptions.verbEnd != null) {
             NavigableMap<String, Set<String>> navVerbs = (TreeMap<String, Set<String>>) verbSynsetHash;
@@ -597,15 +696,16 @@ public class GenMorphoDB {
                 navVerbs = navVerbs.tailMap(cliOptions.verbStart, true);
             }
             if (cliOptions.verbEnd != null) {
-                String upperBound = String.valueOf((char) (cliOptions.verbEnd.charAt(0) + 1));
+                String upperBound = cliOptions.verbEnd.substring(0, cliOptions.verbEnd.length() - 1)
+                        + (char) (cliOptions.verbEnd.charAt(cliOptions.verbEnd.length() - 1) + 1);
                 navVerbs = navVerbs.headMap(upperBound, false);
             }
             verbSynsetHash = navVerbs;
             System.out.println("Verb set size (after range filter): " + verbSynsetHash.size());
         }
 
-        Map<String, Set<String>> adjectiveSynsetHash = filteredSortedCopy(WordNet.wn.adjectiveSynsetHash, "adjective set");
-        Map<String, Set<String>> adverbSynsetHash    = filteredSortedCopy(WordNet.wn.adverbSynsetHash,    "adverb set");
+        Map<String, Set<String>> adjectiveSynsetHash = MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.adjectiveSynsetHash, "adjective set");
+        Map<String, Set<String>> adverbSynsetHash    = MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.adverbSynsetHash,    "adverb set");
 
         System.out.println("Noun set size      : " + nounSynsetHash.size());
         System.out.println("Verb set size      : " + verbSynsetHash.size());
@@ -800,10 +900,22 @@ public class GenMorphoDB {
             return;
         }
 
-        if (cliOptions.addLemma && cliOptions.compact) {
+        if (cliOptions.getErrorPercent) {
+            runErrorPercentReport(morphoModelRoot, targetResolution);
+            printSkippedMaintenanceTargets(targetResolution.skipped);
+            System.out.println("Morphological DB maintenance complete for root: " + morphoModelRoot +
+                    (cliOptions.allModels ? " (all-models mode)" : ""));
+            return;
+        }
+
+        if (cliOptions.addLemma && cliOptions.compact && cliOptions.normalizeCategorical) {
+            System.out.println("Maintenance flags provided; running add-lemma, compact cleanup, then categorical normalization.");
+        } else if (cliOptions.addLemma && cliOptions.compact) {
             System.out.println("Both maintenance flags provided; running add-lemma first, then compact (dedup, compact, find-fix-gaps).");
         } else if (cliOptions.compact) {
             System.out.println("compact: full cleanup sequence: dedup, compact, find-fix-gaps.");
+        } else if (cliOptions.normalizeCategorical) {
+            System.out.println("normalize-categorical: canonicalizing categorical fields in place.");
         }
 
         if (cliOptions.addLemma) {
@@ -852,14 +964,31 @@ public class GenMorphoDB {
             int totalFilesProcessed = 0;
             for (MaintenanceTarget target : targetResolution.targets) {
                 CompactStats modelTotal = new CompactStats();
+                Path auditPath = target.modelRoot.resolve(REQUIRED_FIELD_RECOVERY_AUDIT_FILE);
+                BufferedWriter requiredFieldRecoveryAuditWriter = null;
+                try {
+                    requiredFieldRecoveryAuditWriter = Files.newBufferedWriter(auditPath, StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    System.out.println("Failed to create compact recovery audit file: " + auditPath + " (" + e.getMessage() + ")");
+                    requiredFieldRecoveryAuditWriter = null;
+                }
                 for (MorphoFileSpec fileSpec : target.fileSpecs) {
-                    CompactStats stats = compactMorphoFile(fileSpec, compactSummaryWriter);
+                    CompactStats stats = compactMorphoFile(fileSpec, compactSummaryWriter, requiredFieldRecoveryAuditWriter);
                     modelTotal.add(stats);
+                }
+                if (requiredFieldRecoveryAuditWriter != null) {
+                    try {
+                        requiredFieldRecoveryAuditWriter.flush();
+                        requiredFieldRecoveryAuditWriter.close();
+                        System.out.println("compact: required-field recovery audit file=" + auditPath);
+                    } catch (IOException e) {
+                        System.out.println("Failed to finalize compact recovery audit file: " + auditPath + " (" + e.getMessage() + ")");
+                    }
                 }
                 total.add(modelTotal);
                 totalFilesProcessed += target.fileSpecs.size();
-                int modelErrors = modelTotal.existingErrorRows + modelTotal.malformedConvertedRows;
-                String modelSummary = String.format("compact MODEL: %s files=%d lines=%d stripped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d)",
+                int modelErrors = modelTotal.existingErrorRows + modelTotal.malformedConvertedRows + modelTotal.garbledRows;
+                String modelSummary = String.format("compact MODEL: %s files=%d lines=%d stripped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d refused=%d garbled=%d)",
                         target.modelName,
                         target.fileSpecs.size(),
                         modelTotal.totalLines,
@@ -867,7 +996,9 @@ public class GenMorphoDB {
                         modelErrors,
                         formatErrorPct(modelErrors, modelTotal.totalLines),
                         modelTotal.existingErrorRows,
-                        modelTotal.malformedConvertedRows);
+                        modelTotal.malformedConvertedRows,
+                        modelTotal.refusedRows,
+                        modelTotal.garbledRows);
                 printCompactLine(compactSummaryWriter, modelSummary);
                 if (modelTotal.malformedUnrecoverableRows > 0) {
                     String modelMalformedSummary = String.format("compact MODEL: %s dropped malformed rows without recoverable lemma=%d",
@@ -888,8 +1019,8 @@ public class GenMorphoDB {
                     printCompactLine(compactSummaryWriter, modelDroppedSummary);
                 }
             }
-            int totalErrors = total.existingErrorRows + total.malformedConvertedRows;
-            String totalSummary = String.format("compact TOTAL: models=%d skipped=%d files=%d lines=%d stripped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d)",
+            int totalErrors = total.existingErrorRows + total.malformedConvertedRows + total.garbledRows;
+            String totalSummary = String.format("compact TOTAL: models=%d skipped=%d files=%d lines=%d stripped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d refused=%d garbled=%d)",
                     targetResolution.targets.size(),
                     targetResolution.skipped.size(),
                     totalFilesProcessed,
@@ -898,7 +1029,9 @@ public class GenMorphoDB {
                     totalErrors,
                     formatErrorPct(totalErrors, total.totalLines),
                     total.existingErrorRows,
-                    total.malformedConvertedRows);
+                    total.malformedConvertedRows,
+                    total.refusedRows,
+                    total.garbledRows);
             printCompactLine(compactSummaryWriter, totalSummary);
             if (total.malformedUnrecoverableRows > 0) {
                 String totalMalformedSummary = String.format("compact TOTAL: dropped malformed rows without recoverable lemma=%d",
@@ -933,6 +1066,10 @@ public class GenMorphoDB {
             runDedupPass(targetResolution.targets, cliOptions.allModels, dedupReferenceRoot);
         }
 
+        if (cliOptions.normalizeCategorical) {
+            runCategoricalNormalizationReport(morphoModelRoot, targetResolution);
+        }
+
         printSkippedMaintenanceTargets(targetResolution.skipped);
         System.out.println("Morphological DB maintenance complete for root: " + morphoModelRoot +
                 (cliOptions.allModels ? " (all-models mode)" : ""));
@@ -956,10 +1093,33 @@ public class GenMorphoDB {
     private static class MorphoFileSpec {
         final Path path;
         final String sourceFieldName;
+        final String[] requiredPayloadFields;
+        final String[] allowedPersistedFields;
+        final boolean requiresCompleteConjugation;
+        final boolean allowRequiredFieldFragmentRecovery;
 
-        MorphoFileSpec(Path path, String sourceFieldName) {
+        MorphoFileSpec(Path path,
+                       String sourceFieldName,
+                       String[] requiredPayloadFields,
+                       String[] allowedPersistedFields,
+                       boolean requiresCompleteConjugation,
+                       boolean allowRequiredFieldFragmentRecovery) {
             this.path = path;
             this.sourceFieldName = sourceFieldName;
+            this.requiredPayloadFields = requiredPayloadFields == null ? new String[0] : requiredPayloadFields;
+            this.allowedPersistedFields = allowedPersistedFields == null ? new String[0] : allowedPersistedFields;
+            this.requiresCompleteConjugation = requiresCompleteConjugation;
+            this.allowRequiredFieldFragmentRecovery = allowRequiredFieldFragmentRecovery;
+        }
+    }
+
+    private static class CompactRecoveryResult {
+        final com.fasterxml.jackson.databind.node.ObjectNode node;
+        final String method;
+
+        CompactRecoveryResult(com.fasterxml.jackson.databind.node.ObjectNode node, String method) {
+            this.node = node;
+            this.method = method;
         }
     }
 
@@ -972,6 +1132,11 @@ public class GenMorphoDB {
         int malformedUnrecoverableRows;
         int lemmaAddedRows;
         int droppedMissingLemmaRows;
+        int rescuedRows;
+        int refusedRows;
+        int garbledRows;
+        int conjugationCompleteRows;
+        int conjugationPartialRows;
 
         void add(CompactStats other) {
             if (other == null) return;
@@ -983,8 +1148,76 @@ public class GenMorphoDB {
             malformedUnrecoverableRows += other.malformedUnrecoverableRows;
             lemmaAddedRows += other.lemmaAddedRows;
             droppedMissingLemmaRows += other.droppedMissingLemmaRows;
+            rescuedRows += other.rescuedRows;
+            refusedRows += other.refusedRows;
+            garbledRows += other.garbledRows;
+            conjugationCompleteRows += other.conjugationCompleteRows;
+            conjugationPartialRows += other.conjugationPartialRows;
         }
     }
+
+    private static class ErrorPercentStats {
+        int totalLines;
+        int existingErrorRows;
+        int malformedConvertedRows;
+        int parseFailures;
+        int refusedRows;
+        int garbledRows;
+        int invalidCategorizationRows;
+        int conjugationCompleteRows;
+        int conjugationPartialRows;
+
+        void add(ErrorPercentStats other) {
+            if (other == null) return;
+            totalLines += other.totalLines;
+            existingErrorRows += other.existingErrorRows;
+            malformedConvertedRows += other.malformedConvertedRows;
+            parseFailures += other.parseFailures;
+            refusedRows += other.refusedRows;
+            garbledRows += other.garbledRows;
+            invalidCategorizationRows += other.invalidCategorizationRows;
+            conjugationCompleteRows += other.conjugationCompleteRows;
+            conjugationPartialRows += other.conjugationPartialRows;
+        }
+    }
+
+    private static class CategoricalNormalizationStats {
+        int totalLines;
+        int canonicalizedRows;
+        int alreadyCanonicalRows;
+        int invalidCategorizationRows;
+        int parseFailures;
+        int existingErrorRows;
+        int refusedRows;
+        int garbledRows;
+
+        void add(CategoricalNormalizationStats other) {
+            if (other == null) return;
+            totalLines += other.totalLines;
+            canonicalizedRows += other.canonicalizedRows;
+            alreadyCanonicalRows += other.alreadyCanonicalRows;
+            invalidCategorizationRows += other.invalidCategorizationRows;
+            parseFailures += other.parseFailures;
+            existingErrorRows += other.existingErrorRows;
+            refusedRows += other.refusedRows;
+            garbledRows += other.garbledRows;
+        }
+    }
+
+    private static final String[] LATEX_CLASSIFICATION_COLUMN_PATHS = new String[]{
+            "noun/IndefiniteArticles.txt",
+            "noun/Countability.txt",
+            "noun/Humanness.txt",
+            "noun/NounAgentivity.txt",
+            "noun/CollectiveNouns.txt",
+            "verb/VerbValence.txt",
+            "verb/VerbReflexive.txt",
+            "verb/VerbCausativity.txt",
+            "verb/VerbAchievementProcess.txt",
+            "verb/VerbReciprocal.txt",
+            "adjective/AdjectiveSemanticClasses.txt",
+            "adverb/AdverbSemanticClasses.txt"
+    };
 
     private static List<MorphoFileSpec> getMorphologicalDatabaseFileSpecs(Path modelRoot) {
 
@@ -993,28 +1226,87 @@ public class GenMorphoDB {
             return specs;
         }
 
-        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("IndefiniteArticles.txt"), "noun"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("Countability.txt"), "noun"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("Plurals.txt"), "singular"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("Humanness.txt"), "noun"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("NounAgentivity.txt"), "noun"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("noun").resolve("CollectiveNouns.txt"), "noun"));
+        specs.add(flatSpec(modelRoot.resolve("noun").resolve("IndefiniteArticles.txt"),
+                "noun",
+                new String[]{"noun", "article"},
+                new String[]{"synsetId", "lemma", "noun", "article", "article_pattern"}));
+        specs.add(flatSpec(modelRoot.resolve("noun").resolve("Countability.txt"),
+                "noun",
+                new String[]{"noun", "countability"},
+                new String[]{"synsetId", "lemma", "noun", "countability"}));
+        specs.add(flatSpec(modelRoot.resolve("noun").resolve("Plurals.txt"),
+                "singular",
+                new String[]{"singular", "plural", "type"},
+                new String[]{"synsetId", "lemma", "singular", "plural", "type", "plural_pattern"}));
+        specs.add(flatSpec(modelRoot.resolve("noun").resolve("Humanness.txt"),
+                "noun",
+                new String[]{"noun", "classification"},
+                new String[]{"synsetId", "lemma", "noun", "classification"}));
+        specs.add(flatSpec(modelRoot.resolve("noun").resolve("NounAgentivity.txt"),
+                "noun",
+                new String[]{"noun", "agency", "agent_type"},
+                new String[]{"synsetId", "lemma", "noun", "agency", "agent_type"}));
+        specs.add(flatSpec(modelRoot.resolve("noun").resolve("CollectiveNouns.txt"),
+                "noun",
+                new String[]{"noun", "collective"},
+                new String[]{"synsetId", "lemma", "noun", "collective"}));
 
-        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbValence.txt"), "verb"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbReflexive.txt"), "verb"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbCausativity.txt"), "verb"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbAchievementProcess.txt"), "verb"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbReciprocal.txt"), "verb"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbConjugations.txt"), "verb"));
+        specs.add(flatSpec(modelRoot.resolve("verb").resolve("VerbValence.txt"),
+                "verb",
+                new String[]{"verb", "valence", "subtype", "semantic_roles"},
+                new String[]{"synsetId", "lemma", "verb", "valence", "subtype", "semantic_roles"}));
+        specs.add(flatSpec(modelRoot.resolve("verb").resolve("VerbReflexive.txt"),
+                "verb",
+                new String[]{"verb", "reflexivity"},
+                new String[]{"synsetId", "lemma", "verb", "reflexivity"}));
+        specs.add(flatSpec(modelRoot.resolve("verb").resolve("VerbCausativity.txt"),
+                "verb",
+                new String[]{"verb", "causativity"},
+                new String[]{"synsetId", "lemma", "verb", "causativity"}));
+        specs.add(flatSpec(modelRoot.resolve("verb").resolve("VerbAchievementProcess.txt"),
+                "verb",
+                new String[]{"verb", "aktionsart"},
+                new String[]{"synsetId", "lemma", "verb", "aktionsart"}));
+        specs.add(flatSpec(modelRoot.resolve("verb").resolve("VerbReciprocal.txt"),
+                "verb",
+                new String[]{"verb", "reciprocity"},
+                new String[]{"synsetId", "lemma", "verb", "reciprocity"}));
+        specs.add(new MorphoFileSpec(modelRoot.resolve("verb").resolve("VerbConjugations.txt"),
+                "verb",
+                new String[]{"verb", "tenses"},
+                new String[]{"synsetId", "lemma", "verb", "status", "filledSlotCount", "totalSlotCount",
+                        "filledTenseCount", "totalTenseCount", "regularity", "regularity_derived", "tenses", "notes"},
+                true,
+                false));
 
-        specs.add(new MorphoFileSpec(modelRoot.resolve("adjective").resolve("AdjectiveSemanticClasses.txt"), "adjective"));
-        specs.add(new MorphoFileSpec(modelRoot.resolve("adverb").resolve("AdverbSemanticClasses.txt"), "adverb"));
+        specs.add(flatSpec(modelRoot.resolve("adjective").resolve("AdjectiveSemanticClasses.txt"),
+                "adjective",
+                new String[]{"adjective", "category"},
+                new String[]{"synsetId", "lemma", "adjective", "category"}));
+        specs.add(flatSpec(modelRoot.resolve("adverb").resolve("AdverbSemanticClasses.txt"),
+                "adverb",
+                new String[]{"adverb", "category"},
+                new String[]{"synsetId", "lemma", "adverb", "category"}));
 
         return specs;
     }
 
+    private static MorphoFileSpec flatSpec(Path path,
+                                           String sourceFieldName,
+                                           String[] requiredPayloadFields,
+                                           String[] allowedPersistedFields) {
+
+        return new MorphoFileSpec(path,
+                sourceFieldName,
+                requiredPayloadFields,
+                allowedPersistedFields,
+                false,
+                true);
+    }
+
     private static CompactStats compactMorphoFile(MorphoFileSpec fileSpec,
-                                                  BufferedWriter compactSummaryWriter) {
+                                                  BufferedWriter compactSummaryWriter,
+                                                  BufferedWriter requiredFieldRecoveryAuditWriter) {
 
         CompactStats stats = new CompactStats();
         if (fileSpec == null || fileSpec.path == null || !Files.exists(fileSpec.path)) {
@@ -1029,7 +1321,23 @@ public class GenMorphoDB {
             while ((line = reader.readLine()) != null) {
                 lineNo++;
                 stats.totalLines++;
+                String originalLine = line;
                 com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                boolean rescuedMalformedLine = false;
+                if (node == null) {
+                    String recoveredSynset = extractJsonLikeField(line, "synsetId");
+                    String recoveredLemma = recoverLemmaFromMalformedLine(line, fileSpec.sourceFieldName);
+                    String recoveredSource = recoverSourceValueFromMalformedText(line, fileSpec.sourceFieldName, recoveredLemma);
+                    CompactRecoveryResult recovery =
+                            tryRecoverCompactRecord(fileSpec, line, stats, recoveredSynset, recoveredLemma, recoveredSource);
+                    if (recovery != null) {
+                        node = recovery.node;
+                        rescuedMalformedLine = true;
+                        if (RECOVERY_METHOD_REQUIRED_FIELDS_ONLY.equals(recovery.method)) {
+                            writeRequiredFieldRecoveryAudit(requiredFieldRecoveryAuditWriter, fileSpec, line, node);
+                        }
+                    }
+                }
                 if (node == null) {
                     String recoveredLemma = recoverLemmaFromMalformedLine(line, fileSpec.sourceFieldName);
                     if (recoveredLemma.isEmpty()) {
@@ -1044,6 +1352,7 @@ public class GenMorphoDB {
                     errorNode.put("lemma", recoveredLemma);
                     errorNode.put(fileSpec.sourceFieldName, recoveredLemma);
                     errorNode.put("status", "error");
+                    errorNode.put("errorSource", ERROR_SOURCE_MALFORMED_CONVERTED);
                     errorNode.put("rawResponse", sanitizeForJsonField(line));
                     writer.write(GenMorphoUtils.serializeJsonLine(errorNode));
                     writer.newLine();
@@ -1051,45 +1360,99 @@ public class GenMorphoDB {
                     continue;
                 }
                 stats.jsonLines++;
-                boolean removedAny = false;
-                if (node.remove("explanation") != null) {
-                    removedAny = true;
+                node = normalizeCompactedNode(fileSpec, node, stats);
+                if (node == null) {
+                    continue;
                 }
-                if (node.remove("usage") != null) {
-                    removedAny = true;
-                }
-                if (node.remove("definition") != null) {
-                    removedAny = true;
-                }
-                if (node.remove("message") != null) {
-                    removedAny = true;
-                }
-                if (removedAny) {
-                    stats.strippedFieldRows++;
-                }
-
-                String lemma = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
-                if (lemma.isEmpty()) {
-                    String sourceValue = recoverLemmaFromNode(node, fileSpec.sourceFieldName);
-                    if (!sourceValue.isEmpty()) {
-                        node.put("lemma", sourceValue);
-                        lemma = sourceValue;
-                        stats.lemmaAddedRows++;
-                    }
-                    else {
-                        stats.droppedMissingLemmaRows++;
+                String statusBeforeCanonicalization = node.path("status").asText("");
+                if (fileSpec.requiresCompleteConjugation && !isErrorLikeStatus(statusBeforeCanonicalization)) {
+                    VerbConjugationUtils.CanonicalizationResult conjugationResult =
+                            canonicalizeVerbConjugationNode(fileSpec, node);
+                    if (conjugationResult == null
+                            || conjugationResult.record == null
+                            || conjugationResult.completeness == VerbConjugationUtils.ConjugationCompleteness.ERROR) {
+                        com.fasterxml.jackson.databind.node.ObjectNode errorNode =
+                                buildCompactErrorNode(fileSpec, node, originalLine);
+                        if (errorNode != null) {
+                            stats.existingErrorRows++;
+                            writer.write(GenMorphoUtils.serializeJsonLine(errorNode));
+                            writer.newLine();
+                        }
+                        else {
+                            stats.droppedMissingLemmaRows++;
+                        }
                         continue;
                     }
-                } else {
-                    node.put("lemma", lemma);
+                    node = conjugationResult.record;
                 }
-                node = GenMorphoUtils.prependSynsetIdAndLemma(
-                        node,
-                        node.path("synsetId").asText(""),
-                        lemma);
+                if (rescuedMalformedLine) {
+                    stats.rescuedRows++;
+                }
 
-                if ("error".equalsIgnoreCase(node.path("status").asText(""))) {
-                    stats.existingErrorRows++;
+                String status = node.path("status").asText("");
+                if ("refused".equalsIgnoreCase(status)) {
+                    stats.refusedRows++;
+                }
+                else if ("garbled".equalsIgnoreCase(status)) {
+                    stats.garbledRows++;
+                }
+                else if (fileSpec.requiresCompleteConjugation && isConjugationPartialRow(node)) {
+                    stats.conjugationPartialRows++;
+                }
+                else if ("error".equalsIgnoreCase(status)) {
+                    // Case B: try to rescue valid JSON from rawResponse (with or without fences)
+                    String rawResp = node.path("rawResponse").asText("").trim();
+                    if (!rawResp.isEmpty()) {
+                        CompactRecoveryResult recovery = tryRecoverCompactRecord(
+                                fileSpec,
+                                rawResp,
+                                stats,
+                                node.path("synsetId").asText("").trim(),
+                                node.path("lemma").asText("").trim(),
+                                node.path(fileSpec.sourceFieldName).asText("").trim());
+                        if (recovery != null) {
+                            if (RECOVERY_METHOD_REQUIRED_FIELDS_ONLY.equals(recovery.method)) {
+                                writeRequiredFieldRecoveryAudit(requiredFieldRecoveryAuditWriter, fileSpec, rawResp, recovery.node);
+                            }
+                            writer.write(GenMorphoUtils.serializeJsonLine(recovery.node));
+                            writer.newLine();
+                            stats.rescuedRows++;
+                            if (fileSpec.requiresCompleteConjugation) {
+                                if (isConjugationPartialRow(recovery.node)) {
+                                    stats.conjugationPartialRows++;
+                                } else {
+                                    stats.conjugationCompleteRows++;
+                                }
+                            }
+                            continue;
+                        }
+                    }
+                    String rawRespForClassify = node.path("rawResponse").asText("").trim();
+                    if (!rawRespForClassify.isEmpty()) {
+                        String classified = GenMorphoUtils.classifyNonJsonResponse(rawRespForClassify);
+                        if (!"error".equals(classified)) {
+                            node.put("status", classified);
+                            node.remove("errorSource");
+                            if ("refused".equals(classified)) {
+                                stats.refusedRows++;
+                            } else {
+                                stats.garbledRows++;
+                            }
+                            writer.write(GenMorphoUtils.serializeJsonLine(node));
+                            writer.newLine();
+                            continue;
+                        }
+                    }
+                    normalizeErrorSource(node);
+                    if (ERROR_SOURCE_MALFORMED_CONVERTED.equals(node.path("errorSource").asText("").trim())) {
+                        stats.malformedConvertedRows++;
+                    }
+                    else {
+                        stats.existingErrorRows++;
+                    }
+                }
+                else if (fileSpec.requiresCompleteConjugation) {
+                    stats.conjugationCompleteRows++;
                 }
                 writer.write(GenMorphoUtils.serializeJsonLine(node));
                 writer.newLine();
@@ -1100,18 +1463,1497 @@ public class GenMorphoDB {
             return stats;
         }
         overwriteFile(filePath, tmp);
-        int errorRows = stats.existingErrorRows + stats.malformedConvertedRows;
-        String fileSummary = String.format("compact: %-30s lines=%d stripped=%d dropped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d)",
-                filePath.getFileName(),
-                stats.totalLines,
-                stats.strippedFieldRows,
-                stats.droppedMissingLemmaRows,
-                errorRows,
-                formatErrorPct(errorRows, stats.totalLines),
-                stats.existingErrorRows,
-                stats.malformedConvertedRows);
+        int errorRows = stats.existingErrorRows + stats.malformedConvertedRows + stats.garbledRows;
+        String fileSummary;
+        if (fileSpec.requiresCompleteConjugation) {
+            int conjugationErrorRows = computeConjugationErrorRows(stats);
+            fileSummary = String.format(
+                    "compact: %-30s lines=%d stripped=%d dropped=%d complete=%d completePct=%s partial=%d partialPct=%s errors=%d errorPct=%s (existing=%d malformed->error=%d rescued=%d refused=%d garbled=%d)",
+                    filePath.getFileName(),
+                    stats.totalLines,
+                    stats.strippedFieldRows,
+                    stats.droppedMissingLemmaRows,
+                    stats.conjugationCompleteRows,
+                    formatErrorPct(stats.conjugationCompleteRows, stats.totalLines),
+                    stats.conjugationPartialRows,
+                    formatErrorPct(stats.conjugationPartialRows, stats.totalLines),
+                    conjugationErrorRows,
+                    formatErrorPct(conjugationErrorRows, stats.totalLines),
+                    stats.existingErrorRows,
+                    stats.malformedConvertedRows,
+                    stats.rescuedRows,
+                    stats.refusedRows,
+                    stats.garbledRows);
+        } else {
+            fileSummary = String.format("compact: %-30s lines=%d stripped=%d dropped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d rescued=%d refused=%d garbled=%d)",
+                    filePath.getFileName(),
+                    stats.totalLines,
+                    stats.strippedFieldRows,
+                    stats.droppedMissingLemmaRows,
+                    errorRows,
+                    formatErrorPct(errorRows, stats.totalLines),
+                    stats.existingErrorRows,
+                    stats.malformedConvertedRows,
+                    stats.rescuedRows,
+                    stats.refusedRows,
+                    stats.garbledRows);
+        }
         printCompactLine(compactSummaryWriter, fileSummary);
         return stats;
+    }
+
+    private static CompactRecoveryResult tryRecoverCompactRecord(MorphoFileSpec fileSpec,
+                                                                 String text,
+                                                                 CompactStats stats,
+                                                                 String fallbackSynsetId,
+                                                                 String fallbackLemma,
+                                                                 String fallbackSourceValue) {
+
+        CompactRecoveryResult parsedRecovery = tryRecoverCompactJsonObject(text);
+        if (parsedRecovery != null) {
+            com.fasterxml.jackson.databind.node.ObjectNode finalized = finalizeRecoveredCompactNode(
+                    fileSpec,
+                    parsedRecovery.node,
+                    stats,
+                    fallbackSynsetId,
+                    fallbackLemma,
+                    fallbackSourceValue);
+            if (finalized != null) {
+                if (RECOVERY_METHOD_DROPPED_FIELD_PRUNED.equals(parsedRecovery.method) && stats != null) {
+                    stats.strippedFieldRows++;
+                }
+                return new CompactRecoveryResult(finalized, parsedRecovery.method);
+            }
+        }
+        if (fileSpec != null && fileSpec.allowRequiredFieldFragmentRecovery) {
+            com.fasterxml.jackson.databind.node.ObjectNode fragmentRecovered =
+                    recoverRequiredFieldsOnlyRecord(fileSpec, text, fallbackSynsetId, fallbackLemma, fallbackSourceValue);
+            if (fragmentRecovered != null) {
+                return new CompactRecoveryResult(fragmentRecovered, RECOVERY_METHOD_REQUIRED_FIELDS_ONLY);
+            }
+        }
+        return null;
+    }
+
+    private static CompactRecoveryResult tryRecoverCompactJsonObject(String text) {
+
+        if (text == null) {
+            return null;
+        }
+        String normalized = GenMorphoUtils.fixInvalidJsonEscapes(
+                GenMorphoUtils.stripMarkdownFences(text.trim()));
+        com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(normalized);
+        if (node != null) {
+            return new CompactRecoveryResult(node, "json_object");
+        }
+        String extracted = GenUtils.extractFirstJsonObject(normalized);
+        if (extracted == null || extracted.trim().isEmpty()) {
+            return null;
+        }
+        com.fasterxml.jackson.databind.node.ObjectNode parsed = GenMorphoUtils.parseJsonObjectLine(extracted);
+        if (parsed != null) {
+            return new CompactRecoveryResult(parsed, "extracted_json_object");
+        }
+        String repaired = repairOverEscapedQuotedStrings(extracted);
+        if (!repaired.equals(extracted)) {
+            com.fasterxml.jackson.databind.node.ObjectNode repairedNode = GenMorphoUtils.parseJsonObjectLine(repaired);
+            if (repairedNode != null) {
+                return new CompactRecoveryResult(repairedNode, "repaired_over_escaped_quotes");
+            }
+        }
+        String pruned = pruneDroppedFieldsFromExtractedObject(extracted);
+        if (pruned == null || pruned.equals(extracted)) {
+            return null;
+        }
+        com.fasterxml.jackson.databind.node.ObjectNode prunedNode = GenMorphoUtils.parseJsonObjectLine(pruned);
+        if (prunedNode != null) {
+            return new CompactRecoveryResult(prunedNode, RECOVERY_METHOD_DROPPED_FIELD_PRUNED);
+        }
+        String repairedPruned = repairOverEscapedQuotedStrings(pruned);
+        if (repairedPruned.equals(pruned)) {
+            return null;
+        }
+        prunedNode = GenMorphoUtils.parseJsonObjectLine(repairedPruned);
+        if (prunedNode != null) {
+            return new CompactRecoveryResult(prunedNode, RECOVERY_METHOD_DROPPED_FIELD_PRUNED);
+        }
+        return null;
+    }
+
+    private static String repairOverEscapedQuotedStrings(String text) {
+
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        String repaired = text;
+        while (repaired.contains("\\\\\"")) {
+            String next = repaired.replace("\\\\\"", "\\\"");
+            if (next.equals(repaired)) {
+                break;
+            }
+            repaired = next;
+        }
+        return repaired;
+    }
+
+    private static String pruneDroppedFieldsFromExtractedObject(String text) {
+
+        if (text == null || text.trim().isEmpty()) {
+            return null;
+        }
+        String pruned = text;
+        boolean changed = false;
+        for (String fieldName : DROPPABLE_COMPACT_FIELDS) {
+            String next = removeTopLevelField(pruned, fieldName);
+            if (!pruned.equals(next)) {
+                pruned = next;
+                changed = true;
+            }
+        }
+        return changed ? cleanupPrunedJsonObject(pruned) : null;
+    }
+
+    private static String removeTopLevelField(String text, String fieldName) {
+
+        if (text == null || text.isEmpty() || fieldName == null || fieldName.isEmpty()) {
+            return text;
+        }
+        int fieldStart = findTopLevelFieldStart(text, fieldName);
+        if (fieldStart < 0) {
+            return text;
+        }
+        int fieldNameEnd = fieldStart + fieldName.length() + 2;
+        int colonIndex = skipWhitespace(text, fieldNameEnd);
+        if (colonIndex < 0 || colonIndex >= text.length() || text.charAt(colonIndex) != ':') {
+            return text;
+        }
+        int valueStart = skipWhitespace(text, colonIndex + 1);
+        if (valueStart < 0 || valueStart >= text.length()) {
+            return text;
+        }
+        int valueEnd = findBestEffortJsonValueEnd(text, valueStart);
+        if (valueEnd <= valueStart) {
+            return text;
+        }
+
+        int removalStart = fieldStart;
+        int prefixIndex = skipWhitespaceBackward(text, fieldStart - 1);
+        if (prefixIndex >= 0 && text.charAt(prefixIndex) == ',') {
+            removalStart = prefixIndex;
+        }
+        int removalEnd = valueEnd;
+        if (removalStart == fieldStart) {
+            int suffixIndex = skipWhitespace(text, valueEnd);
+            if (suffixIndex >= 0 && suffixIndex < text.length() && text.charAt(suffixIndex) == ',') {
+                removalEnd = suffixIndex + 1;
+            }
+        }
+        return text.substring(0, removalStart) + text.substring(removalEnd);
+    }
+
+    private static int findTopLevelFieldStart(String text, String fieldName) {
+
+        if (text == null || fieldName == null) {
+            return -1;
+        }
+        int depth = 0;
+        boolean inString = false;
+        boolean escaping = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (c == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (c == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (c == '"') {
+                if (depth == 1 && text.startsWith("\"" + fieldName + "\"", i)) {
+                    int afterField = skipWhitespace(text, i + fieldName.length() + 2);
+                    if (afterField >= 0 && afterField < text.length() && text.charAt(afterField) == ':') {
+                        return i;
+                    }
+                }
+                inString = true;
+                continue;
+            }
+            if (c == '{' || c == '[') {
+                depth++;
+            }
+            else if (c == '}' || c == ']') {
+                depth = Math.max(0, depth - 1);
+            }
+        }
+        return -1;
+    }
+
+    private static int findBestEffortJsonValueEnd(String text, int valueStart) {
+
+        if (text == null || valueStart < 0 || valueStart >= text.length()) {
+            return -1;
+        }
+        char first = text.charAt(valueStart);
+        if (first == '"') {
+            int stringEnd = findJsonStringEnd(text, valueStart);
+            if (stringEnd > valueStart) {
+                int afterString = skipWhitespace(text, stringEnd);
+                if (afterString >= 0 && afterString < text.length()) {
+                    char boundaryChar = text.charAt(afterString);
+                    if (boundaryChar == ',' || boundaryChar == '}' || boundaryChar == ']') {
+                        return stringEnd;
+                    }
+                } else if (stringEnd == text.length()) {
+                    return stringEnd;
+                }
+            }
+            int boundary = findLikelyFieldBoundary(text, valueStart + 1);
+            if (boundary >= 0) {
+                return boundary;
+            }
+            return text.length();
+        }
+        if (first == '{' || first == '[') {
+            int matched = findMatchingBracketEnd(text, valueStart, first, first == '{' ? '}' : ']');
+            if (matched > valueStart) {
+                return matched;
+            }
+        }
+        int boundary = findLikelyFieldBoundary(text, valueStart);
+        return boundary >= 0 ? boundary : text.length();
+    }
+
+    private static int findJsonStringEnd(String text, int startQuote) {
+
+        boolean escaping = false;
+        for (int i = startQuote + 1; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (escaping) {
+                escaping = false;
+                continue;
+            }
+            if (c == '\\') {
+                escaping = true;
+                continue;
+            }
+            if (c == '"') {
+                return i + 1;
+            }
+        }
+        return -1;
+    }
+
+    private static int findMatchingBracketEnd(String text, int startIndex, char openChar, char closeChar) {
+
+        int depth = 0;
+        boolean inString = false;
+        boolean escaping = false;
+        for (int i = startIndex; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (c == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (c == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (c == '"') {
+                inString = true;
+                continue;
+            }
+            if (c == openChar) {
+                depth++;
+                continue;
+            }
+            if (c == closeChar) {
+                depth--;
+                if (depth == 0) {
+                    return i + 1;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static int findLikelyFieldBoundary(String text, int fromIndex) {
+
+        for (int i = fromIndex; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == ',') {
+                int next = skipWhitespace(text, i + 1);
+                if (next >= 0 && next < text.length() && text.charAt(next) == '"') {
+                    int quoteEnd = findJsonStringEnd(text, next);
+                    if (quoteEnd > next) {
+                        int colon = skipWhitespace(text, quoteEnd);
+                        if (colon >= 0 && colon < text.length() && text.charAt(colon) == ':') {
+                            return i;
+                        }
+                    }
+                }
+            }
+            if (c == '}') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int skipWhitespace(String text, int startIndex) {
+
+        if (text == null) {
+            return -1;
+        }
+        for (int i = Math.max(0, startIndex); i < text.length(); i++) {
+            if (!Character.isWhitespace(text.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int skipWhitespaceBackward(String text, int startIndex) {
+
+        if (text == null) {
+            return -1;
+        }
+        for (int i = Math.min(startIndex, text.length() - 1); i >= 0; i--) {
+            if (!Character.isWhitespace(text.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static String cleanupPrunedJsonObject(String text) {
+
+        if (text == null) {
+            return null;
+        }
+        String cleaned = text;
+        cleaned = cleaned.replaceAll(",\\s*}", "}");
+        cleaned = cleaned.replaceAll("\\{\\s*,", "{");
+        return cleaned;
+    }
+
+    private static boolean isSuccessfulRow(com.fasterxml.jackson.databind.node.ObjectNode node) {
+
+        if (node == null) {
+            return false;
+        }
+        return node.path("status").asText("").trim().isEmpty();
+    }
+
+    private static VerbConjugationUtils.CanonicalizationResult canonicalizeVerbConjugationNode(MorphoFileSpec fileSpec,
+                                                                                                com.fasterxml.jackson.databind.node.ObjectNode node) {
+
+        if (fileSpec == null || node == null || !fileSpec.requiresCompleteConjugation) {
+            return new VerbConjugationUtils.CanonicalizationResult(
+                    VerbConjugationUtils.ConjugationCompleteness.ERROR,
+                    node,
+                    0,
+                    VerbConjugationUtils.TOTAL_CANONICAL_SLOT_COUNT,
+                    0,
+                    VerbConjugationUtils.TOTAL_CANONICAL_TENSE_COUNT);
+        }
+        return VerbConjugationUtils.canonicalizeRecord(
+                node,
+                node.path("synsetId").asText("").trim(),
+                node.path("lemma").asText("").trim(),
+                node.path(fileSpec.sourceFieldName).asText("").trim());
+    }
+
+    private static com.fasterxml.jackson.databind.node.ObjectNode buildCompactErrorNode(MorphoFileSpec fileSpec,
+                                                                                        com.fasterxml.jackson.databind.node.ObjectNode node,
+                                                                                        String rawResponse) {
+
+        if (fileSpec == null || node == null) {
+            return null;
+        }
+        String synsetId = node.path("synsetId").asText("").trim();
+        String lemma = recoverLemmaFromNode(node, fileSpec.sourceFieldName);
+        if (synsetId.isEmpty() || lemma.isEmpty()) {
+            return null;
+        }
+        String sourceValue = node.path(fileSpec.sourceFieldName).asText("").trim();
+        if (sourceValue.isEmpty()) {
+            sourceValue = lemma;
+        }
+        com.fasterxml.jackson.databind.node.ObjectNode errorNode = GenMorphoUtils.JSON_MAPPER.createObjectNode();
+        errorNode.put("synsetId", synsetId);
+        errorNode.put("lemma", lemma);
+        errorNode.put(fileSpec.sourceFieldName, sourceValue);
+        errorNode.put("status", "error");
+        errorNode.put("errorSource", ERROR_SOURCE_EXISTING);
+        errorNode.put("rawResponse", sanitizeForJsonField(rawResponse));
+        return errorNode;
+    }
+
+    private static com.fasterxml.jackson.databind.node.ObjectNode finalizeRecoveredCompactNode(MorphoFileSpec fileSpec,
+                                                                                                com.fasterxml.jackson.databind.node.ObjectNode node,
+                                                                                                CompactStats stats,
+                                                                                                String fallbackSynsetId,
+                                                                                                String fallbackLemma,
+                                                                                                String fallbackSourceValue) {
+
+        if (fileSpec == null || node == null) {
+            return null;
+        }
+        node.remove("status");
+        node.remove("errorSource");
+        node.remove("rawResponse");
+        if (node.path("synsetId").asText("").trim().isEmpty() && fallbackSynsetId != null && !fallbackSynsetId.trim().isEmpty()) {
+            node.put("synsetId", fallbackSynsetId.trim());
+        }
+        if (node.path("lemma").asText("").trim().isEmpty() && fallbackLemma != null && !fallbackLemma.trim().isEmpty()) {
+            node.put("lemma", fallbackLemma.trim());
+        }
+        if (node.path(fileSpec.sourceFieldName).asText("").trim().isEmpty()
+                && fallbackSourceValue != null && !fallbackSourceValue.trim().isEmpty()) {
+            node.put(fileSpec.sourceFieldName, fallbackSourceValue.trim());
+        }
+        node = normalizeCompactedNode(fileSpec, node, stats);
+        if (node == null) {
+            return null;
+        }
+        if (node.path("synsetId").asText("").trim().isEmpty()) {
+            return null;
+        }
+        if (fileSpec.requiresCompleteConjugation) {
+            VerbConjugationUtils.CanonicalizationResult result = canonicalizeVerbConjugationNode(fileSpec, node);
+            return result == null ? null : result.record;
+        }
+        if (!hasRequiredPayloadFields(fileSpec, node)) {
+            return null;
+        }
+        if (fileSpec.allowRequiredFieldFragmentRecovery) {
+            Map<String, String> extracted = new HashMap<>();
+            for (String fieldName : fileSpec.requiredPayloadFields) {
+                extracted.put(fieldName, node.path(fieldName).asText(""));
+            }
+            String sourceValue = node.path(fileSpec.sourceFieldName).asText("").trim();
+            com.fasterxml.jackson.databind.node.ObjectNode rebuilt = rebuildFlatSchemaRecoveredNode(
+                    fileSpec,
+                    node.path("synsetId").asText("").trim(),
+                    node.path("lemma").asText("").trim(),
+                    sourceValue,
+                    extracted);
+            if (rebuilt != null) {
+                return rebuilt;
+            }
+            return null;
+        }
+        return node;
+    }
+
+    private static boolean isConjugationPartialRow(com.fasterxml.jackson.databind.node.ObjectNode node) {
+
+        if (node == null) {
+            return false;
+        }
+        return "partial".equalsIgnoreCase(node.path("status").asText(""));
+    }
+
+    private static boolean isErrorLikeStatus(String status) {
+
+        if (status == null) {
+            return false;
+        }
+        String lowered = status.trim().toLowerCase(Locale.ROOT);
+        return "error".equals(lowered) || "refused".equals(lowered) || "garbled".equals(lowered);
+    }
+
+    private static int computeConjugationErrorRows(CompactStats stats) {
+
+        if (stats == null) {
+            return 0;
+        }
+        return Math.max(0, stats.totalLines - stats.conjugationCompleteRows - stats.conjugationPartialRows);
+    }
+
+    private static int computeConjugationErrorRows(ErrorPercentStats stats) {
+
+        if (stats == null) {
+            return 0;
+        }
+        return Math.max(0, stats.totalLines - stats.conjugationCompleteRows - stats.conjugationPartialRows);
+    }
+
+    private static boolean hasRequiredPayloadFields(MorphoFileSpec fileSpec,
+                                                    com.fasterxml.jackson.databind.node.ObjectNode node) {
+
+        if (fileSpec == null || node == null) {
+            return false;
+        }
+        for (String fieldName : fileSpec.requiredPayloadFields) {
+            if (fieldName == null || fieldName.trim().isEmpty()) {
+                continue;
+            }
+            com.fasterxml.jackson.databind.JsonNode fieldValue = node.get(fieldName);
+            if (fieldValue == null || fieldValue.isNull()) {
+                return false;
+            }
+            if (fieldValue.isTextual() && fieldValue.asText("").trim().isEmpty()) {
+                return false;
+            }
+            if (fieldValue.isArray() && fieldValue.size() == 0) {
+                return false;
+            }
+        }
+        String lemma = node.path("lemma").asText("").trim();
+        return !lemma.isEmpty();
+    }
+
+    private static com.fasterxml.jackson.databind.node.ObjectNode recoverRequiredFieldsOnlyRecord(MorphoFileSpec fileSpec,
+                                                                                                  String text,
+                                                                                                  String fallbackSynsetId,
+                                                                                                  String fallbackLemma,
+                                                                                                  String fallbackSourceValue) {
+
+        if (fileSpec == null || text == null || text.trim().isEmpty() || !fileSpec.allowRequiredFieldFragmentRecovery) {
+            return null;
+        }
+        String normalized = GenMorphoUtils.fixInvalidJsonEscapes(GenMorphoUtils.stripMarkdownFences(text.trim()));
+        Map<String, String> extracted = new HashMap<>();
+        for (String fieldName : fileSpec.requiredPayloadFields) {
+            String value = extractTopLevelJsonStringField(normalized, fieldName);
+            if (value == null) {
+                return null;
+            }
+            extracted.put(fieldName, value);
+        }
+        String synsetId = extractTopLevelJsonStringField(normalized, "synsetId");
+        if (synsetId == null || synsetId.trim().isEmpty()) {
+            synsetId = fallbackSynsetId == null ? "" : fallbackSynsetId.trim();
+        }
+        if (synsetId.isEmpty()) {
+            return null;
+        }
+        String sourceValue = extracted.get(fileSpec.sourceFieldName);
+        if ((sourceValue == null || sourceValue.trim().isEmpty()) && fallbackSourceValue != null) {
+            sourceValue = fallbackSourceValue.trim();
+        }
+        if (sourceValue == null || sourceValue.trim().isEmpty()) {
+            return null;
+        }
+        String lemma = extractTopLevelJsonStringField(normalized, "lemma");
+        if (lemma == null || lemma.trim().isEmpty()) {
+            lemma = fallbackLemma;
+        }
+        lemma = GenMorphoUtils.normalizeLemma(lemma == null ? sourceValue : lemma);
+        if (lemma.isEmpty()) {
+            lemma = GenMorphoUtils.normalizeLemma(sourceValue);
+        }
+        if (lemma.isEmpty()) {
+            return null;
+        }
+        return rebuildFlatSchemaRecoveredNode(fileSpec, synsetId, lemma, sourceValue, extracted);
+    }
+
+    private static String extractTopLevelJsonStringField(String text, String fieldName) {
+
+        if (text == null || fieldName == null || fieldName.trim().isEmpty()) {
+            return null;
+        }
+        int fieldStart = findTopLevelFieldStart(text, fieldName);
+        if (fieldStart < 0) {
+            return null;
+        }
+        int fieldNameEnd = fieldStart + fieldName.length() + 2;
+        int colonIndex = skipWhitespace(text, fieldNameEnd);
+        if (colonIndex < 0 || colonIndex >= text.length() || text.charAt(colonIndex) != ':') {
+            return null;
+        }
+        int valueStart = skipWhitespace(text, colonIndex + 1);
+        if (valueStart < 0 || valueStart >= text.length() || text.charAt(valueStart) != '"') {
+            return null;
+        }
+        int valueEnd = findJsonStringEnd(text, valueStart);
+        if (valueEnd <= valueStart) {
+            return null;
+        }
+        String encoded = text.substring(valueStart + 1, valueEnd - 1);
+        if (encoded == null) {
+            return null;
+        }
+        return decodeJsonStringValue(encoded);
+    }
+
+    private static String decodeJsonStringValue(String encodedValue) {
+
+        if (encodedValue == null) {
+            return null;
+        }
+        try {
+            return GenMorphoUtils.JSON_MAPPER.readValue("\"" + encodedValue + "\"", String.class);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static com.fasterxml.jackson.databind.node.ObjectNode rebuildFlatSchemaRecoveredNode(MorphoFileSpec fileSpec,
+                                                                                                  String synsetId,
+                                                                                                  String lemma,
+                                                                                                  String sourceValue,
+                                                                                                  Map<String, String> extracted) {
+
+        if (fileSpec == null || synsetId == null || synsetId.trim().isEmpty() || lemma == null || lemma.trim().isEmpty()) {
+            return null;
+        }
+        String fileName = fileSpec.path == null || fileSpec.path.getFileName() == null
+                ? ""
+                : fileSpec.path.getFileName().toString();
+        return MorphoFlatSchemaUtils.buildRecoveredFlatRecord(
+                fileName,
+                synsetId,
+                lemma,
+                sourceValue,
+                extracted);
+    }
+
+    private static String recoverSourceValueFromMalformedText(String text,
+                                                              String sourceFieldName,
+                                                              String recoveredLemma) {
+
+        String sourceValue = extractJsonLikeField(text, sourceFieldName);
+        if (sourceValue != null && !sourceValue.trim().isEmpty()) {
+            return sourceValue.trim();
+        }
+        return recoveredLemma == null ? "" : recoveredLemma.trim();
+    }
+
+    private static void writeRequiredFieldRecoveryAudit(BufferedWriter auditWriter,
+                                                        MorphoFileSpec fileSpec,
+                                                        String rawResponse,
+                                                        com.fasterxml.jackson.databind.node.ObjectNode recoveredNode) {
+
+        if (auditWriter == null || fileSpec == null || recoveredNode == null) {
+            return;
+        }
+        com.fasterxml.jackson.databind.node.ObjectNode auditNode = GenMorphoUtils.JSON_MAPPER.createObjectNode();
+        auditNode.put("file", fileSpec.path == null ? "" : fileSpec.path.toString());
+        auditNode.put("synsetId", recoveredNode.path("synsetId").asText(""));
+        auditNode.put("lemma", recoveredNode.path("lemma").asText(""));
+        auditNode.put("recoveryMethod", RECOVERY_METHOD_REQUIRED_FIELDS_ONLY);
+        com.fasterxml.jackson.databind.node.ArrayNode requiredFields = auditNode.putArray("requiredFields");
+        for (String fieldName : fileSpec.requiredPayloadFields) {
+            requiredFields.add(fieldName);
+        }
+        auditNode.put("rawResponse", rawResponse == null ? "" : rawResponse);
+        auditNode.set("recoveredRow", recoveredNode.deepCopy());
+        try {
+            auditWriter.write(GenMorphoUtils.serializeJsonLine(auditNode));
+            auditWriter.newLine();
+        } catch (IOException e) {
+            System.out.println("Failed to write compact required-field recovery audit entry: " + e.getMessage());
+        }
+    }
+
+    private static com.fasterxml.jackson.databind.node.ObjectNode normalizeCompactedNode(MorphoFileSpec fileSpec,
+                                                                                         com.fasterxml.jackson.databind.node.ObjectNode node,
+                                                                                         CompactStats stats) {
+
+        if (fileSpec == null || node == null) {
+            return null;
+        }
+        boolean removedAny = false;
+        if (node.remove("explanation") != null) {
+            removedAny = true;
+        }
+        if (node.remove("usage") != null) {
+            removedAny = true;
+        }
+        if (node.remove("definition") != null) {
+            removedAny = true;
+        }
+        if (node.remove("message") != null) {
+            removedAny = true;
+        }
+        if (removedAny && stats != null) {
+            stats.strippedFieldRows++;
+        }
+
+        String lemma = GenMorphoUtils.normalizeLemma(node.path("lemma").asText(""));
+        if (lemma.isEmpty()) {
+            String sourceValue = recoverLemmaFromNode(node, fileSpec.sourceFieldName);
+            if (!sourceValue.isEmpty()) {
+                node.put("lemma", sourceValue);
+                lemma = sourceValue;
+                if (stats != null) {
+                    stats.lemmaAddedRows++;
+                }
+            }
+            else {
+                if (stats != null) {
+                    stats.droppedMissingLemmaRows++;
+                }
+                return null;
+            }
+        } else {
+            node.put("lemma", lemma);
+        }
+        return GenMorphoUtils.prependSynsetIdAndLemma(
+                node,
+                node.path("synsetId").asText(""),
+                lemma);
+    }
+
+    private static void normalizeErrorSource(com.fasterxml.jackson.databind.node.ObjectNode node) {
+
+        if (node == null) {
+            return;
+        }
+        if (!"error".equalsIgnoreCase(node.path("status").asText(""))) {
+            return;
+        }
+        String errorSource = node.path("errorSource").asText("").trim();
+        if (ERROR_SOURCE_MALFORMED_CONVERTED.equals(errorSource)) {
+            return;
+        }
+        node.put("errorSource", ERROR_SOURCE_EXISTING);
+    }
+
+    private static void printErrorPercentLine(BufferedWriter summaryWriter, String line) {
+
+        if (line == null) {
+            return;
+        }
+        System.out.println(line);
+        if (summaryWriter == null) {
+            return;
+        }
+        try {
+            summaryWriter.write(line);
+            summaryWriter.newLine();
+        } catch (IOException e) {
+            System.out.println("Failed to write error percent summary line: " + e.getMessage());
+        }
+    }
+
+    private static void printCategoricalNormalizationLine(BufferedWriter summaryWriter, String line) {
+
+        if (line == null) {
+            return;
+        }
+        System.out.println(line);
+        if (summaryWriter == null) {
+            return;
+        }
+        try {
+            summaryWriter.write(line);
+            summaryWriter.newLine();
+        } catch (IOException e) {
+            System.out.println("Failed to write categorical normalization summary line: " + e.getMessage());
+        }
+    }
+
+    private static void runCategoricalNormalizationReport(Path morphoModelRoot,
+                                                          MaintenanceTargetResolution targetResolution) {
+
+        Path summaryPath = morphoModelRoot.resolve("categorical-normalization-summary.txt");
+        BufferedWriter summaryWriter = null;
+        try {
+            summaryWriter = Files.newBufferedWriter(summaryPath, StandardCharsets.UTF_8);
+            summaryWriter.write("categorical-normalization-summary");
+            summaryWriter.newLine();
+            summaryWriter.write("root\t" + morphoModelRoot);
+            summaryWriter.newLine();
+        } catch (IOException e) {
+            System.out.println("Failed to create categorical normalization summary file: " + summaryPath + " (" + e.getMessage() + ")");
+            summaryWriter = null;
+        }
+
+        CategoricalNormalizationStats total = new CategoricalNormalizationStats();
+        int totalFilesProcessed = 0;
+        for (MaintenanceTarget target : targetResolution.targets) {
+            CategoricalNormalizationStats modelTotal = new CategoricalNormalizationStats();
+            int modelFilesProcessed = 0;
+            for (MorphoFileSpec fileSpec : target.fileSpecs) {
+                MorphoCategoricalSchema.CategorySpec categorySpec = categoricalSpecForFile(fileSpec);
+                if (categorySpec == null) {
+                    continue;
+                }
+                CategoricalNormalizationStats stats = normalizeCategoricalFile(fileSpec, categorySpec, summaryWriter);
+                modelTotal.add(stats);
+                modelFilesProcessed++;
+            }
+            if (modelFilesProcessed == 0) {
+                continue;
+            }
+            total.add(modelTotal);
+            totalFilesProcessed += modelFilesProcessed;
+            String modelSummary = String.format(
+                    "normalize-categorical MODEL: %s files=%d lines=%d canonicalized=%d alreadyCanonical=%d invalidCategorization=%d parseFailures=%d (existing=%d refused=%d garbled=%d)",
+                    target.modelName,
+                    modelFilesProcessed,
+                    modelTotal.totalLines,
+                    modelTotal.canonicalizedRows,
+                    modelTotal.alreadyCanonicalRows,
+                    modelTotal.invalidCategorizationRows,
+                    modelTotal.parseFailures,
+                    modelTotal.existingErrorRows,
+                    modelTotal.refusedRows,
+                    modelTotal.garbledRows);
+            printCategoricalNormalizationLine(summaryWriter, modelSummary);
+        }
+
+        String totalSummary = String.format(
+                "normalize-categorical TOTAL: models=%d skipped=%d files=%d lines=%d canonicalized=%d alreadyCanonical=%d invalidCategorization=%d parseFailures=%d (existing=%d refused=%d garbled=%d)",
+                targetResolution.targets.size(),
+                targetResolution.skipped.size(),
+                totalFilesProcessed,
+                total.totalLines,
+                total.canonicalizedRows,
+                total.alreadyCanonicalRows,
+                total.invalidCategorizationRows,
+                total.parseFailures,
+                total.existingErrorRows,
+                total.refusedRows,
+                total.garbledRows);
+        printCategoricalNormalizationLine(summaryWriter, totalSummary);
+
+        if (summaryWriter != null) {
+            try {
+                summaryWriter.flush();
+                summaryWriter.close();
+                System.out.println("normalize-categorical: summary file=" + summaryPath);
+            } catch (IOException e) {
+                System.out.println("Failed to finalize categorical normalization summary file: " + summaryPath + " (" + e.getMessage() + ")");
+            }
+        }
+    }
+
+    private static CategoricalNormalizationStats normalizeCategoricalFile(MorphoFileSpec fileSpec,
+                                                                          MorphoCategoricalSchema.CategorySpec categorySpec,
+                                                                          BufferedWriter summaryWriter) {
+
+        CategoricalNormalizationStats stats = new CategoricalNormalizationStats();
+        if (fileSpec == null || categorySpec == null || fileSpec.path == null || !Files.exists(fileSpec.path)) {
+            return stats;
+        }
+        Path filePath = fileSpec.path;
+        Path tmp = createTempFileInSameDirectory(filePath);
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8);
+             BufferedWriter writer = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stats.totalLines++;
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    stats.parseFailures++;
+                    writer.write(line);
+                    writer.newLine();
+                    continue;
+                }
+
+                String status = node.path("status").asText("");
+                if ("error".equalsIgnoreCase(status)) {
+                    stats.existingErrorRows++;
+                    writer.write(line);
+                    writer.newLine();
+                    continue;
+                }
+                if ("refused".equalsIgnoreCase(status)) {
+                    stats.refusedRows++;
+                    writer.write(line);
+                    writer.newLine();
+                    continue;
+                }
+                if ("garbled".equalsIgnoreCase(status)) {
+                    stats.garbledRows++;
+                    writer.write(line);
+                    writer.newLine();
+                    continue;
+                }
+
+                String fieldName = categorySpec.getFieldName();
+                String rawValue = node.path(fieldName).asText("");
+                String canonicalValue = categorySpec.canonicalizeStoredValue(rawValue);
+                if (!canonicalValue.isEmpty()) {
+                    boolean changed = hasInvalidCategorizationMarker(node, fieldName) || !canonicalValue.equals(rawValue);
+                    node.put(fieldName, canonicalValue);
+                    clearInvalidCategorizationMarkers(node);
+                    if (changed) {
+                        stats.canonicalizedRows++;
+                    } else {
+                        stats.alreadyCanonicalRows++;
+                    }
+                    writer.write(GenMorphoUtils.serializeJsonLine(node));
+                    writer.newLine();
+                    continue;
+                }
+
+                markInvalidCategorization(node, fieldName, rawValue);
+                stats.invalidCategorizationRows++;
+                writer.write(GenMorphoUtils.serializeJsonLine(node));
+                writer.newLine();
+            }
+            writer.flush();
+        } catch (IOException e) {
+            printCategoricalNormalizationLine(summaryWriter,
+                    "Failed while normalizing categorical file " + filePath + ": " + e.getMessage());
+            return stats;
+        }
+
+        overwriteFile(filePath, tmp);
+        String fileSummary = String.format(
+                "normalize-categorical: %-30s lines=%d canonicalized=%d alreadyCanonical=%d invalidCategorization=%d parseFailures=%d (existing=%d refused=%d garbled=%d)",
+                filePath.getFileName(),
+                stats.totalLines,
+                stats.canonicalizedRows,
+                stats.alreadyCanonicalRows,
+                stats.invalidCategorizationRows,
+                stats.parseFailures,
+                stats.existingErrorRows,
+                stats.refusedRows,
+                stats.garbledRows);
+        printCategoricalNormalizationLine(summaryWriter, fileSummary);
+        return stats;
+    }
+
+    private static MorphoCategoricalSchema.CategorySpec categoricalSpecForFile(MorphoFileSpec fileSpec) {
+
+        if (fileSpec == null || fileSpec.path == null) {
+            return null;
+        }
+        return MorphoCategoricalSchema.getByRelativePath(relativeMorphoPath(null, fileSpec.path));
+    }
+
+    private static boolean hasInvalidCategorizationMarker(com.fasterxml.jackson.databind.node.ObjectNode node,
+                                                          String expectedFieldName) {
+
+        if (node == null) {
+            return false;
+        }
+        return MorphoCategoricalSchema.isInvalidCategorizationForField(
+                node.path(MorphoCategoricalSchema.CATEGORIZATION_STATUS_FIELD).asText(""),
+                node.path(MorphoCategoricalSchema.INVALID_CATEGORIZATION_FIELD_FIELD).asText(""),
+                expectedFieldName
+        );
+    }
+
+    private static void markInvalidCategorization(com.fasterxml.jackson.databind.node.ObjectNode node,
+                                                  String fieldName,
+                                                  String rawValue) {
+
+        if (node == null) {
+            return;
+        }
+        node.put(MorphoCategoricalSchema.CATEGORIZATION_STATUS_FIELD,
+                MorphoCategoricalSchema.INVALID_CATEGORIZATION_STATUS);
+        node.put(MorphoCategoricalSchema.INVALID_CATEGORIZATION_FIELD_FIELD, fieldName == null ? "" : fieldName);
+        node.put(MorphoCategoricalSchema.INVALID_CATEGORIZATION_RAW_FIELD, rawValue == null ? "" : rawValue);
+    }
+
+    private static void clearInvalidCategorizationMarkers(com.fasterxml.jackson.databind.node.ObjectNode node) {
+
+        if (node == null) {
+            return;
+        }
+        node.remove(MorphoCategoricalSchema.CATEGORIZATION_STATUS_FIELD);
+        node.remove(MorphoCategoricalSchema.INVALID_CATEGORIZATION_FIELD_FIELD);
+        node.remove(MorphoCategoricalSchema.INVALID_CATEGORIZATION_RAW_FIELD);
+    }
+
+    private static void runErrorPercentReport(Path morphoModelRoot,
+                                              MaintenanceTargetResolution targetResolution) {
+
+        Path summaryPath = morphoModelRoot.resolve("error-percent-summary.txt");
+        BufferedWriter summaryWriter = null;
+        try {
+            summaryWriter = Files.newBufferedWriter(summaryPath, StandardCharsets.UTF_8);
+            summaryWriter.write("error-percent-summary");
+            summaryWriter.newLine();
+            summaryWriter.write("root\t" + morphoModelRoot);
+            summaryWriter.newLine();
+        } catch (IOException e) {
+            System.out.println("Failed to create error percent summary file: " + summaryPath + " (" + e.getMessage() + ")");
+            summaryWriter = null;
+        }
+
+        ErrorPercentStats total = new ErrorPercentStats();
+        Map<String, Map<String, Double>> classificationFeaturePctsByModel = new HashMap<>();
+        Map<String, Double> latexOverallPctsByModel = new HashMap<>();
+        Map<String, Double> pluralErrorPctsByModel = new HashMap<>();
+        Map<String, Double> conjugationCompletePctsByModel = new HashMap<>();
+        Map<String, Double> conjugationPartialPctsByModel = new HashMap<>();
+        Map<String, Double> conjugationErrorPctsByModel = new HashMap<>();
+        int totalFilesProcessed = 0;
+        for (MaintenanceTarget target : targetResolution.targets) {
+            ErrorPercentStats modelTotal = new ErrorPercentStats();
+            for (MorphoFileSpec fileSpec : target.fileSpecs) {
+                ErrorPercentStats stats = getErrorPercentForMorphoFile(fileSpec, summaryWriter);
+                modelTotal.add(stats);
+                String relativePath = relativeMorphoPath(target.modelRoot, fileSpec.path);
+                if ("noun/Plurals.txt".equals(relativePath)) {
+                    pluralErrorPctsByModel.put(target.modelName, computeErrorPctValue(stats));
+                } else if ("verb/VerbConjugations.txt".equals(relativePath)) {
+                    conjugationCompletePctsByModel.put(target.modelName, computeConjugationCompletePctValue(stats));
+                    conjugationPartialPctsByModel.put(target.modelName, computeConjugationPartialPctValue(stats));
+                    conjugationErrorPctsByModel.put(target.modelName, computeConjugationErrorPctValue(stats));
+                } else {
+                    classificationFeaturePctsByModel
+                            .computeIfAbsent(target.modelName, ignored -> new HashMap<>())
+                            .put(relativePath, computeErrorPctValue(stats));
+                }
+            }
+            total.add(modelTotal);
+            totalFilesProcessed += target.fileSpecs.size();
+            int modelErrors = computeTotalErrorRows(modelTotal);
+            String modelSummary = String.format(
+                    "error-percent MODEL: %s files=%d lines=%d errors=%d errorPct=%s (existing=%d malformed->error=%d parseFailures=%d refused=%d garbled=%d invalidCategorization=%d)",
+                    target.modelName,
+                    target.fileSpecs.size(),
+                    modelTotal.totalLines,
+                    modelErrors,
+                    formatErrorPct(modelErrors, modelTotal.totalLines),
+                    modelTotal.existingErrorRows,
+                    modelTotal.malformedConvertedRows,
+                    modelTotal.parseFailures,
+                    modelTotal.refusedRows,
+                    modelTotal.garbledRows,
+                    modelTotal.invalidCategorizationRows);
+            printErrorPercentLine(summaryWriter, modelSummary);
+            latexOverallPctsByModel.put(target.modelName, computeErrorPctValue(modelTotal));
+        }
+
+        int totalErrors = computeTotalErrorRows(total);
+        String totalSummary = String.format(
+                "error-percent TOTAL: models=%d skipped=%d files=%d lines=%d errors=%d errorPct=%s (existing=%d malformed->error=%d parseFailures=%d refused=%d garbled=%d invalidCategorization=%d)",
+                targetResolution.targets.size(),
+                targetResolution.skipped.size(),
+                totalFilesProcessed,
+                total.totalLines,
+                totalErrors,
+                formatErrorPct(totalErrors, total.totalLines),
+                total.existingErrorRows,
+                total.malformedConvertedRows,
+                total.parseFailures,
+                total.refusedRows,
+                total.garbledRows,
+                total.invalidCategorizationRows);
+        printErrorPercentLine(summaryWriter, totalSummary);
+
+        if (summaryWriter != null) {
+            try {
+                writeLatexClassificationErrorTable(summaryWriter, classificationFeaturePctsByModel, latexOverallPctsByModel);
+                writeLatexGenerationTable(summaryWriter, latexOverallPctsByModel.keySet(),
+                        pluralErrorPctsByModel, conjugationCompletePctsByModel, conjugationPartialPctsByModel, conjugationErrorPctsByModel);
+                summaryWriter.flush();
+                summaryWriter.close();
+                System.out.println("error-percent: summary file=" + summaryPath);
+            } catch (IOException e) {
+                System.out.println("Failed to finalize error percent summary file: " + summaryPath + " (" + e.getMessage() + ")");
+            }
+        }
+    }
+
+    private static ErrorPercentStats getErrorPercentForMorphoFile(MorphoFileSpec fileSpec,
+                                                                  BufferedWriter summaryWriter) {
+
+        ErrorPercentStats stats = new ErrorPercentStats();
+        if (fileSpec == null || fileSpec.path == null || !Files.exists(fileSpec.path)) {
+            return stats;
+        }
+        Path filePath = fileSpec.path;
+        MorphoCategoricalSchema.CategorySpec categorySpec = categoricalSpecForFile(fileSpec);
+        String categoryFieldName = categorySpec == null ? null : categorySpec.getFieldName();
+        try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stats.totalLines++;
+                com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(line);
+                if (node == null) {
+                    stats.parseFailures++;
+                    continue;
+                }
+                String status = node.path("status").asText("").toLowerCase();
+                if (status.equals("refused")) {
+                    stats.refusedRows++;
+                    continue;
+                }
+                if (status.equals("garbled")) {
+                    stats.garbledRows++;
+                    continue;
+                }
+                if (fileSpec.requiresCompleteConjugation && status.equals("partial")) {
+                    stats.conjugationPartialRows++;
+                    continue;
+                }
+                if (categoryFieldName != null && hasInvalidCategorizationMarker(node, categoryFieldName)) {
+                    stats.invalidCategorizationRows++;
+                    continue;
+                }
+                if (!"error".equals(status)) {
+                    if (fileSpec.requiresCompleteConjugation) {
+                        stats.conjugationCompleteRows++;
+                    }
+                    continue;
+                }
+                String errorSource = node.path("errorSource").asText("").trim();
+                if (ERROR_SOURCE_EXISTING.equals(errorSource)) {
+                    stats.existingErrorRows++;
+                } else if (ERROR_SOURCE_MALFORMED_CONVERTED.equals(errorSource)) {
+                    stats.malformedConvertedRows++;
+                } else {
+                    // Unknown errorSource — count as existing error
+                    stats.existingErrorRows++;
+                }
+            }
+        } catch (IOException e) {
+            printErrorPercentLine(summaryWriter, "Failed while scanning file " + filePath + ": " + e.getMessage());
+            return stats;
+        }
+
+        int totalErrors = computeTotalErrorRows(stats);
+        String fileSummary;
+        if (fileSpec.requiresCompleteConjugation) {
+            int conjugationErrors = computeConjugationErrorRows(stats);
+            fileSummary = String.format(
+                    "error-percent: %-30s lines=%d complete=%d completePct=%s partial=%d partialPct=%s errors=%d errorPct=%s (existing=%d malformed->error=%d parseFailures=%d refused=%d garbled=%d invalidCategorization=%d)",
+                    filePath.getFileName(),
+                    stats.totalLines,
+                    stats.conjugationCompleteRows,
+                    formatErrorPct(stats.conjugationCompleteRows, stats.totalLines),
+                    stats.conjugationPartialRows,
+                    formatErrorPct(stats.conjugationPartialRows, stats.totalLines),
+                    conjugationErrors,
+                    formatErrorPct(conjugationErrors, stats.totalLines),
+                    stats.existingErrorRows,
+                    stats.malformedConvertedRows,
+                    stats.parseFailures,
+                    stats.refusedRows,
+                    stats.garbledRows,
+                    stats.invalidCategorizationRows);
+        } else {
+            fileSummary = String.format(
+                    "error-percent: %-30s lines=%d errors=%d errorPct=%s (existing=%d malformed->error=%d parseFailures=%d refused=%d garbled=%d invalidCategorization=%d)",
+                    filePath.getFileName(),
+                    stats.totalLines,
+                    totalErrors,
+                    formatErrorPct(totalErrors, stats.totalLines),
+                    stats.existingErrorRows,
+                    stats.malformedConvertedRows,
+                    stats.parseFailures,
+                    stats.refusedRows,
+                    stats.garbledRows,
+                    stats.invalidCategorizationRows);
+        }
+        printErrorPercentLine(summaryWriter, fileSummary);
+        return stats;
+    }
+
+    private static double computeErrorPctValue(ErrorPercentStats stats) {
+
+        if (stats == null || stats.totalLines <= 0) {
+            return Double.NaN;
+        }
+        int totalErrors = computeTotalErrorRows(stats);
+        return (100.0 * totalErrors) / stats.totalLines;
+    }
+
+    private static int computeTotalErrorRows(ErrorPercentStats stats) {
+
+        if (stats == null) {
+            return 0;
+        }
+        return stats.existingErrorRows + stats.malformedConvertedRows
+                + stats.parseFailures + stats.garbledRows + stats.invalidCategorizationRows;
+    }
+
+    private static double computeConjugationCompletePctValue(ErrorPercentStats stats) {
+
+        if (stats == null || stats.totalLines <= 0) {
+            return Double.NaN;
+        }
+        return (100.0 * stats.conjugationCompleteRows) / stats.totalLines;
+    }
+
+    private static double computeConjugationPartialPctValue(ErrorPercentStats stats) {
+
+        if (stats == null || stats.totalLines <= 0) {
+            return Double.NaN;
+        }
+        return (100.0 * stats.conjugationPartialRows) / stats.totalLines;
+    }
+
+    private static double computeConjugationErrorPctValue(ErrorPercentStats stats) {
+
+        if (stats == null || stats.totalLines <= 0) {
+            return Double.NaN;
+        }
+        return (100.0 * computeConjugationErrorRows(stats)) / stats.totalLines;
+    }
+
+    private static String relativeMorphoPath(Path modelRoot, Path filePath) {
+
+        if (filePath == null) {
+            return "";
+        }
+        if (modelRoot == null) {
+            Path parent = filePath.getParent();
+            String category = parent == null || parent.getFileName() == null ? "" : parent.getFileName().toString();
+            String fileName = filePath.getFileName() == null ? filePath.toString() : filePath.getFileName().toString();
+            if (category.isEmpty()) {
+                return fileName;
+            }
+            return category + "/" + fileName;
+        }
+        try {
+            return modelRoot.relativize(filePath).toString().replace(File.separatorChar, '/');
+        } catch (IllegalArgumentException e) {
+            Path parent = filePath.getParent();
+            String category = parent == null || parent.getFileName() == null ? "" : parent.getFileName().toString();
+            String fileName = filePath.getFileName() == null ? filePath.toString() : filePath.getFileName().toString();
+            if (category.isEmpty()) {
+                return fileName;
+            }
+            return category + "/" + fileName;
+        }
+    }
+
+    private static void writeLatexClassificationErrorTable(BufferedWriter summaryWriter,
+                                                           Map<String, Map<String, Double>> featurePctsByModel,
+                                                           Map<String, Double> overallPctsByModel) throws IOException {
+
+        if (summaryWriter == null || overallPctsByModel == null || overallPctsByModel.isEmpty()) {
+            return;
+        }
+
+        List<String> modelNames = new ArrayList<>(overallPctsByModel.keySet());
+        modelNames.sort(GenMorphoDB::compareModelsForLatexTable);
+
+        summaryWriter.newLine();
+        summaryWriter.write("\\begin{table*}[t]");
+        summaryWriter.newLine();
+        summaryWriter.write("\\centering");
+        summaryWriter.newLine();
+        summaryWriter.write("\\scriptsize");
+        summaryWriter.newLine();
+        summaryWriter.write("\\caption{Classification error percentage by model and feature}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\label{tab:classification_error_rates}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\resizebox{\\textwidth}{!}{%");
+        summaryWriter.newLine();
+        summaryWriter.write("\\begin{tabular}{lrrrrr|rrrrr|r|r|r}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\toprule");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\multicolumn{5}{c}{Nouns} ");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\multicolumn{5}{c}{Verbs} ");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\multicolumn{1}{c}{Adjectives} ");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\multicolumn{1}{c}{Adverbs} ");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\multicolumn{1}{c}{Overall} \\\\");
+        summaryWriter.newLine();
+        summaryWriter.write("\\cmidrule(lr){2-6} \\cmidrule(lr){7-11} \\cmidrule(lr){12-12} \\cmidrule(lr){13-13} \\cmidrule(lr){14-14}");
+        summaryWriter.newLine();
+        summaryWriter.write("Model");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Indefinite Articles}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Countability}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Humanness}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Agentivity}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Collective Nouns}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Valence}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Reflexive}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Causativity}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Achievement Process}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Reciprocal}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Semantic Classes}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Semantic Classes}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Error \\%} \\\\");
+        summaryWriter.newLine();
+        summaryWriter.write("\\midrule");
+        summaryWriter.newLine();
+        summaryWriter.newLine();
+
+        for (String modelName : modelNames) {
+            Map<String, Double> featurePcts = featurePctsByModel.get(modelName);
+            summaryWriter.write("\\texttt{" + escapeLatex(modelName) + "}");
+            summaryWriter.newLine();
+            for (String columnPath : LATEX_CLASSIFICATION_COLUMN_PATHS) {
+                summaryWriter.write("& " + formatLatexPct(featurePcts == null ? null : featurePcts.get(columnPath)));
+                summaryWriter.newLine();
+            }
+            summaryWriter.write("& " + formatLatexPct(overallPctsByModel.get(modelName)) + " \\\\");
+            summaryWriter.newLine();
+            summaryWriter.newLine();
+        }
+
+        summaryWriter.write("\\bottomrule");
+        summaryWriter.newLine();
+        summaryWriter.write("\\end{tabular}%");
+        summaryWriter.newLine();
+        summaryWriter.write("}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\end{table*}");
+        summaryWriter.newLine();
+    }
+
+    private static void writeLatexGenerationTable(BufferedWriter summaryWriter,
+                                                  Set<String> modelNameSet,
+                                                  Map<String, Double> pluralErrorPctsByModel,
+                                                  Map<String, Double> conjugationCompletePctsByModel,
+                                                  Map<String, Double> conjugationPartialPctsByModel,
+                                                  Map<String, Double> conjugationErrorPctsByModel) throws IOException {
+
+        if (summaryWriter == null || modelNameSet == null || modelNameSet.isEmpty()) {
+            return;
+        }
+
+        List<String> modelNames = new ArrayList<>(modelNameSet);
+        modelNames.sort(GenMorphoDB::compareModelsForLatexTable);
+
+        summaryWriter.newLine();
+        summaryWriter.write("\\begin{table*}[t]");
+        summaryWriter.newLine();
+        summaryWriter.write("\\centering");
+        summaryWriter.newLine();
+        summaryWriter.write("\\scriptsize");
+        summaryWriter.newLine();
+        summaryWriter.write("\\caption{Generation percentages by model and feature}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\label{tab:generation_rates}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\resizebox{\\textwidth}{!}{%");
+        summaryWriter.newLine();
+        summaryWriter.write("\\begin{tabular}{lrrrr}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\toprule");
+        summaryWriter.newLine();
+        summaryWriter.write("Model");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Plurals Error \\%}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Conjugations Complete \\%}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Conjugations Partial \\%}");
+        summaryWriter.newLine();
+        summaryWriter.write("& \\rot{Conjugations Error \\%} \\\\");
+        summaryWriter.newLine();
+        summaryWriter.write("\\midrule");
+        summaryWriter.newLine();
+        summaryWriter.newLine();
+
+        for (String modelName : modelNames) {
+            summaryWriter.write("\\texttt{" + escapeLatex(modelName) + "}");
+            summaryWriter.newLine();
+            summaryWriter.write("& " + formatLatexPct(pluralErrorPctsByModel.get(modelName)));
+            summaryWriter.newLine();
+            summaryWriter.write("& " + formatLatexPct(conjugationCompletePctsByModel.get(modelName)));
+            summaryWriter.newLine();
+            summaryWriter.write("& " + formatLatexPct(conjugationPartialPctsByModel.get(modelName)));
+            summaryWriter.newLine();
+            summaryWriter.write("& " + formatLatexPct(conjugationErrorPctsByModel.get(modelName)) + " \\\\");
+            summaryWriter.newLine();
+            summaryWriter.newLine();
+        }
+
+        summaryWriter.write("\\bottomrule");
+        summaryWriter.newLine();
+        summaryWriter.write("\\end{tabular}%");
+        summaryWriter.newLine();
+        summaryWriter.write("}");
+        summaryWriter.newLine();
+        summaryWriter.write("\\end{table*}");
+        summaryWriter.newLine();
+    }
+
+    private static int compareModelsForLatexTable(String leftModel, String rightModel) {
+
+        ModelMetadata left = ModelMetadata.fromDirName(leftModel);
+        ModelMetadata right = ModelMetadata.fromDirName(rightModel);
+
+        double leftSize = left.getParameterBillions();
+        double rightSize = right.getParameterBillions();
+        boolean leftKnown = leftSize >= 0;
+        boolean rightKnown = rightSize >= 0;
+
+        if (leftKnown && rightKnown) {
+            int sizeCompare = Double.compare(leftSize, rightSize);
+            if (sizeCompare != 0) {
+                return sizeCompare;
+            }
+            return leftModel.compareTo(rightModel);
+        }
+        if (leftKnown != rightKnown) {
+            return leftKnown ? -1 : 1;
+        }
+
+        int frontierCompare = Integer.compare(frontierRankForLatex(leftModel), frontierRankForLatex(rightModel));
+        if (frontierCompare != 0) {
+            return frontierCompare;
+        }
+        return leftModel.compareTo(rightModel);
+    }
+
+    private static int frontierRankForLatex(String modelName) {
+
+        if (modelName == null) {
+            return Integer.MAX_VALUE;
+        }
+        String lower = modelName.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("openai__gpt-5-nano")) {
+            return 0;
+        }
+        if (lower.startsWith("openai__gpt-5_2")) {
+            return 1;
+        }
+        return 100;
+    }
+
+    private static String formatLatexPct(Double value) {
+
+        if (value == null || Double.isNaN(value) || Double.isInfinite(value)) {
+            return "--";
+        }
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private static String escapeLatex(String text) {
+
+        if (text == null) {
+            return "";
+        }
+        return text
+                .replace("\\", "\\textbackslash{}")
+                .replace("_", "\\_")
+                .replace("%", "\\%")
+                .replace("&", "\\&")
+                .replace("#", "\\#")
+                .replace("$", "\\$")
+                .replace("{", "\\{")
+                .replace("}", "\\}");
     }
 
     /**
@@ -1231,39 +3073,14 @@ public class GenMorphoDB {
         return result;
     }
 
-    private static Set<String> buildNormalizedLemmaSet(Map<String, Set<String>> synsetHash) {
-
-        Set<String> result = new HashSet<>();
-        for (String lemma : synsetHash.keySet()) {
-            String normalized = GenMorphoUtils.normalizeLemma(lemma);
-            if (!normalized.isEmpty()) {
-                result.add(normalized);
-            }
-        }
-        return result;
-    }
-
-    private static void initWordNet() {
-
-        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
-        WordNet.initOnce();
-    }
-
-    private static Map<String, Set<String>> filteredSortedCopy(Map<String, Set<String>> raw, String label) {
-
-        Map<String, Set<String>> copy = new TreeMap<>(raw);
-        GenMorphoUtils.removeNonEnglishWords(copy, label);
-        return copy;
-    }
-
     private static void loadWordNetAndRunFindFixGaps(Path morphoModelRoot, CliOptions cliOptions) {
 
-        initWordNet();
+        MorphoWordNetUtils.initWordNet();
         runFindFixGaps(morphoModelRoot, cliOptions,
-                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.nounSynsetHash,      "noun set")),
-                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.verbSynsetHash,      "verb set")),
-                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.adjectiveSynsetHash, "adjective set")),
-                       buildNormalizedLemmaSet(filteredSortedCopy(WordNet.wn.adverbSynsetHash,    "adverb set")));
+                       MorphoWordNetUtils.buildNormalizedLemmaSet(MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.nounSynsetHash,      "noun set")),
+                       MorphoWordNetUtils.buildNormalizedLemmaSet(MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.verbSynsetHash,      "verb set")),
+                       MorphoWordNetUtils.buildNormalizedLemmaSet(MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.adjectiveSynsetHash, "adjective set")),
+                       MorphoWordNetUtils.buildNormalizedLemmaSet(MorphoWordNetUtils.filteredSortedCopy(WordNet.wn.adverbSynsetHash,    "adverb set")));
     }
 
     private static void runFindFixGaps(Path morphoModelRoot, CliOptions cliOptions,
@@ -1417,11 +3234,40 @@ public class GenMorphoDB {
         if (line == null || fieldName == null || fieldName.trim().isEmpty()) {
             return null;
         }
-        Pattern p = Pattern.compile("\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\"([^\"]+)\"");
-        Matcher m = p.matcher(line);
-        if (m.find()) {
-            String value = m.group(1);
-            return value == null ? null : value.trim();
+        String extracted = extractLooseJsonStringField(line, fieldName);
+        if (extracted != null) {
+            return extracted.trim();
+        }
+        return null;
+    }
+
+    private static String extractLooseJsonStringField(String text, String fieldName) {
+
+        if (text == null || fieldName == null || fieldName.trim().isEmpty()) {
+            return null;
+        }
+        String quotedField = "\"" + fieldName + "\"";
+        int searchStart = 0;
+        while (searchStart >= 0 && searchStart < text.length()) {
+            int fieldStart = text.indexOf(quotedField, searchStart);
+            if (fieldStart < 0) {
+                return null;
+            }
+            int colonIndex = skipWhitespace(text, fieldStart + quotedField.length());
+            if (colonIndex < 0 || colonIndex >= text.length() || text.charAt(colonIndex) != ':') {
+                searchStart = fieldStart + quotedField.length();
+                continue;
+            }
+            int valueStart = skipWhitespace(text, colonIndex + 1);
+            if (valueStart < 0 || valueStart >= text.length() || text.charAt(valueStart) != '"') {
+                searchStart = fieldStart + quotedField.length();
+                continue;
+            }
+            int valueEnd = findJsonStringEnd(text, valueStart);
+            if (valueEnd <= valueStart) {
+                return null;
+            }
+            return decodeJsonStringValue(text.substring(valueStart + 1, valueEnd - 1));
         }
         return null;
     }

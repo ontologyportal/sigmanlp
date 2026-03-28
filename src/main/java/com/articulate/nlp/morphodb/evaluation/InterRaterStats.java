@@ -56,18 +56,6 @@ public class InterRaterStats {
         return "Less than chance agreement";
     }
 
-    /** Escape special LaTeX characters. Package-private so AgreementReport can reuse it. */
-    static String escapeLatex(String s) {
-        return s.replace("_", "\\_")
-                .replace("&", "\\&")
-                .replace("%", "\\%")
-                .replace("#", "\\#")
-                .replace("$", "\\$")
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                .replace("~", "\\textasciitilde{}");
-    }
-
     // ── Result types ──────────────────────────────────────────────────────────
 
     /** Result of a Cohen's kappa computation between two raters. */
@@ -120,17 +108,6 @@ public class InterRaterStats {
             this.itemCount = itemCount;
         }
 
-        public String interpretation() { return interpretLandisKoch(kappa); }
-
-        public String getReport() {
-            return "Fleiss' Kappa\n"
-                 + "=============\n"
-                 + "Number of items: " + itemCount + "\n\n"
-                 + "Observed agreement (P_bar):   " + String.format("%.4f", observedAgreement) + "\n"
-                 + "Expected agreement (P_e_bar): " + String.format("%.4f", expectedAgreement) + "\n"
-                 + "Fleiss' Kappa:                " + String.format("%.4f", kappa) + "\n"
-                 + "Interpretation:               " + interpretation() + "\n";
-        }
     }
 
     /** Result of a Krippendorff's alpha computation. */
@@ -150,25 +127,6 @@ public class InterRaterStats {
             this.totalComparisons = totalComparisons;
         }
 
-        public String interpretation() {
-            if (Double.isNaN(alpha)) return "Not calculated";
-            if (alpha >= 0.81) return "Perfect agreement (alpha >= 0.81)";
-            if (alpha >= 0.67) return "Good agreement (0.67 <= alpha < 0.81)";
-            if (alpha >= 0.51) return "Acceptable agreement (0.51 <= alpha < 0.67)";
-            if (alpha > 0.0)   return "Questionable agreement (0 < alpha < 0.51)";
-            return                    "Poor or no agreement (alpha <= 0)";
-        }
-
-        public String getReport() {
-            return "Krippendorff's Alpha\n"
-                 + "====================\n"
-                 + "Number of units:             " + itemCount + "\n"
-                 + "Total comparisons:           " + totalComparisons + "\n\n"
-                 + "Observed disagreement (Do):  " + String.format("%.4f", observedDisagreement) + "\n"
-                 + "Expected disagreement (De):  " + String.format("%.4f", expectedDisagreement) + "\n"
-                 + "Krippendorff's Alpha:        " + String.format("%.4f", alpha) + "\n"
-                 + "Interpretation:              " + interpretation() + "\n";
-        }
     }
 
     // ── Compute methods ───────────────────────────────────────────────────────
@@ -220,52 +178,6 @@ public class InterRaterStats {
     }
 
     /**
-     * Compute Cohen's kappa for each pair of raters.
-     *
-     * @param raters map of raterName → (itemId → label)
-     * @return map of "raterA vs raterB" → CohensKappaResult
-     */
-    public static Map<String, CohensKappaResult> computeAllPairsCohensKappa(
-            Map<String, Map<String, String>> raters) {
-        List<String> names = new ArrayList<>(raters.keySet());
-        Map<String, CohensKappaResult> results = new LinkedHashMap<>();
-        for (int i = 0; i < names.size(); i++) {
-            for (int j = i + 1; j < names.size(); j++) {
-                String nameA = names.get(i);
-                String nameB = names.get(j);
-                CohensKappaResult r = computeCohensKappa(raters.get(nameA), raters.get(nameB));
-                if (r != null) results.put(nameA + " vs " + nameB, r);
-            }
-        }
-        return results;
-    }
-
-    /**
-     * Compute Cohen's kappa for each model against a reference rater,
-     * sorted by descending kappa.
-     *
-     * @param reference     gold-standard annotations (itemId → label)
-     * @param referenceName display name for the reference
-     * @param models        map of modelName → (itemId → label)
-     * @return map of "modelName vs referenceName" → CohensKappaResult, sorted by descending kappa
-     */
-    public static Map<String, CohensKappaResult> computeVsReference(
-            Map<String, String> reference,
-            String referenceName,
-            Map<String, Map<String, String>> models) {
-        List<Map.Entry<String, CohensKappaResult>> entries = new ArrayList<>();
-        for (Map.Entry<String, Map<String, String>> e : models.entrySet()) {
-            CohensKappaResult r = computeCohensKappa(reference, e.getValue());
-            if (r != null) entries.add(Map.entry(e.getKey() + " vs " + referenceName, r));
-        }
-        entries.sort((a, b) -> Double.compare(b.getValue().kappa, a.getValue().kappa));
-
-        Map<String, CohensKappaResult> sorted = new LinkedHashMap<>();
-        for (Map.Entry<String, CohensKappaResult> e : entries) sorted.put(e.getKey(), e.getValue());
-        return sorted;
-    }
-
-    /**
      * Compute Fleiss' kappa for multiple raters.
      *
      * @param annotationSets list of per-item maps (raterName → label)
@@ -307,65 +219,4 @@ public class InterRaterStats {
         return new KrippendorffAlphaResult(alpha, dObs, dExp, annotationSets.size(), totalComparisons);
     }
 
-    // ── Confusion matrix formatting ───────────────────────────────────────────
-
-    public static String formatConfusionMatrix(CohensKappaResult result,
-                                               String rater1Name,
-                                               String rater2Name) {
-        List<String> labels = new ArrayList<>(result.labels);
-        int maxLabelLen = Math.max(rater1Name.length(),
-                labels.stream().mapToInt(String::length).max().orElse(5));
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%" + maxLabelLen + "s", rater1Name + " \u2193 / " + rater2Name + " \u2192"));
-        for (String l : labels) {
-            sb.append(String.format("  %8s", l.length() > 8 ? l.substring(0, 8) : l));
-        }
-        sb.append("\n");
-        for (String row : labels) {
-            sb.append(String.format("%" + maxLabelLen + "s", row));
-            for (String col : labels) {
-                int count = result.confusionMatrix
-                        .getOrDefault(row, Collections.emptyMap())
-                        .getOrDefault(col, 0);
-                sb.append(String.format("  %8d", count));
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
-    }
-
-    public static String formatConfusionMatrixLatex(CohensKappaResult result,
-                                                    String rater1Name,
-                                                    String rater2Name) {
-        List<String> labels = new ArrayList<>(result.labels);
-        int cols = labels.size();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("\\begin{table}[h]\n\\centering\n");
-        sb.append("\\caption{Confusion matrix: ")
-          .append(escapeLatex(rater1Name)).append(" vs.\\ ")
-          .append(escapeLatex(rater2Name)).append("}\n");
-        sb.append("\\begin{tabular}{l");
-        for (int i = 0; i < cols; i++) sb.append("r");
-        sb.append("}\n\\toprule\n");
-        sb.append(escapeLatex(rater1Name))
-          .append(" $\\downarrow$ / ")
-          .append(escapeLatex(rater2Name))
-          .append(" $\\rightarrow$");
-        for (String l : labels) sb.append(" & ").append(escapeLatex(l));
-        sb.append(" \\\\\n\\midrule\n");
-        for (String row : labels) {
-            sb.append(escapeLatex(row));
-            for (String col : labels) {
-                int count = result.confusionMatrix
-                        .getOrDefault(row, Collections.emptyMap())
-                        .getOrDefault(col, 0);
-                sb.append(" & ").append(count);
-            }
-            sb.append(" \\\\\n");
-        }
-        sb.append("\\bottomrule\n\\end{tabular}\n\\end{table}\n");
-        return sb.toString();
-    }
 }

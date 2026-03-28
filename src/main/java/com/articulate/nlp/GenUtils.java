@@ -68,6 +68,7 @@ public class GenUtils {
     static String LLM_BASE_URL = null;
     static String LLM_SERVICE_TIER = null;
     static boolean CHEAP_PROMPT_MODE = false;
+    static String OPENROUTER_PROVIDER_PREFERRED = null;
     static int OLLAMA_PORT = Integer.parseInt(System.getProperty("OLLAMA_PORT", "11434"));
     public static OllamaAPI ollamaAPI;
     public static Options options;
@@ -502,6 +503,12 @@ public class GenUtils {
         return null;
     }
 
+    public static void setOpenRouterProviderPreferred(String provider) {
+
+        OPENROUTER_PROVIDER_PREFERRED = (provider == null || provider.trim().isEmpty())
+                ? null : provider.trim();
+    }
+
     public static void setOllamaPort(Integer port) {
 
         if (port == null) {
@@ -820,6 +827,10 @@ public class GenUtils {
         }
         if (serviceTier != null && !serviceTier.trim().isEmpty()) {
             root.put("service_tier", serviceTier);
+        }
+        if ("openrouter".equals(getLLMProvider()) && OPENROUTER_PROVIDER_PREFERRED != null) {
+            root.putObject("provider")
+                    .putArray("order").add(OPENROUTER_PROVIDER_PREFERRED);
         }
         root.putArray("messages")
                 .addObject()
