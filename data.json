@@ -1,0 +1,501 @@
+[ {
+  "id" : 1,
+  "image_list" : [ ],
+  "language_description" : "The Book is right of the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Chair) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 2,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is right of the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Book) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 3,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Near the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 4,
+  "image_list" : [ ],
+  "language_description" : "The Table is Near the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 5,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Below the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 6,
+  "image_list" : [ ],
+  "language_description" : "The Chair is left of the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 7,
+  "image_list" : [ ],
+  "language_description" : "The Chair is right of the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 8,
+  "image_list" : [ ],
+  "language_description" : "The Chair is left of the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 9,
+  "image_list" : [ ],
+  "language_description" : "The Book is Above the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 10,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Near the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 11,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Near the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 12,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Below the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 13,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is right of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 14,
+  "image_list" : [ ],
+  "language_description" : "The Chair is right of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 15,
+  "image_list" : [ ],
+  "language_description" : "The Table is Below the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 16,
+  "image_list" : [ ],
+  "language_description" : "The Table is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 17,
+  "image_list" : [ ],
+  "language_description" : "The Book is Below the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 18,
+  "image_list" : [ ],
+  "language_description" : "The Table is adjacent to the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 19,
+  "image_list" : [ ],
+  "language_description" : "The Table is Near the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 20,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Near the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 21,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is right of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 22,
+  "image_list" : [ ],
+  "language_description" : "The Book is adjacent to the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 23,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 24,
+  "image_list" : [ ],
+  "language_description" : "The Book is Above the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Chair) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 25,
+  "image_list" : [ ],
+  "language_description" : "The Chair is right of the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 26,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is adjacent to the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 27,
+  "image_list" : [ ],
+  "language_description" : "The Table is right of the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 28,
+  "image_list" : [ ],
+  "language_description" : "The Table is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 29,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 30,
+  "image_list" : [ ],
+  "language_description" : "The Book is left of the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 31,
+  "image_list" : [ ],
+  "language_description" : "The Table is right of the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 32,
+  "image_list" : [ ],
+  "language_description" : "The Chair is On the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 33,
+  "image_list" : [ ],
+  "language_description" : "The Book is Above the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 34,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is adjacent to the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 35,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is left of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 36,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is On the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 37,
+  "image_list" : [ ],
+  "language_description" : "The Chair is adjacent to the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 38,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Above the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Book) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 39,
+  "image_list" : [ ],
+  "language_description" : "The Book is On the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 40,
+  "image_list" : [ ],
+  "language_description" : "The Chair is adjacent to the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 41,
+  "image_list" : [ ],
+  "language_description" : "The Table is right of the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 42,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 43,
+  "image_list" : [ ],
+  "language_description" : "The Chair is left of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 44,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Above the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 45,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Above the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 46,
+  "image_list" : [ ],
+  "language_description" : "The Book is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 47,
+  "image_list" : [ ],
+  "language_description" : "The Table is left of the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 48,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Above the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 49,
+  "image_list" : [ ],
+  "language_description" : "The Chair is left of the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 50,
+  "image_list" : [ ],
+  "language_description" : "The Table is Near the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 51,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Above the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 52,
+  "image_list" : [ ],
+  "language_description" : "The Book is right of the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 53,
+  "image_list" : [ ],
+  "language_description" : "The Book is left of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 54,
+  "image_list" : [ ],
+  "language_description" : "The Chair is right of the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 55,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is adjacent to the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 56,
+  "image_list" : [ ],
+  "language_description" : "The Chair is On the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 57,
+  "image_list" : [ ],
+  "language_description" : "The Book is left of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 58,
+  "image_list" : [ ],
+  "language_description" : "The Table is adjacent to the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 59,
+  "image_list" : [ ],
+  "language_description" : "The Book is right of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 60,
+  "image_list" : [ ],
+  "language_description" : "The Book is On the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 61,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Above the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Table) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 62,
+  "image_list" : [ ],
+  "language_description" : "The Table is adjacent to the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 63,
+  "image_list" : [ ],
+  "language_description" : "The Chair is adjacent to the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 64,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Below the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 65,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Above the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 66,
+  "image_list" : [ ],
+  "language_description" : "The Table is Near the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Book) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 67,
+  "image_list" : [ ],
+  "language_description" : "The Book is Below the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 68,
+  "image_list" : [ ],
+  "language_description" : "The Book is Near the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 69,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Near the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Table) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 70,
+  "image_list" : [ ],
+  "language_description" : "The Book is On the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 71,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is adjacent to the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Book) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 72,
+  "image_list" : [ ],
+  "language_description" : "The Book is Below the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 73,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Below the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 74,
+  "image_list" : [ ],
+  "language_description" : "The Book is Above the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 75,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is left of the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 76,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Near the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 77,
+  "image_list" : [ ],
+  "language_description" : "The Book is Below the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 78,
+  "image_list" : [ ],
+  "language_description" : "The Book is left of the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 79,
+  "image_list" : [ ],
+  "language_description" : "The Book is left of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 80,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is On the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Book) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 81,
+  "image_list" : [ ],
+  "language_description" : "The Book is right of the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 right of)))"
+}, {
+  "id" : 82,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is On the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 83,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Below the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 84,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is adjacent to the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 85,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Below the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 Below)))"
+}, {
+  "id" : 86,
+  "image_list" : [ ],
+  "language_description" : "The Book is On the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 87,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is adjacent to the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Book) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 88,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Near the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 89,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 90,
+  "image_list" : [ ],
+  "language_description" : "The Book is left of the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Chair) (orientation ?A1 ?A2 left of)))"
+}, {
+  "id" : 91,
+  "image_list" : [ ],
+  "language_description" : "The Book is Above the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 92,
+  "image_list" : [ ],
+  "language_description" : "The DrinkingCup is adjacent to the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 DrinkingCup) (instance ?A2 Chair) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 93,
+  "image_list" : [ ],
+  "language_description" : "The Book is adjacent to the DrinkingCup.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 DrinkingCup) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 94,
+  "image_list" : [ ],
+  "language_description" : "The Chair is On the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 95,
+  "image_list" : [ ],
+  "language_description" : "The Chair is adjacent to the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 96,
+  "image_list" : [ ],
+  "language_description" : "The Table is Near the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 Near)))"
+}, {
+  "id" : 97,
+  "image_list" : [ ],
+  "language_description" : "The Book is Above the Table.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Book) (instance ?A2 Table) (orientation ?A1 ?A2 Above)))"
+}, {
+  "id" : 98,
+  "image_list" : [ ],
+  "language_description" : "The Table is adjacent to the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 adjacent to)))"
+}, {
+  "id" : 99,
+  "image_list" : [ ],
+  "language_description" : "The Table is On the Chair.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Table) (instance ?A2 Chair) (orientation ?A1 ?A2 On)))"
+}, {
+  "id" : 100,
+  "image_list" : [ ],
+  "language_description" : "The Chair is Above the Book.",
+  "logical_description" : "(exists (?A1 ?A2) (and (instance ?A1 Chair) (instance ?A2 Book) (orientation ?A1 ?A2 Above)))"
+} ]
