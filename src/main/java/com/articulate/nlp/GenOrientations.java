@@ -8,12 +8,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+/** Generate core prompts for image-to-logic data set
+ * creates two text files, one with english prompts, 
+ * the other creates the corresponding SUMO KIF logic
+ * and creates a data.json file that stores each prompt, sumo kif, and 
+ * blank image location list, with a unique idea.
+ * also incorporates a manual coherence detector
+ */
 
-import java.io.File;
-import java.io.IOException;
     
 
 public class GenOrientations {
+
     public static int numToGenerate;
     public static RandSet allSUMOArtifactRandSet;
     public static RandSet allSUMOOrientationRandSet;
@@ -74,7 +80,7 @@ public class GenOrientations {
         System.out.println(allSUMOArtifactSet);
         //Set<String> allSUMOVariableAritySet = kbLite.getAllInstances("VariableArityRelation");
         Set<String> allSUMOOrientationSet = kbLite.getAllInstances("PositionalAttribute");
-       
+       //Adjusting the grammar of some of the relations
         SUMOOrientationExlcusionList = new ArrayList<>(Arrays.asList("Downstairs", "North", "East", "South", "West", "Horizontal", "Upstairs", "Vertical", "Inside", "Outside", "Surrounded"));
         allSUMOOrientationSet.removeAll(SUMOOrientationExlcusionList);
         System.out.println("Number in allSUMOOrientationSet "+allSUMOOrientationSet.size());
@@ -126,7 +132,9 @@ public class GenOrientations {
     }
 
 
-
+    /**Function for adding a data point node to the json file. Inputs: filepath (location of .json),
+     *id (unique identifier), imagelist (list of file locations of images), languagedescription (english prompt),
+     *logicaldescription (SUMO KIF Logic for English prompt*/
     public static void addEntry(
             String filePath,
             int id, 
@@ -174,6 +182,7 @@ public class GenOrientations {
         }
     }
     
+    /*manual coherence detector for english prompts */
     public static String coherenceDetector() {
         Scanner scanner = new Scanner(System.in);
         String input;
@@ -190,6 +199,8 @@ public class GenOrientations {
         }
     }
 
+    /**if data.json already exists gets the max id from the file so you can add 
+    *to an already existing data set, will return the max id from the data.json file */
     public static int getMaxIntValue(String filePath) {
         ObjectMapper mapper = new ObjectMapper();
         int max = Integer.MIN_VALUE;
@@ -211,11 +222,15 @@ public class GenOrientations {
 
         return max;
     }
+    /*Main Method
+    Generates english prmopts and saves them in the respective files, data.json,
+    and the two text files */
     public static void main(String[] args){
         init(args);
         //System.out.println("Hello World!");
         //System.out.println(allSUMOArtifactRandSet.toString());
         // System.out.println(allSUMOOrientationRandSet.toString());
+        //counter to keep track of coherent sentences generated
         sentenceGeneratedCounter = 0;
         //filepath to .json training data
         filepath = "./data.json";
@@ -289,7 +304,3 @@ public class GenOrientations {
     }
 
 }
-/* need to take english sentence from here, combine it with wrappers from word doc (this will change),
-feed it into an llm, save image to correct directory and save name to .json file here 
-change image list to empty list, create a java file to access json file, read eng sent 
-creat image, save image, cerate image title, save to json image list*/

@@ -18,9 +18,10 @@ import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.images.ImageGenerateParams;
 import com.openai.models.images.ImageModel;
 import com.openai.azure.credential.AzureApiKeyCredential;
-
+/*Take english prompts from a data.json file, wrap them and send to image generator
+update data.json and save the updated record. */
 public class GenOrientationImages {
-     
+    /*method to get the data, returns the record */ 
     public static class ImageRecord {
 
         private int id;
@@ -78,7 +79,7 @@ public class GenOrientationImages {
         }
     }
 
-
+    /*adds an image to a record with record id */
     public static void addImageToRecord(
             int recordId,
             String imagePath,
@@ -120,14 +121,15 @@ public class GenOrientationImages {
     }
 
 
-
-    public static String generateImage(String prompt, String content) {
+    /*generats an image based of prompt and saves it */
+    public static String generateImage(String prompt, String content,  int ID) {
 
         String endpoint = "https://llm-agents-east-resource.openai.azure.com/openai/v1/";
         // String deploymentName = "gpt-image-1-mini";
         String deploymentName = "gpt-image-1.5";
         String apiKey = content;
-        String savepath = ("images/"+prompt.replace(" ","_")+"png");
+        String numberString = String.valueOf(ID);
+        String savepath = ("images/"+prompt.replace(" ","_").replace(".","_")+numberString+".png");
         // System.out.println(savepath);
         
         //System.out.println(apiKey);
@@ -153,11 +155,15 @@ public class GenOrientationImages {
         });
         return savepath;
     }
-   
+   /*simple concatenate function, returns a string */
     public static String concatenateStrings(String first, String second) {
         return first + second;
     }
-    
+/*Main method. Has the generation loop
+    1. get record
+    2. wrap prompts
+    3. generate and save image, update json file
+ */
     public static void main(String[] args) {
         
 try {
@@ -170,19 +176,19 @@ try {
             );
             List<String> wrappers = new ArrayList<>();
             wrappers.add("Generate a realistic image of ");
-            wrappers.add("Generate a photo-realistic image of ");
-            wrappers.add("Generate a low light image of ");
-            wrappers.add("Generate an image of in darkness of ");
-            wrappers.add("Generate a dark image of ");
-            wrappers.add("Generate a bright image of ");
-            wrappers.add("Generate a sharp image of ");
-            wrappers.add("Generate a high contrast image of ");
-            wrappers.add("Generate a low contrast image of ");
-            wrappers.add("Generate a murky image of ");
-            wrappers.add("Generate a cloudy image of ");
-            wrappers.add("Generate a foggy image of ");
-            wrappers.add("Generate a shady image of ");
-            wrappers.add("Generate a brightly lit image of ");
+            // wrappers.add("Generate a photo-realistic image of ");
+            // wrappers.add("Generate a low light image of ");
+            // wrappers.add("Generate an image of in darkness of ");
+            // wrappers.add("Generate a dark image of ");
+            // wrappers.add("Generate a bright image of ");
+            // wrappers.add("Generate a sharp image of ");
+            // wrappers.add("Generate a high contrast image of ");
+            // wrappers.add("Generate a low contrast image of ");
+            // wrappers.add("Generate a murky image of ");
+            // wrappers.add("Generate a cloudy image of ");
+            // wrappers.add("Generate a foggy image of ");
+            // wrappers.add("Generate a shady image of ");
+            // wrappers.add("Generate a brightly lit image of ");
             for (ImageRecord record : records) {
                 System.out.println("ID: " + record.getId());
                 System.out.println("Images: " + record.getImage_list());
@@ -193,7 +199,7 @@ try {
                 for(String wrapper:wrappers ){
                     String wrappedPrompt = concatenateStrings(wrapper, record.getLanguage_description());
                     System.out.println("Prompt: "+wrappedPrompt);
-                    addImageToRecord(record.getId(), generateImage(wrappedPrompt, readStringFromFile() ), "data.json");
+                    addImageToRecord(record.getId(), generateImage(wrappedPrompt, readStringFromFile(), record.getId() ), "data.json");
                 }
                 // System.out.println("ID: " + record.getId());
                 // System.out.println("Images: " + record.getImage_list());
