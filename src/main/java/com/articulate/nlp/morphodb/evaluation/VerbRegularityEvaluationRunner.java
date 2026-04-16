@@ -443,7 +443,7 @@ public class VerbRegularityEvaluationRunner {
         StringBuilder sb = new StringBuilder();
         sb.append("\\begin{table*}[t]\n");
         sb.append("\\centering\n");
-        sb.append("\\scriptsize\n");
+        sb.append("\\small\n");
         sb.append("\\caption{Exact match percentages on the accepted human-audited verb conjugation benchmark stratified by regularity. Regular denominator ")
                 .append(regularDenominatorCount)
                 .append(". Irregular denominator ")
@@ -455,14 +455,21 @@ public class VerbRegularityEvaluationRunner {
         sb.append("\\toprule\n");
         sb.append("Model & Regular all parts & Irregular all parts & Overall all parts & Coverage \\\\\n");
         sb.append("\\midrule\n");
-        for (ModelMetadata model : models) {
+        List<ModelMetadata> latexModels = new ArrayList<>(models);
+        latexModels.sort(ModelMetadata::compareForLatex);
+        ModelMetadata previous = null;
+        for (ModelMetadata model : latexModels) {
+            if (ModelMetadata.shouldInsertLatexSeparator(previous, model)) {
+                sb.append("\\midrule\n");
+            }
             String modelName = model.getName();
-            sb.append("\\texttt{").append(escapeLatex(modelName)).append("}");
+            sb.append("\\texttt{").append(escapeLatex(model.getLatexDisplayName())).append("}");
             sb.append(" & ").append(formatPercentCell(regularAllParts.get(modelName)));
             sb.append(" & ").append(formatPercentCell(irregularAllParts.get(modelName)));
             sb.append(" & ").append(formatPercentCell(overallAllParts.get(modelName)));
             sb.append(" & ").append(formatPercentCell(coverageByModel.get(modelName)));
             sb.append(" \\\\\n");
+            previous = model;
         }
         sb.append("\\bottomrule\n");
         sb.append("\\end{tabular}%\n");

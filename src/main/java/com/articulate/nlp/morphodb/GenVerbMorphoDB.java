@@ -564,94 +564,29 @@ public class GenVerbMorphoDB {
             String definition = verbDocumentationHash.get(synsetId);
             definition = (definition != null) ? definition.replaceAll("^\"|\"$", "") : null;
             String definitionStatement = (definition == null) ? "" : "Definition: \"" + definition + "\". ";
-            boolean cheapPrompt = GenUtils.isCheapPromptMode();
-            String prompt = "You are an expert English grammarian generating complete verb conjugation tables. " +
-                    "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
-                    "across the tense/aspect categories below.\n\n" +
-                    "Verb: \"" + term + "\".\n" +
-                    definitionStatement + "\n\n" +
-                    "Tenses to cover in this order:\n" +
-                    "  1. Infinitive\n" +
-                    "  2. Simple present\n" +
-                    "  3. Simple past\n" +
-                    "  4. Simple future\n" +
-                    "  5. Present progressive (present continuous)\n" +
-                    "  6. Past progressive (past continuous)\n" +
-                    "  7. Future progressive (future continuous)\n" +
-                    "  8. Present perfect\n" +
-                    "  9. Past perfect\n" +
-                    " 10. Future perfect\n" +
-                    " 11. Present perfect progressive\n" +
-                    " 12. Past perfect progressive\n" +
-                    " 13. Future perfect progressive\n" +
-                    " 14. Imperative\n" +
-                    " 15. Gerund / present participle\n" +
-                    " 16. Past participle\n\n" +
-                    "Instructions:\n" +
-                    (cheapPrompt
-                            ? " - Return valid JSON with fields: verb, tenses, regularity.\n"
-                            : " - Return valid JSON with fields: verb, tenses, regularity, notes.\n") +
-                    " - verb must match the infinitive/base form provided.\n" +
-                    " - tenses must be an array of 16 objects, each containing:\n" +
-                    "     • tense: the tense/aspect name\n" +
-                    "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\n" +
-                    "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
-                    (cheapPrompt ? "" : "     • Optional fields example and notes are allowed.\n") +
-                    " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
-                    " - regularity must be either \"Regular\" or \"Irregular\" and should reflect whether the simple past and past participle follow the standard -ed pattern.\n" +
-                    (cheapPrompt ? "" : " - Provide a brief notes string highlighting any irregularities or alternations.\n") +
-                    " - Do not include commentary outside the JSON object.\n\n" +
-                    "Example output schema:\n" +
-                    "{\n" +
-                    "  \"verb\": \"to sample\",\n" +
-                    "  \"regularity\": \"<Regular|Irregular>\",\n" +
-                    "  \"tenses\": [\n" +
-                    "    {\n" +
-                    "      \"tense\": \"Simple present\",\n" +
-                    "      \"forms\": {\n" +
-                    "        \"i\": \"I sample\",\n" +
-                    "        \"you_singular\": \"You sample\",\n" +
-                    "        \"he_she_it\": \"He samples\",\n" +
-                    "        \"we\": \"We sample\",\n" +
-                    "        \"you_plural\": \"You sample\",\n" +
-                    "        \"they\": \"They sample\"\n" +
-                    "      }" +
-                    (cheapPrompt ? "\n" : ",\n      \"example\": \"I sample the sauce before serving.\"\n") +
-                    "    }\n" +
-                    "  ]" +
-                    (cheapPrompt ? "\n" : ",\n  \"notes\": \"Third person singular present adds -s.\"\n") +
-                    "}";
             if (GenMorphoUtils.debug) {
-                System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: " + prompt);
+                System.out.println("GenVerbMorphoDB.genVerbConjugations() Prompt: "
+                        + VerbConjugationUtils.buildConjugationPrompt(term, definitionStatement));
             }
-            String llmResponse = GenUtils.askLLM(prompt);
-            String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
-            boolean errorInResponse = true;
-            if (jsonResponse != null) {
+            ObjectNode record = VerbConjugationUtils.queryAndCanonicalizeConjugation(
+                    term, synsetId, definitionStatement);
+            if (record != null) {
                 try {
-                    JsonNode root = JSON_MAPPER.readTree(jsonResponse);
-                    String verbValue = root.path("verb").asText("").trim();
-                    VerbConjugationUtils.CanonicalizationResult result = VerbConjugationUtils.canonicalizeRecord(
-                            root, synsetId, lemmaKey, verbValue.isEmpty() ? term : verbValue);
-                    if (result.record != null && result.completeness != VerbConjugationUtils.ConjugationCompleteness.ERROR) {
-                        errorInResponse = false;
-                        String serializedLine = JSON_MAPPER.writeValueAsString(result.record);
-                        GenUtils.writeToFile(conjugationFileName, serializedLine + "\n");
-                        GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
-                    }
+                    String serializedLine = JSON_MAPPER.writeValueAsString(record);
+                    GenUtils.writeToFile(conjugationFileName, serializedLine + "\n");
+                    GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, serializedLine);
                 } catch (Exception ignored) {
                     // fall through to error handling
                 }
-            }
-            if (errorInResponse) {
+            } else {
                 String errorLine = GenMorphoUtils.buildErrorRecord("verb", term, lemmaKey, synsetId,
-                        definition, llmResponse, "Unable to parse verb conjugation response.");
+                        definition, null, "Unable to parse verb conjugation response.");
                 GenUtils.writeToFile(conjugationFileName, errorLine + "\n");
                 GenMorphoUtils.cacheClassification(classifiedEntries, lemmaKey, errorLine);
             }
 
             if (GenMorphoUtils.debug) {
-                System.out.println("\n\nGenVerbMorphoDB.genVerbConjugations().LLMResponse: " + llmResponse + "\n\n**************\n");
+                System.out.println("\n\nGenVerbMorphoDB.genVerbConjugations() completed for: " + term + "\n\n**************\n");
             }
         }
     }

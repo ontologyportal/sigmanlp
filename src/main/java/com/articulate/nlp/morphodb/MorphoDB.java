@@ -1,6 +1,7 @@
 package com.articulate.nlp.morphodb;
 
 import com.articulate.nlp.GenUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.File;
@@ -52,6 +53,11 @@ public class MorphoDB {
     private final Map<String, String> cachedArticles = new HashMap<>();
     private final Set<String> cachedNounErrorLemmas = new HashSet<>();
     private boolean nounErrorCacheLoaded = false;
+
+    private final Set<String> queriedVerbs = new HashSet<>();
+    // lemmaKey → tenseKey → personKey → surface form
+    private final Map<String, Map<String, Map<String, String>>> cachedVerbConjugations = new HashMap<>();
+    private final Set<String> cachedVerbErrorLemmas = new HashSet<>();
 
     public static MorphoDB loadMorphoDatabase(String morphoDbPath,
                                               boolean queryMissingWords,
@@ -262,6 +268,8 @@ public class MorphoDB {
 
     /***************************************************************
      * Lookup verb conjugation across all loaded models in iteration order.
+     * Queries the LLM on miss if queryMissingWords is enabled, persisting
+     * the result to verb/VerbConjugations.txt for future runs.
      ***************************************************************/
     public String getVerbConjugation(String lemma, String tense, String grammaticalPerson) {
 
@@ -271,7 +279,104 @@ public class MorphoDB {
                 return value;
             }
         }
+        String cached = getCachedVerbConjugation(lemma, tense, grammaticalPerson);
+        if (cached != null) {
+            return cached;
+        }
+        if (queryMissingWords && lemma != null && !lemma.trim().isEmpty()) {
+            String key = GenMorphoUtils.normalizeLemma(lemma);
+            if (!cachedVerbErrorLemmas.contains(key)) {
+                queryAndCacheVerb(lemma.trim());
+                return getCachedVerbConjugation(lemma, tense, grammaticalPerson);
+            }
+        }
         return null;
+    }
+
+    private String getCachedVerbConjugation(String lemma, String tense, String person) {
+
+        if (lemma == null || tense == null || person == null) {
+            return null;
+        }
+        Map<String, Map<String, String>> byTense = cachedVerbConjugations
+                .get(GenMorphoUtils.normalizeLemma(lemma));
+        if (byTense == null) {
+            return null;
+        }
+        Map<String, String> byPerson = byTense.get(tense.trim().toLowerCase());
+        if (byPerson == null) {
+            return null;
+        }
+        return byPerson.get(person.trim().toLowerCase());
+    }
+
+    private void queryAndCacheVerb(String lemma) {
+
+        String key = GenMorphoUtils.normalizeLemma(lemma);
+        if (key.isEmpty() || queriedVerbs.contains(key)) {
+            return;
+        }
+        queriedVerbs.add(key);
+        String model = (llmModel != null && !llmModel.isEmpty()) ? llmModel : GenUtils.getLLMModel();
+        if (llmModel != null && !llmModel.isEmpty()) {
+            GenUtils.setLLMModel(llmModel);
+        }
+        System.out.println("Querying " + model + " for verb conjugations of '" + lemma + "'.");
+        ObjectNode record = VerbConjugationUtils.queryAndCanonicalizeConjugation(lemma, "LLM-generated", "");
+        if (record == null) {
+            cachedVerbErrorLemmas.add(key);
+            persistVerbErrorEntry(lemma, "Unable to parse verb conjugation response.");
+            System.out.println("MorphoDB: LLM query failed or returned unparseable response for verb '" + lemma + "'.");
+            return;
+        }
+        // Populate in-memory cache from the tenses array
+        JsonNode tensesNode = record.get("tenses");
+        if (tensesNode != null && tensesNode.isArray()) {
+            for (JsonNode tenseNode : tensesNode) {
+                String tenseKey = tenseNode.path("tense").asText("").trim().toLowerCase();
+                if (tenseKey.isEmpty()) {
+                    continue;
+                }
+                JsonNode forms = tenseNode.get("forms");
+                if (forms == null) {
+                    continue;
+                }
+                Map<String, String> personMap = cachedVerbConjugations
+                        .computeIfAbsent(key, k -> new HashMap<>())
+                        .computeIfAbsent(tenseKey, k -> new HashMap<>());
+                for (String person : List.of("i", "you_singular", "he_she_it", "we", "you_plural", "they")) {
+                    String rawForm = forms.path(person).asText("").trim();
+                    String form = VerbConjugationUtils.normalizeVerbFormForIndex(rawForm, key, person);
+                    if (form != null && !form.isEmpty()) {
+                        personMap.putIfAbsent(person, form);
+                    }
+                }
+            }
+        }
+        // Persist to disk
+        if (dbRootPath != null) {
+            String dbName = new File(dbRootPath).getName();
+            GenMorphoUtils.appendJsonLine(dbRootPath + "/verb/VerbConjugations.txt", record);
+            System.out.println("Added conjugations for '" + lemma + "' to " + dbName + "/verb/VerbConjugations.txt.");
+        }
+    }
+
+    private void persistVerbErrorEntry(String lemma, String errorMessage) {
+
+        if (dbRootPath == null || lemma == null || lemma.trim().isEmpty()) {
+            return;
+        }
+        String key = GenMorphoUtils.normalizeLemma(lemma);
+        if (key.isEmpty()) {
+            return;
+        }
+        String errorLine = GenMorphoUtils.buildErrorRecord(
+                "verb", lemma, key, "LLM-generated", "", null,
+                errorMessage == null ? "Unable to classify verb conjugation." : errorMessage);
+        ObjectNode errorNode = GenMorphoUtils.parseJsonObjectLine(errorLine);
+        if (errorNode != null) {
+            GenMorphoUtils.appendJsonLine(dbRootPath + "/verb/VerbConjugations.txt", errorNode);
+        }
     }
 
     /***************************************************************
@@ -288,6 +393,22 @@ public class MorphoDB {
             }
         }
         return null;
+    }
+
+    /***************************************************************
+     * Returns "the" if this positional term needs a definite article
+     * when used after a frame-supplied preposition (e.g. "from the
+     * north"), or "" if no article is needed (e.g. "from upstream").
+     ***************************************************************/
+    public String getPositionalArticle(String surfaceForm) {
+
+        for (ModelMorphoDB model : byModel.values()) {
+            String article = model.prepositions.getPositionalArticle(surfaceForm);
+            if (article != null && !article.isEmpty()) {
+                return article;
+            }
+        }
+        return "";
     }
 
     /***************************************************************

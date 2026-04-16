@@ -304,11 +304,8 @@ public class EvaluationRunner {
             new GroupedKappaColumn("Countability", "Countability"),
             new GroupedKappaColumn("Humanness", "Humanness"),
             new GroupedKappaColumn("NounAgentivity", "Agentivity"),
-            new GroupedKappaColumn("CollectiveNouns", "Collective Nouns"),
-            new GroupedKappaColumn("VerbValence", "Valence"),
             new GroupedKappaColumn("VerbReflexive", "Reflexive"),
             new GroupedKappaColumn("VerbCausativity", "Causativity"),
-            new GroupedKappaColumn("VerbAchievementProcess", "Achievement Process"),
             new GroupedKappaColumn("VerbReciprocal", "Reciprocal"),
             new GroupedKappaColumn("ConjugationRegularity", "Conjugation Regularity"),
             new GroupedKappaColumn("AdjectiveSemanticClasses", "Semantic Classes"),
@@ -456,6 +453,9 @@ public class EvaluationRunner {
             return result;
         }
         for (File subdir : subdirs) {
+            if (!ModelMetadata.shouldIncludeAsModelDirectory(subdir.getName())) {
+                continue;
+            }
             result.add(ModelMetadata.fromDirName(subdir.getName()));
         }
         return result;
@@ -1480,42 +1480,46 @@ public class EvaluationRunner {
                     .put(row.property, useReferenceKappa ? row.kappaReference : row.kappaGold);
         }
 
-        List<String> modelNames = new ArrayList<>(kappaByModel.keySet());
-        modelNames.sort(EvaluationRunner::compareModelsForLatexTable);
+        List<ModelMetadata> models = new ArrayList<>();
+        for (String modelName : kappaByModel.keySet()) {
+            models.add(ModelMetadata.fromDirName(modelName));
+        }
+        models.sort(ModelMetadata::compareForLatex);
 
         sb.append("\\begin{table*}[t]\n");
         sb.append("\\centering\n");
-        sb.append("\\scriptsize\n");
+        sb.append("\\small\n");
         sb.append("\\caption{").append(caption).append("}\n");
         sb.append("\\label{").append(label).append("}\n");
         sb.append("\\resizebox{\\textwidth}{!}{%\n");
-        sb.append("\\begin{tabular}{lrrrrr|rrrrrr|r|r|r}\n");
+        sb.append("\\begin{tabular}{lrrrr|rrrr|r|r}\n");
         sb.append("\\toprule\n");
-        sb.append("& \\multicolumn{5}{c}{Nouns} ");
-        sb.append("& \\multicolumn{6}{c}{Verbs} ");
-        sb.append("& \\multicolumn{1}{c}{Adjectives} ");
-        sb.append("& \\multicolumn{1}{c}{Adverbs} ");
-        sb.append("& \\multicolumn{1}{c}{Overall} \\\\\n");
-        sb.append("\\cmidrule(lr){2-6} \\cmidrule(lr){7-12} \\cmidrule(lr){13-13} \\cmidrule(lr){14-14} \\cmidrule(lr){15-15}\n");
+        sb.append("& \\multicolumn{4}{c}{Nouns} ");
+        sb.append("& \\multicolumn{4}{c}{Verbs} ");
+        sb.append("& \\multicolumn{1}{c}{Adj.} ");
+        sb.append("& \\multicolumn{1}{c}{Adv.} \\\\\n");
+        sb.append("\\cmidrule(lr){2-5} \\cmidrule(lr){6-9} \\cmidrule(lr){10-10} \\cmidrule(lr){11-11}\n");
         sb.append("Model");
         for (GroupedKappaColumn column : GROUPED_KAPPA_COLUMNS) {
             sb.append(" & \\rot{").append(escapeLatex(column.displayName)).append("}");
         }
-        sb.append(" & \\rot{Overall $\\kappa$} \\\\\n");
+        sb.append(" \\\\\n");
         sb.append("\\midrule\n");
 
-        for (String modelName : modelNames) {
+        ModelMetadata previous = null;
+        for (ModelMetadata model : models) {
+            if (ModelMetadata.shouldInsertLatexSeparator(previous, model)) {
+                sb.append("\\midrule\n");
+            }
+            String modelName = model.getName();
             Map<String, Double> byProperty = kappaByModel.getOrDefault(modelName, Collections.emptyMap());
-            List<Double> displayedKappas = new ArrayList<>();
-            sb.append("\\texttt{").append(escapeLatex(modelName)).append("}");
+            sb.append("\\texttt{").append(escapeLatex(model.getLatexDisplayName())).append("}");
             for (GroupedKappaColumn column : GROUPED_KAPPA_COLUMNS) {
                 Double value = byProperty.get(column.propertyName);
-                if (value != null && !Double.isNaN(value)) {
-                    displayedKappas.add(value);
-                }
-                sb.append(" & ").append(formatMaybeDouble(value));
+                sb.append(" & ").append(formatLatexMaybeDouble(value));
             }
-            sb.append(" & ").append(formatMaybeDouble(average(displayedKappas))).append(" \\\\\n");
+            sb.append(" \\\\\n");
+            previous = model;
         }
 
         sb.append("\\bottomrule\n");
@@ -1537,8 +1541,8 @@ public class EvaluationRunner {
                     .append(escapeLatex(row.stratum)).append(" & ")
                     .append(row.auditedN).append(" & ")
                     .append(row.acceptedN).append(" & ")
-                    .append(formatMaybeDouble(row.rate)).append(" & ")
-                    .append(formatConfidenceInterval(row.confidenceInterval)).append("\\\\\n");
+                    .append(formatLatexMaybeDouble(row.rate)).append(" & ")
+                    .append(formatLatexConfidenceInterval(row.confidenceInterval)).append("\\\\\n");
         }
         sb.append("\\end{longtable}\n");
         return sb.toString();
@@ -1552,68 +1556,31 @@ public class EvaluationRunner {
         sb.append("Model & Property & Scope & Metric & Row & Stratum & $n$ & Rate\\\\\n");
         sb.append("\\hline\n");
         for (GenerativeAgreementRow row : generativeAgreementRows) {
-            sb.append(escapeLatex(row.model)).append(" & ")
+            sb.append(escapeLatex(ModelMetadata.fromDirName(row.model).getLatexDisplayName())).append(" & ")
                     .append(escapeLatex(row.property)).append(" & ")
                     .append(escapeLatex(row.scope)).append(" & ")
                     .append(escapeLatex(row.metric)).append(" & ")
                     .append(escapeLatex(row.rowType)).append(" & ")
                     .append(escapeLatex(row.stratum)).append(" & ")
                     .append(row.denominatorN).append(" & ")
-                    .append(formatMaybeDouble(row.rate)).append("\\\\\n");
+                    .append(formatLatexMaybeDouble(row.rate)).append("\\\\\n");
         }
         for (GenerativeAgreementRow row : generativeAgreementAcceptedRows) {
-            sb.append(escapeLatex(row.model)).append(" & ")
+            sb.append(escapeLatex(ModelMetadata.fromDirName(row.model).getLatexDisplayName())).append(" & ")
                     .append(escapeLatex(row.property)).append(" & ")
                     .append(escapeLatex(row.scope)).append(" & ")
                     .append(escapeLatex(row.metric)).append(" & ")
                     .append(escapeLatex(row.rowType)).append(" & ")
                     .append(escapeLatex(row.stratum)).append(" & ")
                     .append(row.denominatorN).append(" & ")
-                    .append(formatMaybeDouble(row.rate)).append("\\\\\n");
+                    .append(formatLatexMaybeDouble(row.rate)).append("\\\\\n");
         }
         sb.append("\\end{longtable}\n");
         return sb.toString();
     }
 
     private static int compareModelsForLatexTable(String leftModel, String rightModel) {
-        ModelMetadata left = ModelMetadata.fromDirName(leftModel);
-        ModelMetadata right = ModelMetadata.fromDirName(rightModel);
-
-        double leftSize = left.getParameterBillions();
-        double rightSize = right.getParameterBillions();
-        boolean leftKnown = leftSize >= 0;
-        boolean rightKnown = rightSize >= 0;
-
-        if (leftKnown && rightKnown) {
-            int sizeCompare = Double.compare(leftSize, rightSize);
-            if (sizeCompare != 0) {
-                return sizeCompare;
-            }
-            return leftModel.compareTo(rightModel);
-        }
-        if (leftKnown != rightKnown) {
-            return leftKnown ? -1 : 1;
-        }
-
-        int frontierCompare = Integer.compare(frontierRankForLatex(leftModel), frontierRankForLatex(rightModel));
-        if (frontierCompare != 0) {
-            return frontierCompare;
-        }
-        return leftModel.compareTo(rightModel);
-    }
-
-    private static int frontierRankForLatex(String modelName) {
-        if (modelName == null) {
-            return Integer.MAX_VALUE;
-        }
-        String lower = modelName.toLowerCase(Locale.ROOT);
-        if (lower.startsWith("openai__gpt-5-nano")) {
-            return 0;
-        }
-        if (lower.startsWith("openai__gpt-5_2")) {
-            return 1;
-        }
-        return 100;
+        return ModelMetadata.compareForLatex(ModelMetadata.fromDirName(leftModel), ModelMetadata.fromDirName(rightModel));
     }
 
     private static String escapeLatex(String value) {
@@ -1697,6 +1664,20 @@ public class EvaluationRunner {
             return "N/A";
         }
         return String.format(Locale.ROOT, "%.3f", value);
+    }
+
+    private static String formatLatexMaybeDouble(Double value) {
+        if (value == null || Double.isNaN(value)) {
+            return "N/A";
+        }
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private static String formatLatexConfidenceInterval(ConfidenceInterval interval) {
+        if (interval == null || interval.lower == null || interval.upper == null) {
+            return "N/A";
+        }
+        return String.format(Locale.ROOT, "[%.2f, %.2f]", interval.lower, interval.upper);
     }
 
     private static String formatSize(double value) {

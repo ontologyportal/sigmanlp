@@ -68,7 +68,7 @@ public class GenUtils {
     static String LLM_BASE_URL = null;
     static String LLM_SERVICE_TIER = null;
     static boolean CHEAP_PROMPT_MODE = false;
-    static String OPENROUTER_PROVIDER_PREFERRED = null;
+    static List<String> OPENROUTER_PROVIDER_ORDER = new ArrayList<>();
     static int OLLAMA_PORT = Integer.parseInt(System.getProperty("OLLAMA_PORT", "11434"));
     public static OllamaAPI ollamaAPI;
     public static Options options;
@@ -503,10 +503,35 @@ public class GenUtils {
         return null;
     }
 
+    public static void setOpenRouterProviderOrder(List<String> providers) {
+
+        OPENROUTER_PROVIDER_ORDER = new ArrayList<>();
+        if (providers == null) {
+            return;
+        }
+        for (String provider : providers) {
+            if (provider == null) {
+                continue;
+            }
+            String trimmed = provider.trim();
+            if (!trimmed.isEmpty()) {
+                OPENROUTER_PROVIDER_ORDER.add(trimmed);
+            }
+        }
+    }
+
     public static void setOpenRouterProviderPreferred(String provider) {
 
-        OPENROUTER_PROVIDER_PREFERRED = (provider == null || provider.trim().isEmpty())
-                ? null : provider.trim();
+        List<String> providers = new ArrayList<>();
+        if (provider != null && !provider.trim().isEmpty()) {
+            for (String token : provider.split(",")) {
+                String trimmed = token == null ? "" : token.trim();
+                if (!trimmed.isEmpty()) {
+                    providers.add(trimmed);
+                }
+            }
+        }
+        setOpenRouterProviderOrder(providers);
     }
 
     public static void setOllamaPort(Integer port) {
@@ -828,9 +853,12 @@ public class GenUtils {
         if (serviceTier != null && !serviceTier.trim().isEmpty()) {
             root.put("service_tier", serviceTier);
         }
-        if ("openrouter".equals(getLLMProvider()) && OPENROUTER_PROVIDER_PREFERRED != null) {
-            root.putObject("provider")
-                    .putArray("order").add(OPENROUTER_PROVIDER_PREFERRED);
+        if ("openrouter".equals(getLLMProvider()) && !OPENROUTER_PROVIDER_ORDER.isEmpty()) {
+            ObjectNode providerNode = root.putObject("provider");
+            com.fasterxml.jackson.databind.node.ArrayNode orderNode = providerNode.putArray("order");
+            for (String provider : OPENROUTER_PROVIDER_ORDER) {
+                orderNode.add(provider);
+            }
         }
         root.putArray("messages")
                 .addObject()

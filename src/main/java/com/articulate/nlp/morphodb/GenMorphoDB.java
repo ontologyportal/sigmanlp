@@ -38,6 +38,7 @@ public class GenMorphoDB {
     private static final String REQUIRED_FIELD_RECOVERY_AUDIT_FILE = "compact-required-field-recovery-audit.jsonl";
     private static final String RECOVERY_METHOD_REQUIRED_FIELDS_ONLY = "required_fields_only";
     private static final String RECOVERY_METHOD_DROPPED_FIELD_PRUNED = "dropped_field_pruned";
+    private static final String RECOVERY_METHOD_JSONISH_EXTRACTED = "jsonish_extracted";
     private static final String[] DROPPABLE_COMPACT_FIELDS =
             new String[]{"explanation", "usage", "definition", "message"};
 
@@ -67,7 +68,9 @@ public class GenMorphoDB {
         String verbEnd;
         String nounStart;
         String nounEnd;
-        String orProviderPreferred;
+        List<String> orProviderOrder = new ArrayList<>();
+        boolean orProviderOrderExplicit;
+        boolean openRouterProviderOptionSet;
     }
 
 
@@ -132,7 +135,8 @@ public class GenMorphoDB {
         System.out.println("      --provider <ollama|openai|anthropic|claude|openai-compatible|google|gemini|openrouter> --model <model> \\");
         System.out.println("      [--ollama-port <port>] [--api-key <key>|--api-key-env <ENV_VAR>] [--base-url <url>] \\");
         System.out.println("      [--service-tier <auto|default|flex|priority>] [--cheap-prompt|--full-prompt] [--verbose] \\");
-        System.out.println("      [--or-provider-preferred <provider>]");
+        System.out.println("      [--or-provider-order <provider1,provider2,...>] [--or-provider-preferred <provider>]");
+        System.out.println("      --or-provider-preferred is accepted as a compatibility alias for --or-provider-order.");
         System.out.println("word-types supported: noun, verb, adjective, adverb, all");
         System.out.println("Maintenance flags:");
         System.out.println("  --compact      strip explanation/usage/definition and convert malformed rows into error rows");
@@ -318,7 +322,21 @@ public class GenMorphoDB {
                     System.err.println("Missing value for --or-provider-preferred.");
                     return null;
                 }
-                options.orProviderPreferred = args[index + 1];
+                options.openRouterProviderOptionSet = true;
+                if (!options.orProviderOrderExplicit) {
+                    options.orProviderOrder = parseOpenRouterProviderOrder(args[index + 1]);
+                }
+                index += 2;
+                continue;
+            }
+            if ("--or-provider-order".equals(arg)) {
+                if (index + 1 >= args.length) {
+                    System.err.println("Missing value for --or-provider-order.");
+                    return null;
+                }
+                options.orProviderOrder = parseOpenRouterProviderOrder(args[index + 1]);
+                options.orProviderOrderExplicit = true;
+                options.openRouterProviderOptionSet = true;
                 index += 2;
                 continue;
             }
@@ -372,7 +390,7 @@ public class GenMorphoDB {
                     System.err.println("Missing value for --verb-start.");
                     return null;
                 }
-                options.verbStart = args[index + 1].toLowerCase();
+                options.verbStart = args[index + 1];
                 index += 2;
                 continue;
             }
@@ -381,7 +399,7 @@ public class GenMorphoDB {
                     System.err.println("Missing value for --verb-end.");
                     return null;
                 }
-                options.verbEnd = args[index + 1].toLowerCase();
+                options.verbEnd = args[index + 1];
                 index += 2;
                 continue;
             }
@@ -390,7 +408,7 @@ public class GenMorphoDB {
                     System.err.println("Missing value for --noun-start.");
                     return null;
                 }
-                options.nounStart = args[index + 1].toLowerCase();
+                options.nounStart = args[index + 1];
                 index += 2;
                 continue;
             }
@@ -399,7 +417,7 @@ public class GenMorphoDB {
                     System.err.println("Missing value for --noun-end.");
                     return null;
                 }
-                options.nounEnd = args[index + 1].toLowerCase();
+                options.nounEnd = args[index + 1];
                 index += 2;
                 continue;
             }
@@ -565,7 +583,7 @@ public class GenMorphoDB {
         GenUtils.setLLMModel(options.model);
         GenUtils.setLLMBaseUrl(options.baseUrl);
         GenUtils.setLLMServiceTier(options.serviceTier);
-        GenUtils.setOpenRouterProviderPreferred(options.orProviderPreferred);
+        GenUtils.setOpenRouterProviderOrder(options.orProviderOrder);
         boolean cheapPromptMode = options.cheapPromptMode != null
                 ? options.cheapPromptMode
                 : !"ollama".equals(options.provider);
@@ -606,15 +624,30 @@ public class GenMorphoDB {
             System.out.println("Ignoring --service-tier for provider: " + options.provider +
                     " (only applied when --provider openai).");
         }
-        if ("openrouter".equals(options.provider) && options.orProviderPreferred != null) {
-            System.out.println("Using OpenRouter preferred provider: " + options.orProviderPreferred);
-        } else if (options.orProviderPreferred != null) {
-            System.out.println("Ignoring --or-provider-preferred for provider: " + options.provider +
+        if ("openrouter".equals(options.provider) && !options.orProviderOrder.isEmpty()) {
+            System.out.println("Using OpenRouter provider order: " + String.join(", ", options.orProviderOrder));
+        } else if (options.openRouterProviderOptionSet) {
+            System.out.println("Ignoring OpenRouter provider order for provider: " + options.provider +
                     " (only applied when --provider openrouter).");
         }
         System.out.println("Using cheap prompt mode: " + GenUtils.isCheapPromptMode());
         System.out.println("Using verbose logging: " + GenMorphoUtils.debug);
         System.out.println("MorphoDB model directory: " + GenUtils.getMorphoModelDirectoryName());
+    }
+
+    private static List<String> parseOpenRouterProviderOrder(String value) {
+
+        List<String> providers = new ArrayList<>();
+        if (value == null || value.trim().isEmpty()) {
+            return providers;
+        }
+        for (String token : value.split(",")) {
+            String trimmed = token == null ? "" : token.trim();
+            if (!trimmed.isEmpty()) {
+                providers.add(trimmed);
+            }
+        }
+        return providers;
     }
 
     
@@ -1133,6 +1166,7 @@ public class GenMorphoDB {
         int lemmaAddedRows;
         int droppedMissingLemmaRows;
         int rescuedRows;
+        int jsonishExtractedRows;
         int refusedRows;
         int garbledRows;
         int conjugationCompleteRows;
@@ -1149,6 +1183,7 @@ public class GenMorphoDB {
             lemmaAddedRows += other.lemmaAddedRows;
             droppedMissingLemmaRows += other.droppedMissingLemmaRows;
             rescuedRows += other.rescuedRows;
+            jsonishExtractedRows += other.jsonishExtractedRows;
             refusedRows += other.refusedRows;
             garbledRows += other.garbledRows;
             conjugationCompleteRows += other.conjugationCompleteRows;
@@ -1209,11 +1244,8 @@ public class GenMorphoDB {
             "noun/Countability.txt",
             "noun/Humanness.txt",
             "noun/NounAgentivity.txt",
-            "noun/CollectiveNouns.txt",
-            "verb/VerbValence.txt",
             "verb/VerbReflexive.txt",
             "verb/VerbCausativity.txt",
-            "verb/VerbAchievementProcess.txt",
             "verb/VerbReciprocal.txt",
             "adjective/AdjectiveSemanticClasses.txt",
             "adverb/AdverbSemanticClasses.txt"
@@ -1333,9 +1365,8 @@ public class GenMorphoDB {
                     if (recovery != null) {
                         node = recovery.node;
                         rescuedMalformedLine = true;
-                        if (RECOVERY_METHOD_REQUIRED_FIELDS_ONLY.equals(recovery.method)) {
-                            writeRequiredFieldRecoveryAudit(requiredFieldRecoveryAuditWriter, fileSpec, line, node);
-                        }
+                        noteCompactRecoveryMethod(stats, recovery.method);
+                        writeCompactRecoveryAudit(requiredFieldRecoveryAuditWriter, fileSpec, line, recovery.method, node);
                     }
                 }
                 if (node == null) {
@@ -1411,9 +1442,8 @@ public class GenMorphoDB {
                                 node.path("lemma").asText("").trim(),
                                 node.path(fileSpec.sourceFieldName).asText("").trim());
                         if (recovery != null) {
-                            if (RECOVERY_METHOD_REQUIRED_FIELDS_ONLY.equals(recovery.method)) {
-                                writeRequiredFieldRecoveryAudit(requiredFieldRecoveryAuditWriter, fileSpec, rawResp, recovery.node);
-                            }
+                            noteCompactRecoveryMethod(stats, recovery.method);
+                            writeCompactRecoveryAudit(requiredFieldRecoveryAuditWriter, fileSpec, rawResp, recovery.method, recovery.node);
                             writer.write(GenMorphoUtils.serializeJsonLine(recovery.node));
                             writer.newLine();
                             stats.rescuedRows++;
@@ -1468,7 +1498,7 @@ public class GenMorphoDB {
         if (fileSpec.requiresCompleteConjugation) {
             int conjugationErrorRows = computeConjugationErrorRows(stats);
             fileSummary = String.format(
-                    "compact: %-30s lines=%d stripped=%d dropped=%d complete=%d completePct=%s partial=%d partialPct=%s errors=%d errorPct=%s (existing=%d malformed->error=%d rescued=%d refused=%d garbled=%d)",
+                    "compact: %-30s lines=%d stripped=%d dropped=%d complete=%d completePct=%s partial=%d partialPct=%s errors=%d errorPct=%s (existing=%d malformed->error=%d rescued=%d%s refused=%d garbled=%d)",
                     filePath.getFileName(),
                     stats.totalLines,
                     stats.strippedFieldRows,
@@ -1482,10 +1512,11 @@ public class GenMorphoDB {
                     stats.existingErrorRows,
                     stats.malformedConvertedRows,
                     stats.rescuedRows,
+                    stats.jsonishExtractedRows > 0 ? " jsonish=" + stats.jsonishExtractedRows : "",
                     stats.refusedRows,
                     stats.garbledRows);
         } else {
-            fileSummary = String.format("compact: %-30s lines=%d stripped=%d dropped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d rescued=%d refused=%d garbled=%d)",
+            fileSummary = String.format("compact: %-30s lines=%d stripped=%d dropped=%d errors=%d errorPct=%s (existing=%d malformed->error=%d rescued=%d%s refused=%d garbled=%d)",
                     filePath.getFileName(),
                     stats.totalLines,
                     stats.strippedFieldRows,
@@ -1495,6 +1526,7 @@ public class GenMorphoDB {
                     stats.existingErrorRows,
                     stats.malformedConvertedRows,
                     stats.rescuedRows,
+                    stats.jsonishExtractedRows > 0 ? " jsonish=" + stats.jsonishExtractedRows : "",
                     stats.refusedRows,
                     stats.garbledRows);
         }
@@ -1509,8 +1541,7 @@ public class GenMorphoDB {
                                                                  String fallbackLemma,
                                                                  String fallbackSourceValue) {
 
-        CompactRecoveryResult parsedRecovery = tryRecoverCompactJsonObject(text);
-        if (parsedRecovery != null) {
+        for (CompactRecoveryResult parsedRecovery : collectCompactJsonRecoveryCandidates(text)) {
             com.fasterxml.jackson.databind.node.ObjectNode finalized = finalizeRecoveredCompactNode(
                     fileSpec,
                     parsedRecovery.node,
@@ -1535,49 +1566,124 @@ public class GenMorphoDB {
         return null;
     }
 
-    private static CompactRecoveryResult tryRecoverCompactJsonObject(String text) {
+    private static List<CompactRecoveryResult> collectCompactJsonRecoveryCandidates(String text) {
 
+        List<CompactRecoveryResult> candidates = new ArrayList<>();
         if (text == null) {
-            return null;
+            return candidates;
         }
+        Set<String> seen = new HashSet<>();
         String normalized = GenMorphoUtils.fixInvalidJsonEscapes(
                 GenMorphoUtils.stripMarkdownFences(text.trim()));
-        com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(normalized);
-        if (node != null) {
-            return new CompactRecoveryResult(node, "json_object");
-        }
+        addParsedCompactRecoveryCandidate(candidates, seen, normalized, "json_object");
         String extracted = GenUtils.extractFirstJsonObject(normalized);
-        if (extracted == null || extracted.trim().isEmpty()) {
-            return null;
-        }
-        com.fasterxml.jackson.databind.node.ObjectNode parsed = GenMorphoUtils.parseJsonObjectLine(extracted);
-        if (parsed != null) {
-            return new CompactRecoveryResult(parsed, "extracted_json_object");
-        }
-        String repaired = repairOverEscapedQuotedStrings(extracted);
-        if (!repaired.equals(extracted)) {
-            com.fasterxml.jackson.databind.node.ObjectNode repairedNode = GenMorphoUtils.parseJsonObjectLine(repaired);
-            if (repairedNode != null) {
-                return new CompactRecoveryResult(repairedNode, "repaired_over_escaped_quotes");
+        if (extracted != null && !extracted.trim().isEmpty()) {
+            addParsedCompactRecoveryCandidate(candidates, seen, extracted, "extracted_json_object");
+            String repaired = repairOverEscapedQuotedStrings(extracted);
+            if (!repaired.equals(extracted)) {
+                addParsedCompactRecoveryCandidate(candidates, seen, repaired, "repaired_over_escaped_quotes");
+            }
+            String pruned = pruneDroppedFieldsFromExtractedObject(extracted);
+            if (pruned != null && !pruned.equals(extracted)) {
+                addParsedCompactRecoveryCandidate(candidates, seen, pruned, RECOVERY_METHOD_DROPPED_FIELD_PRUNED);
+                String repairedPruned = repairOverEscapedQuotedStrings(pruned);
+                if (!repairedPruned.equals(pruned)) {
+                    addParsedCompactRecoveryCandidate(candidates, seen, repairedPruned, RECOVERY_METHOD_DROPPED_FIELD_PRUNED);
+                }
             }
         }
-        String pruned = pruneDroppedFieldsFromExtractedObject(extracted);
-        if (pruned == null || pruned.equals(extracted)) {
+
+        String finalTail = extractChatTemplateFinalTail(normalized);
+        if (finalTail != null) {
+            addParsedCompactRecoveryCandidate(candidates, seen, finalTail, RECOVERY_METHOD_JSONISH_EXTRACTED);
+        }
+
+        List<String> extractedObjects = extractBalancedTopLevelJsonObjects(normalized);
+        for (int i = extractedObjects.size() - 1; i >= 0; i--) {
+            addParsedCompactRecoveryCandidate(candidates, seen, extractedObjects.get(i), RECOVERY_METHOD_JSONISH_EXTRACTED);
+        }
+        return candidates;
+    }
+
+    private static void addParsedCompactRecoveryCandidate(List<CompactRecoveryResult> candidates,
+                                                          Set<String> seen,
+                                                          String candidateText,
+                                                          String method) {
+
+        if (candidates == null || seen == null || candidateText == null) {
+            return;
+        }
+        String trimmed = candidateText.trim();
+        if (trimmed.isEmpty() || !seen.add(trimmed)) {
+            return;
+        }
+        com.fasterxml.jackson.databind.node.ObjectNode node = GenMorphoUtils.parseJsonObjectLine(trimmed);
+        if (node != null) {
+            candidates.add(new CompactRecoveryResult(node, method));
+        }
+    }
+
+    private static String extractChatTemplateFinalTail(String text) {
+
+        if (text == null || text.trim().isEmpty()) {
             return null;
         }
-        com.fasterxml.jackson.databind.node.ObjectNode prunedNode = GenMorphoUtils.parseJsonObjectLine(pruned);
-        if (prunedNode != null) {
-            return new CompactRecoveryResult(prunedNode, RECOVERY_METHOD_DROPPED_FIELD_PRUNED);
-        }
-        String repairedPruned = repairOverEscapedQuotedStrings(pruned);
-        if (repairedPruned.equals(pruned)) {
+        int markerIndex = text.lastIndexOf("<|channel|>final<|message|>");
+        if (markerIndex < 0) {
             return null;
         }
-        prunedNode = GenMorphoUtils.parseJsonObjectLine(repairedPruned);
-        if (prunedNode != null) {
-            return new CompactRecoveryResult(prunedNode, RECOVERY_METHOD_DROPPED_FIELD_PRUNED);
+        String tail = text.substring(markerIndex + "<|channel|>final<|message|>".length()).trim();
+        if (tail.startsWith("{")) {
+            return tail;
         }
-        return null;
+        int objectStart = tail.indexOf('{');
+        return objectStart >= 0 ? tail.substring(objectStart).trim() : null;
+    }
+
+    private static List<String> extractBalancedTopLevelJsonObjects(String text) {
+
+        List<String> objects = new ArrayList<>();
+        if (text == null || text.isEmpty()) {
+            return objects;
+        }
+        boolean inString = false;
+        boolean escaping = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                } else if (c == '\\') {
+                    escaping = true;
+                } else if (c == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (c == '"') {
+                inString = true;
+                continue;
+            }
+            if (c != '{') {
+                continue;
+            }
+            int end = findMatchingBracketEnd(text, i, '{', '}');
+            if (end > i) {
+                objects.add(text.substring(i, end));
+                i = end - 1;
+            }
+        }
+        return objects;
+    }
+
+    private static void noteCompactRecoveryMethod(CompactStats stats, String method) {
+
+        if (stats == null || method == null) {
+            return;
+        }
+        if (RECOVERY_METHOD_JSONISH_EXTRACTED.equals(method)) {
+            stats.jsonishExtractedRows++;
+        }
     }
 
     private static String repairOverEscapedQuotedStrings(String text) {
@@ -2135,19 +2241,24 @@ public class GenMorphoDB {
         return recoveredLemma == null ? "" : recoveredLemma.trim();
     }
 
-    private static void writeRequiredFieldRecoveryAudit(BufferedWriter auditWriter,
-                                                        MorphoFileSpec fileSpec,
-                                                        String rawResponse,
-                                                        com.fasterxml.jackson.databind.node.ObjectNode recoveredNode) {
+    private static void writeCompactRecoveryAudit(BufferedWriter auditWriter,
+                                                  MorphoFileSpec fileSpec,
+                                                  String rawResponse,
+                                                  String recoveryMethod,
+                                                  com.fasterxml.jackson.databind.node.ObjectNode recoveredNode) {
 
-        if (auditWriter == null || fileSpec == null || recoveredNode == null) {
+        if (auditWriter == null || fileSpec == null || recoveredNode == null || recoveryMethod == null) {
+            return;
+        }
+        if (!RECOVERY_METHOD_REQUIRED_FIELDS_ONLY.equals(recoveryMethod)
+                && !RECOVERY_METHOD_JSONISH_EXTRACTED.equals(recoveryMethod)) {
             return;
         }
         com.fasterxml.jackson.databind.node.ObjectNode auditNode = GenMorphoUtils.JSON_MAPPER.createObjectNode();
         auditNode.put("file", fileSpec.path == null ? "" : fileSpec.path.toString());
         auditNode.put("synsetId", recoveredNode.path("synsetId").asText(""));
         auditNode.put("lemma", recoveredNode.path("lemma").asText(""));
-        auditNode.put("recoveryMethod", RECOVERY_METHOD_REQUIRED_FIELDS_ONLY);
+        auditNode.put("recoveryMethod", recoveryMethod);
         com.fasterxml.jackson.databind.node.ArrayNode requiredFields = auditNode.putArray("requiredFields");
         for (String fieldName : fileSpec.requiredPayloadFields) {
             requiredFields.add(fieldName);
@@ -2158,7 +2269,7 @@ public class GenMorphoDB {
             auditWriter.write(GenMorphoUtils.serializeJsonLine(auditNode));
             auditWriter.newLine();
         } catch (IOException e) {
-            System.out.println("Failed to write compact required-field recovery audit entry: " + e.getMessage());
+            System.out.println("Failed to write compact recovery audit entry: " + e.getMessage());
         }
     }
 
@@ -2734,6 +2845,7 @@ public class GenMorphoDB {
         }
 
         List<String> modelNames = new ArrayList<>(overallPctsByModel.keySet());
+        modelNames.removeIf(modelName -> ModelMetadata.fromDirName(modelName).isEnsemble());
         modelNames.sort(GenMorphoDB::compareModelsForLatexTable);
 
         summaryWriter.newLine();
@@ -2741,29 +2853,29 @@ public class GenMorphoDB {
         summaryWriter.newLine();
         summaryWriter.write("\\centering");
         summaryWriter.newLine();
-        summaryWriter.write("\\scriptsize");
+        summaryWriter.write("\\small");
         summaryWriter.newLine();
-        summaryWriter.write("\\caption{Classification error percentage by model and feature}");
+        summaryWriter.write("\\caption{Classification response syntax error percentage by model and feature}");
         summaryWriter.newLine();
         summaryWriter.write("\\label{tab:classification_error_rates}");
         summaryWriter.newLine();
         summaryWriter.write("\\resizebox{\\textwidth}{!}{%");
         summaryWriter.newLine();
-        summaryWriter.write("\\begin{tabular}{lrrrrr|rrrrr|r|r|r}");
+        summaryWriter.write("\\begin{tabular}{lrrrr|rrr|r|r}");
         summaryWriter.newLine();
         summaryWriter.write("\\toprule");
         summaryWriter.newLine();
-        summaryWriter.write("& \\multicolumn{5}{c}{Nouns} ");
+        summaryWriter.write("& \\multicolumn{4}{c}{Nouns} ");
         summaryWriter.newLine();
-        summaryWriter.write("& \\multicolumn{5}{c}{Verbs} ");
+        summaryWriter.write("& \\multicolumn{3}{c}{Verbs} ");
         summaryWriter.newLine();
-        summaryWriter.write("& \\multicolumn{1}{c}{Adjectives} ");
+        summaryWriter.write("& \\multicolumn{1}{c}{Adj.} ");
         summaryWriter.newLine();
-        summaryWriter.write("& \\multicolumn{1}{c}{Adverbs} ");
+        summaryWriter.write("& \\multicolumn{1}{c}{Adv.} ");
         summaryWriter.newLine();
-        summaryWriter.write("& \\multicolumn{1}{c}{Overall} \\\\");
+        summaryWriter.write("\\\\");
         summaryWriter.newLine();
-        summaryWriter.write("\\cmidrule(lr){2-6} \\cmidrule(lr){7-11} \\cmidrule(lr){12-12} \\cmidrule(lr){13-13} \\cmidrule(lr){14-14}");
+        summaryWriter.write("\\cmidrule(lr){2-5} \\cmidrule(lr){6-8} \\cmidrule(lr){9-9} \\cmidrule(lr){10-10}");
         summaryWriter.newLine();
         summaryWriter.write("Model");
         summaryWriter.newLine();
@@ -2775,15 +2887,9 @@ public class GenMorphoDB {
         summaryWriter.newLine();
         summaryWriter.write("& \\rot{Agentivity}");
         summaryWriter.newLine();
-        summaryWriter.write("& \\rot{Collective Nouns}");
-        summaryWriter.newLine();
-        summaryWriter.write("& \\rot{Valence}");
-        summaryWriter.newLine();
         summaryWriter.write("& \\rot{Reflexive}");
         summaryWriter.newLine();
         summaryWriter.write("& \\rot{Causativity}");
-        summaryWriter.newLine();
-        summaryWriter.write("& \\rot{Achievement Process}");
         summaryWriter.newLine();
         summaryWriter.write("& \\rot{Reciprocal}");
         summaryWriter.newLine();
@@ -2791,23 +2897,29 @@ public class GenMorphoDB {
         summaryWriter.newLine();
         summaryWriter.write("& \\rot{Semantic Classes}");
         summaryWriter.newLine();
-        summaryWriter.write("& \\rot{Error \\%} \\\\");
+        summaryWriter.write("\\\\");
         summaryWriter.newLine();
         summaryWriter.write("\\midrule");
         summaryWriter.newLine();
         summaryWriter.newLine();
 
+        ModelMetadata previous = null;
         for (String modelName : modelNames) {
-            Map<String, Double> featurePcts = featurePctsByModel.get(modelName);
-            summaryWriter.write("\\texttt{" + escapeLatex(modelName) + "}");
-            summaryWriter.newLine();
-            for (String columnPath : LATEX_CLASSIFICATION_COLUMN_PATHS) {
-                summaryWriter.write("& " + formatLatexPct(featurePcts == null ? null : featurePcts.get(columnPath)));
+            ModelMetadata metadata = ModelMetadata.fromDirName(modelName);
+            if (ModelMetadata.shouldInsertLatexSeparator(previous, metadata)) {
+                summaryWriter.write("\\midrule");
                 summaryWriter.newLine();
             }
-            summaryWriter.write("& " + formatLatexPct(overallPctsByModel.get(modelName)) + " \\\\");
+            Map<String, Double> featurePcts = featurePctsByModel.get(modelName);
+            StringBuilder row = new StringBuilder("\\texttt{" + escapeLatex(metadata.getLatexDisplayName()) + "}");
+            for (String columnPath : LATEX_CLASSIFICATION_COLUMN_PATHS) {
+                row.append(" & ").append(formatLatexPct(featurePcts == null ? null : featurePcts.get(columnPath)));
+            }
+            row.append(" \\\\");
+            summaryWriter.write(row.toString());
             summaryWriter.newLine();
             summaryWriter.newLine();
+            previous = metadata;
         }
 
         summaryWriter.write("\\bottomrule");
@@ -2832,6 +2944,7 @@ public class GenMorphoDB {
         }
 
         List<String> modelNames = new ArrayList<>(modelNameSet);
+        modelNames.removeIf(modelName -> ModelMetadata.fromDirName(modelName).isEnsemble());
         modelNames.sort(GenMorphoDB::compareModelsForLatexTable);
 
         summaryWriter.newLine();
@@ -2839,13 +2952,9 @@ public class GenMorphoDB {
         summaryWriter.newLine();
         summaryWriter.write("\\centering");
         summaryWriter.newLine();
-        summaryWriter.write("\\scriptsize");
-        summaryWriter.newLine();
-        summaryWriter.write("\\caption{Generation percentages by model and feature}");
+        summaryWriter.write("\\caption{Generation response syntax error percentage by model and feature}");
         summaryWriter.newLine();
         summaryWriter.write("\\label{tab:generation_rates}");
-        summaryWriter.newLine();
-        summaryWriter.write("\\resizebox{\\textwidth}{!}{%");
         summaryWriter.newLine();
         summaryWriter.write("\\begin{tabular}{lrrrr}");
         summaryWriter.newLine();
@@ -2855,81 +2964,45 @@ public class GenMorphoDB {
         summaryWriter.newLine();
         summaryWriter.write("& \\rot{Plurals Error \\%}");
         summaryWriter.newLine();
-        summaryWriter.write("& \\rot{Conjugations Complete \\%}");
+        summaryWriter.write("& \\rot{Conjugations Error \\%}");
         summaryWriter.newLine();
         summaryWriter.write("& \\rot{Conjugations Partial \\%}");
         summaryWriter.newLine();
-        summaryWriter.write("& \\rot{Conjugations Error \\%} \\\\");
+        summaryWriter.write("& \\rot{Conjugations Complete \\%} \\\\");
         summaryWriter.newLine();
         summaryWriter.write("\\midrule");
         summaryWriter.newLine();
         summaryWriter.newLine();
 
+        ModelMetadata previous = null;
         for (String modelName : modelNames) {
-            summaryWriter.write("\\texttt{" + escapeLatex(modelName) + "}");
+            ModelMetadata metadata = ModelMetadata.fromDirName(modelName);
+            if (ModelMetadata.shouldInsertLatexSeparator(previous, metadata)) {
+                summaryWriter.write("\\midrule");
+                summaryWriter.newLine();
+            }
+            StringBuilder row = new StringBuilder("\\texttt{" + escapeLatex(metadata.getLatexDisplayName()) + "}");
+            row.append(" & ").append(formatLatexPct(pluralErrorPctsByModel.get(modelName)));
+            row.append(" & ").append(formatLatexPct(conjugationErrorPctsByModel.get(modelName)));
+            row.append(" & ").append(formatLatexPct(conjugationPartialPctsByModel.get(modelName)));
+            row.append(" & ").append(formatLatexPct(conjugationCompletePctsByModel.get(modelName)));
+            row.append(" \\\\");
+            summaryWriter.write(row.toString());
             summaryWriter.newLine();
-            summaryWriter.write("& " + formatLatexPct(pluralErrorPctsByModel.get(modelName)));
             summaryWriter.newLine();
-            summaryWriter.write("& " + formatLatexPct(conjugationCompletePctsByModel.get(modelName)));
-            summaryWriter.newLine();
-            summaryWriter.write("& " + formatLatexPct(conjugationPartialPctsByModel.get(modelName)));
-            summaryWriter.newLine();
-            summaryWriter.write("& " + formatLatexPct(conjugationErrorPctsByModel.get(modelName)) + " \\\\");
-            summaryWriter.newLine();
-            summaryWriter.newLine();
+            previous = metadata;
         }
 
         summaryWriter.write("\\bottomrule");
         summaryWriter.newLine();
-        summaryWriter.write("\\end{tabular}%");
-        summaryWriter.newLine();
-        summaryWriter.write("}");
+        summaryWriter.write("\\end{tabular}");
         summaryWriter.newLine();
         summaryWriter.write("\\end{table*}");
         summaryWriter.newLine();
     }
 
     private static int compareModelsForLatexTable(String leftModel, String rightModel) {
-
-        ModelMetadata left = ModelMetadata.fromDirName(leftModel);
-        ModelMetadata right = ModelMetadata.fromDirName(rightModel);
-
-        double leftSize = left.getParameterBillions();
-        double rightSize = right.getParameterBillions();
-        boolean leftKnown = leftSize >= 0;
-        boolean rightKnown = rightSize >= 0;
-
-        if (leftKnown && rightKnown) {
-            int sizeCompare = Double.compare(leftSize, rightSize);
-            if (sizeCompare != 0) {
-                return sizeCompare;
-            }
-            return leftModel.compareTo(rightModel);
-        }
-        if (leftKnown != rightKnown) {
-            return leftKnown ? -1 : 1;
-        }
-
-        int frontierCompare = Integer.compare(frontierRankForLatex(leftModel), frontierRankForLatex(rightModel));
-        if (frontierCompare != 0) {
-            return frontierCompare;
-        }
-        return leftModel.compareTo(rightModel);
-    }
-
-    private static int frontierRankForLatex(String modelName) {
-
-        if (modelName == null) {
-            return Integer.MAX_VALUE;
-        }
-        String lower = modelName.toLowerCase(Locale.ROOT);
-        if (lower.startsWith("openai__gpt-5-nano")) {
-            return 0;
-        }
-        if (lower.startsWith("openai__gpt-5_2")) {
-            return 1;
-        }
-        return 100;
+        return ModelMetadata.compareForLatex(ModelMetadata.fromDirName(leftModel), ModelMetadata.fromDirName(rightModel));
     }
 
     private static String formatLatexPct(Double value) {

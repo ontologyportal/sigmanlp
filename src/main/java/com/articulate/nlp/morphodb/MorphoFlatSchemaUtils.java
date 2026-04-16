@@ -556,6 +556,32 @@ public final class MorphoFlatSchemaUtils {
         if (normalized.isEmpty()) {
             return "Unknown";
         }
+        if (normalized.matches("\\d+")) {
+            switch (normalized) {
+                case "1":
+                    return "Descriptive / Qualitative";
+                case "2":
+                    return "Evaluative";
+                case "3":
+                    return "Quantitative / Indefinite";
+                case "4":
+                    return "Numeral";
+                case "5":
+                    return "Demonstrative (Deictic)";
+                case "6":
+                    return "Possessive";
+                case "7":
+                    return "Interrogative";
+                case "8":
+                    return "Distributive";
+                case "9":
+                    return "Proper / Nominal";
+                case "10":
+                    return "Other";
+                default:
+                    return rawCategory.trim();
+            }
+        }
         String spacesNormalized = normalized.replace('-', ' ');
         if (spacesNormalized.contains("descriptive") || spacesNormalized.contains("qualitative")
                 || spacesNormalized.contains("quality") || spacesNormalized.contains("stative")) {
@@ -611,6 +637,54 @@ public final class MorphoFlatSchemaUtils {
         String normalized = rawCategory.trim().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty()) {
             return "Unknown";
+        }
+        if (normalized.matches("\\d+")) {
+            switch (normalized) {
+                case "1":
+                    return "Manner";
+                case "2":
+                    return "Place / Location";
+                case "3":
+                    return "Direction / Path";
+                case "4":
+                    return "Time";
+                case "5":
+                    return "Duration";
+                case "6":
+                    return "Frequency";
+                case "7":
+                    return "Sequence";
+                case "8":
+                    return "Degree / Intensifier";
+                case "9":
+                    return "Approximator / Scalar";
+                case "10":
+                    return "Measure / Multiplier";
+                case "11":
+                    return "Epistemic";
+                case "12":
+                    return "Evidential";
+                case "13":
+                    return "Attitudinal / Evaluative";
+                case "14":
+                    return "Style / Domain";
+                case "15":
+                    return "Focus (additive / restrictive / emphatic)";
+                case "16":
+                    return "Negation / Polarity";
+                case "17":
+                    return "Affirmative";
+                case "18":
+                    return "Connective / Linking";
+                case "19":
+                    return "Topic-management / Discourse";
+                case "20":
+                    return "Interrogative";
+                case "21":
+                    return "Relative";
+                default:
+                    return rawCategory.trim();
+            }
         }
         String spacesNormalized = normalized.replace('-', ' ');
         if (spacesNormalized.contains("manner") || spacesNormalized.contains("how")) {
