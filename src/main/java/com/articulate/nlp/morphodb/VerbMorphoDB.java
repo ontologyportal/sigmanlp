@@ -154,7 +154,7 @@ public class VerbMorphoDB {
                         if ((rawForm == null || rawForm.trim().isEmpty()) && forms.has("summary")) {
                             rawForm = forms.path("summary").asText("");
                         }
-                        String value = extractSurfaceForm(rawForm, normalizedPerson);
+                        String value = VerbConjugationUtils.normalizeVerbFormForIndex(rawForm, lemma, normalizedPerson);
                         if (value == null || value.isEmpty()) {
                             continue;
                         }
@@ -201,7 +201,7 @@ public class VerbMorphoDB {
         return key;
     }
 
-    private static String extractSurfaceForm(String rawForm, String personKey) {
+    static String extractSurfaceForm(String rawForm, String personKey) {
 
         if (rawForm == null) {
             return null;

@@ -42,13 +42,13 @@ public class UniMorphEvaluationRunner {
     }
 
     private static final List<CanonicalFeatureSpec> CANONICAL_REPORT_FEATURES = Arrays.asList(
-            new CanonicalFeatureSpec("singular_plural_pair_exact", "Singular plural pair", true),
-            new CanonicalFeatureSpec("infinitive_exact_match", "Infinitive", false),
-            new CanonicalFeatureSpec("present_3sg_exact_match", "Present 3sg", false),
-            new CanonicalFeatureSpec("simple_past_exact_match", "Simple past", false),
-            new CanonicalFeatureSpec("past_participle_exact_match", "Past participle", false),
-            new CanonicalFeatureSpec("gerund_exact_match", "Gerund", false),
-            new CanonicalFeatureSpec("all_parts_exact_match", "All parts", false)
+            new CanonicalFeatureSpec("singular_plural_pair_exact", "\\shortstack{Sg-Pl\\\\pair}", true),
+            new CanonicalFeatureSpec("infinitive_exact_match", "Inf.", false),
+            new CanonicalFeatureSpec("present_3sg_exact_match", "\\shortstack{Pres.\\\\3sg}", false),
+            new CanonicalFeatureSpec("simple_past_exact_match", "\\shortstack{S.\\\\past}", false),
+            new CanonicalFeatureSpec("past_participle_exact_match", "\\shortstack{P.\\\\part.}", false),
+            new CanonicalFeatureSpec("gerund_exact_match", "Ger.", false),
+            new CanonicalFeatureSpec("all_parts_exact_match", "\\shortstack{All\\\\parts}", false)
     );
 
     static class AgreementRow {
@@ -688,12 +688,8 @@ public class UniMorphEvaluationRunner {
         StringBuilder sb = new StringBuilder();
         sb.append("\\begin{table*}[t]\n");
         sb.append("\\centering\n");
-        sb.append("\\scriptsize\n");
-        sb.append("\\caption{Canonical-denominator UniMorph exact match percentages by model. Noun denominator ")
-                .append(canonicalNounDenominatorCount)
-                .append(". Verb denominator ")
-                .append(canonicalVerbDenominatorCount)
-                .append(".}\n");
+        sb.append("\\small\n");
+        sb.append("\\caption{UniMorph exact match percentages by model.}\n");
         sb.append("\\label{tab:unimorph-canonical-agreement}\n");
         sb.append("\\resizebox{\\textwidth}{!}{%\n");
         sb.append("\\begin{tabular}{lrrrrrrr}\n");
@@ -704,14 +700,21 @@ public class UniMorphEvaluationRunner {
         }
         sb.append(" \\\\\n");
         sb.append("\\midrule\n");
-        for (ModelMetadata model : models) {
+        List<ModelMetadata> latexModels = new ArrayList<>(models);
+        latexModels.sort(ModelMetadata::compareForLatex);
+        ModelMetadata previous = null;
+        for (ModelMetadata model : latexModels) {
+            if (ModelMetadata.shouldInsertLatexSeparator(previous, model)) {
+                sb.append("\\midrule\n");
+            }
             String modelName = model.getName();
             Map<String, Double> modelRates = ratesByModel.getOrDefault(modelName, Collections.<String, Double>emptyMap());
-            sb.append("\\texttt{").append(escapeLatex(modelName)).append("}");
+            sb.append("\\texttt{").append(escapeLatex(latexDisplayNameForTable(model))).append("}");
             for (CanonicalFeatureSpec feature : CANONICAL_REPORT_FEATURES) {
                 sb.append(" & ").append(formatLatexPercent(modelRates.get(canonicalMetricName(feature.baseMetric))));
             }
             sb.append(" \\\\\n");
+            previous = model;
         }
         sb.append("\\bottomrule\n");
         sb.append("\\end{tabular}%\n");
@@ -749,7 +752,14 @@ public class UniMorphEvaluationRunner {
         if (rate == null || Double.isNaN(rate) || Double.isInfinite(rate)) {
             return "--";
         }
-        return String.format(Locale.ROOT, "%.2f", rate * 100.0);
+        return String.format(Locale.ROOT, "%.1f", rate * 100.0);
+    }
+
+    private static String latexDisplayNameForTable(ModelMetadata model) {
+        if (model != null && "ensemble_consumer".equals(model.getDirectoryName())) {
+            return "ens. consumer";
+        }
+        return model == null ? "" : model.getLatexDisplayName();
     }
 
     private static String escapeLatex(String value) {

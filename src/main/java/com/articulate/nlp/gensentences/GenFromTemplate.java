@@ -96,17 +96,20 @@ public class GenFromTemplate {
         private final Map<Integer, String> englishSlotValues;
         private final Map<Integer, String> englishVerbValues;
         private final Map<Integer, InstanceValue> instanceValues;
+        private final Map<Integer, InstanceValue> verbInstanceValues;
         private final boolean logicNegate;
 
         private SlotValues(Map<Integer, String> logicSlotValues,
                            Map<Integer, String> englishSlotValues,
                            Map<Integer, String> englishVerbValues,
                            Map<Integer, InstanceValue> instanceValues,
+                           Map<Integer, InstanceValue> verbInstanceValues,
                            boolean logicNegate) {
             this.logicSlotValues = logicSlotValues;
             this.englishSlotValues = englishSlotValues;
             this.englishVerbValues = englishVerbValues;
             this.instanceValues = instanceValues;
+            this.verbInstanceValues = verbInstanceValues;
             this.logicNegate = logicNegate;
         }
     }
@@ -567,22 +570,42 @@ public class GenFromTemplate {
             String englishValue;
             if (slot.getType() == Templates.Slot.TermSelectionType.POSITIONAL_INSTANCE) {
                 // Positional attributes are not entity instances: no article, no collection.
-                // Append the dependent preposition (e.g. "adjacent" → "adjacent to").
-                String prep = morphoDB.getPositionalPreposition(termFormat);
-                if (prep == null) {
-                    if (termFormat.contains(" ")) {
-                        // Term format is already multi-word (e.g. "east of", "surrounded by");
-                        // the preposition is embedded — use as-is.
-                        prep = "";
+                if (!slot.isIncludePrep()) {
+                    // The template frame already supplies the connecting preposition (e.g. "from %3").
+                    // Strip any embedded preposition from the termFormat so it isn't duplicated.
+                    // e.g. "upstream from" → "upstream", "north of" → "north"
+                    String firstWord = termFormat.split("\\s+")[0];
+                    String embeddedPrep = morphoDB.getPositionalPreposition(firstWord);
+                    if (embeddedPrep != null && !embeddedPrep.isEmpty()
+                            && termFormat.endsWith(" " + embeddedPrep)) {
+                        englishValue = firstWord;
                     } else {
-                        System.out.println("Warning: positional preposition for '" + termFormat + "' not found in PrepositionMorphoDB; using no connecting word.");
+                        englishValue = termFormat;
+                    }
+                    // Prepend "the" for terms that behave as nouns in source PPs
+                    // (e.g. "north" → "the north"; adverbs like "upstream" get no article).
+                    String positionalArticle = morphoDB.getPositionalArticle(englishValue);
+                    if (!positionalArticle.isEmpty()) {
+                        englishValue = positionalArticle + " " + englishValue;
+                    }
+                } else {
+                    // Append the dependent preposition (e.g. "adjacent" → "adjacent to").
+                    String prep = morphoDB.getPositionalPreposition(termFormat);
+                    if (prep == null) {
+                        if (termFormat.contains(" ")) {
+                            // Term format is already multi-word (e.g. "east of", "surrounded by");
+                            // the preposition is embedded — use as-is.
+                            prep = "";
+                        } else {
+                            System.out.println("Warning: positional preposition for '" + termFormat + "' not found in PrepositionMorphoDB; using no connecting word.");
+                            prep = "";
+                        }
+                    } else if (termFormat.endsWith(" " + prep)) {
+                        // Preposition already present at the end of the term format — don't duplicate.
                         prep = "";
                     }
-                } else if (termFormat.endsWith(" " + prep)) {
-                    // Preposition already present at the end of the term format — don't duplicate.
-                    prep = "";
+                    englishValue = !prep.isEmpty() ? termFormat + " " + prep : termFormat;
                 }
-                englishValue = !prep.isEmpty() ? termFormat + " " + prep : termFormat;
             } else {
                 InstanceValue iv = resolveInstanceValue(slot, slotNum, termFormat, term, 0);
                 // Convert collection → natural-language list when list_freq fires.
@@ -663,7 +686,16 @@ public class GenFromTemplate {
                     asQuestion);
             englishVerbValues.put(verbSlotNum, verbHelper.realizeVerbPhrase(features));
         }
-        return new SlotValues(logicSlotValues, englishSlotValues, englishVerbValues, instanceValues, logicNegate);
+        Map<Integer, InstanceValue> verbInstanceValues = new HashMap<>();
+        for (int vn = 1; vn <= verbSlotCount; vn++) {
+            Templates.VerbSlot vs = template.getVerbSlots()[vn - 1];
+            String varName = (vs.getVariable() != null && !vs.getVariable().isEmpty())
+                    ? vs.getVariable() : ("?V" + vn);
+            boolean definite = vs.getDefiniteFreq() >= 1.0
+                    || (vs.getDefiniteFreq() > 0.0 && Math.random() < vs.getDefiniteFreq());
+            verbInstanceValues.put(vn, new InstanceValue(definite, varName, false, 1, null, null, null, null, null, null));
+        }
+        return new SlotValues(logicSlotValues, englishSlotValues, englishVerbValues, instanceValues, verbInstanceValues, logicNegate);
     }
 
     /***************************************************************
@@ -766,6 +798,25 @@ public class GenFromTemplate {
         return result.toString();
     }
 
+    /***************************************************************
+     * Replaces all %?vN tokens in a string with the resolved
+     * variable name for that verb slot.
+     ***************************************************************/
+    private static String replaceVerbInstanceSlots(String input, Map<Integer, InstanceValue> verbInstanceValues) {
+
+        Pattern pattern = Pattern.compile("%\\?v(\\d+)");
+        Matcher matcher = pattern.matcher(input);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            int slotNum = Integer.parseInt(matcher.group(1));
+            InstanceValue iv = verbInstanceValues.get(slotNum);
+            String value = iv != null ? iv.name : matcher.group(0);
+            matcher.appendReplacement(result, Matcher.quoteReplacement(value));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
     private static class LogicParts {
         private final String preExists;
         private final String body;
@@ -858,8 +909,25 @@ public class GenFromTemplate {
         List<String> existsVars = new ArrayList<>();
         boolean hasTenseClause = false;
         Pattern instancePattern = Pattern.compile("^\\(instance %\\?(\\d+)\\s+.*\\)$");
+        Pattern verbInstancePattern = Pattern.compile("^\\(instance %\\?v(\\d+)\\s+(\\S+)\\)$");
+        Pattern verbSlotRefPattern = Pattern.compile("%\\?v(\\d+)");
         for (String clause : template.getLogicTemplate().getClauses()) {
             if (clause.contains("%t{")) hasTenseClause = true;
+            Matcher vm = verbInstancePattern.matcher(clause.trim());
+            if (vm.matches()) {
+                int verbSlotNum = Integer.parseInt(vm.group(1));
+                String sumoClass = vm.group(2);
+                InstanceValue iv = slotValues.verbInstanceValues.get(verbSlotNum);
+                String varName = iv != null ? iv.name : ("?V" + verbSlotNum);
+                String instClause = "(instance " + varName + " " + sumoClass + ")";
+                if (iv != null && iv.definite) {
+                    preExistsClauses.add(instClause);
+                } else {
+                    bodyClauses.add(instClause);
+                    existsVars.add(varName);
+                }
+                continue;
+            }
             Matcher m = instancePattern.matcher(clause.trim());
             if (m.matches()) {
                 int slotNum = Integer.parseInt(m.group(1));
@@ -931,10 +999,21 @@ public class GenFromTemplate {
                     }
                 }
             } else {
+                // Collect any %?vN references in this clause so we can add their vars to existsVars.
+                Matcher verbRefMatcher = verbSlotRefPattern.matcher(clause);
+                while (verbRefMatcher.find()) {
+                    int vn = Integer.parseInt(verbRefMatcher.group(1));
+                    InstanceValue viv = slotValues.verbInstanceValues.get(vn);
+                    String verbVarName = viv != null ? viv.name : ("?V" + vn);
+                    if (!existsVars.contains(verbVarName) && (viv == null || !viv.definite)) {
+                        existsVars.add(verbVarName);
+                    }
+                }
                 List<Integer> listSlotNums = findListSlotRefs(clause, slotValues.instanceValues);
                 if (listSlotNums.isEmpty()) {
                     String resolved = replaceInstanceSlots(clause, slotValues.instanceValues);
                     resolved = replaceSlots(resolved, slotValues.logicSlotValues);
+                    resolved = replaceVerbInstanceSlots(resolved, slotValues.verbInstanceValues);
                     bodyClauses.add(resolved);
                 } else {
                     // Expand clause once per combination of list-slot items.
@@ -944,6 +1023,7 @@ public class GenFromTemplate {
                         merged.putAll(combo);
                         String resolved = replaceInstanceSlots(clause, merged);
                         resolved = replaceSlots(resolved, slotValues.logicSlotValues);
+                        resolved = replaceVerbInstanceSlots(resolved, slotValues.verbInstanceValues);
                         bodyClauses.add(resolved);
                     }
                 }

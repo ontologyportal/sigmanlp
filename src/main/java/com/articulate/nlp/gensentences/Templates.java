@@ -337,12 +337,22 @@ public class Templates {
         private final List<String> exclude;
         private final double listFreq;
         private final double listProbDropoff;
+        private final boolean includePrep;
 
         public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type,
                     boolean countablePossible, double countableFreq,
                     String variable, double definiteFreq, double countProbDropoff,
                     double namedHumanFreq, List<String> exclude,
                     double listFreq, double listProbDropoff) {
+            this(sumoTerms, type, countablePossible, countableFreq, variable, definiteFreq,
+                    countProbDropoff, namedHumanFreq, exclude, listFreq, listProbDropoff, true);
+        }
+
+        public Slot(List<WeightedSumoTerm> sumoTerms, TermSelectionType type,
+                    boolean countablePossible, double countableFreq,
+                    String variable, double definiteFreq, double countProbDropoff,
+                    double namedHumanFreq, List<String> exclude,
+                    double listFreq, double listProbDropoff, boolean includePrep) {
             this.sumoTerms = sumoTerms;
             this.type = type;
             this.countablePossible = countablePossible;
@@ -354,6 +364,7 @@ public class Templates {
             this.exclude = exclude;
             this.listFreq = listFreq;
             this.listProbDropoff = listProbDropoff;
+            this.includePrep = includePrep;
         }
 
         public List<WeightedSumoTerm> getSumoTerms() {
@@ -404,6 +415,16 @@ public class Templates {
             return listProbDropoff;
         }
 
+        /***************************************************************
+         * When false, the positional slot's dependent preposition is
+         * suppressed because the template frame already provides it
+         * (e.g. "from %3" where %3 should resolve to "upstream", not
+         * "upstream from").
+         ***************************************************************/
+        public boolean isIncludePrep() {
+            return includePrep;
+        }
+
     }
 
     public static class WeightedSumoTerm {
@@ -433,11 +454,16 @@ public class Templates {
         private final List<WeightedVerb> verbs;
         private final boolean negationOn;
         private final double negFreq;
+        private final String variable;
+        private final double definiteFreq;
 
-        public VerbSlot(List<WeightedVerb> verbs, boolean negationOn, double negFreq) {
+        public VerbSlot(List<WeightedVerb> verbs, boolean negationOn, double negFreq,
+                        String variable, double definiteFreq) {
             this.verbs = verbs;
             this.negationOn = negationOn;
             this.negFreq = negFreq;
+            this.variable = variable;
+            this.definiteFreq = definiteFreq;
         }
 
         public List<WeightedVerb> getVerbs() {
@@ -450,6 +476,16 @@ public class Templates {
 
         public double getNegFreq() {
             return negFreq;
+        }
+
+        /** Optional KIF variable name (e.g. "?V1"). Null means auto-generate. */
+        public String getVariable() {
+            return variable;
+        }
+
+        /** Probability [0,1] that the process instance is treated as pre-existing (definite). */
+        public double getDefiniteFreq() {
+            return definiteFreq;
         }
     }
 
@@ -910,8 +946,9 @@ public class Templates {
                     if (item.isTextual()) positionalExclude.add(item.asText());
                 }
             }
+            boolean includePrep = slotNode.path("include_prep").asBoolean(true);
             return new Slot(sumoTerms, type, false, 0.0, null, 0.0, defaultCountProbDropoff, 0.0,
-                    positionalExclude, 0.0, defaultCountProbDropoff);
+                    positionalExclude, 0.0, defaultCountProbDropoff, includePrep);
         }
         JsonNode countableNode = slotNode.get("countable");
         if (countableNode == null || !countableNode.isObject()) {
@@ -1078,7 +1115,11 @@ public class Templates {
             }
             verbs.add(new WeightedVerb(lemmaNode.asText(), weight));
         }
-        return new VerbSlot(verbs, negationOn, negFreq);
+        JsonNode variableNode = slotNode.get("variable");
+        String variable = (variableNode != null && variableNode.isTextual()) ? variableNode.asText().trim() : null;
+        JsonNode definiteFreqNode = slotNode.get("definite_freq");
+        double definiteFreq = (definiteFreqNode != null && definiteFreqNode.isNumber()) ? definiteFreqNode.asDouble() : 0.0;
+        return new VerbSlot(verbs, negationOn, negFreq, variable, definiteFreq);
     }
 
     /***************************************************************

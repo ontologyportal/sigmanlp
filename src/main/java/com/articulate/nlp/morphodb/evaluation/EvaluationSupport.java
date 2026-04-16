@@ -56,6 +56,9 @@ final class EvaluationSupport {
             return result;
         }
         for (File subdir : subdirs) {
+            if (!ModelMetadata.shouldIncludeAsModelDirectory(subdir.getName())) {
+                continue;
+            }
             result.add(ModelMetadata.fromDirName(subdir.getName()));
         }
         result.sort(ModelMetadata::compareForDisplay);

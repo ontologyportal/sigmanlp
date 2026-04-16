@@ -124,14 +124,14 @@
         "future":1
       },
       "count_prob_dropoff":0.5,
-      "named_human_freq":1.0,
+      "named_human_freq":0.5,
       "num_to_gen":100,
       "question_freq":0.1
   },
   "templates":[
     {
       "name":"Orientation",
-      "num_to_gen":200,
+      "num_to_gen":0,
       "english":{
         "example":"The book is on the table.",
         "frame":{
@@ -185,6 +185,74 @@
             ]
         }
       }
+    },
+    {
+      "name":"MovingTowardsFromDirection",
+      "num_to_gen":100,
+      "english":{
+        "example":"The cat is moving towards the house from the north.",
+        "frame":{
+            "tense_none":["%1 %v1 %2 from %3."],
+            "tense_present":["%1 %v1 %2 from %3."],
+            "tense_past":["%1 %v1 %2 from %3."],
+            "tense_future":["%1 will %v1 %2 from %3."]
+        },
+        "frame_question":{
+            "tense_none":["%1 %v1 %2 %3?"],
+            "tense_future":["Will %1 %v1 %2 %3?"]
+        },
+        "%1":{
+            "variable":"?A",
+            "definite_freq":0.0,
+            "sumo_terms":[{"name":"Animal","weight":10},
+                          {"name":"Human","weight":100},
+                          {"name":"SocialRole","weight":5}],
+            "type":"subclass",
+            "countable":{
+                "possible":true,
+                "freq":0.1,
+                "named_human_freq":1.0
+            }
+        },
+        "%2":{
+            "variable":"?O",
+            "definite_freq":0.0,
+            "sumo_terms":[{"name":"Object","weight":1}],
+            "type":"subclass",
+            "countable":{"possible":true, "freq":0.1},
+            "exclude":["AnatomicalStructure"]
+        },
+        "%3":{
+            "variable":"?D",
+            "definite_freq":0.0,
+            "sumo_terms":[{"name":"PositionalAttribute","weight":1}],
+            "type":"positional",
+            "include_prep":false
+        },
+        "%v1":{
+            "negation":"off",
+            "definite_freq":0.0,
+            "neg_freq":0.0,
+            "verbs":[{"lemma":"move towards","weight":1},
+                     {"lemma":"approach","weight":1},
+                     {"lemma":"head towards","weight":1},
+                     {"lemma":"advance towards","weight":1},
+                     {"lemma":"proceed towards","weight":1},
+                     {"lemma":"go towards","weight":1},
+                     {"lemma":"come towards","weight":1},
+                     {"lemma":"move in the direction of","weight":1},
+                     {"lemma":"move closer to","weight":1},
+                     {"lemma":"draw near","weight":1}]
+      },
+      "logic":{
+        "clauses":[
+            "(instance %?1 %1)",
+            "(instance %?2 %2)",
+            "(instance %?v1 MovingTowards)",
+            "%t{%n{(not }(agent %?v1 %?1) (direction %?v1 %?2) (orientation %?1 %?2 %3)%n{)}}"
+        ]
+      }
     }
+  }
   ]
 }

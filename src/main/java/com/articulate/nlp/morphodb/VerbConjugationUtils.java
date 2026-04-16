@@ -95,6 +95,129 @@ public final class VerbConjugationUtils {
     private VerbConjugationUtils() {
     }
 
+    /***************************************************************
+     * Builds the LLM prompt for generating a full conjugation table
+     * for the given verb. definitionStatement is either a non-empty
+     * "Definition: \"...\". " string or "".
+     ***************************************************************/
+    public static String buildConjugationPrompt(String verb, String definitionStatement) {
+
+        boolean cheapPrompt = GenUtils.isCheapPromptMode();
+        return "You are an expert English grammarian generating complete verb conjugation tables. " +
+                "List the conjugated forms of the verb for the subjects I, you (singular), he/she/it, we, you (plural), and they " +
+                "across the tense/aspect categories below.\n\n" +
+                "Verb: \"" + verb + "\".\n" +
+                definitionStatement + "\n\n" +
+                "Tenses to cover in this order:\n" +
+                "  1. Infinitive\n" +
+                "  2. Simple present\n" +
+                "  3. Simple past\n" +
+                "  4. Simple future\n" +
+                "  5. Present progressive (present continuous)\n" +
+                "  6. Past progressive (past continuous)\n" +
+                "  7. Future progressive (future continuous)\n" +
+                "  8. Present perfect\n" +
+                "  9. Past perfect\n" +
+                " 10. Future perfect\n" +
+                " 11. Present perfect progressive\n" +
+                " 12. Past perfect progressive\n" +
+                " 13. Future perfect progressive\n" +
+                " 14. Imperative\n" +
+                " 15. Gerund / present participle\n" +
+                " 16. Past participle\n\n" +
+                "Instructions:\n" +
+                (cheapPrompt
+                        ? " - Return valid JSON with fields: verb, tenses, regularity.\n"
+                        : " - Return valid JSON with fields: verb, tenses, regularity, notes.\n") +
+                " - verb must match the infinitive/base form provided.\n" +
+                " - tenses must be an array of 16 objects, each containing:\n" +
+                "     • tense: the tense/aspect name\n" +
+                "     • forms: an object with keys i, you_singular, he_she_it, we, you_plural, they\n" +
+                "       (use the same form for all pronouns if a tense does not vary by subject)\n" +
+                (cheapPrompt ? "" : "     • Optional fields example and notes are allowed.\n") +
+                " - Use complete example clauses (e.g., \"I am running\") rather than bare verb forms.\n" +
+                " - regularity must be either \"Regular\" or \"Irregular\" and should reflect whether the simple past and past participle follow the standard -ed pattern.\n" +
+                (cheapPrompt ? "" : " - Provide a brief notes string highlighting any irregularities or alternations.\n") +
+                " - Do not include commentary outside the JSON object.\n\n" +
+                "Example output schema:\n" +
+                "{\n" +
+                "  \"verb\": \"to sample\",\n" +
+                "  \"regularity\": \"<Regular|Irregular>\",\n" +
+                "  \"tenses\": [\n" +
+                "    {\n" +
+                "      \"tense\": \"Simple present\",\n" +
+                "      \"forms\": {\n" +
+                "        \"i\": \"I sample\",\n" +
+                "        \"you_singular\": \"You sample\",\n" +
+                "        \"he_she_it\": \"He samples\",\n" +
+                "        \"we\": \"We sample\",\n" +
+                "        \"you_plural\": \"You sample\",\n" +
+                "        \"they\": \"They sample\"\n" +
+                "      }" +
+                (cheapPrompt ? "\n" : ",\n      \"example\": \"I sample the sauce before serving.\"\n") +
+                "    }\n" +
+                "  ]" +
+                (cheapPrompt ? "\n" : ",\n  \"notes\": \"Third person singular present adds -s.\"\n") +
+                "}";
+    }
+
+    /***************************************************************
+     * Normalises a raw LLM-produced conjugation form for index storage.
+     * For multi-word lemmas uses GenerativeEvalUtils.normalizeVerbSurface
+     * to strip both leading pronouns and trailing example objects
+     * (e.g. "he proceeds towards the door" → "proceeds towards").
+     * For single-word lemmas falls back to VerbMorphoDB.extractSurfaceForm,
+     * which is sufficient.
+     ***************************************************************/
+    static String normalizeVerbFormForIndex(String rawForm, String lemma, String person) {
+
+        if (rawForm == null || rawForm.trim().isEmpty()) {
+            return null;
+        }
+        String normalizedLemma = GenMorphoUtils.normalizeLemma(lemma);
+        if (normalizedLemma.contains(" ")) {
+            String result = GenerativeEvalUtils.normalizeVerbSurface(rawForm, null, normalizedLemma);
+            return result.isEmpty() ? null : result;
+        }
+        return VerbMorphoDB.extractSurfaceForm(rawForm, person);
+    }
+
+    /***************************************************************
+     * Queries the LLM for a full conjugation table for the given verb,
+     * canonicalizes the response, and returns the record on success.
+     * Returns null on any failure — the caller is responsible for
+     * logging and error handling.
+     * Uses cheap-prompt mode internally to minimize token usage.
+     ***************************************************************/
+    public static ObjectNode queryAndCanonicalizeConjugation(String verb,
+                                                             String synsetId,
+                                                             String definitionStatement) {
+        boolean prevCheap = GenUtils.isCheapPromptMode();
+        GenUtils.setCheapPromptMode(true);
+        try {
+            String prompt = buildConjugationPrompt(verb, definitionStatement);
+            String llmResponse = GenUtils.askLLM(prompt);
+            String jsonResponse = GenUtils.extractFirstJsonObject(llmResponse);
+            if (jsonResponse == null) {
+                return null;
+            }
+            JsonNode root = GenMorphoUtils.JSON_MAPPER.readTree(jsonResponse);
+            String verbValue = root.path("verb").asText("").trim();
+            String lemmaKey = GenMorphoUtils.normalizeLemma(verb);
+            CanonicalizationResult result = canonicalizeRecord(
+                    root, synsetId, lemmaKey, verbValue.isEmpty() ? verb : verbValue);
+            if (result.record != null && result.completeness != ConjugationCompleteness.ERROR) {
+                return result.record;
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            GenUtils.setCheapPromptMode(prevCheap);
+        }
+    }
+
+
     public static CanonicalizationResult canonicalizeRecord(JsonNode rawNode,
                                                             String fallbackSynsetId,
                                                             String fallbackLemma,
