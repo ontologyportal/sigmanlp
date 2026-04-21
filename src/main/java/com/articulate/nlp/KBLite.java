@@ -12,6 +12,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 
 public class KBLite {
@@ -87,6 +91,33 @@ public class KBLite {
         System.out.println("Files loaded.");
     }
 
+    private List<String> expandWildcardPattern(String pattern) {
+        List<String> result = new ArrayList<>();
+        int lastSep = pattern.lastIndexOf('/');
+        String dirPart  = (lastSep >= 0) ? pattern.substring(0, lastSep) : "";
+        String globPart = (lastSep >= 0) ? pattern.substring(lastSep + 1) : pattern;
+        Path baseDir;
+        if (dirPart.isEmpty()) {
+            baseDir = Paths.get(KB_FILEPATH);
+        } else {
+            Path d = Paths.get(dirPart);
+            baseDir = d.isAbsolute() ? d : Paths.get(KB_FILEPATH, dirPart);
+        }
+        if (!Files.isDirectory(baseDir)) {
+            System.err.println("Warning: directory not found for wildcard pattern: " + baseDir);
+            return result;
+        }
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(baseDir, globPart)) {
+            for (Path match : stream) {
+                result.add(match.toAbsolutePath().toString());
+            }
+        } catch (IOException e) {
+            System.err.println("Error expanding wildcard pattern: " + pattern);
+            e.printStackTrace();
+        }
+        return result;
+    }
+
     private void getKifFilesFromConfig(String kbName) {
         kifFiles.clear();
         try {
@@ -106,7 +137,11 @@ public class KBLite {
                         org.w3c.dom.Element consElem = (org.w3c.dom.Element) constituentList.item(j);
                         String filename = consElem.getAttribute("filename");
                         if (filename != null && !filename.isEmpty()) {
-                            kifFiles.add(filename);
+                            if (filename.contains("*")) {
+                                kifFiles.addAll(expandWildcardPattern(filename));
+                            } else {
+                                kifFiles.add(filename);
+                            }
                         }
                     }
                     break;
