@@ -58,13 +58,6 @@ public class IntegrationTestBase extends SigmaTestBase {
         //SigmaTestBase.doSetUp(xmlReader);
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB("SUMO");
-        if (!KBmanager.getMgr().prefEquals("loadLexicons", "false")) {
-            WordNet.initOnce();
-            NLGUtils.init(KB_PATH);
-        }
-        else {
-            WordNet.disable = true;
-        }
         kbBackup = new KB(kb);
 
         checkConfiguration();
