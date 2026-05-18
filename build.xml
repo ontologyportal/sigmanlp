@@ -176,6 +176,14 @@
 
         <copy todir="${basedir}/lib" file="../sigmakee/build/sigmakee.jar"/>
         <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar"/>
+        <copy todir="${basedir}/lib" flatten="true">
+            <fileset dir="../sigmakee/lib" erroronmissingdir="false">
+                <include name="*.jar"/>
+                <exclude name="junit*.jar"/>
+                <exclude name="hamcrest*.jar"/>
+                <exclude name="tomcat-servlet-api*.jar"/>
+            </fileset>
+        </copy>
     </target>
 
     <target name="compile" depends="build.sigmakee" description="Compile sigmanlp">
