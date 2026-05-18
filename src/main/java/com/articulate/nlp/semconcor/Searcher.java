@@ -4,7 +4,7 @@ import com.articulate.nlp.semRewrite.*;
 import com.articulate.sigma.utils.AVPair;
 import com.articulate.sigma.KBmanager;
 import com.articulate.sigma.KButilities;
-import com.articulate.sigma.PasswordService;
+import com.articulate.sigma.user.UserManager;
 import com.articulate.sigma.utils.StringUtil;
 
 import com.google.common.base.Strings;
@@ -47,6 +47,8 @@ public class Searcher implements ServletContextListener {
     public static int countSize = 100; // parameter to optimize searching
     public static boolean debug = false;
 
+    private final UserManager userManager = new UserManager();
+
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         KButilities.getInstance().contextInitialized(servletContextEvent);
@@ -58,17 +60,21 @@ public class Searcher implements ServletContextListener {
     // Fix for issue #135
     @Override
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
-        PasswordService pws = PasswordService.getInstance();
-        pws.contextDestroyed(servletContextEvent);
+
+        userManager.shutdown();
         KButilities.getInstance().contextDestroyed(servletContextEvent);
+
         System.out.println("Shutting down " + Searcher.class.getName() + " Service...");
         org.h2.Driver.unload();
         System.out.println("Deregistering and shutting down: " + H2_DRIVER);
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("SHUTDOWN");
-        }
-        catch (SQLException e) {
-            System.err.println(H2_DRIVER + " shutdown issues: " + e.getLocalizedMessage());
+
+        if (conn != null) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("SHUTDOWN");
+            }
+            catch (SQLException e) {
+                System.err.println(H2_DRIVER + " shutdown issues: " + e.getLocalizedMessage());
+            }
         }
     }
 
