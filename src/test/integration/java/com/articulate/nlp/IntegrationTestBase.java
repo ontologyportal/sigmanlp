@@ -58,7 +58,6 @@ public class IntegrationTestBase extends SigmaTestBase {
         //SigmaTestBase.doSetUp(xmlReader);
         KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB("SUMO");
-
         kbBackup = new KB(kb);
 
         checkConfiguration();

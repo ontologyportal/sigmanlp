@@ -46,6 +46,10 @@
                 <exclude name="junit*.jar"/>
                 <exclude name="hamcrest*.jar"/>
             </fileset>
+            <pathelement location="${sigmaantlr.home}/build/classes"/>
+            <fileset dir="${sigmaantlr.home}" erroronmissingdir="false">
+                <include name="**/*.jar"/>
+            </fileset>
         </path>
         <path id="compile.test.classpath">
             <path refid="compile.classpath"/>
@@ -105,7 +109,8 @@
     <property name="deploy.home" value="${dist.home}/${web.app.name}"/>
     <property name="git.home" value="${env.ONTOLOGYPORTAL_GIT}"/>
     <property name="sigmakee.home" value="${env.SIGMA_SRC}"/>
-
+    <property name="sigmaantlr.home" value="${git.home}/sigmaAntlr"/>
+    
     <property name="javac.release" value="11"/>
     <property name="run.jvmargs" value="-Xmx10g -Xss1m"/>
     <property name="corenlp.version" value="4.5.7"/>
@@ -165,9 +170,20 @@
     -->
 
     <target name="build.sigmakee" depends="init">
+        <ant antfile="../SigmaUtils/build.xml" inheritAll="false" target="all"/>
+        <ant antfile="../sigmaAntlr/build.xml" inheritAll="false" target="all"/>
         <ant antfile="../sigmakee/build.xml" inheritAll="false" target="all"/>
+
         <copy todir="${basedir}/lib" file="../sigmakee/build/sigmakee.jar"/>
         <copy todir="${basedir}/lib" file="../SigmaUtils/sigmaUtils.jar"/>
+        <copy todir="${basedir}/lib" flatten="true">
+            <fileset dir="../sigmakee/lib" erroronmissingdir="false">
+                <include name="*.jar"/>
+                <exclude name="junit*.jar"/>
+                <exclude name="hamcrest*.jar"/>
+                <exclude name="tomcat-servlet-api*.jar"/>
+            </fileset>
+        </copy>
     </target>
 
     <target name="compile" depends="build.sigmakee" description="Compile sigmanlp">

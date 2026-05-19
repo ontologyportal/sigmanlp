@@ -34,6 +34,7 @@ import com.articulate.nlp.semRewrite.substitutor.*;
 
 import com.articulate.sigma.*;
 import com.articulate.sigma.tp.Vampire;
+import com.articulate.sigma.tp.EProver;
 import com.articulate.sigma.utils.*;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
@@ -1425,11 +1426,13 @@ public class Interpreter {
                 Formula query = new Formula(s3);
                 List<String> inferenceAnswers = Lists.newArrayList();
                 if (verboseProof) {
-                    Vampire vamp = kb.askVampire(s3, timeOut_value, 1);
-                    inferenceAnswers = vamp.output;
+                    Vampire vampire = new Vampire(kb, "tptp", "CASC", false, timeOut_value, 1);
+                    vampire.askVampire(s3);
+                    inferenceAnswers = vampire.output;
                 }
                 else {
-                    inferenceAnswers = kb.askNoProof(s3, timeOut_value, 1);
+                    EProver eprover = new EProver(kb, "tptp", timeOut_value, 1);
+                    inferenceAnswers = eprover.askNoProof(s3);
                 }
                 if (verboseAnswer) {
                     System.out.println("Inference Answers: " + inferenceAnswers);

@@ -16,26 +16,55 @@ public class SigmaTestBase {
 
     protected static KB kb;
 
+    // /****************************************************************
+    //  * Performs the KB load.
+    //  * @param reader
+    //  */
+    // protected static void doSetUp(Reader reader) {
+
+    //     SimpleElement configuration = null;
+    //     if (!KBmanager.initialized) {
+    //         try {
+    //             SimpleDOMParser sdp = new SimpleDOMParser();
+    //             //sdp.setSkipProlog(false);
+    //             configuration = sdp.parse(reader);
+    //         }
+    //         catch (IOException e) {
+    //             e.printStackTrace();
+    //         }
+
+    //         KBmanager.getMgr().setDefaultAttributes();
+    //         // KBmanager.getMgr().setConfiguration(configuration);
+    //         KBmanager.getMgr().initializeOnce();
+    //         KBmanager.initialized = true;
+    //     }
+    //     kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+    //     checkConfiguration();
+    // }
+
     /****************************************************************
      * Performs the KB load.
      * @param reader
      */
-    protected static void doSetUp(Reader reader) {
+    protected static void doSetUp(String configPath) {
 
-        SimpleElement configuration = null;
         if (!KBmanager.initialized) {
             try {
-                SimpleDOMParser sdp = new SimpleDOMParser();
-                //sdp.setSkipProlog(false);
-                configuration = sdp.parse(reader);
+                File sourceConfig = new File(configPath);
+                File kbDir = new File(KB_PATH);
+                File targetConfig = new File(kbDir, "config.xml");
+                kbDir.mkdirs();
+                java.nio.file.Files.copy(
+                        sourceConfig.toPath(),
+                        targetConfig.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                );
+                KBmanager.getMgr().setDefaultAttributes();
+                KBmanager.getMgr().initializeOnce(KB_PATH);
             }
             catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Could not prepare Sigma test config", e);
             }
-
-            KBmanager.getMgr().setDefaultAttributes();
-            KBmanager.getMgr().setConfiguration(configuration);
-            KBmanager.initialized = true;
         }
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         checkConfiguration();
@@ -66,7 +95,7 @@ public class SigmaTestBase {
             problemList.add("KB missing one or more files. Expected: " + kbnames +
                     " actual:" + KBmanager.getMgr().getKBnames());
         }
-        if (! problemList.isEmpty()) {
+        if (!problemList.isEmpty()) {
             StringBuilder sBuild = new StringBuilder();
             final String NEWLINE_AND_SPACES = "\n   ";
             for (String problem : problemList) {

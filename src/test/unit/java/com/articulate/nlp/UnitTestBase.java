@@ -41,7 +41,7 @@ public class UnitTestBase extends SigmaTestBase {
         System.out.println("UnitTestBase.setup(): reading test config file: " + CONFIG_FILE_PATH);
         System.out.println("***** UnitTestBase.setup(): warning! Note that only KB files in the test config file will be loaded! ***** ");
         long startTime = System.currentTimeMillis();
-        SigmaTestBase.doSetUp(xmlReader);
+        SigmaTestBase.doSetUp(CONFIG_FILE_PATH);
         long endTime = System.currentTimeMillis();
         // Update the init time only if it has its initialized value.
         if (UnitTestBase.totalKbMgrInitTime == Long.MAX_VALUE) {

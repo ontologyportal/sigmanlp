@@ -94,6 +94,30 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Build dependency repositories
+        env:
+          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
+          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
+          SIGMA_SRC: ${{ github.workspace }}/sigmakee
+          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "Building SigmaUtils"
+          cd "$GITHUB_WORKSPACE/SigmaUtils"
+          ant
+
+          echo "Building TPTP-ANTLR"
+          cd "$GITHUB_WORKSPACE/TPTP-ANTLR"
+          ant
+
+          echo "Building sigmaAntlr"
+          cd "$GITHUB_WORKSPACE/sigmaAntlr"
+          ant
+
+          echo "Building sigmakee"
+          cd "$GITHUB_WORKSPACE/sigmakee"
+          ant
+
       - name: Build with Ant
         env:
           ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
