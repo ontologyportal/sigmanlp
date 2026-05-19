@@ -16,26 +16,42 @@ public class SigmaTestBase {
 
     protected static KB kb;
 
+    // /****************************************************************
+    //  * Performs the KB load.
+    //  * @param reader
+    //  */
+    // protected static void doSetUp(Reader reader) {
+
+    //     SimpleElement configuration = null;
+    //     if (!KBmanager.initialized) {
+    //         try {
+    //             SimpleDOMParser sdp = new SimpleDOMParser();
+    //             //sdp.setSkipProlog(false);
+    //             configuration = sdp.parse(reader);
+    //         }
+    //         catch (IOException e) {
+    //             e.printStackTrace();
+    //         }
+
+    //         KBmanager.getMgr().setDefaultAttributes();
+    //         // KBmanager.getMgr().setConfiguration(configuration);
+    //         KBmanager.getMgr().initializeOnce();
+    //         KBmanager.initialized = true;
+    //     }
+    //     kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+    //     checkConfiguration();
+    // }
+
     /****************************************************************
      * Performs the KB load.
      * @param reader
      */
-    protected static void doSetUp(Reader reader) {
+    protected static void doSetUp(String configPath) {
 
         SimpleElement configuration = null;
         if (!KBmanager.initialized) {
-            try {
-                SimpleDOMParser sdp = new SimpleDOMParser();
-                //sdp.setSkipProlog(false);
-                configuration = sdp.parse(reader);
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
-
             KBmanager.getMgr().setDefaultAttributes();
-            KBmanager.getMgr().setConfiguration(configuration);
-            KBmanager.initialized = true;
+            KBmanager.getMgr().initializeOnce(configPath);
         }
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         checkConfiguration();
