@@ -49,10 +49,9 @@ public class SigmaTestBase {
     protected static void doSetUp(String configPath) {
 
         SimpleElement configuration = null;
-        if (!KBmanager.initialized) {
-            KBmanager.getMgr().setDefaultAttributes();
-            KBmanager.getMgr().initializeOnce(configPath);
-        }
+        KBmanager.getMgr().setDefaultAttributes();
+        KBmanager.getMgr().initializeLexicons(configPath);
+        KBmanager.getMgr().initializeOnce(configPath);
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         checkConfiguration();
     }
