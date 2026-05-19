@@ -48,10 +48,24 @@ public class SigmaTestBase {
      */
     protected static void doSetUp(String configPath) {
 
-        SimpleElement configuration = null;
-        KBmanager.getMgr().setDefaultAttributes();
-        KBmanager.getMgr().initializeLexicons(configPath);
-        KBmanager.getMgr().initializeOnce(configPath);
+        if (!KBmanager.initialized) {
+            try {
+                File sourceConfig = new File(configPath);
+                File kbDir = new File(KB_PATH);
+                File targetConfig = new File(kbDir, "config.xml");
+                kbDir.mkdirs();
+                java.nio.file.Files.copy(
+                        sourceConfig.toPath(),
+                        targetConfig.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                );
+                KBmanager.getMgr().setDefaultAttributes();
+                KBmanager.getMgr().initializeOnce(KB_PATH);
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Could not prepare Sigma test config", e);
+            }
+        }
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
         checkConfiguration();
     }
@@ -81,7 +95,7 @@ public class SigmaTestBase {
             problemList.add("KB missing one or more files. Expected: " + kbnames +
                     " actual:" + KBmanager.getMgr().getKBnames());
         }
-        if (! problemList.isEmpty()) {
+        if (!problemList.isEmpty()) {
             StringBuilder sBuild = new StringBuilder();
             final String NEWLINE_AND_SPACES = "\n   ";
             for (String problem : problemList) {
