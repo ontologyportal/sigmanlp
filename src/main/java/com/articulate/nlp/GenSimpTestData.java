@@ -108,8 +108,7 @@ public class GenSimpTestData {
         try {
             File constituent = new File(fname);
             String canonicalPath = constituent.getCanonicalPath();
-            KIF kif = new KIF(canonicalPath);
-            kif.setParseMode(KIF.RELAXED_PARSE_MODE);
+            KIF kif = new KIF();
             kif.readFile(fname);
             String t, s;
             for (Formula f : kif.formulaMap.values()) {
