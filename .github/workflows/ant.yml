@@ -82,6 +82,7 @@ jobs:
           echo "CORPORA: $CORPORA"
           mkdir -p $SIGMA_HOME/KBs/WordNetMappings
           mkdir -p $CATALINA_HOME/webapps
+          mkdir -p $CATALINA_HOME/lib
           cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
           cp -R $ONTOLOGYPORTAL_GIT/sumo/* $SIGMA_HOME/KBs
           wget 'https://wordnetcode.princeton.edu/3.0/WordNet-3.0.tar.gz'
