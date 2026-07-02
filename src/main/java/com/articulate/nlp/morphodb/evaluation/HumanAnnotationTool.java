@@ -488,7 +488,7 @@ public class HumanAnnotationTool {
     }
 
     private static void initWordNet() {
-        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+        KBmanager.getMgr().configuration.setPreference("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
         WordNet.initOnce();
     }
 

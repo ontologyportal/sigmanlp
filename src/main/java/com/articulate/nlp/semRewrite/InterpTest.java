@@ -84,7 +84,7 @@ public class InterpTest {
 
         //return JsonReader.transform("resources/translation_tiny.json", (JSONObject jo) -> {
         //return JsonReader.transform("miscellaneous/translation_tests.json", (JSONObject jo) -> {
-        return transform(KBmanager.getMgr().getPref("kbDir") + File.separator + inputfile, (JSONObject jo) -> {
+        return transform(KBmanager.getMgr().configuration.getKbDir() + File.separator + inputfile, (JSONObject jo) -> {
             String text = (String) jo.get("text");
             //String tokens = (String) jo.get("tokens");
             //String type = (String) jo.get("type");

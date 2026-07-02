@@ -59,14 +59,14 @@ public class SigmaTestBase {
                         targetConfig.toPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING
                 );
-                KBmanager.getMgr().setDefaultAttributes();
+                KBmanager.getMgr().configuration.setAllPreferencesAsDefault();
                 KBmanager.getMgr().initializeOnce(KB_PATH);
             }
             catch (IOException e) {
                 throw new RuntimeException("Could not prepare Sigma test config", e);
             }
         }
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
         checkConfiguration();
     }
 

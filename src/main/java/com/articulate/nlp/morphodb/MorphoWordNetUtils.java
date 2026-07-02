@@ -33,7 +33,7 @@ public final class MorphoWordNetUtils {
         if (sigmaHome == null || sigmaHome.trim().isEmpty()) {
             throw new IllegalStateException("SIGMA_HOME is required to load filtered WordNet lemma sets");
         }
-        KBmanager.getMgr().setPref("kbDir", sigmaHome + File.separator + "KBs");
+        KBmanager.getMgr().configuration.setPreference("kbDir", sigmaHome + File.separator + "KBs");
         WordNet.initOnce();
     }
 

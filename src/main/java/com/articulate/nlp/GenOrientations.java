@@ -66,7 +66,7 @@ public class GenOrientations {
         // load the knowledge base
         kbLite = new KBLite("SUMO");
         System.out.println("Finished loading KBs");
-        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+        KBmanager.getMgr().configuration.setPreference("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
         WordNet.initOnce();
         //Organizing the set of all things you want from SUMO
         Set<String> allSUMOArtifactSet = kbLite.getChildClasses("Artifact");

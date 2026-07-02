@@ -33,7 +33,7 @@ August 9, Acapulco, Mexico.  See also http://github.com/ontologyportal
         return;
     }
     KBmanager.getMgr().initializeOnce();
-    Indexer.UserName = KBmanager.getMgr().getPref("dbUser");
+    Indexer.UserName = KBmanager.getMgr().configuration.getPref("dbUser");
     Interpreter interp = new Interpreter();
     interp.initialize();
 

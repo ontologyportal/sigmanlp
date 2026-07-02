@@ -177,7 +177,7 @@ public class GenCausesTestData {
         kbLite = new KBLite("SUMO");
         System.out.println("Finished loading KBs");
         System.out.println("Loading Wordnet");
-        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+        KBmanager.getMgr().configuration.setPreference("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
         WordNet.initOnce();
         System.out.println("Wordnet loaded");
         Set<String> allSUMOTermsSet = kbLite.getChildClasses("Process");
