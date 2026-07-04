@@ -1,6 +1,7 @@
 package com.articulate.nlp;
 
 import com.articulate.sigma.*;
+import com.articulate.sigma.parsing.Configuration;
 import com.articulate.sigma.nlg.NLGUtils;
 import com.articulate.sigma.wordNet.WordNet;
 
@@ -46,28 +47,67 @@ public class SigmaTestBase {
      * Performs the KB load.
      * @param reader
      */
-    protected static void doSetUp(String configPath) {
+    protected static void doSetUp() {
 
         if (!KBmanager.initialized) {
-            try {
-                File sourceConfig = new File(configPath);
-                File kbDir = new File(KB_PATH);
-                File targetConfig = new File(kbDir, "config.xml");
-                kbDir.mkdirs();
-                java.nio.file.Files.copy(
-                        sourceConfig.toPath(),
-                        targetConfig.toPath(),
-                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
-                );
-                KBmanager.getMgr().configuration.setAllPreferencesAsDefault();
-                KBmanager.getMgr().initializeOnce(KB_PATH);
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Could not prepare Sigma test config", e);
-            }
+            // try {
+                // File sourceConfig = new File(configPath);
+                // File kbDir = new File(KB_PATH);
+                // File targetConfig = new File(kbDir, "config.xml");
+                // kbDir.mkdirs();
+                // java.nio.file.Files.copy(
+                //         sourceConfig.toPath(),
+                //         targetConfig.toPath(),
+                //         java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                // );
+                Configuration config = buildUnitConfiguration();
+                KBmanager.initialized = false;
+                KBmanager.initializing = false;
+                KBmanager.getMgr().kbs.clear();
+                KBmanager.getMgr().initializeOnce(config);
+            // }
+            // catch (IOException e) {
+            //     throw new RuntimeException("Could not prepare Sigma test config", e);
+            // }
         }
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
         checkConfiguration();
+    }
+
+    private static Configuration buildUnitConfiguration() {
+
+        String kbDir = KB_PATH;
+        String userHome = System.getProperty("user.home");
+        Configuration config = new Configuration();
+        config.clearKbConstituentLists();
+        config.setPreference("baseDir", new File(kbDir).getParentFile().getAbsolutePath());
+        config.setPreference("kbDir", kbDir);
+        config.setPreference("inferenceTestDir", kbDir + File.separator + "tests");
+        config.setPreference("loadFresh", "true");
+        config.setPreference("loadLexicons", "true");
+        config.setPreference("cache", "true");
+        config.setPreference("cacheDisjoint", "true");
+        config.setPreference("cwa", "false");
+        config.setPreference("maxPredicateArity", "7");
+        config.setPreference("graphVizExec", "/usr/bin/dot");
+        String eproverExec = new File("/usr/local/bin/e_ltb_runner").canExecute()
+                ? "/usr/local/bin/e_ltb_runner"
+                : userHome + File.separator + "Programs" + File.separator + "E" + File.separator + "PROVER" + File.separator + "e_ltb_runner";
+        String vampireExec = new File("/usr/local/bin/vampire").canExecute()
+                ? "/usr/local/bin/vampire"
+                : userHome + File.separator + "Programs" + File.separator + "vampire" + File.separator + "build" + File.separator + "vampire";
+        config.setPreference("eproverExec", eproverExec);
+        config.setPreference("vampireExec", vampireExec);
+        config.setPreference("tptpExec", userHome + File.separator + "workspace" + File.separator + "TPTP4X" + File.separator + "tptp4X");
+        config.setPreference("systemsDir", userHome);
+        List<String> constituents = Arrays.asList(
+            "domainEnglishFormat.kif",
+            "english_format.kif",
+            "Merge.kif",
+            "Mid-level-ontology.kif"
+        );
+        config.setKbConstituentList("SUMO", constituents);
+        return config;
     }
 
     /***************************************************************
