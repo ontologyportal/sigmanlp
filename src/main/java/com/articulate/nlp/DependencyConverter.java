@@ -18,6 +18,8 @@ import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcess
 import edu.stanford.nlp.tagger.maxent.MaxentTagger;
 import edu.stanford.nlp.trees.GrammaticalStructure;
 import edu.stanford.nlp.util.CoreMap;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import java.io.*;
 import java.util.*;
@@ -80,64 +82,25 @@ public class DependencyConverter {
      */
     public static ArrayList<String> getDependencies(String input) throws IOException {
 
-        ArrayList<String> result = new ArrayList<String>();
-        Process _nlp;
-        BufferedReader _reader;
-        BufferedWriter _writer;
-        BufferedReader _error;
-        String tmpfname = "tmp.txt";
-//        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27" +
-        String stanfordCore = System.getProperty("user.home") + "/Programs/stanford-corenlp-full-2015-12-09";
-        String newcore = KBmanager.getMgr().getPref("stanford-core");
-        if (!StringUtil.emptyString(newcore))
-        	stanfordCore = newcore;
-        String execString = System.getProperty("java.home") + "/java -mx1000m -classpath " + stanfordCore +
-                "/stanford-corenlp-3.5.1.jar edu.stanford.com.articulate.nlp.parser.lexparser.LexicalizedParser " +
-                "-outputFormat typedDependencies " + stanfordCore + "/englishPCFG-mcg.ser.gz " + tmpfname;
-                //"-outputFormat typedDependencies " + System.getProperty("user.home") + "/Programs/stanford-parser-full-2014-08-27/englishPCFG.ser.gz " + tmpfname;
-        FileWriter fr = null;
-        PrintWriter pr = null;
-
-        try {
-            fr = new FileWriter(tmpfname);
-            pr = new PrintWriter(fr);
-            pr.println(input);
-        }
-        catch (IOException e) {
-            System.out.println("Error in DependencyConverter.getDependencies(): Error writing file " + tmpfname);
-            e.printStackTrace();
-        }
-        finally {
-            if (pr != null) { pr.close(); }
-            if (fr != null) { fr.close(); }
-        }
-        System.out.println("INFO in DependencyConverter.getDependencies(): executing: " + execString);
-
-        ProcessBuilder builder = new ProcessBuilder(WordNet.splitToArrayList(execString));
-        builder.redirectErrorStream(true);
-        _nlp = builder.start();
-
-        //_nlp = Runtime.getRuntime().exec(execString);
-        _reader = new BufferedReader(new InputStreamReader(_nlp.getInputStream()));
-        _error = new BufferedReader(new InputStreamReader(_nlp.getErrorStream()));
-        //System.out.println("INFO in DependencyConverter.getDependencies(): initializing process");
-        String line = null;
-        boolean recording = false;
-        while ((line = _reader.readLine ()) != null) {
-            // line = _reader.readLine();
-
-            if (line != null && line.startsWith("Parsed file"))
-                break;
-
-            if (!StringUtil.emptyString(line) && recording) {
-                //System.out.println("INFO in DependencyConverter.getDependencies(): line: " + line);
-                result.add(processInput(line));
+        ArrayList<String> result = new ArrayList<>();
+        Properties props = new Properties();
+        props.setProperty("annotators", "tokenize,ssplit,pos,lemma,parse");
+        props.setProperty("parse.keepPunct", "false");
+        StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+        Annotation document = new Annotation(input);
+        pipeline.annotate(document);
+        List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+        for (CoreMap sentence : sentences) {
+            SemanticGraph dependencies =
+                    sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+            if (dependencies == null)
+                continue;
+            String[] lines = dependencies.toList().split("\\n");
+            for (String line : lines) {
+                if (!StringUtil.emptyString(line))
+                    result.add(processInput(line));
             }
-            if (line != null && line.startsWith("Parsing ["))
-                recording = true;
         }
-        _writer = new BufferedWriter(new OutputStreamWriter(_nlp.getOutputStream()));
-
         return result;
     }
 
@@ -148,32 +111,16 @@ public class DependencyConverter {
      */
     public static ArrayList<String> splitSentences(String infile) throws IOException {
 
-        ArrayList<String> result = new ArrayList<String>();
-        Process _nlp;
-        BufferedReader _reader;
-        BufferedWriter _writer;
-        BufferedReader _error;
-        String stanfordCore = System.getProperty("user.home") + "/Programs/stanford-corenlp-full-2015-12-09";
-        String newcore = KBmanager.getMgr().getPref("stanford-core");
-        if (!StringUtil.emptyString(newcore))
-        	stanfordCore = newcore;
-        String execString = System.getProperty("java.home") + "/java -classpath " + stanfordCore +
-                "/stanford-parser.jar edu.stanford.com.articulate.nlp.process.DocumentPreprocessor " +
-                infile;
-        System.out.println("INFO in DependencyConverter.splitSentences(): executing: " + execString);
-        _nlp = Runtime.getRuntime().exec(execString);
-        _reader = new BufferedReader(new InputStreamReader(_nlp.getInputStream()));
-        _error = new BufferedReader(new InputStreamReader(_nlp.getErrorStream()));
-        //System.out.println("INFO in DependencyConverter.splitSentences(): initializing process");
-        String line = null;
-        while (true) {
-            line = _reader.readLine();
-            System.out.println(line);
-            if (line == null)
-                break;
-            result.add(line);
-        }
-        _writer = new BufferedWriter(new OutputStreamWriter(_nlp.getOutputStream()));
+        ArrayList<String> result = new ArrayList<>();
+        String text = new String(Files.readAllBytes(Paths.get(infile)));
+        Properties props = new Properties();
+        props.setProperty("annotators", "tokenize,ssplit");
+        StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+        Annotation document = new Annotation(text);
+        pipeline.annotate(document);
+        List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+        for (CoreMap sentence : sentences)
+            result.add(sentence.toString());
         return result;
     }
 
@@ -187,7 +134,7 @@ public class DependencyConverter {
         File swFile = null;
         String canonicalPath = "";
         try {
-            String baseDir = KBmanager.getMgr().getPref("kbDir");
+            String baseDir = KBmanager.configuration.getKbDir();
             swFile = new File(baseDir + File.separator + "WordNetMappings" + File.separator + "FirstNames.csv");
             if (swFile == null) {
                 System.out.println("Error in DependencyConverter.readFirstNames(): " +

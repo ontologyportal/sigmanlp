@@ -102,7 +102,7 @@ public class GenRelations {
         // load the knowledge base
         kbLite = new KBLite("SUMO");
         System.out.println("Finished loading KBs");
-        KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+        KBmanager.getMgr().configuration.setPreference("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
         WordNet.initOnce();
         Set<String> allSUMOFunctionsSet = kbLite.getAllInstances("Function");
         Set<String> allSUMOVariableAritySet = kbLite.getAllInstances("VariableArityRelation");

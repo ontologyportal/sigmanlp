@@ -1716,15 +1716,12 @@ public class Interpreter {
      */
     public static RuleSet loadRules() {
 
-       // String filename = KBmanager.getMgr().getPref("kbDir") + File.separator +
-               // "WordNetMappings" + File.separator + "SemRewrite.txt";
-        String filename = System.getenv("ONTOLOGYPORTAL_GIT") + File.separator +
-                "sumo" + File.separator + "WordNetMappings" + File.separator + "SemRewrite.txt";
-        String pref = KBmanager.getMgr().getPref("semRewrite");
-        if (!Strings.isNullOrEmpty(pref))
-            filename = pref;
+        String filename = KBmanager.configuration.getKbDir()
+                + File.separator
+                + "WordNetMappings"
+                + File.separator
+                + "SemRewrite.txt";
         RuleSet rs = loadRules(filename);
-        //printRules(rs);
         return rs;
     }
 

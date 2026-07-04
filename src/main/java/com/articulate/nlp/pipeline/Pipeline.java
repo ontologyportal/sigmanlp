@@ -115,14 +115,8 @@ public class Pipeline {
             props.put("coref.maxMentionDistance","100");
             System.out.println("Pipeline(): limit coreference lookback to 100 tokens");
         }
-        if (propString.contains("pos,") && !useDefaultPCFGModel &&
-                !Strings.isNullOrEmpty(KBmanager.getMgr().getPref("englishPCFG"))) {
-            props.put("parse.model", KBmanager.getMgr().getPref("englishPCFG"));
-            props.put("parser.model", KBmanager.getMgr().getPref("englishPCFG"));
-            props.put("parse.flags", "");
-        }
         props.setProperty("tokenize.options", "splitForwardSlash=true");
-        System.out.println("Pipeline(): using PCFG model: " + KBmanager.getMgr().getPref("englishPCFG"));
+        System.out.println("Pipeline(): using Stanford CoreNLP default PCFG model");
         // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
         pipeline = new StanfordCoreNLP(props);
         if (propString.contains("tsumo")) {

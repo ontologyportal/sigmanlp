@@ -129,19 +129,6 @@ jobs:
         run: ant
         working-directory: ./sigmanlp
 
-      - name: Prepare test env
-        env:
-          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
-          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
-          SIGMA_SRC: ${{ github.workspace }}/sigmakee
-          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
-        working-directory: ${{ github.workspace }}
-        run: |
-          sed -i "s|/home/theuser/workspace/sumo|$ONTOLOGYPORTAL_GIT/sumo|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
-          sed -i "s|/home/theuser/.sigmakee|$SIGMA_HOME|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
-          sed -i "s|/home/theuser/E/bin/e_ltb_runner|/usr/local/bin/e_ltb_runner|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
-          sed -i "s|/home/theuser/Programs/vampire/build/vampire|/usr/local/bin/vampire|g" $SIGMA_SRC/test/unit/java/resources/config_topOnly.xml
-
       - name: Run unit tests
         env:
           ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
@@ -151,37 +138,14 @@ jobs:
         working-directory: ./sigmanlp
         run: ant test.unit
 
-      - name: Setup SIGMA_HOME for integration tests
+      - name: Prepare integration runtime
         env:
-          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
           SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
-          SIGMA_SRC: ${{ github.workspace }}/sigmakee
-          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
         working-directory: ${{ github.workspace }}
         run: |
-          find $SIGMA_HOME/KBs -name '**/*.ser' -delete
-          cp $SIGMA_SRC/config.xml $SIGMA_HOME/KBs
-          sed -i "s|/home/theuser/workspace/sumo|$ONTOLOGYPORTAL_GIT/sumo|g" $SIGMA_HOME/KBs/config.xml
-          sed -i "s|/home/theuser/.sigmakee|$SIGMA_HOME|g" $SIGMA_HOME/KBs/config.xml
-          sed -i "s|/home/theuser/E/bin/e_ltb_runner|/usr/local/bin/e_ltb_runner|g" $SIGMA_HOME/KBs/config.xml
-          sed -i "s|/home/theuser/Programs/vampire/build/vampire|/usr/local/bin/vampire|g" $SIGMA_HOME/KBs/config.xml
-          sed -i '/<kb name/,/<\/kb>/d' $SIGMA_HOME/KBs/config.xml
-
-      - name: Setup KB for integration tests
-        env:
-          ONTOLOGYPORTAL_GIT: ${{ github.workspace }}
-          SIGMA_HOME: ${{ github.workspace }}/sigmakee-runtime
-          SIGMA_SRC: ${{ github.workspace }}/sigmakee
-          CORPORA: ${{ github.workspace }}/sigmanlp/corpora
-        working-directory: ${{ github.workspace }}
-        run: >
-          sed -i '/<\/configuration>/i\
-          <kb name="SUMO">\n
-          <constituent filename="Merge.kif"\/>\n
-          <constituent filename="Mid-level-ontology.kif"\/>\n
-          <constituent filename="english_format.kif"\/>\n
-          <constituent filename="domainEnglishFormat.kif"\/>\n
-          <\/kb>' $SIGMA_HOME/KBs/config.xml
+          find "$SIGMA_HOME/KBs" -name '*.ser' -delete
+          mkdir -p "$SIGMA_HOME/KBs/tests"
+          mkdir -p "$SIGMA_HOME/cache"
 
       - name: Run integration tests
         env:

@@ -175,7 +175,7 @@ public class GenFromTemplate {
         outputFileLogic = filePrefix + "-log.txt";
         if (kbLite == null) {
             kbLite = new KBLite("SUMO");
-            KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + "/KBs");
+            KBmanager.getMgr().configuration.setPreference("kbDir", System.getenv("SIGMA_HOME") + "/KBs");
             WordNet.initOnce();
         }
         lfeatsets = GenUtils.initLFeatureSets(kbLite, suppress);

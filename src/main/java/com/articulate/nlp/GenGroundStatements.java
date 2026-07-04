@@ -21,7 +21,7 @@ public class GenGroundStatements {
 
     public GenGroundStatements() {
         KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
     }
 
     /**

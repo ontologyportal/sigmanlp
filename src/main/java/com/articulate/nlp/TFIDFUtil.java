@@ -79,7 +79,7 @@ public class TFIDFUtil {
 
         TFIDF cb = null;
         try {
-            String dirname =  KBmanager.getMgr().getPref("kbDir") + File.separator + "WordNetMappings";
+            String dirname =  KBmanager.getMgr().configuration.getKbDir() + File.separator + "WordNetMappings";
             String fname = dirname + File.separator + "stopwords.txt";
             cb = new TFIDF(documents, fname);
         }

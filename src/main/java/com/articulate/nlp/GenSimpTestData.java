@@ -82,7 +82,7 @@ public class GenSimpTestData {
     public GenSimpTestData() {
 
         KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
         lfeatsets = GenUtils.initLFeatureSets(kbLite, suppress);
     }
 
@@ -90,11 +90,11 @@ public class GenSimpTestData {
 
         if (useKBLite) {
             kbLite = new KBLite("SUMO");
-            KBmanager.getMgr().setPref("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
+            KBmanager.getMgr().configuration.setPreference("kbDir", System.getenv("SIGMA_HOME") + File.separator + "KBs");
             WordNet.initOnce();
         } else {
             KBmanager.getMgr().initializeOnce();
-            kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+            kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
         }
         lfeatsets = GenUtils.initLFeatureSets(kbLite, suppress);
     }
@@ -175,7 +175,7 @@ public class GenSimpTestData {
 
         System.out.println("GenSimpTestData.allAxioms()");
         KBmanager.getMgr().initializeOnce();
-        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+        kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
         String form;
         for (Formula f : kb.formulaMap.values()) {
             form = f.getFormula();
@@ -1555,7 +1555,6 @@ public class GenSimpTestData {
      */
     public static void main(String args[]) {
 
-        KBmanager.prefOverride.put("TPTP","no");
         try {
             if (args == null || args.length == 0 || args[0].equals("-h"))
                 showHelp();
@@ -1623,7 +1622,7 @@ public class GenSimpTestData {
                 }
                 if (args.length > 0 && args[0].equals("-i")) { // generate English for all non-ground statements
                     KBmanager.getMgr().initializeOnce();
-                    kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+                    kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
                     englishAxioms();
                 }
                 if (args.length > 0 && args[0].equals("-u")) {
@@ -1653,7 +1652,7 @@ public class GenSimpTestData {
                 if (args.length > 0 && args[0].equals("-t")) {
                     GenSimpTestData gstd = new GenSimpTestData();
                     KBmanager.getMgr().initializeOnce();
-                    kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
+                    kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
                     String word = "Sheep";
                     System.out.println("exceptions: " + WordNet.wn.exceptionNounPluralHash);
                     for (int i = 0; i < 10; i++)

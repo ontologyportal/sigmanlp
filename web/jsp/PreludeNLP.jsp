@@ -71,10 +71,10 @@ System.out.println("PreludeNLP.jsp: KBmanager initialized  " + KBmanager.initial
 System.out.println("PreludeNLP.jsp: KBmanager initializing  " + KBmanager.initializing);
 mgr = KBmanager.getMgr();
 
-String hostname = KBmanager.getMgr().getPref("hostname");
+String hostname = KBmanager.getMgr().configuration.getHostName("hostname");
 if (hostname == null)
     hostname = "localhost";
-String port = KBmanager.getMgr().getPref("port");
+String port = KBmanager.getMgr().configuration.getPort("port");
 if (port == null)
     port = "8080";
 
