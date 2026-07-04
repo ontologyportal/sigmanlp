@@ -51,7 +51,6 @@ public class IntegrationTestBase extends SigmaTestBase {
     public static void setup() throws IOException {
 
         long startTime = System.currentTimeMillis();
-
         System.out.println("IntegrationTestBase.setup(): using default KBmanager configuration.");
         System.out.println("SIGMA_HOME = " + System.getenv("SIGMA_HOME"));
         System.out.println("Expected runtime config = " +
@@ -62,7 +61,6 @@ public class IntegrationTestBase extends SigmaTestBase {
         }
 
         kb = KBmanager.getMgr().getKB("SUMO");
-        kbBackup = new KB(kb);
 
         checkConfiguration();
 
@@ -191,18 +189,18 @@ public class IntegrationTestBase extends SigmaTestBase {
      */
     public static void resetAllForInference() throws IOException {
 
-        kb = new KB(kbBackup);
-        KBmanager.getMgr().kbs.put("SUMO", kb);
+        kb = KBmanager.getMgr().getKB("SUMO");
+        if (kb == null) {
+            throw new IllegalStateException("SUMO KB is not initialized.");
+        }
         kb.deleteUserAssertions();
-
-        // Remove the assertions in the files.
+        KBmanager.getMgr().kbs.put("SUMO", kb);
         File userAssertionsFile = new File(KB_PATH, "SUMO" + KB._userAssertionsString);
         if (userAssertionsFile.exists()) {
             userAssertionsFile.delete();
             userAssertionsFile.createNewFile();
             userAssertionsFile.deleteOnExit();
         }
-
         String tptpFileName = userAssertionsFile.getAbsolutePath().replace(".kif", ".tptp");
         userAssertionsFile = new File(tptpFileName);
         if (userAssertionsFile.exists()) {
