@@ -114,7 +114,7 @@ public class IntegrationTestBase extends SigmaTestBase {
         config.setPreference("https", "false");
         config.setPreference("inferenceTestDir", kbDir + File.separator + "tests");
         config.setPreference("kbDir", kbDir);
-        config.setPreference("loadFresh", "false");
+        config.setPreference("loadFresh", "true");
         config.setPreference("loadLexicons", "true");
         config.setPreference("logDir", sigmaHome + File.separator + "logs");
         config.setPreference("logLevel", "warning");
