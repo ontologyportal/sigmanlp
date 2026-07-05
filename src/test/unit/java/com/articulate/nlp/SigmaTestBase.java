@@ -17,32 +17,6 @@ public class SigmaTestBase {
 
     protected static KB kb;
 
-    // /****************************************************************
-    //  * Performs the KB load.
-    //  * @param reader
-    //  */
-    // protected static void doSetUp(Reader reader) {
-
-    //     SimpleElement configuration = null;
-    //     if (!KBmanager.initialized) {
-    //         try {
-    //             SimpleDOMParser sdp = new SimpleDOMParser();
-    //             //sdp.setSkipProlog(false);
-    //             configuration = sdp.parse(reader);
-    //         }
-    //         catch (IOException e) {
-    //             e.printStackTrace();
-    //         }
-
-    //         KBmanager.getMgr().setDefaultAttributes();
-    //         // KBmanager.getMgr().setConfiguration(configuration);
-    //         KBmanager.getMgr().initializeOnce();
-    //         KBmanager.initialized = true;
-    //     }
-    //     kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getPref("sumokbname"));
-    //     checkConfiguration();
-    // }
-
     /****************************************************************
      * Performs the KB load.
      * @param reader
@@ -50,25 +24,11 @@ public class SigmaTestBase {
     protected static void doSetUp() {
 
         if (!KBmanager.initialized) {
-            // try {
-                // File sourceConfig = new File(configPath);
-                // File kbDir = new File(KB_PATH);
-                // File targetConfig = new File(kbDir, "config.xml");
-                // kbDir.mkdirs();
-                // java.nio.file.Files.copy(
-                //         sourceConfig.toPath(),
-                //         targetConfig.toPath(),
-                //         java.nio.file.StandardCopyOption.REPLACE_EXISTING
-                // );
-                Configuration config = buildUnitConfiguration();
-                KBmanager.initialized = false;
-                KBmanager.initializing = false;
-                KBmanager.getMgr().kbs.clear();
-                KBmanager.getMgr().initializeOnce(config);
-            // }
-            // catch (IOException e) {
-            //     throw new RuntimeException("Could not prepare Sigma test config", e);
-            // }
+            Configuration config = buildUnitConfiguration();
+            KBmanager.initialized = false;
+            KBmanager.initializing = false;
+            KBmanager.getMgr().kbs.clear();
+            KBmanager.getMgr().initializeOnce(config);
         }
         kb = KBmanager.getMgr().getKB(KBmanager.getMgr().getDefaultKbName());
         checkConfiguration();
