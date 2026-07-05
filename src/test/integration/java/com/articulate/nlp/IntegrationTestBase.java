@@ -54,13 +54,13 @@ public class IntegrationTestBase extends SigmaTestBase {
         System.out.println("SIGMA_HOME = " + System.getenv("SIGMA_HOME"));
         System.out.println("KB_PATH = " + KB_PATH);
         System.out.println("IntegrationTestBase.setup(): KBmanager.initialized before setup = " + KBmanager.initialized);
-        KBmanager.configuration = buildIntegrationConfiguration();
-        if (KBmanager.initialized) {
-            System.out.println("IntegrationTestBase.setup(): KBmanager was already initialized; clearing SUMO before deterministic integration load.");
-            KBmanager.getMgr().kbs.remove("SUMO");
-            KBmanager.initialized = false;
-        }
-        KBmanager.getMgr().initializeOnce();
+        // KBmanager.configuration = buildIntegrationConfiguration();
+        // if (!KBmanager.initialized) {
+        //     System.out.println("IntegrationTestBase.setup(): KBmanager was already initialized; clearing SUMO before deterministic integration load.");
+        //     KBmanager.getMgr().kbs.remove("SUMO");
+        //     KBmanager.initialized = false;
+        // }
+        KBmanager.getMgr().initializeOnce(buildIntegrationConfiguration());
         kb = KBmanager.getMgr().getKB("SUMO");
         if (kb == null) throw new IllegalStateException("SUMO KB is not initialized.");
         checkConfiguration();
