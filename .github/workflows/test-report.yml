@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   report:
-    name: Report ${{ gitThub.event.workflow_run.head_branch }}
+    name: Report ${{ github.event.workflow_run.head_branch }}
     runs-on: ubuntu-latest
 
     steps:
