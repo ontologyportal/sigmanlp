@@ -53,10 +53,14 @@ public class IntegrationTestBase extends SigmaTestBase {
         System.out.println("IntegrationTestBase.setup(): using in-memory NLP integration configuration.");
         System.out.println("SIGMA_HOME = " + System.getenv("SIGMA_HOME"));
         System.out.println("KB_PATH = " + KB_PATH);
-        if (!KBmanager.initialized) {
-            KBmanager.configuration = buildIntegrationConfiguration();
-            KBmanager.getMgr().initializeOnce();
+        System.out.println("IntegrationTestBase.setup(): KBmanager.initialized before setup = " + KBmanager.initialized);
+        KBmanager.configuration = buildIntegrationConfiguration();
+        if (KBmanager.initialized) {
+            System.out.println("IntegrationTestBase.setup(): KBmanager was already initialized; clearing SUMO before deterministic integration load.");
+            KBmanager.getMgr().kbs.remove("SUMO");
+            KBmanager.initialized = false;
         }
+        KBmanager.getMgr().initializeOnce();
         kb = KBmanager.getMgr().getKB("SUMO");
         if (kb == null) throw new IllegalStateException("SUMO KB is not initialized.");
         checkConfiguration();
@@ -95,7 +99,7 @@ public class IntegrationTestBase extends SigmaTestBase {
                 File.separator + "tptp4X";
         config.setPreference("adminBrowserLimit", "200");
         config.setPreference("baseDir", sigmaHome);
-        config.setPreference("cache", "yes");
+        config.setPreference("cache", "no");
         config.setPreference("cacheDisjoint", "false");
         config.setPreference("cwa", "false");
         config.setPreference("eproverExec", eproverExec);
