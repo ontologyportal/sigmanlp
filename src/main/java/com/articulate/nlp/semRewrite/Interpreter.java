@@ -34,7 +34,7 @@ import com.articulate.nlp.semRewrite.substitutor.*;
 
 import com.articulate.sigma.*;
 import com.articulate.sigma.tp.Vampire;
-import com.articulate.sigma.tp.EProver;
+import com.articulate.sigma.tp.e.*;
 import com.articulate.sigma.utils.*;
 import com.articulate.sigma.wordNet.WSD;
 import com.articulate.sigma.wordNet.WordNet;
