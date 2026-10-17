@@ -48,6 +48,7 @@ public class GenOrientations {
     public static int id; 
     public static String key;
     public static int max;
+    public static boolean coherenceCheckEnabled = true;
     /** ***************************************************************
      *   Initiates important variables and objects needed
      *   for orientation generation.
@@ -56,11 +57,16 @@ public class GenOrientations {
     public static void init(String[] args) {
 
         // parse input variables
-        if (args == null || args.length != 2 || args[0].equals("-h")) {
-            System.out.println("Usage: GenOrientations <file prefix> <num to generate>");
-            System.exit(0);
+        boolean help = args != null && args.length == 1
+                && (args[0].equals("-h") || args[0].equals("--help"));
+        if (help || args == null || (args.length != 2 && args.length != 3)
+                || (args.length == 3 && !args[2].equals("--no-coherence-check"))) {
+            System.out.println("Usage: GenOrientations <file prefix> <num to generate> [--no-coherence-check]");
+            System.out.println("  --no-coherence-check  Accept every generated sentence without prompting.");
+            System.exit(help ? 0 : 1);
         }
         numToGenerate = Integer.parseInt(args[1]);
+        coherenceCheckEnabled = args.length == 2;
 
 
         // load the knowledge base
@@ -74,23 +80,16 @@ public class GenOrientations {
         // System.out.println("Number in allSUMOArtifactSet "+allSUMOArtifactSet.size());
         // System.out.println(allSUMOArtifactSet);
         //code to select certain artifacts from the original list of all artifacts.
-        SUMOArtifactRetainList = new ArrayList<>(Arrays.asList("DrinkingCup", "Book", "Table", "Chair"));
-        allSUMOArtifactSet.retainAll(SUMOArtifactRetainList);
+        //SUMOArtifactRetainList = new ArrayList<>(Arrays.asList("DrinkingCup", "Book", "Table", "Chair"));
+        //allSUMOArtifactSet.retainAll(SUMOArtifactRetainList);
         System.out.println("Number in allSUMOArtifactSet "+allSUMOArtifactSet.size());
-        System.out.println(allSUMOArtifactSet);
+        //System.out.println(allSUMOArtifactSet);
         //Set<String> allSUMOVariableAritySet = kbLite.getAllInstances("VariableArityRelation");
         Set<String> allSUMOOrientationSet = kbLite.getAllInstances("PositionalAttribute");
        //Adjusting the grammar of some of the relations
-        SUMOOrientationExlcusionList = new ArrayList<>(Arrays.asList("Downstairs", "North", "East", "South", "West", "Horizontal", "Upstairs", "Vertical", "Inside", "Outside", "Surrounded"));
-        allSUMOOrientationSet.removeAll(SUMOOrientationExlcusionList);
+        //SUMOOrientationExlcusionList = new ArrayList<>(Arrays.asList("Downstairs", "North", "East", "South", "West", "Horizontal", "Upstairs", "Vertical", "Inside", "Outside", "Surrounded"));
+        //allSUMOOrientationSet.removeAll(SUMOOrientationExlcusionList);
         System.out.println("Number in allSUMOOrientationSet "+allSUMOOrientationSet.size());
-        System.out.println(allSUMOOrientationSet);
-        allSUMOOrientationSet.remove("Adjacent");
-        allSUMOOrientationSet.add("adjacent to");
-        allSUMOOrientationSet.remove("Left");
-        allSUMOOrientationSet.add("left of");
-        allSUMOOrientationSet.remove("Right");
-        allSUMOOrientationSet.add("right of");
         System.out.println(allSUMOOrientationSet);
 
         //missing on
@@ -182,6 +181,47 @@ public class GenOrientations {
         }
     }
     
+    /**
+     * Normalize only the orientation phrase in the generated sentence frame.
+     * The SUMO constant determines the wording, rather than a possibly incomplete
+     * termFormat. Unknown orientations retain their original English wording.
+     */
+    public static String ensureOrientationPreposition(String sentence, String orientation,
+                                                     String englishOrientation) {
+        String phrase;
+        switch (orientation) {
+            case "Adjacent": phrase = "adjacent to"; break;
+            case "Clockwise": phrase = "clockwise from"; break;
+            case "CounterClockwise": phrase = "counterclockwise from"; break;
+            case "Downhill": phrase = "downhill from"; break;
+            case "Downstairs": phrase = "downstairs from"; break;
+            case "Downstream": phrase = "downstream from"; break;
+            case "Downwind": phrase = "downwind of"; break;
+            case "Horizontal": phrase = "horizontal to"; break;
+            case "Left": phrase = "left of"; break;
+            case "Right": phrase = "right of"; break;
+            case "RightAngle": phrase = "at a right angle to"; break;
+            case "Surrounded": phrase = "surrounded by"; break;
+            case "Uphill": phrase = "uphill from"; break;
+            case "Upstairs": phrase = "upstairs from"; break;
+            case "Upstream": phrase = "upstream from"; break;
+            case "Upwind": phrase = "upwind of"; break;
+            case "Vertical": phrase = "vertical to"; break;
+            case "East": case "North": case "Northeast": case "Northwest":
+            case "South": case "Southeast": case "Southwest": case "West":
+                phrase = orientation.toLowerCase(Locale.ROOT) + " of";
+                break;
+            // These words already function as prepositions; no extra word is needed.
+            case "Above": case "Below": case "Inside": case "Near":
+            case "On": case "Outside":
+                phrase = orientation.toLowerCase(Locale.ROOT);
+                break;
+            default: return sentence;
+        }
+        return sentence.replace(" is " + englishOrientation + " the ",
+                                " is " + phrase + " the ");
+    }
+
     /*manual coherence detector for english prompts */
     public static String coherenceDetector() {
         Scanner scanner = new Scanner(System.in);
@@ -252,29 +292,24 @@ public class GenOrientations {
 
             //sample without replacement
             while (randSUMOArtifact1==randSUMOArtifact2) {
-                randSUMOArtifact2 = allSUMOArtifactRandSet.getNext();
-                
+                randSUMOArtifact2 = allSUMOArtifactRandSet.getNext();   
             }
             //the below takes the sumo object and gets a random english format of it (usually only one)
             randEngOrientation = kbLite.getTermFormat(randSUMOOrientation);
             randEngArtifact1 = kbLite.getTermFormat(randSUMOArtifact1);
             randEngArtifact2 = kbLite.getTermFormat(randSUMOArtifact2);
-            //work around for bad grammar 
-            randEngOrientation = randSUMOOrientation;
-            randEngArtifact1 = randSUMOArtifact1;
-            randEngArtifact2 = randSUMOArtifact2;
             //randOreintationFormats = allFormats.get(randOrientation);formats are specific to relations
             //template "The <artifact1> is <orientation> the <artifact 2>."\
             //need to add prepostion to account for different orientations
             englishSentence = "The " +randEngArtifact1+" is "+randEngOrientation+" the "+randEngArtifact2+".";
+            englishSentence = ensureOrientationPreposition(
+                    englishSentence, randSUMOOrientation, randEngOrientation);
             logicPhrase = "(exists (?A1 ?A2) (and (instance ?A1 "+randSUMOArtifact1+") (instance ?A2 "+randSUMOArtifact2+") (orientation ?A1 ?A2 "+randSUMOOrientation+")))";
             System.out.println();
             System.out.println(englishSentence);
             System.out.println();
             //System.out.println(logicPhrase);
-            //insert coherence detector here
-            String coherence =  coherenceDetector();   
-            if (coherence.equals("a")){
+            if (!coherenceCheckEnabled || coherenceDetector().equals("a")){
                 //System.out.println("in if statement");
                 GenUtils.writeEnglishLogicPairToFile(englishSentence, logicPhrase, outputFileEnglish, outputFileLogic);
                 //add write to .json file here
