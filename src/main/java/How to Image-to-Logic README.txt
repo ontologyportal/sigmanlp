@@ -8,13 +8,26 @@ run the command ant to compile the java code.
 make sure to update the directories where you want the data saved and update the directory which is used to hold your api key.
 
 run the command :
-java -Xmx40g -classpath $SIGMANLP_CP com.articulate.nlp.GenOrientations Orientations XX
+java -Xmx40g -classpath "$SIGMANLP_CP" com.articulate.nlp.GenOrientations Orientations XX
 
-where XX is the number of coherent sentences you want to generate. 
+where XX is the number of accepted sentences you want to generate. By default,
+the manual coherence detector prompts for each sentence: enter "a" to accept it
+or "d" to reject it. Rejected sentences do not count toward XX.
+
+To disable the coherence detector and automatically accept every generated sentence:
+java -Xmx40g -classpath "$SIGMANLP_CP" com.articulate.nlp.GenOrientations Orientations XX --no-coherence-check
+
+The --no-coherence-check option must follow the sentence count. This mode does
+not assess coherence; it saves XX sentences without requiring keyboard input.
+Omit the option to restore manual checking. Use --help to display usage.
+
+The generator writes Orientations-eng.txt, Orientations-log.txt, and data.json
+in the current working directory. If data.json already exists, new records are
+appended with IDs continuing after the largest existing ID.
 
 Next run the command: 
 
-java -Xmx40g -classpath $SIGMANLP_CP com.articulate.nlp.GenOrientationImages
+java -Xmx40g -classpath "$SIGMANLP_CP" com.articulate.nlp.GenOrientationImages
 
 this will generate the images and update the json automatically
 
